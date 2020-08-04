@@ -1,61 +1,62 @@
+#nullable enable
 Microsoft.VisualStudio.Threading.AsyncAutoResetEvent
 Microsoft.VisualStudio.Threading.AsyncAutoResetEvent.AsyncAutoResetEvent() -> void
 Microsoft.VisualStudio.Threading.AsyncAutoResetEvent.AsyncAutoResetEvent(bool allowInliningAwaiters) -> void
 Microsoft.VisualStudio.Threading.AsyncAutoResetEvent.Set() -> void
-Microsoft.VisualStudio.Threading.AsyncAutoResetEvent.WaitAsync() -> System.Threading.Tasks.Task
-Microsoft.VisualStudio.Threading.AsyncAutoResetEvent.WaitAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task
+Microsoft.VisualStudio.Threading.AsyncAutoResetEvent.WaitAsync() -> System.Threading.Tasks.Task!
+Microsoft.VisualStudio.Threading.AsyncAutoResetEvent.WaitAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 Microsoft.VisualStudio.Threading.AsyncBarrier
 Microsoft.VisualStudio.Threading.AsyncBarrier.AsyncBarrier(int participants) -> void
-Microsoft.VisualStudio.Threading.AsyncBarrier.SignalAndWait() -> System.Threading.Tasks.Task
+Microsoft.VisualStudio.Threading.AsyncBarrier.SignalAndWait() -> System.Threading.Tasks.Task!
 Microsoft.VisualStudio.Threading.AsyncCountdownEvent
 Microsoft.VisualStudio.Threading.AsyncCountdownEvent.AsyncCountdownEvent(int initialCount) -> void
 Microsoft.VisualStudio.Threading.AsyncCountdownEvent.Signal() -> void
-Microsoft.VisualStudio.Threading.AsyncCountdownEvent.SignalAndWaitAsync() -> System.Threading.Tasks.Task
-Microsoft.VisualStudio.Threading.AsyncCountdownEvent.SignalAsync() -> System.Threading.Tasks.Task
-Microsoft.VisualStudio.Threading.AsyncCountdownEvent.WaitAsync() -> System.Threading.Tasks.Task
+Microsoft.VisualStudio.Threading.AsyncCountdownEvent.SignalAndWaitAsync() -> System.Threading.Tasks.Task!
+Microsoft.VisualStudio.Threading.AsyncCountdownEvent.SignalAsync() -> System.Threading.Tasks.Task!
+Microsoft.VisualStudio.Threading.AsyncCountdownEvent.WaitAsync() -> System.Threading.Tasks.Task!
 Microsoft.VisualStudio.Threading.AsyncEventHandler
 Microsoft.VisualStudio.Threading.AsyncEventHandler<TEventArgs>
 Microsoft.VisualStudio.Threading.AsyncLazy<T>
-Microsoft.VisualStudio.Threading.AsyncLazy<T>.AsyncLazy(System.Func<System.Threading.Tasks.Task<T>> valueFactory, Microsoft.VisualStudio.Threading.JoinableTaskFactory joinableTaskFactory = null) -> void
+Microsoft.VisualStudio.Threading.AsyncLazy<T>.AsyncLazy(System.Func<System.Threading.Tasks.Task<T>!>! valueFactory, Microsoft.VisualStudio.Threading.JoinableTaskFactory? joinableTaskFactory = null) -> void
 Microsoft.VisualStudio.Threading.AsyncLazy<T>.GetValue() -> T
 Microsoft.VisualStudio.Threading.AsyncLazy<T>.GetValue(System.Threading.CancellationToken cancellationToken) -> T
-Microsoft.VisualStudio.Threading.AsyncLazy<T>.GetValueAsync() -> System.Threading.Tasks.Task<T>
-Microsoft.VisualStudio.Threading.AsyncLazy<T>.GetValueAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<T>
+Microsoft.VisualStudio.Threading.AsyncLazy<T>.GetValueAsync() -> System.Threading.Tasks.Task<T>!
+Microsoft.VisualStudio.Threading.AsyncLazy<T>.GetValueAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<T>!
 Microsoft.VisualStudio.Threading.AsyncLazy<T>.IsValueCreated.get -> bool
 Microsoft.VisualStudio.Threading.AsyncLazy<T>.IsValueFactoryCompleted.get -> bool
 Microsoft.VisualStudio.Threading.AsyncLazyInitializer
-Microsoft.VisualStudio.Threading.AsyncLazyInitializer.AsyncLazyInitializer(System.Func<System.Threading.Tasks.Task> action, Microsoft.VisualStudio.Threading.JoinableTaskFactory joinableTaskFactory = null) -> void
+Microsoft.VisualStudio.Threading.AsyncLazyInitializer.AsyncLazyInitializer(System.Func<System.Threading.Tasks.Task!>! action, Microsoft.VisualStudio.Threading.JoinableTaskFactory? joinableTaskFactory = null) -> void
 Microsoft.VisualStudio.Threading.AsyncLazyInitializer.Initialize(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> void
-Microsoft.VisualStudio.Threading.AsyncLazyInitializer.InitializeAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task
+Microsoft.VisualStudio.Threading.AsyncLazyInitializer.InitializeAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Microsoft.VisualStudio.Threading.AsyncLazyInitializer.IsCompleted.get -> bool
 Microsoft.VisualStudio.Threading.AsyncLazyInitializer.IsCompletedSuccessfully.get -> bool
 Microsoft.VisualStudio.Threading.AsyncLocal<T>
 Microsoft.VisualStudio.Threading.AsyncLocal<T>.AsyncLocal() -> void
-Microsoft.VisualStudio.Threading.AsyncLocal<T>.Value.get -> T
+Microsoft.VisualStudio.Threading.AsyncLocal<T>.Value.get -> T?
 Microsoft.VisualStudio.Threading.AsyncLocal<T>.Value.set -> void
 Microsoft.VisualStudio.Threading.AsyncManualResetEvent
 Microsoft.VisualStudio.Threading.AsyncManualResetEvent.AsyncManualResetEvent(bool initialState = false, bool allowInliningAwaiters = false) -> void
 Microsoft.VisualStudio.Threading.AsyncManualResetEvent.GetAwaiter() -> System.Runtime.CompilerServices.TaskAwaiter
 Microsoft.VisualStudio.Threading.AsyncManualResetEvent.IsSet.get -> bool
 Microsoft.VisualStudio.Threading.AsyncManualResetEvent.PulseAll() -> void
-Microsoft.VisualStudio.Threading.AsyncManualResetEvent.PulseAllAsync() -> System.Threading.Tasks.Task
+Microsoft.VisualStudio.Threading.AsyncManualResetEvent.PulseAllAsync() -> System.Threading.Tasks.Task!
 Microsoft.VisualStudio.Threading.AsyncManualResetEvent.Reset() -> void
 Microsoft.VisualStudio.Threading.AsyncManualResetEvent.Set() -> void
-Microsoft.VisualStudio.Threading.AsyncManualResetEvent.SetAsync() -> System.Threading.Tasks.Task
-Microsoft.VisualStudio.Threading.AsyncManualResetEvent.WaitAsync() -> System.Threading.Tasks.Task
-Microsoft.VisualStudio.Threading.AsyncManualResetEvent.WaitAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task
+Microsoft.VisualStudio.Threading.AsyncManualResetEvent.SetAsync() -> System.Threading.Tasks.Task!
+Microsoft.VisualStudio.Threading.AsyncManualResetEvent.WaitAsync() -> System.Threading.Tasks.Task!
+Microsoft.VisualStudio.Threading.AsyncManualResetEvent.WaitAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 Microsoft.VisualStudio.Threading.AsyncQueue<T>
 Microsoft.VisualStudio.Threading.AsyncQueue<T>.AsyncQueue() -> void
 Microsoft.VisualStudio.Threading.AsyncQueue<T>.Complete() -> void
-Microsoft.VisualStudio.Threading.AsyncQueue<T>.Completion.get -> System.Threading.Tasks.Task
+Microsoft.VisualStudio.Threading.AsyncQueue<T>.Completion.get -> System.Threading.Tasks.Task!
 Microsoft.VisualStudio.Threading.AsyncQueue<T>.Count.get -> int
-Microsoft.VisualStudio.Threading.AsyncQueue<T>.DequeueAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<T>
+Microsoft.VisualStudio.Threading.AsyncQueue<T>.DequeueAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<T>!
 Microsoft.VisualStudio.Threading.AsyncQueue<T>.Enqueue(T value) -> void
 Microsoft.VisualStudio.Threading.AsyncQueue<T>.IsCompleted.get -> bool
 Microsoft.VisualStudio.Threading.AsyncQueue<T>.IsEmpty.get -> bool
 Microsoft.VisualStudio.Threading.AsyncQueue<T>.Peek() -> T
-Microsoft.VisualStudio.Threading.AsyncQueue<T>.SyncRoot.get -> object
-Microsoft.VisualStudio.Threading.AsyncQueue<T>.TryDequeue(System.Predicate<T> valueCheck, out T value) -> bool
+Microsoft.VisualStudio.Threading.AsyncQueue<T>.SyncRoot.get -> object!
+Microsoft.VisualStudio.Threading.AsyncQueue<T>.TryDequeue(System.Predicate<T>! valueCheck, out T value) -> bool
 Microsoft.VisualStudio.Threading.AsyncQueue<T>.TryDequeue(out T value) -> bool
 Microsoft.VisualStudio.Threading.AsyncQueue<T>.TryEnqueue(T value) -> bool
 Microsoft.VisualStudio.Threading.AsyncQueue<T>.TryPeek(out T value) -> bool
@@ -64,16 +65,16 @@ Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.AmbientLock.get -> Micros
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.AsyncReaderWriterLock() -> void
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.AsyncReaderWriterLock(bool captureDiagnostics) -> void
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Awaitable
-Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Awaitable.GetAwaiter() -> Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Awaiter
+Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Awaitable.GetAwaiter() -> Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Awaiter!
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Awaiter
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Awaiter.GetResult() -> Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Releaser
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Awaiter.IsCompleted.get -> bool
-Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Awaiter.OnCompleted(System.Action continuation) -> void
-Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Awaiter.UnsafeOnCompleted(System.Action continuation) -> void
+Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Awaiter.OnCompleted(System.Action! continuation) -> void
+Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Awaiter.UnsafeOnCompleted(System.Action! continuation) -> void
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.CaptureDiagnostics.get -> bool
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.CaptureDiagnostics.set -> void
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Complete() -> void
-Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Completion.get -> System.Threading.Tasks.Task
+Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Completion.get -> System.Threading.Tasks.Task!
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Dispose() -> void
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.GetAggregateLockFlags() -> Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.LockFlags
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.HideLocks() -> Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Suppression
@@ -89,7 +90,7 @@ Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.LockFlags
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.LockFlags.None = 0 -> Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.LockFlags
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.LockFlags.StickyWrite = 1 -> Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.LockFlags
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.LockHandle
-Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.LockHandle.Data.get -> object
+Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.LockHandle.Data.get -> object?
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.LockHandle.Data.set -> void
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.LockHandle.Flags.get -> Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.LockFlags
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.LockHandle.HasReadLock.get -> bool
@@ -102,15 +103,15 @@ Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.LockHandle.IsValid.get ->
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.LockHandle.IsWriteLock.get -> bool
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.LockHandle.NestingLock.get -> Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.LockHandle
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.LockStackContains(Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.LockFlags flags, Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.LockHandle handle) -> bool
-Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.OnBeforeWriteLockReleased(System.Func<System.Threading.Tasks.Task> action) -> void
-Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.OnCriticalFailure(string message) -> System.Exception
+Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.OnBeforeWriteLockReleased(System.Func<System.Threading.Tasks.Task!>! action) -> void
+Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.OnCriticalFailure(string! message) -> System.Exception!
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.ReadLockAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Awaitable
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Releaser
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Releaser.Dispose() -> void
-Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Releaser.ReleaseAsync() -> System.Threading.Tasks.Task
+Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Releaser.ReleaseAsync() -> System.Threading.Tasks.Task!
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Suppression
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Suppression.Dispose() -> void
-Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.SyncObject.get -> object
+Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.SyncObject.get -> object!
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.UpgradeableReadLockAsync(Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.LockFlags options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Awaitable
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.UpgradeableReadLockAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Awaitable
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.WriteLockAsync(Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.LockFlags options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Awaitable
@@ -129,15 +130,15 @@ Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResour
 Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.ResourceAwaiter
 Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.ResourceAwaiter.GetResult() -> Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.ResourceReleaser
 Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.ResourceAwaiter.IsCompleted.get -> bool
-Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.ResourceAwaiter.OnCompleted(System.Action continuation) -> void
-Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.ResourceAwaiter.UnsafeOnCompleted(System.Action continuation) -> void
+Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.ResourceAwaiter.OnCompleted(System.Action! continuation) -> void
+Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.ResourceAwaiter.UnsafeOnCompleted(System.Action! continuation) -> void
 Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.ResourceReleaser
 Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.ResourceReleaser.Dispose() -> void
-Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.ResourceReleaser.GetResourceAsync(TMoniker resourceMoniker, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResource>
-Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.ResourceReleaser.ReleaseAsync() -> System.Threading.Tasks.Task
+Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.ResourceReleaser.GetResourceAsync(TMoniker resourceMoniker, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResource!>!
+Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.ResourceReleaser.ReleaseAsync() -> System.Threading.Tasks.Task!
 Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.SetAllResourcesToUnknownState() -> void
-Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.SetResourceAsAccessed(System.Func<TResource, object, bool> resourceCheck, object state) -> bool
-Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.SetResourceAsAccessed(TResource resource) -> void
+Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.SetResourceAsAccessed(System.Func<TResource!, object?, bool>! resourceCheck, object? state) -> bool
+Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.SetResourceAsAccessed(TResource! resource) -> void
 Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.UpgradeableReadLockAsync(Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.LockFlags options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.ResourceAwaitable
 Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.UpgradeableReadLockAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.ResourceAwaitable
 Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.WriteLockAsync(Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.LockFlags options, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.ResourceAwaitable
@@ -146,9 +147,9 @@ Microsoft.VisualStudio.Threading.AsyncSemaphore
 Microsoft.VisualStudio.Threading.AsyncSemaphore.AsyncSemaphore(int initialCount) -> void
 Microsoft.VisualStudio.Threading.AsyncSemaphore.CurrentCount.get -> int
 Microsoft.VisualStudio.Threading.AsyncSemaphore.Dispose() -> void
-Microsoft.VisualStudio.Threading.AsyncSemaphore.EnterAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Microsoft.VisualStudio.Threading.AsyncSemaphore.Releaser>
-Microsoft.VisualStudio.Threading.AsyncSemaphore.EnterAsync(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Microsoft.VisualStudio.Threading.AsyncSemaphore.Releaser>
-Microsoft.VisualStudio.Threading.AsyncSemaphore.EnterAsync(int timeout, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Microsoft.VisualStudio.Threading.AsyncSemaphore.Releaser>
+Microsoft.VisualStudio.Threading.AsyncSemaphore.EnterAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Microsoft.VisualStudio.Threading.AsyncSemaphore.Releaser>!
+Microsoft.VisualStudio.Threading.AsyncSemaphore.EnterAsync(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Microsoft.VisualStudio.Threading.AsyncSemaphore.Releaser>!
+Microsoft.VisualStudio.Threading.AsyncSemaphore.EnterAsync(int timeout, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Microsoft.VisualStudio.Threading.AsyncSemaphore.Releaser>!
 Microsoft.VisualStudio.Threading.AsyncSemaphore.Releaser
 Microsoft.VisualStudio.Threading.AsyncSemaphore.Releaser.Dispose() -> void
 Microsoft.VisualStudio.Threading.AwaitExtensions
@@ -159,86 +160,86 @@ Microsoft.VisualStudio.Threading.AwaitExtensions.ConfiguredTaskYieldAwaiter
 Microsoft.VisualStudio.Threading.AwaitExtensions.ConfiguredTaskYieldAwaiter.ConfiguredTaskYieldAwaiter(bool continueOnCapturedContext) -> void
 Microsoft.VisualStudio.Threading.AwaitExtensions.ConfiguredTaskYieldAwaiter.GetResult() -> void
 Microsoft.VisualStudio.Threading.AwaitExtensions.ConfiguredTaskYieldAwaiter.IsCompleted.get -> bool
-Microsoft.VisualStudio.Threading.AwaitExtensions.ConfiguredTaskYieldAwaiter.OnCompleted(System.Action continuation) -> void
-Microsoft.VisualStudio.Threading.AwaitExtensions.ConfiguredTaskYieldAwaiter.UnsafeOnCompleted(System.Action continuation) -> void
+Microsoft.VisualStudio.Threading.AwaitExtensions.ConfiguredTaskYieldAwaiter.OnCompleted(System.Action! continuation) -> void
+Microsoft.VisualStudio.Threading.AwaitExtensions.ConfiguredTaskYieldAwaiter.UnsafeOnCompleted(System.Action! continuation) -> void
 Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaitable
-Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaitable.ExecuteContinuationSynchronouslyAwaitable(System.Threading.Tasks.Task antecedent) -> void
+Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaitable.ExecuteContinuationSynchronouslyAwaitable(System.Threading.Tasks.Task! antecedent) -> void
 Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaitable.GetAwaiter() -> Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaiter
 Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaitable<T>
-Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaitable<T>.ExecuteContinuationSynchronouslyAwaitable(System.Threading.Tasks.Task<T> antecedent) -> void
+Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaitable<T>.ExecuteContinuationSynchronouslyAwaitable(System.Threading.Tasks.Task<T>! antecedent) -> void
 Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaitable<T>.GetAwaiter() -> Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaiter<T>
 Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaiter
-Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaiter.ExecuteContinuationSynchronouslyAwaiter(System.Threading.Tasks.Task antecedent) -> void
+Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaiter.ExecuteContinuationSynchronouslyAwaiter(System.Threading.Tasks.Task! antecedent) -> void
 Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaiter.GetResult() -> void
 Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaiter.IsCompleted.get -> bool
-Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaiter.OnCompleted(System.Action continuation) -> void
+Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaiter.OnCompleted(System.Action! continuation) -> void
 Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaiter<T>
-Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaiter<T>.ExecuteContinuationSynchronouslyAwaiter(System.Threading.Tasks.Task<T> antecedent) -> void
+Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaiter<T>.ExecuteContinuationSynchronouslyAwaiter(System.Threading.Tasks.Task<T>! antecedent) -> void
 Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaiter<T>.GetResult() -> T
 Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaiter<T>.IsCompleted.get -> bool
-Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaiter<T>.OnCompleted(System.Action continuation) -> void
+Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaiter<T>.OnCompleted(System.Action! continuation) -> void
 Microsoft.VisualStudio.Threading.AwaitExtensions.TaskSchedulerAwaitable
 Microsoft.VisualStudio.Threading.AwaitExtensions.TaskSchedulerAwaitable.GetAwaiter() -> Microsoft.VisualStudio.Threading.AwaitExtensions.TaskSchedulerAwaiter
-Microsoft.VisualStudio.Threading.AwaitExtensions.TaskSchedulerAwaitable.TaskSchedulerAwaitable(System.Threading.Tasks.TaskScheduler taskScheduler, bool alwaysYield = false) -> void
+Microsoft.VisualStudio.Threading.AwaitExtensions.TaskSchedulerAwaitable.TaskSchedulerAwaitable(System.Threading.Tasks.TaskScheduler! taskScheduler, bool alwaysYield = false) -> void
 Microsoft.VisualStudio.Threading.AwaitExtensions.TaskSchedulerAwaiter
 Microsoft.VisualStudio.Threading.AwaitExtensions.TaskSchedulerAwaiter.GetResult() -> void
 Microsoft.VisualStudio.Threading.AwaitExtensions.TaskSchedulerAwaiter.IsCompleted.get -> bool
-Microsoft.VisualStudio.Threading.AwaitExtensions.TaskSchedulerAwaiter.OnCompleted(System.Action continuation) -> void
-Microsoft.VisualStudio.Threading.AwaitExtensions.TaskSchedulerAwaiter.TaskSchedulerAwaiter(System.Threading.Tasks.TaskScheduler scheduler, bool alwaysYield = false) -> void
-Microsoft.VisualStudio.Threading.AwaitExtensions.TaskSchedulerAwaiter.UnsafeOnCompleted(System.Action continuation) -> void
+Microsoft.VisualStudio.Threading.AwaitExtensions.TaskSchedulerAwaiter.OnCompleted(System.Action! continuation) -> void
+Microsoft.VisualStudio.Threading.AwaitExtensions.TaskSchedulerAwaiter.TaskSchedulerAwaiter(System.Threading.Tasks.TaskScheduler! scheduler, bool alwaysYield = false) -> void
+Microsoft.VisualStudio.Threading.AwaitExtensions.TaskSchedulerAwaiter.UnsafeOnCompleted(System.Action! continuation) -> void
 Microsoft.VisualStudio.Threading.CancellationTokenExtensions
 Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken
 Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken.CombinedCancellationToken(System.Threading.CancellationToken cancellationToken) -> void
-Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken.CombinedCancellationToken(System.Threading.CancellationTokenSource cancellationTokenSource) -> void
+Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken.CombinedCancellationToken(System.Threading.CancellationTokenSource! cancellationTokenSource) -> void
 Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken.Dispose() -> void
 Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken.Equals(Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken other) -> bool
 Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken.Token.get -> System.Threading.CancellationToken
 Microsoft.VisualStudio.Threading.DelegatingJoinableTaskFactory
-Microsoft.VisualStudio.Threading.DelegatingJoinableTaskFactory.DelegatingJoinableTaskFactory(Microsoft.VisualStudio.Threading.JoinableTaskFactory innerFactory) -> void
+Microsoft.VisualStudio.Threading.DelegatingJoinableTaskFactory.DelegatingJoinableTaskFactory(Microsoft.VisualStudio.Threading.JoinableTaskFactory! innerFactory) -> void
 Microsoft.VisualStudio.Threading.DispatcherExtensions
 Microsoft.VisualStudio.Threading.HangReportContribution
-Microsoft.VisualStudio.Threading.HangReportContribution.Content.get -> string
-Microsoft.VisualStudio.Threading.HangReportContribution.ContentName.get -> string
-Microsoft.VisualStudio.Threading.HangReportContribution.ContentType.get -> string
-Microsoft.VisualStudio.Threading.HangReportContribution.HangReportContribution(string content, string contentType, string contentName) -> void
-Microsoft.VisualStudio.Threading.HangReportContribution.HangReportContribution(string content, string contentType, string contentName, params Microsoft.VisualStudio.Threading.HangReportContribution[] nestedReports) -> void
-Microsoft.VisualStudio.Threading.HangReportContribution.NestedReports.get -> System.Collections.Generic.IReadOnlyCollection<Microsoft.VisualStudio.Threading.HangReportContribution>
+Microsoft.VisualStudio.Threading.HangReportContribution.Content.get -> string!
+Microsoft.VisualStudio.Threading.HangReportContribution.ContentName.get -> string?
+Microsoft.VisualStudio.Threading.HangReportContribution.ContentType.get -> string?
+Microsoft.VisualStudio.Threading.HangReportContribution.HangReportContribution(string! content, string? contentType, string? contentName) -> void
+Microsoft.VisualStudio.Threading.HangReportContribution.HangReportContribution(string! content, string? contentType, string? contentName, params Microsoft.VisualStudio.Threading.HangReportContribution![]? nestedReports) -> void
+Microsoft.VisualStudio.Threading.HangReportContribution.NestedReports.get -> System.Collections.Generic.IReadOnlyCollection<Microsoft.VisualStudio.Threading.HangReportContribution!>?
 Microsoft.VisualStudio.Threading.IAsyncDisposable
-Microsoft.VisualStudio.Threading.IAsyncDisposable.DisposeAsync() -> System.Threading.Tasks.Task
+Microsoft.VisualStudio.Threading.IAsyncDisposable.DisposeAsync() -> System.Threading.Tasks.Task!
 Microsoft.VisualStudio.Threading.IHangReportContributor
-Microsoft.VisualStudio.Threading.IHangReportContributor.GetHangReport() -> Microsoft.VisualStudio.Threading.HangReportContribution
+Microsoft.VisualStudio.Threading.IHangReportContributor.GetHangReport() -> Microsoft.VisualStudio.Threading.HangReportContribution!
 Microsoft.VisualStudio.Threading.JoinableTask
 Microsoft.VisualStudio.Threading.JoinableTask.GetAwaiter() -> System.Runtime.CompilerServices.TaskAwaiter
 Microsoft.VisualStudio.Threading.JoinableTask.IsCompleted.get -> bool
 Microsoft.VisualStudio.Threading.JoinableTask.Join(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> void
-Microsoft.VisualStudio.Threading.JoinableTask.JoinAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task
-Microsoft.VisualStudio.Threading.JoinableTask.Task.get -> System.Threading.Tasks.Task
+Microsoft.VisualStudio.Threading.JoinableTask.JoinAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Microsoft.VisualStudio.Threading.JoinableTask.Task.get -> System.Threading.Tasks.Task!
 Microsoft.VisualStudio.Threading.JoinableTask<T>
 Microsoft.VisualStudio.Threading.JoinableTask<T>.GetAwaiter() -> System.Runtime.CompilerServices.TaskAwaiter<T>
 Microsoft.VisualStudio.Threading.JoinableTask<T>.Join(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> T
-Microsoft.VisualStudio.Threading.JoinableTask<T>.JoinAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<T>
-Microsoft.VisualStudio.Threading.JoinableTask<T>.Task.get -> System.Threading.Tasks.Task<T>
+Microsoft.VisualStudio.Threading.JoinableTask<T>.JoinAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<T>!
+Microsoft.VisualStudio.Threading.JoinableTask<T>.Task.get -> System.Threading.Tasks.Task<T>!
 Microsoft.VisualStudio.Threading.JoinableTaskCollection
-Microsoft.VisualStudio.Threading.JoinableTaskCollection.Add(Microsoft.VisualStudio.Threading.JoinableTask joinableTask) -> void
-Microsoft.VisualStudio.Threading.JoinableTaskCollection.Contains(Microsoft.VisualStudio.Threading.JoinableTask joinableTask) -> bool
-Microsoft.VisualStudio.Threading.JoinableTaskCollection.Context.get -> Microsoft.VisualStudio.Threading.JoinableTaskContext
-Microsoft.VisualStudio.Threading.JoinableTaskCollection.DisplayName.get -> string
+Microsoft.VisualStudio.Threading.JoinableTaskCollection.Add(Microsoft.VisualStudio.Threading.JoinableTask! joinableTask) -> void
+Microsoft.VisualStudio.Threading.JoinableTaskCollection.Contains(Microsoft.VisualStudio.Threading.JoinableTask! joinableTask) -> bool
+Microsoft.VisualStudio.Threading.JoinableTaskCollection.Context.get -> Microsoft.VisualStudio.Threading.JoinableTaskContext!
+Microsoft.VisualStudio.Threading.JoinableTaskCollection.DisplayName.get -> string?
 Microsoft.VisualStudio.Threading.JoinableTaskCollection.DisplayName.set -> void
-Microsoft.VisualStudio.Threading.JoinableTaskCollection.GetEnumerator() -> System.Collections.Generic.IEnumerator<Microsoft.VisualStudio.Threading.JoinableTask>
+Microsoft.VisualStudio.Threading.JoinableTaskCollection.GetEnumerator() -> System.Collections.Generic.IEnumerator<Microsoft.VisualStudio.Threading.JoinableTask!>!
 Microsoft.VisualStudio.Threading.JoinableTaskCollection.Join() -> Microsoft.VisualStudio.Threading.JoinableTaskCollection.JoinRelease
 Microsoft.VisualStudio.Threading.JoinableTaskCollection.JoinRelease
 Microsoft.VisualStudio.Threading.JoinableTaskCollection.JoinRelease.Dispose() -> void
-Microsoft.VisualStudio.Threading.JoinableTaskCollection.JoinTillEmptyAsync() -> System.Threading.Tasks.Task
-Microsoft.VisualStudio.Threading.JoinableTaskCollection.JoinTillEmptyAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task
-Microsoft.VisualStudio.Threading.JoinableTaskCollection.JoinableTaskCollection(Microsoft.VisualStudio.Threading.JoinableTaskContext context, bool refCountAddedJobs = false) -> void
-Microsoft.VisualStudio.Threading.JoinableTaskCollection.Remove(Microsoft.VisualStudio.Threading.JoinableTask joinableTask) -> void
+Microsoft.VisualStudio.Threading.JoinableTaskCollection.JoinTillEmptyAsync() -> System.Threading.Tasks.Task!
+Microsoft.VisualStudio.Threading.JoinableTaskCollection.JoinTillEmptyAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Microsoft.VisualStudio.Threading.JoinableTaskCollection.JoinableTaskCollection(Microsoft.VisualStudio.Threading.JoinableTaskContext! context, bool refCountAddedJobs = false) -> void
+Microsoft.VisualStudio.Threading.JoinableTaskCollection.Remove(Microsoft.VisualStudio.Threading.JoinableTask! joinableTask) -> void
 Microsoft.VisualStudio.Threading.JoinableTaskContext
-Microsoft.VisualStudio.Threading.JoinableTaskContext.CreateCollection() -> Microsoft.VisualStudio.Threading.JoinableTaskCollection
+Microsoft.VisualStudio.Threading.JoinableTaskContext.CreateCollection() -> Microsoft.VisualStudio.Threading.JoinableTaskCollection!
 Microsoft.VisualStudio.Threading.JoinableTaskContext.Dispose() -> void
-Microsoft.VisualStudio.Threading.JoinableTaskContext.Factory.get -> Microsoft.VisualStudio.Threading.JoinableTaskFactory
+Microsoft.VisualStudio.Threading.JoinableTaskContext.Factory.get -> Microsoft.VisualStudio.Threading.JoinableTaskFactory!
 Microsoft.VisualStudio.Threading.JoinableTaskContext.HangDetails
-Microsoft.VisualStudio.Threading.JoinableTaskContext.HangDetails.EntryMethod.get -> System.Reflection.MethodInfo
-Microsoft.VisualStudio.Threading.JoinableTaskContext.HangDetails.HangDetails(System.TimeSpan hangDuration, int notificationCount, System.Guid hangId, System.Reflection.MethodInfo entryMethod) -> void
+Microsoft.VisualStudio.Threading.JoinableTaskContext.HangDetails.EntryMethod.get -> System.Reflection.MethodInfo?
+Microsoft.VisualStudio.Threading.JoinableTaskContext.HangDetails.HangDetails(System.TimeSpan hangDuration, int notificationCount, System.Guid hangId, System.Reflection.MethodInfo? entryMethod) -> void
 Microsoft.VisualStudio.Threading.JoinableTaskContext.HangDetails.HangDuration.get -> System.TimeSpan
 Microsoft.VisualStudio.Threading.JoinableTaskContext.HangDetails.HangId.get -> System.Guid
 Microsoft.VisualStudio.Threading.JoinableTaskContext.HangDetails.NotificationCount.get -> int
@@ -246,64 +247,64 @@ Microsoft.VisualStudio.Threading.JoinableTaskContext.IsMainThreadBlocked() -> bo
 Microsoft.VisualStudio.Threading.JoinableTaskContext.IsOnMainThread.get -> bool
 Microsoft.VisualStudio.Threading.JoinableTaskContext.IsWithinJoinableTask.get -> bool
 Microsoft.VisualStudio.Threading.JoinableTaskContext.JoinableTaskContext() -> void
-Microsoft.VisualStudio.Threading.JoinableTaskContext.JoinableTaskContext(System.Threading.Thread mainThread = null, System.Threading.SynchronizationContext synchronizationContext = null) -> void
-Microsoft.VisualStudio.Threading.JoinableTaskContext.MainThread.get -> System.Threading.Thread
+Microsoft.VisualStudio.Threading.JoinableTaskContext.JoinableTaskContext(System.Threading.Thread? mainThread = null, System.Threading.SynchronizationContext? synchronizationContext = null) -> void
+Microsoft.VisualStudio.Threading.JoinableTaskContext.MainThread.get -> System.Threading.Thread!
 Microsoft.VisualStudio.Threading.JoinableTaskContext.RevertRelevance
 Microsoft.VisualStudio.Threading.JoinableTaskContext.RevertRelevance.Dispose() -> void
 Microsoft.VisualStudio.Threading.JoinableTaskContext.SuppressRelevance() -> Microsoft.VisualStudio.Threading.JoinableTaskContext.RevertRelevance
 Microsoft.VisualStudio.Threading.JoinableTaskContextException
 Microsoft.VisualStudio.Threading.JoinableTaskContextException.JoinableTaskContextException() -> void
-Microsoft.VisualStudio.Threading.JoinableTaskContextException.JoinableTaskContextException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) -> void
-Microsoft.VisualStudio.Threading.JoinableTaskContextException.JoinableTaskContextException(string message) -> void
-Microsoft.VisualStudio.Threading.JoinableTaskContextException.JoinableTaskContextException(string message, System.Exception inner) -> void
+Microsoft.VisualStudio.Threading.JoinableTaskContextException.JoinableTaskContextException(System.Runtime.Serialization.SerializationInfo! info, System.Runtime.Serialization.StreamingContext context) -> void
+Microsoft.VisualStudio.Threading.JoinableTaskContextException.JoinableTaskContextException(string? message) -> void
+Microsoft.VisualStudio.Threading.JoinableTaskContextException.JoinableTaskContextException(string? message, System.Exception? inner) -> void
 Microsoft.VisualStudio.Threading.JoinableTaskContextNode
-Microsoft.VisualStudio.Threading.JoinableTaskContextNode.Context.get -> Microsoft.VisualStudio.Threading.JoinableTaskContext
-Microsoft.VisualStudio.Threading.JoinableTaskContextNode.CreateCollection() -> Microsoft.VisualStudio.Threading.JoinableTaskCollection
-Microsoft.VisualStudio.Threading.JoinableTaskContextNode.Factory.get -> Microsoft.VisualStudio.Threading.JoinableTaskFactory
+Microsoft.VisualStudio.Threading.JoinableTaskContextNode.Context.get -> Microsoft.VisualStudio.Threading.JoinableTaskContext!
+Microsoft.VisualStudio.Threading.JoinableTaskContextNode.CreateCollection() -> Microsoft.VisualStudio.Threading.JoinableTaskCollection!
+Microsoft.VisualStudio.Threading.JoinableTaskContextNode.Factory.get -> Microsoft.VisualStudio.Threading.JoinableTaskFactory!
 Microsoft.VisualStudio.Threading.JoinableTaskContextNode.IsMainThreadBlocked() -> bool
 Microsoft.VisualStudio.Threading.JoinableTaskContextNode.IsOnMainThread.get -> bool
-Microsoft.VisualStudio.Threading.JoinableTaskContextNode.JoinableTaskContextNode(Microsoft.VisualStudio.Threading.JoinableTaskContext context) -> void
-Microsoft.VisualStudio.Threading.JoinableTaskContextNode.MainThread.get -> System.Threading.Thread
-Microsoft.VisualStudio.Threading.JoinableTaskContextNode.RegisterOnHangDetected() -> System.IDisposable
+Microsoft.VisualStudio.Threading.JoinableTaskContextNode.JoinableTaskContextNode(Microsoft.VisualStudio.Threading.JoinableTaskContext! context) -> void
+Microsoft.VisualStudio.Threading.JoinableTaskContextNode.MainThread.get -> System.Threading.Thread!
+Microsoft.VisualStudio.Threading.JoinableTaskContextNode.RegisterOnHangDetected() -> System.IDisposable!
 Microsoft.VisualStudio.Threading.JoinableTaskContextNode.SuppressRelevance() -> Microsoft.VisualStudio.Threading.JoinableTaskContext.RevertRelevance
 Microsoft.VisualStudio.Threading.JoinableTaskCreationOptions
 Microsoft.VisualStudio.Threading.JoinableTaskCreationOptions.LongRunning = 1 -> Microsoft.VisualStudio.Threading.JoinableTaskCreationOptions
 Microsoft.VisualStudio.Threading.JoinableTaskCreationOptions.None = 0 -> Microsoft.VisualStudio.Threading.JoinableTaskCreationOptions
 Microsoft.VisualStudio.Threading.JoinableTaskFactory
-Microsoft.VisualStudio.Threading.JoinableTaskFactory.Add(Microsoft.VisualStudio.Threading.JoinableTask joinable) -> void
-Microsoft.VisualStudio.Threading.JoinableTaskFactory.Context.get -> Microsoft.VisualStudio.Threading.JoinableTaskContext
+Microsoft.VisualStudio.Threading.JoinableTaskFactory.Add(Microsoft.VisualStudio.Threading.JoinableTask! joinable) -> void
+Microsoft.VisualStudio.Threading.JoinableTaskFactory.Context.get -> Microsoft.VisualStudio.Threading.JoinableTaskContext!
 Microsoft.VisualStudio.Threading.JoinableTaskFactory.HangDetectionTimeout.get -> System.TimeSpan
 Microsoft.VisualStudio.Threading.JoinableTaskFactory.HangDetectionTimeout.set -> void
 Microsoft.VisualStudio.Threading.JoinableTaskFactory.IsWaitingOnLongRunningTask() -> bool
-Microsoft.VisualStudio.Threading.JoinableTaskFactory.JoinableTaskFactory(Microsoft.VisualStudio.Threading.JoinableTaskCollection collection) -> void
-Microsoft.VisualStudio.Threading.JoinableTaskFactory.JoinableTaskFactory(Microsoft.VisualStudio.Threading.JoinableTaskContext owner) -> void
+Microsoft.VisualStudio.Threading.JoinableTaskFactory.JoinableTaskFactory(Microsoft.VisualStudio.Threading.JoinableTaskCollection! collection) -> void
+Microsoft.VisualStudio.Threading.JoinableTaskFactory.JoinableTaskFactory(Microsoft.VisualStudio.Threading.JoinableTaskContext! owner) -> void
 Microsoft.VisualStudio.Threading.JoinableTaskFactory.MainThreadAwaitable
 Microsoft.VisualStudio.Threading.JoinableTaskFactory.MainThreadAwaitable.GetAwaiter() -> Microsoft.VisualStudio.Threading.JoinableTaskFactory.MainThreadAwaiter
 Microsoft.VisualStudio.Threading.JoinableTaskFactory.MainThreadAwaiter
 Microsoft.VisualStudio.Threading.JoinableTaskFactory.MainThreadAwaiter.GetResult() -> void
 Microsoft.VisualStudio.Threading.JoinableTaskFactory.MainThreadAwaiter.IsCompleted.get -> bool
-Microsoft.VisualStudio.Threading.JoinableTaskFactory.MainThreadAwaiter.OnCompleted(System.Action continuation) -> void
-Microsoft.VisualStudio.Threading.JoinableTaskFactory.MainThreadAwaiter.UnsafeOnCompleted(System.Action continuation) -> void
-Microsoft.VisualStudio.Threading.JoinableTaskFactory.Run(System.Func<System.Threading.Tasks.Task> asyncMethod) -> void
-Microsoft.VisualStudio.Threading.JoinableTaskFactory.Run(System.Func<System.Threading.Tasks.Task> asyncMethod, Microsoft.VisualStudio.Threading.JoinableTaskCreationOptions creationOptions) -> void
-Microsoft.VisualStudio.Threading.JoinableTaskFactory.Run<T>(System.Func<System.Threading.Tasks.Task<T>> asyncMethod) -> T
-Microsoft.VisualStudio.Threading.JoinableTaskFactory.Run<T>(System.Func<System.Threading.Tasks.Task<T>> asyncMethod, Microsoft.VisualStudio.Threading.JoinableTaskCreationOptions creationOptions) -> T
-Microsoft.VisualStudio.Threading.JoinableTaskFactory.RunAsync(System.Func<System.Threading.Tasks.Task> asyncMethod) -> Microsoft.VisualStudio.Threading.JoinableTask
-Microsoft.VisualStudio.Threading.JoinableTaskFactory.RunAsync(System.Func<System.Threading.Tasks.Task> asyncMethod, Microsoft.VisualStudio.Threading.JoinableTaskCreationOptions creationOptions) -> Microsoft.VisualStudio.Threading.JoinableTask
-Microsoft.VisualStudio.Threading.JoinableTaskFactory.RunAsync<T>(System.Func<System.Threading.Tasks.Task<T>> asyncMethod) -> Microsoft.VisualStudio.Threading.JoinableTask<T>
-Microsoft.VisualStudio.Threading.JoinableTaskFactory.RunAsync<T>(System.Func<System.Threading.Tasks.Task<T>> asyncMethod, Microsoft.VisualStudio.Threading.JoinableTaskCreationOptions creationOptions) -> Microsoft.VisualStudio.Threading.JoinableTask<T>
+Microsoft.VisualStudio.Threading.JoinableTaskFactory.MainThreadAwaiter.OnCompleted(System.Action! continuation) -> void
+Microsoft.VisualStudio.Threading.JoinableTaskFactory.MainThreadAwaiter.UnsafeOnCompleted(System.Action! continuation) -> void
+Microsoft.VisualStudio.Threading.JoinableTaskFactory.Run(System.Func<System.Threading.Tasks.Task!>! asyncMethod) -> void
+Microsoft.VisualStudio.Threading.JoinableTaskFactory.Run(System.Func<System.Threading.Tasks.Task!>! asyncMethod, Microsoft.VisualStudio.Threading.JoinableTaskCreationOptions creationOptions) -> void
+Microsoft.VisualStudio.Threading.JoinableTaskFactory.Run<T>(System.Func<System.Threading.Tasks.Task<T>!>! asyncMethod) -> T
+Microsoft.VisualStudio.Threading.JoinableTaskFactory.Run<T>(System.Func<System.Threading.Tasks.Task<T>!>! asyncMethod, Microsoft.VisualStudio.Threading.JoinableTaskCreationOptions creationOptions) -> T
+Microsoft.VisualStudio.Threading.JoinableTaskFactory.RunAsync(System.Func<System.Threading.Tasks.Task!>! asyncMethod) -> Microsoft.VisualStudio.Threading.JoinableTask!
+Microsoft.VisualStudio.Threading.JoinableTaskFactory.RunAsync(System.Func<System.Threading.Tasks.Task!>! asyncMethod, Microsoft.VisualStudio.Threading.JoinableTaskCreationOptions creationOptions) -> Microsoft.VisualStudio.Threading.JoinableTask!
+Microsoft.VisualStudio.Threading.JoinableTaskFactory.RunAsync<T>(System.Func<System.Threading.Tasks.Task<T>!>! asyncMethod) -> Microsoft.VisualStudio.Threading.JoinableTask<T>!
+Microsoft.VisualStudio.Threading.JoinableTaskFactory.RunAsync<T>(System.Func<System.Threading.Tasks.Task<T>!>! asyncMethod, Microsoft.VisualStudio.Threading.JoinableTaskCreationOptions creationOptions) -> Microsoft.VisualStudio.Threading.JoinableTask<T>!
 Microsoft.VisualStudio.Threading.JoinableTaskFactory.SwitchToMainThreadAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> Microsoft.VisualStudio.Threading.JoinableTaskFactory.MainThreadAwaitable
 Microsoft.VisualStudio.Threading.JoinableTaskFactory.SwitchToMainThreadAsync(bool alwaysYield, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> Microsoft.VisualStudio.Threading.JoinableTaskFactory.MainThreadAwaitable
-Microsoft.VisualStudio.Threading.JoinableTaskFactory.UnderlyingSynchronizationContext.get -> System.Threading.SynchronizationContext
+Microsoft.VisualStudio.Threading.JoinableTaskFactory.UnderlyingSynchronizationContext.get -> System.Threading.SynchronizationContext?
 Microsoft.VisualStudio.Threading.NoMessagePumpSyncContext
 Microsoft.VisualStudio.Threading.NoMessagePumpSyncContext.NoMessagePumpSyncContext() -> void
 Microsoft.VisualStudio.Threading.ProgressWithCompletion<T>
-Microsoft.VisualStudio.Threading.ProgressWithCompletion<T>.ProgressWithCompletion(System.Action<T> handler) -> void
-Microsoft.VisualStudio.Threading.ProgressWithCompletion<T>.ProgressWithCompletion(System.Action<T> handler, Microsoft.VisualStudio.Threading.JoinableTaskFactory joinableTaskFactory) -> void
-Microsoft.VisualStudio.Threading.ProgressWithCompletion<T>.ProgressWithCompletion(System.Func<T, System.Threading.Tasks.Task> handler) -> void
-Microsoft.VisualStudio.Threading.ProgressWithCompletion<T>.ProgressWithCompletion(System.Func<T, System.Threading.Tasks.Task> handler, Microsoft.VisualStudio.Threading.JoinableTaskFactory joinableTaskFactory) -> void
-Microsoft.VisualStudio.Threading.ProgressWithCompletion<T>.WaitAsync() -> System.Threading.Tasks.Task
-Microsoft.VisualStudio.Threading.ProgressWithCompletion<T>.WaitAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task
+Microsoft.VisualStudio.Threading.ProgressWithCompletion<T>.ProgressWithCompletion(System.Action<T>! handler) -> void
+Microsoft.VisualStudio.Threading.ProgressWithCompletion<T>.ProgressWithCompletion(System.Action<T>! handler, Microsoft.VisualStudio.Threading.JoinableTaskFactory? joinableTaskFactory) -> void
+Microsoft.VisualStudio.Threading.ProgressWithCompletion<T>.ProgressWithCompletion(System.Func<T, System.Threading.Tasks.Task!>! handler) -> void
+Microsoft.VisualStudio.Threading.ProgressWithCompletion<T>.ProgressWithCompletion(System.Func<T, System.Threading.Tasks.Task!>! handler, Microsoft.VisualStudio.Threading.JoinableTaskFactory? joinableTaskFactory) -> void
+Microsoft.VisualStudio.Threading.ProgressWithCompletion<T>.WaitAsync() -> System.Threading.Tasks.Task!
+Microsoft.VisualStudio.Threading.ProgressWithCompletion<T>.WaitAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 Microsoft.VisualStudio.Threading.ReentrantSemaphore
 Microsoft.VisualStudio.Threading.ReentrantSemaphore.CurrentCount.get -> int
 Microsoft.VisualStudio.Threading.ReentrantSemaphore.Dispose() -> void
@@ -324,7 +325,7 @@ Microsoft.VisualStudio.Threading.SingleThreadedSynchronizationContext.Frame
 Microsoft.VisualStudio.Threading.SingleThreadedSynchronizationContext.Frame.Continue.get -> bool
 Microsoft.VisualStudio.Threading.SingleThreadedSynchronizationContext.Frame.Continue.set -> void
 Microsoft.VisualStudio.Threading.SingleThreadedSynchronizationContext.Frame.Frame() -> void
-Microsoft.VisualStudio.Threading.SingleThreadedSynchronizationContext.PushFrame(Microsoft.VisualStudio.Threading.SingleThreadedSynchronizationContext.Frame frame) -> void
+Microsoft.VisualStudio.Threading.SingleThreadedSynchronizationContext.PushFrame(Microsoft.VisualStudio.Threading.SingleThreadedSynchronizationContext.Frame! frame) -> void
 Microsoft.VisualStudio.Threading.SingleThreadedSynchronizationContext.SingleThreadedSynchronizationContext() -> void
 Microsoft.VisualStudio.Threading.SpecializedSyncContext
 Microsoft.VisualStudio.Threading.SpecializedSyncContext.Dispose() -> void
@@ -332,114 +333,114 @@ Microsoft.VisualStudio.Threading.ThreadingTools
 Microsoft.VisualStudio.Threading.TplExtensions
 Microsoft.VisualStudio.Threading.TplExtensions.NoThrowTaskAwaitable
 Microsoft.VisualStudio.Threading.TplExtensions.NoThrowTaskAwaitable.GetAwaiter() -> Microsoft.VisualStudio.Threading.TplExtensions.NoThrowTaskAwaiter
-Microsoft.VisualStudio.Threading.TplExtensions.NoThrowTaskAwaitable.NoThrowTaskAwaitable(System.Threading.Tasks.Task task, bool captureContext) -> void
+Microsoft.VisualStudio.Threading.TplExtensions.NoThrowTaskAwaitable.NoThrowTaskAwaitable(System.Threading.Tasks.Task! task, bool captureContext) -> void
 Microsoft.VisualStudio.Threading.TplExtensions.NoThrowTaskAwaiter
 Microsoft.VisualStudio.Threading.TplExtensions.NoThrowTaskAwaiter.GetResult() -> void
 Microsoft.VisualStudio.Threading.TplExtensions.NoThrowTaskAwaiter.IsCompleted.get -> bool
-Microsoft.VisualStudio.Threading.TplExtensions.NoThrowTaskAwaiter.NoThrowTaskAwaiter(System.Threading.Tasks.Task task, bool captureContext) -> void
-Microsoft.VisualStudio.Threading.TplExtensions.NoThrowTaskAwaiter.OnCompleted(System.Action continuation) -> void
-Microsoft.VisualStudio.Threading.TplExtensions.NoThrowTaskAwaiter.UnsafeOnCompleted(System.Action continuation) -> void
-abstract Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.GetResourceAsync(TMoniker resourceMoniker, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<TResource>
-abstract Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.PrepareResourceForConcurrentAccessAsync(TResource resource, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task
-abstract Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.PrepareResourceForExclusiveAccessAsync(TResource resource, Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.LockFlags lockFlags, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task
-abstract Microsoft.VisualStudio.Threading.ReentrantSemaphore.ExecuteAsync(System.Func<System.Threading.Tasks.Task> operation, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task
-abstract Microsoft.VisualStudio.Threading.ReentrantSemaphore.ExecuteAsync<T>(System.Func<System.Threading.Tasks.ValueTask<T>> operation, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<T>
-override Microsoft.VisualStudio.Threading.AsyncLazy<T>.ToString() -> string
-override Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.OnExclusiveLockReleasedAsync() -> System.Threading.Tasks.Task
+Microsoft.VisualStudio.Threading.TplExtensions.NoThrowTaskAwaiter.NoThrowTaskAwaiter(System.Threading.Tasks.Task! task, bool captureContext) -> void
+Microsoft.VisualStudio.Threading.TplExtensions.NoThrowTaskAwaiter.OnCompleted(System.Action! continuation) -> void
+Microsoft.VisualStudio.Threading.TplExtensions.NoThrowTaskAwaiter.UnsafeOnCompleted(System.Action! continuation) -> void
+abstract Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.GetResourceAsync(TMoniker resourceMoniker, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<TResource!>!
+abstract Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.PrepareResourceForConcurrentAccessAsync(TResource! resource, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+abstract Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.PrepareResourceForExclusiveAccessAsync(TResource! resource, Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.LockFlags lockFlags, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+abstract Microsoft.VisualStudio.Threading.ReentrantSemaphore.ExecuteAsync(System.Func<System.Threading.Tasks.Task!>! operation, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+abstract Microsoft.VisualStudio.Threading.ReentrantSemaphore.ExecuteAsync<T>(System.Func<System.Threading.Tasks.ValueTask<T>>! operation, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<T>
+override Microsoft.VisualStudio.Threading.AsyncLazy<T>.ToString() -> string!
+override Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.OnExclusiveLockReleasedAsync() -> System.Threading.Tasks.Task!
 override Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.OnUpgradeableReadLockReleased() -> void
-override Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken.Equals(object obj) -> bool
+override Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken.Equals(object? obj) -> bool
 override Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken.GetHashCode() -> int
-override Microsoft.VisualStudio.Threading.DelegatingJoinableTaskFactory.OnTransitionedToMainThread(Microsoft.VisualStudio.Threading.JoinableTask joinableTask, bool canceled) -> void
-override Microsoft.VisualStudio.Threading.DelegatingJoinableTaskFactory.OnTransitioningToMainThread(Microsoft.VisualStudio.Threading.JoinableTask joinableTask) -> void
-override Microsoft.VisualStudio.Threading.DelegatingJoinableTaskFactory.PostToUnderlyingSynchronizationContext(System.Threading.SendOrPostCallback callback, object state) -> void
-override Microsoft.VisualStudio.Threading.DelegatingJoinableTaskFactory.WaitSynchronously(System.Threading.Tasks.Task task) -> void
-override Microsoft.VisualStudio.Threading.NoMessagePumpSyncContext.Wait(System.IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout) -> int
-override Microsoft.VisualStudio.Threading.SingleThreadedSynchronizationContext.CreateCopy() -> System.Threading.SynchronizationContext
-override Microsoft.VisualStudio.Threading.SingleThreadedSynchronizationContext.Post(System.Threading.SendOrPostCallback d, object state) -> void
-override Microsoft.VisualStudio.Threading.SingleThreadedSynchronizationContext.Send(System.Threading.SendOrPostCallback d, object state) -> void
+override Microsoft.VisualStudio.Threading.DelegatingJoinableTaskFactory.OnTransitionedToMainThread(Microsoft.VisualStudio.Threading.JoinableTask! joinableTask, bool canceled) -> void
+override Microsoft.VisualStudio.Threading.DelegatingJoinableTaskFactory.OnTransitioningToMainThread(Microsoft.VisualStudio.Threading.JoinableTask! joinableTask) -> void
+override Microsoft.VisualStudio.Threading.DelegatingJoinableTaskFactory.PostToUnderlyingSynchronizationContext(System.Threading.SendOrPostCallback! callback, object! state) -> void
+override Microsoft.VisualStudio.Threading.DelegatingJoinableTaskFactory.WaitSynchronously(System.Threading.Tasks.Task! task) -> void
+override Microsoft.VisualStudio.Threading.NoMessagePumpSyncContext.Wait(System.IntPtr[]! waitHandles, bool waitAll, int millisecondsTimeout) -> int
+override Microsoft.VisualStudio.Threading.SingleThreadedSynchronizationContext.CreateCopy() -> System.Threading.SynchronizationContext!
+override Microsoft.VisualStudio.Threading.SingleThreadedSynchronizationContext.Post(System.Threading.SendOrPostCallback! d, object? state) -> void
+override Microsoft.VisualStudio.Threading.SingleThreadedSynchronizationContext.Send(System.Threading.SendOrPostCallback! d, object? state) -> void
 static Microsoft.VisualStudio.Threading.AwaitExtensions.ConfigureAwait(this System.Runtime.CompilerServices.YieldAwaitable yieldAwaitable, bool continueOnCapturedContext) -> Microsoft.VisualStudio.Threading.AwaitExtensions.ConfiguredTaskYieldAwaitable
-static Microsoft.VisualStudio.Threading.AwaitExtensions.ConfigureAwaitRunInline(this System.Threading.Tasks.Task antecedent) -> Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaitable
-static Microsoft.VisualStudio.Threading.AwaitExtensions.ConfigureAwaitRunInline<T>(this System.Threading.Tasks.Task<T> antecedent) -> Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaitable<T>
-static Microsoft.VisualStudio.Threading.AwaitExtensions.GetAwaiter(this System.Threading.Tasks.TaskScheduler scheduler) -> Microsoft.VisualStudio.Threading.AwaitExtensions.TaskSchedulerAwaiter
-static Microsoft.VisualStudio.Threading.AwaitExtensions.GetAwaiter(this System.Threading.WaitHandle handle) -> System.Runtime.CompilerServices.TaskAwaiter
-static Microsoft.VisualStudio.Threading.AwaitExtensions.SwitchTo(this System.Threading.Tasks.TaskScheduler scheduler, bool alwaysYield = false) -> Microsoft.VisualStudio.Threading.AwaitExtensions.TaskSchedulerAwaitable
-static Microsoft.VisualStudio.Threading.AwaitExtensions.WaitForChangeAsync(this Microsoft.Win32.RegistryKey registryKey, bool watchSubtree = true, Microsoft.VisualStudio.Threading.RegistryChangeNotificationFilters change = Microsoft.VisualStudio.Threading.RegistryChangeNotificationFilters.Subkey | Microsoft.VisualStudio.Threading.RegistryChangeNotificationFilters.Value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task
-static Microsoft.VisualStudio.Threading.AwaitExtensions.WaitForExitAsync(this System.Diagnostics.Process process, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>
+static Microsoft.VisualStudio.Threading.AwaitExtensions.ConfigureAwaitRunInline(this System.Threading.Tasks.Task! antecedent) -> Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaitable
+static Microsoft.VisualStudio.Threading.AwaitExtensions.ConfigureAwaitRunInline<T>(this System.Threading.Tasks.Task<T>! antecedent) -> Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaitable<T>
+static Microsoft.VisualStudio.Threading.AwaitExtensions.GetAwaiter(this System.Threading.Tasks.TaskScheduler! scheduler) -> Microsoft.VisualStudio.Threading.AwaitExtensions.TaskSchedulerAwaiter
+static Microsoft.VisualStudio.Threading.AwaitExtensions.GetAwaiter(this System.Threading.WaitHandle! handle) -> System.Runtime.CompilerServices.TaskAwaiter
+static Microsoft.VisualStudio.Threading.AwaitExtensions.SwitchTo(this System.Threading.Tasks.TaskScheduler! scheduler, bool alwaysYield = false) -> Microsoft.VisualStudio.Threading.AwaitExtensions.TaskSchedulerAwaitable
+static Microsoft.VisualStudio.Threading.AwaitExtensions.WaitForChangeAsync(this Microsoft.Win32.RegistryKey! registryKey, bool watchSubtree = true, Microsoft.VisualStudio.Threading.RegistryChangeNotificationFilters change = Microsoft.VisualStudio.Threading.RegistryChangeNotificationFilters.Subkey | Microsoft.VisualStudio.Threading.RegistryChangeNotificationFilters.Value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+static Microsoft.VisualStudio.Threading.AwaitExtensions.WaitForExitAsync(this System.Diagnostics.Process! process, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<int>!
 static Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombineWith(this System.Threading.CancellationToken original, System.Threading.CancellationToken other) -> Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken
-static Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombineWith(this System.Threading.CancellationToken original, params System.Threading.CancellationToken[] others) -> Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken
+static Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombineWith(this System.Threading.CancellationToken original, params System.Threading.CancellationToken[]! others) -> Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken
 static Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken.operator !=(Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken left, Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken right) -> bool
 static Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken.operator ==(Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken left, Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken right) -> bool
-static Microsoft.VisualStudio.Threading.DispatcherExtensions.WithPriority(this Microsoft.VisualStudio.Threading.JoinableTaskFactory joinableTaskFactory, System.Windows.Threading.Dispatcher dispatcher, System.Windows.Threading.DispatcherPriority priority) -> Microsoft.VisualStudio.Threading.JoinableTaskFactory
-static Microsoft.VisualStudio.Threading.NoMessagePumpSyncContext.Default.get -> System.Threading.SynchronizationContext
-static Microsoft.VisualStudio.Threading.ReentrantSemaphore.Create(int initialCount = 1, Microsoft.VisualStudio.Threading.JoinableTaskContext joinableTaskContext = null, Microsoft.VisualStudio.Threading.ReentrantSemaphore.ReentrancyMode mode = Microsoft.VisualStudio.Threading.ReentrantSemaphore.ReentrancyMode.NotAllowed) -> Microsoft.VisualStudio.Threading.ReentrantSemaphore
-static Microsoft.VisualStudio.Threading.SpecializedSyncContext.Apply(System.Threading.SynchronizationContext syncContext, bool checkForChangesOnRevert = true) -> Microsoft.VisualStudio.Threading.SpecializedSyncContext
-static Microsoft.VisualStudio.Threading.ThreadingTools.Apply(this System.Threading.SynchronizationContext syncContext, bool checkForChangesOnRevert = true) -> Microsoft.VisualStudio.Threading.SpecializedSyncContext
-static Microsoft.VisualStudio.Threading.ThreadingTools.ApplyChangeOptimistically<T, TArg>(ref T hotLocation, TArg applyChangeArgument, System.Func<T, TArg, T> applyChange) -> bool
-static Microsoft.VisualStudio.Threading.ThreadingTools.ApplyChangeOptimistically<T>(ref T hotLocation, System.Func<T, T> applyChange) -> bool
-static Microsoft.VisualStudio.Threading.ThreadingTools.WithCancellation(this System.Threading.Tasks.Task task, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task
-static Microsoft.VisualStudio.Threading.ThreadingTools.WithCancellation<T>(this System.Threading.Tasks.Task<T> task, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<T>
-static Microsoft.VisualStudio.Threading.TplExtensions.AppendAction(this System.Threading.Tasks.Task task, System.Action action, System.Threading.Tasks.TaskContinuationOptions options = System.Threading.Tasks.TaskContinuationOptions.None, System.Threading.CancellationToken cancellation = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task
-static Microsoft.VisualStudio.Threading.TplExtensions.ApplyResultTo<T>(this System.Threading.Tasks.Task task, System.Threading.Tasks.TaskCompletionSource<T> tcs) -> void
-static Microsoft.VisualStudio.Threading.TplExtensions.ApplyResultTo<T>(this System.Threading.Tasks.Task<T> task, System.Threading.Tasks.TaskCompletionSource<T> tcs) -> void
-static Microsoft.VisualStudio.Threading.TplExtensions.AttachToParent(this System.Threading.Tasks.Task task) -> System.Threading.Tasks.Task
-static Microsoft.VisualStudio.Threading.TplExtensions.AttachToParent<T>(this System.Threading.Tasks.Task<T> task) -> System.Threading.Tasks.Task<T>
-static Microsoft.VisualStudio.Threading.TplExtensions.FollowCancelableTaskToCompletion<T>(System.Func<System.Threading.Tasks.Task<T>> taskToFollow, System.Threading.CancellationToken ultimateCancellation, System.Threading.Tasks.TaskCompletionSource<T> taskThatFollows = null) -> System.Threading.Tasks.Task<T>
-static Microsoft.VisualStudio.Threading.TplExtensions.Forget(this System.Threading.Tasks.Task task) -> void
-static Microsoft.VisualStudio.Threading.TplExtensions.InvokeAsync(this Microsoft.VisualStudio.Threading.AsyncEventHandler handlers, object sender, System.EventArgs args) -> System.Threading.Tasks.Task
-static Microsoft.VisualStudio.Threading.TplExtensions.InvokeAsync<TEventArgs>(this Microsoft.VisualStudio.Threading.AsyncEventHandler<TEventArgs> handlers, object sender, TEventArgs args) -> System.Threading.Tasks.Task
-static Microsoft.VisualStudio.Threading.TplExtensions.NoThrowAwaitable(this System.Threading.Tasks.Task task, bool captureContext = true) -> Microsoft.VisualStudio.Threading.TplExtensions.NoThrowTaskAwaitable
-static Microsoft.VisualStudio.Threading.TplExtensions.ToApm(this System.Threading.Tasks.Task task, System.AsyncCallback callback, object state) -> System.Threading.Tasks.Task
-static Microsoft.VisualStudio.Threading.TplExtensions.ToApm<TResult>(this System.Threading.Tasks.Task<TResult> task, System.AsyncCallback callback, object state) -> System.Threading.Tasks.Task<TResult>
-static Microsoft.VisualStudio.Threading.TplExtensions.ToTask(this System.Threading.WaitHandle handle, int timeout = -1, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>
-static Microsoft.VisualStudio.Threading.TplExtensions.WaitWithoutInlining(this System.Threading.Tasks.Task task) -> void
-static Microsoft.VisualStudio.Threading.TplExtensions.WithTimeout(this System.Threading.Tasks.Task task, System.TimeSpan timeout) -> System.Threading.Tasks.Task
-static Microsoft.VisualStudio.Threading.TplExtensions.WithTimeout<T>(this System.Threading.Tasks.Task<T> task, System.TimeSpan timeout) -> System.Threading.Tasks.Task<T>
-static readonly Microsoft.VisualStudio.Threading.TplExtensions.CanceledTask -> System.Threading.Tasks.Task
-static readonly Microsoft.VisualStudio.Threading.TplExtensions.CompletedTask -> System.Threading.Tasks.Task
-static readonly Microsoft.VisualStudio.Threading.TplExtensions.FalseTask -> System.Threading.Tasks.Task<bool>
-static readonly Microsoft.VisualStudio.Threading.TplExtensions.TrueTask -> System.Threading.Tasks.Task<bool>
+static Microsoft.VisualStudio.Threading.DispatcherExtensions.WithPriority(this Microsoft.VisualStudio.Threading.JoinableTaskFactory! joinableTaskFactory, System.Windows.Threading.Dispatcher! dispatcher, System.Windows.Threading.DispatcherPriority priority) -> Microsoft.VisualStudio.Threading.JoinableTaskFactory!
+static Microsoft.VisualStudio.Threading.NoMessagePumpSyncContext.Default.get -> System.Threading.SynchronizationContext!
+static Microsoft.VisualStudio.Threading.ReentrantSemaphore.Create(int initialCount = 1, Microsoft.VisualStudio.Threading.JoinableTaskContext? joinableTaskContext = null, Microsoft.VisualStudio.Threading.ReentrantSemaphore.ReentrancyMode mode = Microsoft.VisualStudio.Threading.ReentrantSemaphore.ReentrancyMode.NotAllowed) -> Microsoft.VisualStudio.Threading.ReentrantSemaphore!
+static Microsoft.VisualStudio.Threading.SpecializedSyncContext.Apply(System.Threading.SynchronizationContext? syncContext, bool checkForChangesOnRevert = true) -> Microsoft.VisualStudio.Threading.SpecializedSyncContext
+static Microsoft.VisualStudio.Threading.ThreadingTools.Apply(this System.Threading.SynchronizationContext? syncContext, bool checkForChangesOnRevert = true) -> Microsoft.VisualStudio.Threading.SpecializedSyncContext
+static Microsoft.VisualStudio.Threading.ThreadingTools.ApplyChangeOptimistically<T, TArg>(ref T hotLocation, TArg applyChangeArgument, System.Func<T, TArg, T>! applyChange) -> bool
+static Microsoft.VisualStudio.Threading.ThreadingTools.ApplyChangeOptimistically<T>(ref T hotLocation, System.Func<T, T>! applyChange) -> bool
+static Microsoft.VisualStudio.Threading.ThreadingTools.WithCancellation(this System.Threading.Tasks.Task! task, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+static Microsoft.VisualStudio.Threading.ThreadingTools.WithCancellation<T>(this System.Threading.Tasks.Task<T>! task, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<T>!
+static Microsoft.VisualStudio.Threading.TplExtensions.AppendAction(this System.Threading.Tasks.Task! task, System.Action! action, System.Threading.Tasks.TaskContinuationOptions options = System.Threading.Tasks.TaskContinuationOptions.None, System.Threading.CancellationToken cancellation = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+static Microsoft.VisualStudio.Threading.TplExtensions.ApplyResultTo<T>(this System.Threading.Tasks.Task! task, System.Threading.Tasks.TaskCompletionSource<T>! tcs) -> void
+static Microsoft.VisualStudio.Threading.TplExtensions.ApplyResultTo<T>(this System.Threading.Tasks.Task<T>! task, System.Threading.Tasks.TaskCompletionSource<T>! tcs) -> void
+static Microsoft.VisualStudio.Threading.TplExtensions.AttachToParent(this System.Threading.Tasks.Task! task) -> System.Threading.Tasks.Task!
+static Microsoft.VisualStudio.Threading.TplExtensions.AttachToParent<T>(this System.Threading.Tasks.Task<T>! task) -> System.Threading.Tasks.Task<T>!
+static Microsoft.VisualStudio.Threading.TplExtensions.FollowCancelableTaskToCompletion<T>(System.Func<System.Threading.Tasks.Task<T>!>! taskToFollow, System.Threading.CancellationToken ultimateCancellation, System.Threading.Tasks.TaskCompletionSource<T>? taskThatFollows = null) -> System.Threading.Tasks.Task<T>!
+static Microsoft.VisualStudio.Threading.TplExtensions.Forget(this System.Threading.Tasks.Task? task) -> void
+static Microsoft.VisualStudio.Threading.TplExtensions.InvokeAsync(this Microsoft.VisualStudio.Threading.AsyncEventHandler? handlers, object? sender, System.EventArgs! args) -> System.Threading.Tasks.Task!
+static Microsoft.VisualStudio.Threading.TplExtensions.InvokeAsync<TEventArgs>(this Microsoft.VisualStudio.Threading.AsyncEventHandler<TEventArgs>? handlers, object? sender, TEventArgs args) -> System.Threading.Tasks.Task!
+static Microsoft.VisualStudio.Threading.TplExtensions.NoThrowAwaitable(this System.Threading.Tasks.Task! task, bool captureContext = true) -> Microsoft.VisualStudio.Threading.TplExtensions.NoThrowTaskAwaitable
+static Microsoft.VisualStudio.Threading.TplExtensions.ToApm(this System.Threading.Tasks.Task! task, System.AsyncCallback? callback, object? state) -> System.Threading.Tasks.Task!
+static Microsoft.VisualStudio.Threading.TplExtensions.ToApm<TResult>(this System.Threading.Tasks.Task<TResult>! task, System.AsyncCallback? callback, object? state) -> System.Threading.Tasks.Task<TResult>!
+static Microsoft.VisualStudio.Threading.TplExtensions.ToTask(this System.Threading.WaitHandle! handle, int timeout = -1, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<bool>!
+static Microsoft.VisualStudio.Threading.TplExtensions.WaitWithoutInlining(this System.Threading.Tasks.Task! task) -> void
+static Microsoft.VisualStudio.Threading.TplExtensions.WithTimeout(this System.Threading.Tasks.Task! task, System.TimeSpan timeout) -> System.Threading.Tasks.Task!
+static Microsoft.VisualStudio.Threading.TplExtensions.WithTimeout<T>(this System.Threading.Tasks.Task<T>! task, System.TimeSpan timeout) -> System.Threading.Tasks.Task<T>!
+static readonly Microsoft.VisualStudio.Threading.TplExtensions.CanceledTask -> System.Threading.Tasks.Task!
+static readonly Microsoft.VisualStudio.Threading.TplExtensions.CompletedTask -> System.Threading.Tasks.Task!
+static readonly Microsoft.VisualStudio.Threading.TplExtensions.FalseTask -> System.Threading.Tasks.Task<bool>!
+static readonly Microsoft.VisualStudio.Threading.TplExtensions.TrueTask -> System.Threading.Tasks.Task<bool>!
 virtual Microsoft.VisualStudio.Threading.AsyncQueue<T>.InitialCapacity.get -> int
 virtual Microsoft.VisualStudio.Threading.AsyncQueue<T>.OnCompleted() -> void
 virtual Microsoft.VisualStudio.Threading.AsyncQueue<T>.OnDequeued(T value) -> void
 virtual Microsoft.VisualStudio.Threading.AsyncQueue<T>.OnEnqueued(T value, bool alreadyDispatched) -> void
 virtual Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.CanCurrentThreadHoldActiveLock.get -> bool
 virtual Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Dispose(bool disposing) -> void
-virtual Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.GetHangReport() -> Microsoft.VisualStudio.Threading.HangReportContribution
-virtual Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.GetTaskSchedulerForReadLockRequest() -> System.Threading.Tasks.TaskScheduler
+virtual Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.GetHangReport() -> Microsoft.VisualStudio.Threading.HangReportContribution!
+virtual Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.GetTaskSchedulerForReadLockRequest() -> System.Threading.Tasks.TaskScheduler!
 virtual Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.IsUnsupportedSynchronizationContext.get -> bool
-virtual Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.NoMessagePumpSynchronizationContext.get -> System.Threading.SynchronizationContext
-virtual Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.OnBeforeExclusiveLockReleasedAsync() -> System.Threading.Tasks.Task
-virtual Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.OnBeforeLockReleasedAsync(bool exclusiveLockRelease, Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.LockHandle releasingLock) -> System.Threading.Tasks.Task
-virtual Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.OnCriticalFailure(System.Exception ex) -> System.Exception
-virtual Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.OnExclusiveLockReleasedAsync() -> System.Threading.Tasks.Task
+virtual Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.NoMessagePumpSynchronizationContext.get -> System.Threading.SynchronizationContext!
+virtual Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.OnBeforeExclusiveLockReleasedAsync() -> System.Threading.Tasks.Task!
+virtual Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.OnBeforeLockReleasedAsync(bool exclusiveLockRelease, Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.LockHandle releasingLock) -> System.Threading.Tasks.Task!
+virtual Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.OnCriticalFailure(System.Exception! ex) -> System.Exception!
+virtual Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.OnExclusiveLockReleasedAsync() -> System.Threading.Tasks.Task!
 virtual Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.OnUpgradeableReadLockReleased() -> void
 virtual Microsoft.VisualStudio.Threading.AsyncSemaphore.Dispose(bool disposing) -> void
-virtual Microsoft.VisualStudio.Threading.JoinableTaskContext.CreateDefaultFactory() -> Microsoft.VisualStudio.Threading.JoinableTaskFactory
-virtual Microsoft.VisualStudio.Threading.JoinableTaskContext.CreateFactory(Microsoft.VisualStudio.Threading.JoinableTaskCollection collection) -> Microsoft.VisualStudio.Threading.JoinableTaskFactory
+virtual Microsoft.VisualStudio.Threading.JoinableTaskContext.CreateDefaultFactory() -> Microsoft.VisualStudio.Threading.JoinableTaskFactory!
+virtual Microsoft.VisualStudio.Threading.JoinableTaskContext.CreateFactory(Microsoft.VisualStudio.Threading.JoinableTaskCollection! collection) -> Microsoft.VisualStudio.Threading.JoinableTaskFactory!
 virtual Microsoft.VisualStudio.Threading.JoinableTaskContext.Dispose(bool disposing) -> void
-virtual Microsoft.VisualStudio.Threading.JoinableTaskContext.GetHangReport() -> Microsoft.VisualStudio.Threading.HangReportContribution
-virtual Microsoft.VisualStudio.Threading.JoinableTaskContext.NoMessagePumpSynchronizationContext.get -> System.Threading.SynchronizationContext
+virtual Microsoft.VisualStudio.Threading.JoinableTaskContext.GetHangReport() -> Microsoft.VisualStudio.Threading.HangReportContribution!
+virtual Microsoft.VisualStudio.Threading.JoinableTaskContext.NoMessagePumpSynchronizationContext.get -> System.Threading.SynchronizationContext!
 virtual Microsoft.VisualStudio.Threading.JoinableTaskContext.OnFalseHangDetected(System.TimeSpan hangDuration, System.Guid hangId) -> void
 virtual Microsoft.VisualStudio.Threading.JoinableTaskContext.OnHangDetected(System.TimeSpan hangDuration, int notificationCount, System.Guid hangId) -> void
-virtual Microsoft.VisualStudio.Threading.JoinableTaskContextNode.CreateDefaultFactory() -> Microsoft.VisualStudio.Threading.JoinableTaskFactory
-virtual Microsoft.VisualStudio.Threading.JoinableTaskContextNode.CreateFactory(Microsoft.VisualStudio.Threading.JoinableTaskCollection collection) -> Microsoft.VisualStudio.Threading.JoinableTaskFactory
+virtual Microsoft.VisualStudio.Threading.JoinableTaskContextNode.CreateDefaultFactory() -> Microsoft.VisualStudio.Threading.JoinableTaskFactory!
+virtual Microsoft.VisualStudio.Threading.JoinableTaskContextNode.CreateFactory(Microsoft.VisualStudio.Threading.JoinableTaskCollection! collection) -> Microsoft.VisualStudio.Threading.JoinableTaskFactory!
 virtual Microsoft.VisualStudio.Threading.JoinableTaskContextNode.OnFalseHangDetected(System.TimeSpan hangDuration, System.Guid hangId) -> void
-virtual Microsoft.VisualStudio.Threading.JoinableTaskContextNode.OnHangDetected(Microsoft.VisualStudio.Threading.JoinableTaskContext.HangDetails details) -> void
+virtual Microsoft.VisualStudio.Threading.JoinableTaskContextNode.OnHangDetected(Microsoft.VisualStudio.Threading.JoinableTaskContext.HangDetails! details) -> void
 virtual Microsoft.VisualStudio.Threading.JoinableTaskContextNode.OnHangDetected(System.TimeSpan hangDuration, int notificationCount, System.Guid hangId) -> void
-virtual Microsoft.VisualStudio.Threading.JoinableTaskFactory.OnTransitionedToMainThread(Microsoft.VisualStudio.Threading.JoinableTask joinableTask, bool canceled) -> void
-virtual Microsoft.VisualStudio.Threading.JoinableTaskFactory.OnTransitioningToMainThread(Microsoft.VisualStudio.Threading.JoinableTask joinableTask) -> void
-virtual Microsoft.VisualStudio.Threading.JoinableTaskFactory.PostToUnderlyingSynchronizationContext(System.Threading.SendOrPostCallback callback, object state) -> void
-virtual Microsoft.VisualStudio.Threading.JoinableTaskFactory.WaitSynchronously(System.Threading.Tasks.Task task) -> void
-virtual Microsoft.VisualStudio.Threading.JoinableTaskFactory.WaitSynchronouslyCore(System.Threading.Tasks.Task task) -> void
+virtual Microsoft.VisualStudio.Threading.JoinableTaskFactory.OnTransitionedToMainThread(Microsoft.VisualStudio.Threading.JoinableTask! joinableTask, bool canceled) -> void
+virtual Microsoft.VisualStudio.Threading.JoinableTaskFactory.OnTransitioningToMainThread(Microsoft.VisualStudio.Threading.JoinableTask! joinableTask) -> void
+virtual Microsoft.VisualStudio.Threading.JoinableTaskFactory.PostToUnderlyingSynchronizationContext(System.Threading.SendOrPostCallback! callback, object! state) -> void
+virtual Microsoft.VisualStudio.Threading.JoinableTaskFactory.WaitSynchronously(System.Threading.Tasks.Task! task) -> void
+virtual Microsoft.VisualStudio.Threading.JoinableTaskFactory.WaitSynchronouslyCore(System.Threading.Tasks.Task! task) -> void
 virtual Microsoft.VisualStudio.Threading.ProgressWithCompletion<T>.Report(T value) -> void
 virtual Microsoft.VisualStudio.Threading.ReentrantSemaphore.SuppressRelevance() -> Microsoft.VisualStudio.Threading.ReentrantSemaphore.RevertRelevance
 Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.Releaser.DisposeAsync() -> System.Threading.Tasks.ValueTask
 Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.ResourceReleaser.DisposeAsync() -> System.Threading.Tasks.ValueTask
 Microsoft.VisualStudio.Threading.NonConcurrentSynchronizationContext
 Microsoft.VisualStudio.Threading.NonConcurrentSynchronizationContext.NonConcurrentSynchronizationContext(bool sticky) -> void
-Microsoft.VisualStudio.Threading.NonConcurrentSynchronizationContext.UnhandledException -> System.EventHandler<System.Exception>
-override Microsoft.VisualStudio.Threading.NonConcurrentSynchronizationContext.CreateCopy() -> System.Threading.SynchronizationContext
-override Microsoft.VisualStudio.Threading.NonConcurrentSynchronizationContext.Post(System.Threading.SendOrPostCallback d, object state) -> void
-override Microsoft.VisualStudio.Threading.NonConcurrentSynchronizationContext.Send(System.Threading.SendOrPostCallback d, object state) -> void
+Microsoft.VisualStudio.Threading.NonConcurrentSynchronizationContext.UnhandledException -> System.EventHandler<System.Exception!>?
+override Microsoft.VisualStudio.Threading.NonConcurrentSynchronizationContext.CreateCopy() -> System.Threading.SynchronizationContext!
+override Microsoft.VisualStudio.Threading.NonConcurrentSynchronizationContext.Post(System.Threading.SendOrPostCallback! d, object? state) -> void
+override Microsoft.VisualStudio.Threading.NonConcurrentSynchronizationContext.Send(System.Threading.SendOrPostCallback! d, object? state) -> void
 static Microsoft.VisualStudio.Threading.TplExtensions.Forget(this System.Threading.Tasks.ValueTask task) -> void
 static Microsoft.VisualStudio.Threading.TplExtensions.Forget<T>(this System.Threading.Tasks.ValueTask<T> task) -> void
