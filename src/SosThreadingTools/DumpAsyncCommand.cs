@@ -35,12 +35,12 @@ namespace CpsDbg
             {
                 try
                 {
-                    var stateMachine = obj.GetObjectField("m_stateMachine");
+                    var stateMachine = obj.ReadObjectField("m_stateMachine");
                     if (!knownStateMachines.ContainsKey(stateMachine.Address))
                     {
                         try
                         {
-                            var state = stateMachine.GetField<int>("<>1__state");
+                            var state = stateMachine.ReadField<int>("<>1__state");
                             if (state >= -1)
                             {
                                 ClrObject taskField = default(ClrObject);
@@ -63,9 +63,9 @@ namespace CpsDbg
                                     // CLR debugger may not be able to access t__builder, when NGEN assemblies are being used, and the type of the field could be lost.
                                     // Our workaround is to pick up the first Task object referenced by the state machine, which seems to be correct.
                                     // That function works with the raw data structure (like how GC scans the object, so it doesn't depend on symbols.
-                                    foreach (ClrObject referencedObject in stateMachine.EnumerateObjectReferences(true))
+                                    foreach (ClrObject referencedObject in stateMachine.EnumerateReferences(true))
                                     {
-                                        if (!referencedObject.IsNull && referencedObject.Type != null)
+                                        if (!referencedObject.IsNull && referencedObject.Type is object)
                                         {
                                             if (string.Equals(referencedObject.Type.Name, "System.Threading.Tasks.Task", StringComparison.Ordinal) || string.Equals(referencedObject.Type.BaseType?.Name, "System.Threading.Tasks.Task", StringComparison.Ordinal))
                                             {
@@ -80,7 +80,7 @@ namespace CpsDbg
                                 allStateMachines.Add(asyncState);
                                 knownStateMachines.Add(stateMachine.Address, asyncState);
 
-                                if (stateMachine.Type != null)
+                                if (stateMachine.Type is object)
                                 {
                                     foreach (var method in stateMachine.Type.Methods)
                                     {
@@ -94,7 +94,7 @@ namespace CpsDbg
                         }
                         catch (Exception ex)
                         {
-                            context.Output.WriteLine($"Fail to process state machine {stateMachine.Address:x} Type:'{stateMachine.Type.Name}' Module:'{stateMachine.Type.Module.Name}' Error: {ex.Message}");
+                            context.Output.WriteLine($"Fail to process state machine {stateMachine.Address:x} Type:'{stateMachine.Type?.Name}' Module:'{stateMachine.Type?.Module?.Name}' Error: {ex.Message}");
                         }
                     }
                 }
@@ -179,7 +179,7 @@ namespace CpsDbg
             var items = continuationObject.TryGetObjectField("_items");
             if (!items.IsNull && items.IsArray && items.ContainsPointers)
             {
-                foreach (var promise in items.EnumerateObjectReferences(true))
+                foreach (var promise in items.EnumerateReferences(true))
                 {
                     if (!promise.IsNull)
                     {
@@ -201,7 +201,7 @@ namespace CpsDbg
         {
             foreach (var stateMachine in allStateMachines)
             {
-                if (stateMachine.Previous == null)
+                if (stateMachine.Previous is null)
                 {
                     try
                     {
@@ -211,7 +211,7 @@ namespace CpsDbg
                         {
                             var previousStateMachine = allStateMachines
                                 .FirstOrDefault(s => s.Task.Address == wrappedTask.Address);
-                            if (previousStateMachine != null && stateMachine != previousStateMachine)
+                            if (previousStateMachine is object && stateMachine != previousStateMachine)
                             {
                                 stateMachine.Previous = previousStateMachine;
                                 previousStateMachine.Next = stateMachine;
@@ -236,18 +236,19 @@ namespace CpsDbg
                         && string.Equals(f.Method.Name, "CompleteOnCurrentThread", StringComparison.Ordinal)
                         && string.Equals(f.Method.Type?.Name, "Microsoft.VisualStudio.Threading.JoinableTask", StringComparison.Ordinal));
 
-                if (stackFrame != null)
+                if (stackFrame is object)
                 {
                     var visitedObjects = new HashSet<ulong>();
-                    foreach (var stackObject in thread.EnumerateStackObjects())
+                    foreach (IClrStackRoot stackRoot in thread.EnumerateStackRoots())
                     {
+                        ClrObject stackObject = stackRoot.Object;
                         if (string.Equals(stackObject.Type?.Name, "Microsoft.VisualStudio.Threading.JoinableTask", StringComparison.Ordinal) ||
                             string.Equals(stackObject.Type?.BaseType?.Name, "Microsoft.VisualStudio.Threading.JoinableTask", StringComparison.Ordinal))
                         {
-                            if (visitedObjects.Add(stackObject.Object))
+                            if (visitedObjects.Add(stackObject.Address))
                             {
-                                var joinableTaskObject = new ClrObject(stackObject.Object, stackObject.Type);
-                                int state = joinableTaskObject.GetField<int>("state");
+                                var joinableTaskObject = new ClrObject(stackObject.Address, stackObject.Type);
+                                int state = joinableTaskObject.ReadField<int>("state");
                                 if ((state & 0x10) == 0x10)
                                 {
                                     // This flag indicates the JTF is blocking the thread
@@ -256,7 +257,7 @@ namespace CpsDbg
                                     {
                                         var blockingStateMachine = allStateMachines
                                             .FirstOrDefault(s => s.Task.Address == wrappedTask.Address);
-                                        if (blockingStateMachine != null)
+                                        if (blockingStateMachine is object)
                                         {
                                             blockingStateMachine.BlockedThread = thread.OSThreadId;
                                             blockingStateMachine.BlockedJoinableTask = joinableTaskObject;
@@ -276,15 +277,15 @@ namespace CpsDbg
         {
             foreach (var stateMachine in allStateMachines)
             {
-                if (stateMachine.Previous == null && stateMachine.State >= 0)
+                if (stateMachine.Previous is null && stateMachine.State >= 0)
                 {
                     try
                     {
-                        var awaitField = stateMachine.StateMachine.Type.GetFieldByName($"<>u__{stateMachine.State + 1}");
-                        if (awaitField != null && awaitField.IsValueClass && string.Equals(awaitField.Type?.Name, "Microsoft.VisualStudio.Threading.JoinableTaskFactory+MainThreadAwaiter"))
+                        var awaitField = stateMachine.StateMachine.Type?.GetFieldByName($"<>u__{stateMachine.State + 1}");
+                        if (awaitField is object && awaitField.IsValueType && string.Equals(awaitField.Type?.Name, "Microsoft.VisualStudio.Threading.JoinableTaskFactory+MainThreadAwaiter"))
                         {
                             var awaitObject = stateMachine.StateMachine.TryGetValueClassField($"<>u__{stateMachine.State + 1}");
-                            if (awaitObject != null)
+                            if (awaitObject.HasValue)
                             {
                                 stateMachine.SwitchToMainThreadTask = awaitObject.TryGetObjectField("job");
                             }
@@ -301,7 +302,7 @@ namespace CpsDbg
         {
             foreach (var stateMachine in allStateMachines)
             {
-                if (stateMachine.Previous != null && stateMachine.Previous.Next != stateMachine)
+                if (stateMachine.Previous is object && stateMachine.Previous.Next != stateMachine)
                 {
                     // If the previous task actually has two continuations, we end up in a one way dependencies chain, we need fix it in the future.
                     stateMachine.AlterPrevious = stateMachine.Previous;
@@ -316,10 +317,10 @@ namespace CpsDbg
             foreach (var stateMachine in allStateMachines)
             {
                 int depth = 0;
-                if (stateMachine.Previous == null)
+                if (stateMachine.Previous is null)
                 {
                     AsyncStateMachine? p = stateMachine;
-                    while (p != null)
+                    while (p is object)
                     {
                         depth++;
                         if (p.Depth == loopMark)
@@ -332,7 +333,7 @@ namespace CpsDbg
                     }
                 }
 
-                if (stateMachine.AlterPrevious != null)
+                if (stateMachine.AlterPrevious is object)
                 {
                     depth++;
                 }
@@ -377,7 +378,7 @@ namespace CpsDbg
             bool multipleLineBlock = false;
 
             var loopDetection = new HashSet<AsyncStateMachine>();
-            for (AsyncStateMachine? p = node; p != null; p = p.Next)
+            for (AsyncStateMachine? p = node; p is object; p = p.Next)
             {
                 printedMachines.Add(p);
 
@@ -386,10 +387,10 @@ namespace CpsDbg
                     output.WriteString("..");
                     multipleLineBlock = true;
                 }
-                else if (p.AlterPrevious != null)
+                else if (p.AlterPrevious is object)
                 {
                     output.WriteObjectAddress(p.AlterPrevious.StateMachine.Address);
-                    output.WriteString($" <{p.AlterPrevious.State}> * {p.AlterPrevious.StateMachine.Type.Name} @ ");
+                    output.WriteString($" <{p.AlterPrevious.State}> * {p.AlterPrevious.StateMachine.Type?.Name} @ ");
                     output.WriteMethodInfo($"{p.AlterPrevious.CodeAddress:x}", p.AlterPrevious.CodeAddress);
                     output.WriteLine(string.Empty);
                     output.WriteString("..");
@@ -405,7 +406,7 @@ namespace CpsDbg
 
                 output.WriteObjectAddress(p.StateMachine.Address);
                 string doubleDependentTaskMark = p.DependentCount > 1 ? " * " : " ";
-                output.WriteString($" <{p.State}>{doubleDependentTaskMark}{p.StateMachine.Type.Name} @ ");
+                output.WriteString($" <{p.State}>{doubleDependentTaskMark}{p.StateMachine.Type?.Name} @ ");
                 output.WriteMethodInfo($"{p.CodeAddress:x}", p.CodeAddress);
                 output.WriteLine(string.Empty);
 
@@ -415,14 +416,14 @@ namespace CpsDbg
                     break;
                 }
 
-                if (p.Next == null && p.BlockedThread.HasValue)
+                if (p.Next is null && p.BlockedThread.HasValue)
                 {
                     output.WriteString("-- ");
                     output.WriteThreadLink(p.BlockedThread.Value);
                     output.WriteString(" - JoinableTask: ");
                     output.WriteObjectAddress(p.BlockedJoinableTask.Address);
 
-                    int state = p.BlockedJoinableTask.GetField<int>("state");
+                    int state = p.BlockedJoinableTask.ReadField<int>("state");
                     if ((state & 0x20) == 0x20)
                     {
                         output.WriteLine(" SynchronouslyBlockingMainThread");

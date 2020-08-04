@@ -56,7 +56,7 @@ namespace CpsDbg
 
                 var output = new DebuggerOutput(debugClient);
 
-                var dataTarget = DataTarget.CreateFromDebuggerInterface(debugClient);
+                var dataTarget = DataTarget.CreateFromDbgEng(ptrClient);
 
                 ClrRuntime? runtime = null;
 

@@ -31,7 +31,7 @@
     <ItemGroup>
       <TfmSpecificPackageFile Include="$(TargetPath)" PackagePath="tools\$(RuntimeIdentifier)\" />
       <TfmSpecificPackageFile Include="@(DebugSymbolsProjectOutputGroupOutput->'%(FinalOutputPath)')" PackagePath="symbols\$(RuntimeIdentifier)\" />
-      <TfmSpecificPackageFile Include="$(TargetDir)Microsoft.Diagnostics.Runtime.dll" PackagePath="tools\$(RuntimeIdentifier)\" />
+      <TfmSpecificPackageFile Include="$(TargetDir)*.dll" Exclude="$(TargetDir)DllExport.dll" PackagePath="tools\$(RuntimeIdentifier)\" />
     </ItemGroup>
   </Target>
   <Target Name="StampAndIncludeGalleryManifest" DependsOnTargets="GetBuildVersion" BeforeTargets="_GetPackageFiles">
