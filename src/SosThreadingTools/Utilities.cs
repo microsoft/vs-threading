@@ -13,58 +13,53 @@ namespace CpsDbg
         {
             if (!clrObject.IsNull)
             {
-                var field = clrObject.Type.GetFieldByName(fieldName);
-                if (field != null && field.IsObjectReference)
+                var field = clrObject.Type?.GetFieldByName(fieldName);
+                if (field is object && field.IsObjectReference)
                 {
-                    ulong address = field.GetAddress(clrObject.Address);
-                    ulong reference;
-                    if (clrObject.Type.Heap.ReadPointer(address, out reference) && reference != 0)
-                    {
-                        return new ClrObject(reference, clrObject.Type.Heap.GetObjectType(reference));
-                    }
+                    return field.ReadObject(clrObject.Address, interior: false);
                 }
             }
 
             return default(ClrObject);
         }
 
-        internal static ClrValueClass? TryGetValueClassField(this ClrObject clrObject, string fieldName)
+        internal static ClrValueType? TryGetValueClassField(this ClrObject clrObject, string fieldName)
         {
             if (!clrObject.IsNull)
             {
-                var field = clrObject.Type.GetFieldByName(fieldName);
-                if (field != null && field.Type.IsValueClass)
+                var field = clrObject.Type?.GetFieldByName(fieldName);
+                if (field?.Type is object && field.Type.IsValueType)
                 {
-                    // System.Console.WriteLine("{0} {1:x} Field {2} {3} {4} {5}", clrObject.Type.Name, clrObject.Address, fieldName, field.Type.Name, field.Type.IsValueClass, field.Type.IsRuntimeType);
-                    return clrObject.GetValueClassField(fieldName);
+                    // System.Console.WriteLine("{0} {1:x} Field {2} {3} {4} {5}", clrObject.Type.Name, clrObject.Address, fieldName, field.Type.Name, field.Type.IsValueType, field.Type.IsRuntimeType);
+                    return clrObject.ReadValueTypeField(fieldName);
                 }
             }
 
             return null;
         }
 
-        internal static ClrObject TryGetObjectField(this ClrValueClass? clrObject, string fieldName)
+        internal static ClrObject TryGetObjectField(this ClrValueType? clrObject, string fieldName)
         {
-            if (clrObject != null)
+            if (clrObject is object)
             {
-                var field = clrObject.Value.Type.GetFieldByName(fieldName);
-                if (field != null && field.IsObjectReference)
+                var field = clrObject.Value.Type?.GetFieldByName(fieldName);
+                if (field is object && field.IsObjectReference)
                 {
-                    return clrObject.Value.GetObjectField(fieldName);
+                    return clrObject.Value.ReadObjectField(fieldName);
                 }
             }
 
             return default(ClrObject);
         }
 
-        internal static ClrValueClass? TryGetValueClassField(this ClrValueClass? clrObject, string fieldName)
+        internal static ClrValueType? TryGetValueClassField(this ClrValueType? clrObject, string fieldName)
         {
             if (clrObject.HasValue)
             {
-                var field = clrObject.Value.Type.GetFieldByName(fieldName);
-                if (field != null && field.IsValueClass)
+                var field = clrObject.Value.Type?.GetFieldByName(fieldName);
+                if (field is object && field.IsValueType)
                 {
-                    return clrObject.Value.GetValueClassField(fieldName);
+                    return clrObject.Value.ReadValueTypeField(fieldName);
                 }
             }
 
