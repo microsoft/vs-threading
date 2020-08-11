@@ -111,6 +111,51 @@ class Test : object, VsThreadingAsyncDisposable, BclAsyncDisposable
         }
 
         [Fact]
+        public async Task ClassImplementsOnlyVsThreadingType_WithBaseClassToo_PartialClass()
+        {
+            var source1 = Preamble + @"
+partial class Test
+{
+}";
+
+            var source2 = Preamble + @"
+partial class Test : [|VsThreadingAsyncDisposable|]
+{
+    public async Task DisposeAsync()
+    {
+        await Task.Yield();
+    }
+}";
+
+            var fix1 = Preamble + @"
+partial class Test
+{
+}";
+
+            var fix2 = Preamble + @"
+partial class Test : VsThreadingAsyncDisposable, BclAsyncDisposable
+{
+    public async Task DisposeAsync()
+    {
+        await Task.Yield();
+    }
+
+    ValueTask BclAsyncDisposable.DisposeAsync()
+    {
+        return new ValueTask(DisposeAsync());
+    }
+}";
+
+            var test = new Verify.Test
+            {
+                TestState = { Sources = { source1, source2 } },
+                FixedState = { Sources = { fix1, fix2 } },
+            };
+
+            await test.RunAsync();
+        }
+
+        [Fact]
         public async Task ClassImplementsOnlyVsThreadingType_WithBaseClassToo_VB()
         {
             var test = VBPreamble + @"
@@ -138,6 +183,50 @@ Class Test
 End Class";
 
             await VBVerify.VerifyCodeFixAsync(test, fix);
+        }
+
+        [Fact]
+        public async Task ClassImplementsOnlyVsThreadingType_WithBaseClassToo_PartialClass_VB()
+        {
+            var source1 = VBPreamble + @"
+Partial Class Test
+End Class";
+
+            var source2 = VBPreamble + @"
+Partial Class Test
+    Inherits Object
+    Implements [|VsThreadingAsyncDisposable|]
+
+    Public Async Function DisposeAsync() As Task Implements VsThreadingAsyncDisposable.DisposeAsync
+        Await Task.Yield
+    End Function
+End Class";
+
+            var fix1 = VBPreamble + @"
+Partial Class Test
+End Class";
+
+            var fix2 = VBPreamble + @"
+Partial Class Test
+    Inherits Object
+    Implements VsThreadingAsyncDisposable, BclAsyncDisposable
+
+    Public Async Function DisposeAsync() As Task Implements VsThreadingAsyncDisposable.DisposeAsync
+        Await Task.Yield
+    End Function
+
+    Private Function IAsyncDisposable_DisposeAsync() As ValueTask Implements BclAsyncDisposable.DisposeAsync
+        Return New ValueTask(DisposeAsync())
+    End Function
+End Class";
+
+            var test = new VBVerify.Test
+            {
+                TestState = { Sources = { source1, source2 } },
+                FixedState = { Sources = { fix1, fix2 } },
+            };
+
+            await test.RunAsync();
         }
 
         [Fact]
