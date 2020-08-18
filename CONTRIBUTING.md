@@ -7,6 +7,9 @@ FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
 contact [opencode@microsoft.com](mailto:opencode@microsoft.com)
 with any additional questions or comments.
 
+We welcome 3rd party pull requests.
+For significant changes we strongly recommend opening an issue to start a design discussion first.
+
 ## Building
 
 ### Prerequisites
@@ -25,9 +28,3 @@ msbuild src
 ```
 
 This solution can also be built from within Visual Studio 2019.
-
-## Pull requests
-
-We are not yet accepting external pull requests for this repository.
-
-We hope to soon.
