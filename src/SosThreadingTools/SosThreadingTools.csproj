@@ -28,7 +28,7 @@
     <SignFilesDependsOn Include="DllExportMod" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="2.0.142501" />
+    <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="2.0.142701" />
     <PackageReference Include="Microsoft.Diagnostics.Runtime.Utilities" Version="2.0.0-rc.20303.3" />
     <PackageReference Include="DllExport" Version="1.5.2" />
     <PackageReference Include="MicroBuild.VisualStudio" Version="$(MicroBuildVersion)" PrivateAssets="all" />
