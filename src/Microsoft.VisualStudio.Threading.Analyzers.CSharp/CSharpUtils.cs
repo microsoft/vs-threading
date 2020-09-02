@@ -163,7 +163,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             foreach (var syntaxReference in symbol.DeclaringSyntaxReferences)
             {
                 var syntaxNode = syntaxReference.GetSyntax(cancellationToken);
-                if (syntaxNode is TypeDeclarationSyntax typeDeclarationSyntax)
+                if (syntaxNode is TypeDeclarationSyntax { BaseList: { } } typeDeclarationSyntax)
                 {
                     if (compilation.GetSemanticModel(typeDeclarationSyntax.SyntaxTree) is { } semanticModel)
                     {
