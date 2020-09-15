@@ -839,7 +839,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 await Task.Delay(AsyncDelay / 2);
                 Assert.False(timeoutTask.IsCompleted);
                 tcs.SetResult(null);
-                timeoutTask.GetAwaiter().GetResult();
+                timeoutTask.Wait(this.TimeoutToken);
             });
         }
 

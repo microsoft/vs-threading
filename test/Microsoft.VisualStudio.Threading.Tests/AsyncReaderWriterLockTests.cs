@@ -4561,18 +4561,18 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 Assert.Equal(hasReadLock, this.asyncLock.IsReadLockHeld);
                 Assert.Equal(hasUpgradeableReadLock, this.asyncLock.IsUpgradeableReadLockHeld);
                 Assert.Equal(hasWriteLock, this.asyncLock.IsWriteLockHeld);
-                AssertEx.Equal(concurrencyExpected, barrier.SignalAndWait(signalAndWaitDelay), "Concurrency detected for an exclusive lock.");
+                AssertEx.Equal(concurrencyExpected, barrier.SignalAndWait(signalAndWaitDelay), "Actual vs. expected ({0}) concurrency did not match.", concurrencyExpected);
                 await Task.Yield(); // this second yield is useful to check that the magic works across multiple continuations.
                 Assert.Equal(hasReadLock, this.asyncLock.IsReadLockHeld);
                 Assert.Equal(hasUpgradeableReadLock, this.asyncLock.IsUpgradeableReadLockHeld);
                 Assert.Equal(hasWriteLock, this.asyncLock.IsWriteLockHeld);
-                AssertEx.Equal(concurrencyExpected, barrier.SignalAndWait(signalAndWaitDelay), "Concurrency detected for an exclusive lock.");
+                AssertEx.Equal(concurrencyExpected, barrier.SignalAndWait(signalAndWaitDelay), "Actual vs. expected ({0}) concurrency did not match.", concurrencyExpected);
             };
 
             var asyncFuncs = new Func<Task>[] { worker, worker };
 
             // This idea of kicking off lots of async tasks and then awaiting all of them is a common
-            // pattern in async code.  The async lock should protect against the continuatoins accidentally
+            // pattern in async code.  The async lock should protect against the continuations accidentally
             // running concurrently, thereby forking the write lock across multiple threads.
             await Task.WhenAll(asyncFuncs.Select(f => f()));
         }

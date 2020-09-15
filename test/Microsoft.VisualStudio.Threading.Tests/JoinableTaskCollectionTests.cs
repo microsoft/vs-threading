@@ -167,6 +167,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
             Assert.False(collection.Contains(task));
 
             finishTaskEvent.Set();
+            task.Join(this.TimeoutToken); // give the task a chance to cleanup.
         }
 
         [Fact]

@@ -3541,7 +3541,7 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 });
             });
             bkgrndThread.WaitWithoutInlining(throwOriginalException: true);
-            Assert.True(unawaitedWorkCompleted.Wait(ExpectedTimeout));
+            Assert.True(unawaitedWorkCompleted.Wait(UnexpectedTimeout));
         }
 
         [Fact]
