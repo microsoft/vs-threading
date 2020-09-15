@@ -1,4 +1,7 @@
-﻿namespace Microsoft.VisualStudio.Threading.Analyzers
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
     using System.Collections.Generic;
@@ -48,12 +51,12 @@
             if (invocation.Parent?.GetType().Equals(typeof(ExpressionStatementSyntax)) ?? false)
             {
                 var methodSymbol = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
-                var returnedSymbol = methodSymbol?.ReturnType;
+                ITypeSymbol? returnedSymbol = methodSymbol?.ReturnType;
                 if (returnedSymbol?.Name == Types.Task.TypeName && returnedSymbol.BelongsToNamespace(Types.Task.Namespace))
                 {
                     if (!CSharpUtils.GetContainingFunction(invocation).IsAsync)
                     {
-                        var location = (CSharpUtils.IsolateMethodName(invocation) ?? invocation.Expression).GetLocation();
+                        Location? location = (CSharpUtils.IsolateMethodName(invocation) ?? invocation.Expression).GetLocation();
                         context.ReportDiagnostic(Diagnostic.Create(Descriptor, location));
                     }
                 }

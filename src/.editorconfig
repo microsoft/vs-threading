@@ -1,0 +1,13 @@
+[Microsoft.VisualStudio.Threading.Analyzers*/*.cs]
+
+# CS1591: Missing XML comment for publicly visible type or member
+dotnet_diagnostic.CS1591.severity = suggestion
+
+# CA1062: Validate arguments of public methods
+dotnet_diagnostic.CA1062.severity = none
+
+# CA2007: Consider calling ConfigureAwait on the awaited task
+dotnet_diagnostic.CA2007.severity = silent
+
+# RS2008: Enable analyzer release tracking
+dotnet_diagnostic.RS2008.severity = suggestion

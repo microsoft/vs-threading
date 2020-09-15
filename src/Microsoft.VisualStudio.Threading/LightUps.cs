@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading
 {
@@ -14,14 +11,14 @@ namespace Microsoft.VisualStudio.Threading
     internal static class LightUps
     {
         /// <summary>
-        /// The <see cref="OperatingSystem.Version"/> for Windows 8.
-        /// </summary>
-        private static readonly Version Windows8Version = new Version(6, 2, 9200);
-
-        /// <summary>
         /// Gets a value indicating whether we execute Windows 7 code even on later versions of Windows.
         /// </summary>
         internal const bool ForceWindows7Mode = false;
+
+        /// <summary>
+        /// The <see cref="OperatingSystem.Version"/> for Windows 8.
+        /// </summary>
+        private static readonly Version Windows8Version = new Version(6, 2, 9200);
 
         /// <summary>
         /// Gets a value indicating whether the current operating system is Windows 8 or later.

@@ -1,4 +1,7 @@
-﻿namespace Microsoft.VisualStudio.Threading.Analyzers
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
     using System.Collections.Generic;
@@ -67,15 +70,14 @@
 
             context.RegisterCodeBlockStartAction<SyntaxKind>(ctxt =>
             {
-                var methodAnalyzer = new MethodAnalyzer();
-                ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeInvocation), SyntaxKind.InvocationExpression);
-                ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzePropertyGetter), SyntaxKind.SimpleMemberAccessExpression);
+                ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(MethodAnalyzer.AnalyzeInvocation), SyntaxKind.InvocationExpression);
+                ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(MethodAnalyzer.AnalyzePropertyGetter), SyntaxKind.SimpleMemberAccessExpression);
             });
         }
 
         private class MethodAnalyzer
         {
-            internal void AnalyzePropertyGetter(SyntaxNodeAnalysisContext context)
+            internal static void AnalyzePropertyGetter(SyntaxNodeAnalysisContext context)
             {
                 var memberAccessSyntax = (MemberAccessExpressionSyntax)context.Node;
                 if (IsInTaskReturningMethodOrDelegate(context))
@@ -84,7 +86,7 @@
                 }
             }
 
-            internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
+            internal static void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
             {
                 if (IsInTaskReturningMethodOrDelegate(context))
                 {
@@ -100,19 +102,19 @@
 
                     // Also consider all method calls to check for Async-suffixed alternatives.
                     ExpressionSyntax invokedMethodName = CSharpUtils.IsolateMethodName(invocationExpressionSyntax);
-                    var symbolInfo = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax, context.CancellationToken);
+                    SymbolInfo symbolInfo = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax, context.CancellationToken);
                     var methodSymbol = symbolInfo.Symbol as IMethodSymbol;
-                    if (methodSymbol != null && !methodSymbol.Name.EndsWith(VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix) &&
+                    if (methodSymbol is object && !methodSymbol.Name.EndsWith(VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix, StringComparison.CurrentCulture) &&
                         !(methodSymbol.ReturnType?.Name == nameof(Task) && methodSymbol.ReturnType.BelongsToNamespace(Namespaces.SystemThreadingTasks)))
                     {
                         string asyncMethodName = methodSymbol.Name + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix;
-                        var symbols = context.SemanticModel.LookupSymbols(
+                        ImmutableArray<ISymbol> symbols = context.SemanticModel.LookupSymbols(
                             invocationExpressionSyntax.Expression.GetLocation().SourceSpan.Start,
                             methodSymbol.ContainingType,
                             asyncMethodName,
                             includeReducedExtensionMethods: true);
 
-                        foreach (var s in symbols)
+                        foreach (ISymbol? s in symbols)
                         {
                             if (s is IMethodSymbol m
                                 && !m.IsObsolete()
@@ -121,7 +123,7 @@
                                 && Utils.HasAsyncCompatibleReturnType(m))
                             {
                                 // An async alternative exists.
-                                var properties = ImmutableDictionary<string, string>.Empty
+                                ImmutableDictionary<string, string>? properties = ImmutableDictionary<string, string>.Empty
                                     .Add(AsyncMethodKeyName, asyncMethodName);
 
                                 Diagnostic diagnostic = Diagnostic.Create(
@@ -157,47 +159,47 @@
                 // We want to scan invocations that occur inside Task and Task<T>-returning delegates or methods.
                 // That is: methods that either are or could be made async.
                 IMethodSymbol? methodSymbol = null;
-                var anonymousFunc = context.Node.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>();
-                if (anonymousFunc != null)
+                AnonymousFunctionExpressionSyntax? anonymousFunc = context.Node.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>();
+                if (anonymousFunc is object)
                 {
-                    var symbolInfo = context.SemanticModel.GetSymbolInfo(anonymousFunc, context.CancellationToken);
+                    SymbolInfo symbolInfo = context.SemanticModel.GetSymbolInfo(anonymousFunc, context.CancellationToken);
                     methodSymbol = symbolInfo.Symbol as IMethodSymbol;
                 }
                 else
                 {
-                    var methodDecl = context.Node.FirstAncestorOrSelf<MethodDeclarationSyntax>();
-                    if (methodDecl != null)
+                    MethodDeclarationSyntax? methodDecl = context.Node.FirstAncestorOrSelf<MethodDeclarationSyntax>();
+                    if (methodDecl is object)
                     {
                         methodSymbol = context.SemanticModel.GetDeclaredSymbol(methodDecl, context.CancellationToken);
                     }
                 }
 
-                var returnType = methodSymbol?.ReturnType;
+                ITypeSymbol? returnType = methodSymbol?.ReturnType;
                 return returnType?.Name == nameof(Task)
                     && returnType.BelongsToNamespace(Namespaces.SystemThreadingTasks);
             }
 
             private static bool InspectMemberAccess(SyntaxNodeAnalysisContext context, [NotNullWhen(true)] MemberAccessExpressionSyntax? memberAccessSyntax, IEnumerable<CommonInterest.SyncBlockingMethod> problematicMethods)
             {
-                if (memberAccessSyntax == null)
+                if (memberAccessSyntax is null)
                 {
                     return false;
                 }
 
-                var memberSymbol = context.SemanticModel.GetSymbolInfo(memberAccessSyntax, context.CancellationToken).Symbol;
-                if (memberSymbol != null)
+                ISymbol? memberSymbol = context.SemanticModel.GetSymbolInfo(memberAccessSyntax, context.CancellationToken).Symbol;
+                if (memberSymbol is object)
                 {
-                    foreach (var item in problematicMethods)
+                    foreach (CommonInterest.SyncBlockingMethod item in problematicMethods)
                     {
                         if (item.Method.IsMatch(memberSymbol))
                         {
-                            var location = memberAccessSyntax.Name.GetLocation();
-                            var properties = ImmutableDictionary<string, string>.Empty
-                                .Add(ExtensionMethodNamespaceKeyName, item.ExtensionMethodNamespace != null ? string.Join(".", item.ExtensionMethodNamespace) : string.Empty);
+                            Location? location = memberAccessSyntax.Name.GetLocation();
+                            ImmutableDictionary<string, string>? properties = ImmutableDictionary<string, string>.Empty
+                                .Add(ExtensionMethodNamespaceKeyName, item.ExtensionMethodNamespace is object ? string.Join(".", item.ExtensionMethodNamespace) : string.Empty);
                             DiagnosticDescriptor descriptor;
                             var messageArgs = new List<object>(2);
                             messageArgs.Add(item.Method.Name);
-                            if (item.AsyncAlternativeMethodName != null)
+                            if (item.AsyncAlternativeMethodName is object)
                             {
                                 properties = properties.Add(AsyncMethodKeyName, item.AsyncAlternativeMethodName);
                                 descriptor = Descriptor;

@@ -1,4 +1,5 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace CpsDbg
 {
@@ -10,13 +11,10 @@ namespace CpsDbg
     {
         private const string DumpAsyncCommand = "dumpasync";
 
-        private static Dictionary<string, ICommandHandler> commandHandlers;
-
-        static Commands()
+        private static readonly Dictionary<string, ICommandHandler> CommandHandlers = new Dictionary<string, ICommandHandler>(StringComparer.OrdinalIgnoreCase)
         {
-            commandHandlers = new Dictionary<string, ICommandHandler>(StringComparer.OrdinalIgnoreCase);
-            commandHandlers.Add("dumpasync", new DumpAsyncCommand());
-        }
+            { "dumpasync", new DumpAsyncCommand() },
+        };
 
         [DllExport(DumpAsyncCommand, CallingConvention.StdCall)]
         internal static void DumpAsync(IntPtr client, [MarshalAs(UnmanagedType.LPStr)] string args)
@@ -27,13 +25,13 @@ namespace CpsDbg
         private static void ExecuteCommand(IntPtr client, string command, [MarshalAs(UnmanagedType.LPStr)] string args)
         {
             ICommandHandler handler;
-            if (!commandHandlers.TryGetValue(command, out handler))
+            if (!CommandHandlers.TryGetValue(command, out handler))
             {
                 return;
             }
 
             DebuggerContext? context = DebuggerContext.GetDebuggerContext(client);
-            if (context == null)
+            if (context is null)
             {
                 return;
             }
@@ -42,7 +40,9 @@ namespace CpsDbg
             {
                 handler.Execute(context, args);
             }
+#pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception ex)
+#pragma warning restore CA1031 // Do not catch general exception types
             {
                 context.Output.WriteLine($"Encountered an unhandled exception running '{command}':");
                 context.Output.WriteLine(ex.ToString());

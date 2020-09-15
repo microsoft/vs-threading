@@ -1,4 +1,5 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
@@ -64,7 +65,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         private static bool IsInConditional(IOperation operation)
         {
-            foreach (var ancestor in GetAncestorsWithinMethod(operation))
+            foreach (IOperation? ancestor in GetAncestorsWithinMethod(operation))
             {
                 if (ancestor is IConditionalOperation ||
                     ancestor is IWhileLoopOperation { ConditionIsTop: true } ||
@@ -92,11 +93,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         private static bool IsArgInInvocationToConditionalMethod(OperationAnalysisContext context)
         {
-            var argument = GetAncestorsWithinMethod(context.Operation).OfType<IArgumentOperation>().FirstOrDefault();
+            IArgumentOperation? argument = GetAncestorsWithinMethod(context.Operation).OfType<IArgumentOperation>().FirstOrDefault();
             var containingInvocation = argument?.Parent as IInvocationOperation;
-            if (containingInvocation != null)
+            if (containingInvocation is object)
             {
-                var symbolOfContainingMethodInvocation = containingInvocation.TargetMethod;
+                IMethodSymbol? symbolOfContainingMethodInvocation = containingInvocation.TargetMethod;
                 return symbolOfContainingMethodInvocation?.GetAttributes().Any(a =>
                     a.AttributeClass.BelongsToNamespace(Namespaces.SystemDiagnostics) &&
                     a.AttributeClass.Name == nameof(System.Diagnostics.ConditionalAttribute)) ?? false;
@@ -108,8 +109,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         private void AnalyzeInvocation(OperationAnalysisContext context, ImmutableArray<CommonInterest.QualifiedMember> mainThreadAssertingMethods)
         {
             var invocation = (IInvocationOperation)context.Operation;
-            var symbol = invocation.TargetMethod;
-            if (symbol != null)
+            IMethodSymbol? symbol = invocation.TargetMethod;
+            if (symbol is object)
             {
                 bool reportDiagnostic = false;
                 if (mainThreadAssertingMethods.Contains(symbol))
@@ -129,7 +130,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
                 if (reportDiagnostic)
                 {
-                    var nodeToLocate = this.LanguageUtils.IsolateMethodName(invocation);
+                    SyntaxNode? nodeToLocate = this.LanguageUtils.IsolateMethodName(invocation);
                     context.ReportDiagnostic(Diagnostic.Create(Descriptor, nodeToLocate.GetLocation()));
                 }
             }

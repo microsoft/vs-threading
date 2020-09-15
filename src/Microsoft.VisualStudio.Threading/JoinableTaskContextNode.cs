@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading
 {
@@ -49,9 +46,9 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                if (this.nonJoinableFactory == null)
+                if (this.nonJoinableFactory is null)
                 {
-                    var factory = this.CreateDefaultFactory();
+                    JoinableTaskFactory? factory = this.CreateDefaultFactory();
                     Interlocked.CompareExchange(ref this.nonJoinableFactory, factory, null);
                 }
 
@@ -144,20 +141,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Invoked when a hang is suspected to have occurred involving the main thread.
         /// </summary>
-        /// <param name="hangDuration">The duration of the current hang.</param>
-        /// <param name="notificationCount">The number of times this hang has been reported, including this one.</param>
-        /// <param name="hangId">A random GUID that uniquely identifies this particular hang.</param>
-        /// <remarks>
-        /// A single hang occurrence may invoke this method multiple times, with increasing
-        /// values in the <paramref name="hangDuration"/> parameter.
-        /// </remarks>
-        protected virtual void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId)
-        {
-        }
-
-        /// <summary>
-        /// Invoked when a hang is suspected to have occurred involving the main thread.
-        /// </summary>
         /// <param name="details">Describes the hang in detail.</param>
         /// <remarks>
         /// A single hang occurrence may invoke this method multiple times, with increasing
@@ -178,6 +161,20 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="hangDuration">The duration of the total waiting time.</param>
         /// <param name="hangId">A GUID that uniquely identifies the earlier hang report.</param>
         protected internal virtual void OnFalseHangDetected(TimeSpan hangDuration, Guid hangId)
+        {
+        }
+
+        /// <summary>
+        /// Invoked when a hang is suspected to have occurred involving the main thread.
+        /// </summary>
+        /// <param name="hangDuration">The duration of the current hang.</param>
+        /// <param name="notificationCount">The number of times this hang has been reported, including this one.</param>
+        /// <param name="hangId">A random GUID that uniquely identifies this particular hang.</param>
+        /// <remarks>
+        /// A single hang occurrence may invoke this method multiple times, with increasing
+        /// values in the <paramref name="hangDuration"/> parameter.
+        /// </remarks>
+        protected virtual void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId)
         {
         }
 

@@ -1,4 +1,5 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
@@ -18,16 +19,16 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal override Location? GetLocationOfBaseTypeName(INamedTypeSymbol symbol, INamedTypeSymbol baseType, Compilation compilation, CancellationToken cancellationToken)
         {
-            foreach (var syntaxReference in symbol.DeclaringSyntaxReferences)
+            foreach (SyntaxReference? syntaxReference in symbol.DeclaringSyntaxReferences)
             {
-                var syntaxNode = syntaxReference.GetSyntax(cancellationToken);
+                SyntaxNode? syntaxNode = syntaxReference.GetSyntax(cancellationToken);
                 if (syntaxNode is InterfaceStatementSyntax { Parent: InterfaceBlockSyntax vbInterface })
                 {
                     if (compilation.GetSemanticModel(vbInterface.SyntaxTree) is { } semanticModel)
                     {
-                        foreach (var inheritStatement in vbInterface.Inherits)
+                        foreach (InheritsStatementSyntax? inheritStatement in vbInterface.Inherits)
                         {
-                            foreach (var typeSyntax in inheritStatement.Types)
+                            foreach (TypeSyntax? typeSyntax in inheritStatement.Types)
                             {
                                 SymbolInfo baseTypeSymbolInfo = semanticModel.GetSymbolInfo(typeSyntax, cancellationToken);
                                 if (Equals(baseTypeSymbolInfo.Symbol, baseType))
@@ -42,9 +43,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 {
                     if (compilation.GetSemanticModel(vbClass.SyntaxTree) is { } semanticModel)
                     {
-                        foreach (var implementStatement in vbClass.Implements)
+                        foreach (ImplementsStatementSyntax? implementStatement in vbClass.Implements)
                         {
-                            foreach (var typeSyntax in implementStatement.Types)
+                            foreach (TypeSyntax? typeSyntax in implementStatement.Types)
                             {
                                 SymbolInfo baseTypeSymbolInfo = semanticModel.GetSymbolInfo(typeSyntax, cancellationToken);
                                 if (Equals(baseTypeSymbolInfo.Symbol, baseType))
@@ -59,9 +60,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 {
                     if (compilation.GetSemanticModel(vbStruct.SyntaxTree) is { } semanticModel)
                     {
-                        foreach (var implementStatement in vbStruct.Implements)
+                        foreach (ImplementsStatementSyntax? implementStatement in vbStruct.Implements)
                         {
-                            foreach (var typeSyntax in implementStatement.Types)
+                            foreach (TypeSyntax? typeSyntax in implementStatement.Types)
                             {
                                 SymbolInfo baseTypeSymbolInfo = semanticModel.GetSymbolInfo(typeSyntax, cancellationToken);
                                 if (Equals(baseTypeSymbolInfo.Symbol, baseType))

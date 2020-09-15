@@ -1,9 +1,11 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace CpsDbg
 {
     using System;
     using System.Diagnostics;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Reflection;
@@ -49,14 +51,16 @@ namespace CpsDbg
             //   1. Store a copy of IDebugClient in DebugClient.
             //   2. Replace Console's output stream to be the debugger window.
             //   3. Create an instance of DataTarget using the IDebugClient.
-            if (instance == null)
+            if (instance is null)
             {
                 object client = Marshal.GetUniqueObjectForIUnknown(ptrClient);
                 var debugClient = (IDebugClient)client;
 
                 var output = new DebuggerOutput(debugClient);
 
+#pragma warning disable CA2000 // Dispose objects before losing scope
                 var dataTarget = DataTarget.CreateFromDbgEng(ptrClient);
+#pragma warning restore CA2000 // Dispose objects before losing scope
 
                 ClrRuntime? runtime = null;
 
@@ -69,7 +73,7 @@ namespace CpsDbg
                 Process p = Process.GetCurrentProcess();
                 foreach (ProcessModule module in p.Modules)
                 {
-                    if (module.FileName.ToLower().Contains("mscordacwks"))
+                    if (module.FileName.ToUpperInvariant().Contains("MSCORDACWKS"))
                     {
                         // TODO:  This does not support side-by-side CLRs.
                         runtime = dataTarget.ClrVersions.Single().CreateRuntime(module.FileName);
@@ -78,13 +82,13 @@ namespace CpsDbg
                 }
 
                 // Otherwise, the user didn't run .cordll.
-                if (runtime == null)
+                if (runtime is null)
                 {
                     output.WriteLine("Mscordacwks.dll not loaded into the debugger.");
                     output.WriteLine("Run .cordll to load the dac before running this command.");
                 }
 
-                if (runtime != null)
+                if (runtime is object)
                 {
                     instance = new DebuggerContext(debugClient, dataTarget, runtime, output);
                 }
@@ -106,7 +110,7 @@ namespace CpsDbg
             {
                 string codebase = Assembly.GetExecutingAssembly().CodeBase;
 
-                if (codebase.StartsWith("file://"))
+                if (codebase.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
                 {
                     codebase = codebase.Substring(8).Replace('/', '\\');
                 }

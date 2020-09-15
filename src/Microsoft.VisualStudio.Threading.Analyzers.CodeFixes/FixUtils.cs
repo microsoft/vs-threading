@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
@@ -20,7 +17,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
     internal static class FixUtils
     {
-        internal static readonly string BookmarkAnnotationName = "Bookmark";
+        internal const string BookmarkAnnotationName = "Bookmark";
 
         internal static AnonymousFunctionExpressionSyntax MakeMethodAsync(this AnonymousFunctionExpressionSyntax method, bool hasReturnValue, SemanticModel semanticModel, CancellationToken cancellationToken)
         {
@@ -33,7 +30,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             AnonymousFunctionExpressionSyntax? updated = null;
 
             var simpleLambda = method as SimpleLambdaExpressionSyntax;
-            if (simpleLambda != null)
+            if (simpleLambda is object)
             {
                 updated = simpleLambda
                     .WithAsyncKeyword(SyntaxFactory.Token(SyntaxKind.AsyncKeyword))
@@ -41,7 +38,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
 
             var parentheticalLambda = method as ParenthesizedLambdaExpressionSyntax;
-            if (parentheticalLambda != null)
+            if (parentheticalLambda is object)
             {
                 updated = parentheticalLambda
                     .WithAsyncKeyword(SyntaxFactory.Token(SyntaxKind.AsyncKeyword))
@@ -49,14 +46,14 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
 
             var anonymousMethod = method as AnonymousMethodExpressionSyntax;
-            if (anonymousMethod != null)
+            if (anonymousMethod is object)
             {
                 updated = anonymousMethod
                     .WithAsyncKeyword(SyntaxFactory.Token(SyntaxKind.AsyncKeyword))
                     .WithBody(UpdateStatementsForAsyncMethod(anonymousMethod.Body, semanticModel, hasReturnValue, cancellationToken));
             }
 
-            if (updated == null)
+            if (updated is null)
             {
                 throw new NotSupportedException();
             }
@@ -80,12 +77,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// </exception>
         internal static async Task<Tuple<Document, MethodDeclarationSyntax>> MakeMethodAsync(this MethodDeclarationSyntax method, Document document, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (method == null)
+            if (method is null)
             {
                 throw new ArgumentNullException(nameof(method));
             }
 
-            if (document == null)
+            if (document is null)
             {
                 throw new ArgumentNullException(nameof(document));
             }
@@ -98,7 +95,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             DocumentId documentId = document.Id;
             SemanticModel? semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
-            IMethodSymbol? methodSymbol = semanticModel.GetDeclaredSymbol(method);
+            IMethodSymbol? methodSymbol = semanticModel.GetDeclaredSymbol(method, cancellationToken);
 
             bool hasReturnValue;
             TypeSyntax returnType = method.ReturnType;
@@ -162,7 +159,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 // Don't rename entrypoint (i.e. "Main") methods.
                 if (!Utils.IsEntrypointMethod(methodSymbol, semanticModel, cancellationToken))
                 {
-                    var solution = await Renamer.RenameSymbolAsync(
+                    Solution? solution = await Renamer.RenameSymbolAsync(
                         document.Project.Solution,
                         methodSymbol,
                         newName,
@@ -171,7 +168,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     document = solution.GetDocument(document.Id);
                     semanticModel = null;
                     methodSymbol = null;
-                    var root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+                    SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
                     method = (MethodDeclarationSyntax)root.GetAnnotatedNodes(methodBookmark).Single();
                 }
             }
@@ -188,8 +185,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 foreach (DocumentId docId in annotatedDocumentIds)
                 {
                     document = solution.GetDocument(docId);
-                    var tree = await document.GetSyntaxTreeAsync(cancellationToken).ConfigureAwait(false);
-                    var root = await tree.GetRootAsync(cancellationToken).ConfigureAwait(false);
+                    SyntaxTree? tree = await document.GetSyntaxTreeAsync(cancellationToken).ConfigureAwait(false);
+                    SyntaxNode? root = await tree.GetRootAsync(cancellationToken).ConfigureAwait(false);
                     var rewriter = new AwaitCallRewriter(callerAnnotation);
                     root = rewriter.Visit(root);
                     solution = solution.GetDocument(tree).WithSyntaxRoot(root).Project.Solution;
@@ -198,12 +195,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 foreach (DocumentId docId in annotatedDocumentIds)
                 {
                     document = solution.GetDocument(docId);
-                    var tree = await document.GetSyntaxTreeAsync(cancellationToken).ConfigureAwait(false);
-                    var root = await tree.GetRootAsync(cancellationToken).ConfigureAwait(false);
-                    for (var node = root.GetAnnotatedNodes(callerAnnotation).FirstOrDefault(); node != null; node = root.GetAnnotatedNodes(callerAnnotation).FirstOrDefault())
+                    SyntaxTree? tree = await document.GetSyntaxTreeAsync(cancellationToken).ConfigureAwait(false);
+                    SyntaxNode? root = await tree.GetRootAsync(cancellationToken).ConfigureAwait(false);
+                    for (SyntaxNode? node = root.GetAnnotatedNodes(callerAnnotation).FirstOrDefault(); node is object; node = root.GetAnnotatedNodes(callerAnnotation).FirstOrDefault())
                     {
-                        var callingMethod = node.FirstAncestorOrSelf<MethodDeclarationSyntax>();
-                        if (callingMethod != null)
+                        MethodDeclarationSyntax? callingMethod = node.FirstAncestorOrSelf<MethodDeclarationSyntax>();
+                        if (callingMethod is object)
                         {
                             (document, callingMethod) = await MakeMethodAsync(callingMethod, document, cancellationToken).ConfigureAwait(false);
 
@@ -229,8 +226,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
                 // Make sure we return the latest of everything.
                 document = solution.GetDocument(documentId);
-                var finalTree = await document.GetSyntaxTreeAsync(cancellationToken).ConfigureAwait(false);
-                var finalRoot = await finalTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
+                SyntaxTree? finalTree = await document.GetSyntaxTreeAsync(cancellationToken).ConfigureAwait(false);
+                SyntaxNode? finalRoot = await finalTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
                 method = (MethodDeclarationSyntax)finalRoot.GetAnnotatedNodes(methodBookmark).Single();
             }
 
@@ -240,20 +237,20 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         internal static async Task<Tuple<Solution, SyntaxAnnotation, List<DocumentId>>> AnnotateAllCallersAsync(Solution solution, ISymbol symbol, CancellationToken cancellationToken)
         {
             var bookmark = new SyntaxAnnotation();
-            var callers = await SymbolFinder.FindCallersAsync(symbol, solution, cancellationToken).ConfigureAwait(false);
-            var callersByFile = from caller in callers
+            IEnumerable<SymbolCallerInfo>? callers = await SymbolFinder.FindCallersAsync(symbol, solution, cancellationToken).ConfigureAwait(false);
+            IEnumerable<IGrouping<SyntaxTree, Location>>? callersByFile = from caller in callers
                                 from location in caller.Locations
                                 group location by location.SourceTree into file
                                 select file;
             var updatedDocs = new List<DocumentId>();
-            foreach (var callerByFile in callersByFile)
+            foreach (IGrouping<SyntaxTree, Location>? callerByFile in callersByFile)
             {
-                var root = await callerByFile.Key.GetRootAsync(cancellationToken).ConfigureAwait(false);
-                foreach (var caller in callerByFile)
+                SyntaxNode? root = await callerByFile.Key.GetRootAsync(cancellationToken).ConfigureAwait(false);
+                foreach (Location? caller in callerByFile)
                 {
-                    var node = root.FindNode(caller.SourceSpan);
-                    var invocation = node.FirstAncestorOrSelf<InvocationExpressionSyntax>();
-                    if (invocation != null)
+                    SyntaxNode? node = root.FindNode(caller.SourceSpan);
+                    InvocationExpressionSyntax? invocation = node.FirstAncestorOrSelf<InvocationExpressionSyntax>();
+                    if (invocation is object)
                     {
                         root = root.ReplaceNode(invocation, invocation.WithAdditionalAnnotations(bookmark));
                     }
@@ -275,7 +272,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             SyntaxNode root;
             (bookmark, document, syntaxNode, root) = await BookmarkSyntaxAsync(document, syntaxNode, cancellationToken).ConfigureAwait(false);
 
-            var newSyntaxNode = syntaxNodeTransform(syntaxNode);
+            T? newSyntaxNode = syntaxNodeTransform(syntaxNode);
             if (!newSyntaxNode.HasAnnotation(bookmark))
             {
                 newSyntaxNode = syntaxNode.CopyAnnotationsTo(newSyntaxNode);
@@ -293,7 +290,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             where T : SyntaxNode
         {
             var bookmark = new SyntaxAnnotation(BookmarkAnnotationName);
-            var root = await syntaxNode.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
+            SyntaxNode? root = await syntaxNode.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
             root = root.ReplaceNode(syntaxNode, syntaxNode.WithAdditionalAnnotations(bookmark));
             document = document.WithSyntaxRoot(root);
             root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
@@ -304,12 +301,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static NameSyntax QualifyName(IReadOnlyList<string> qualifiers, SimpleNameSyntax simpleName)
         {
-            if (qualifiers == null)
+            if (qualifiers is null)
             {
                 throw new ArgumentNullException(nameof(qualifiers));
             }
 
-            if (simpleName == null)
+            if (simpleName is null)
             {
                 throw new ArgumentNullException(nameof(simpleName));
             }
@@ -322,7 +319,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             NameSyntax result = SyntaxFactory.IdentifierName(qualifiers[0]);
             for (int i = 1; i < qualifiers.Count; i++)
             {
-                var rightSide = SyntaxFactory.IdentifierName(qualifiers[i]);
+                IdentifierNameSyntax? rightSide = SyntaxFactory.IdentifierName(qualifiers[i]);
                 result = SyntaxFactory.QualifiedName(result, rightSide);
             }
 
@@ -332,14 +329,14 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         private static CSharpSyntaxNode UpdateStatementsForAsyncMethod(CSharpSyntaxNode body, SemanticModel semanticModel, bool hasResultValue, CancellationToken cancellationToken)
         {
             var blockBody = body as BlockSyntax;
-            if (blockBody != null)
+            if (blockBody is object)
             {
                 bool returnTypeChanged = false; // probably not right, but we don't have a failing test yet.
                 return UpdateStatementsForAsyncMethod(blockBody, semanticModel, hasResultValue, returnTypeChanged, cancellationToken);
             }
 
             var expressionBody = body as ExpressionSyntax;
-            if (expressionBody != null)
+            if (expressionBody is object)
             {
                 return SyntaxFactory.AwaitExpression(expressionBody).TrySimplify(expressionBody, semanticModel, cancellationToken);
             }
@@ -349,7 +346,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         private static BlockSyntax UpdateStatementsForAsyncMethod(BlockSyntax body, SemanticModel semanticModel, bool hasResultValue, bool returnTypeChanged, CancellationToken cancellationToken)
         {
-            var fixedUpBlock = body.ReplaceNodes(
+            BlockSyntax? fixedUpBlock = body.ReplaceNodes(
                 body.DescendantNodes().OfType<ReturnStatementSyntax>(),
                 (f, n) =>
                 {
@@ -376,23 +373,23 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         private static ExpressionSyntax TrySimplify(this AwaitExpressionSyntax awaitExpression, ExpressionSyntax originalSyntax, SemanticModel semanticModel, CancellationToken cancellationToken)
         {
-            if (awaitExpression == null)
+            if (awaitExpression is null)
             {
                 throw new ArgumentNullException(nameof(awaitExpression));
             }
 
             // await Task.FromResult(x) => x.
-            if (semanticModel != null)
+            if (semanticModel is object)
             {
                 if (awaitExpression.Expression is InvocationExpressionSyntax awaitedInvocation
                     && awaitedInvocation.Expression is MemberAccessExpressionSyntax awaitedInvocationMemberAccess
                     && awaitedInvocationMemberAccess.Name.Identifier.Text == nameof(Task.FromResult))
                 {
                     // Is the FromResult method on the Task or Task<T> class?
-                    var memberOwnerSymbol = semanticModel.GetSymbolInfo(originalSyntax, cancellationToken).Symbol;
+                    ISymbol? memberOwnerSymbol = semanticModel.GetSymbolInfo(originalSyntax, cancellationToken).Symbol;
                     if (Utils.IsTask(memberOwnerSymbol?.ContainingType))
                     {
-                        var simplified = awaitedInvocation.ArgumentList.Arguments.Single().Expression;
+                        ExpressionSyntax? simplified = awaitedInvocation.ArgumentList.Arguments.Single().Expression;
                         return simplified;
                     }
                 }

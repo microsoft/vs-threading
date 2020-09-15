@@ -1,20 +1,21 @@
 trigger: none
 pr: none
 schedules:
-- cron: "0 3 * * Tue" # Mon @ 8 or 9 PM Mountain Time (depending on DST)
-  displayName: Weekly OptProf run
-  branches:
-    include:
-    - 'v16.*'
-    - master
-  always: true # we must keep data fresh since optimizationdata drops are purged after 30 days
+  - cron: "0 3 * * Tue" # Mon @ 8 or 9 PM Mountain Time (depending on DST)
+    displayName: Weekly OptProf run
+    branches:
+      include:
+      - 'v1*'
+      - master
+    always: true # we must keep data fresh since optimizationdata drops are purged after 30 days
 
-resources:
-  repositories:
-  - repository: scripts
-    type: git
-    name: DeploymentScripts
-    ref: refs/heads/test
+# Avoid errant CI builds: https://developercommunity.visualstudio.com/content/problem/1154409/azure-pipeline-is-triggering-due-to-events-that-ne.html
+#resources:
+#  repositories:
+#  - repository: scripts
+#    type: git
+#    name: DeploymentScripts
+#    ref: refs/heads/test
 
 variables:
 - name: TreatWarningsAsErrors
@@ -31,6 +32,8 @@ variables:
   value: true
 - name: PublicRelease
   value: false # avoid using nice version since we're building a preliminary/unoptimized package
+- name: SignType
+  value: real
 - group: Library.Template
 
 stages:
@@ -41,12 +44,11 @@ stages:
   - template: build.yml
     parameters:
       windowsPool: VSEng-MicroBuildVS2019
-      SignType: real
       ShouldSkipOptimize: true
 - stage: QueueVSBuild
   jobs:
   - job: QueueOptProf
-    pool: VSEng-RMPool
+    pool: VSEng-ReleasePool
     variables:
       InsertPayloadName: vs-threading
       InsertTopicBranch: team/VS-IDE/vs-threading-OptProf-run-$(Build.BuildId)

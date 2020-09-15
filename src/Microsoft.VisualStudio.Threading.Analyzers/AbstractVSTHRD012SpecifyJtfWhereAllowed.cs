@@ -1,4 +1,5 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
@@ -46,7 +47,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         private static IArgumentOperation? GetArgumentForParameter(ImmutableArray<IArgumentOperation> arguments, IParameterSymbol parameter)
         {
-            foreach (var argument in arguments)
+            foreach (IArgumentOperation? argument in arguments)
             {
                 if (Equals(argument.Parameter, parameter))
                 {
@@ -59,14 +60,14 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         private static void AnalyzeCall(OperationAnalysisContext context, Location location, ImmutableArray<IArgumentOperation> argList, IMethodSymbol methodSymbol, IEnumerable<IMethodSymbol> otherOverloads)
         {
-            var firstJtfParameter = methodSymbol.Parameters.FirstOrDefault(IsImportantJtfParameter);
-            if (firstJtfParameter != null)
+            IParameterSymbol? firstJtfParameter = methodSymbol.Parameters.FirstOrDefault(IsImportantJtfParameter);
+            if (firstJtfParameter is object)
             {
                 // Verify that if the JTF/JTC parameter is optional, it is actually specified in the caller's syntax.
                 if (firstJtfParameter.HasExplicitDefaultValue)
                 {
-                    var argument = GetArgumentForParameter(argList, firstJtfParameter);
-                    if (argument == null || argument.IsImplicit)
+                    IArgumentOperation? argument = GetArgumentForParameter(argList, firstJtfParameter);
+                    if (argument is null || argument.IsImplicit)
                     {
                         Diagnostic diagnostic = Diagnostic.Create(
                             Descriptor,
@@ -95,18 +96,18 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         private void AnalyzeInvocation(OperationAnalysisContext context)
         {
             var invocation = (IInvocationOperation)context.Operation;
-            var invokedMethodName = this.LanguageUtils.IsolateMethodName(invocation);
-            var argList = invocation.Arguments;
-            var methodSymbol = invocation.TargetMethod;
+            SyntaxNode? invokedMethodName = this.LanguageUtils.IsolateMethodName(invocation);
+            ImmutableArray<IArgumentOperation> argList = invocation.Arguments;
+            IMethodSymbol? methodSymbol = invocation.TargetMethod;
 
-            var otherOverloads = methodSymbol.ContainingType.GetMembers(methodSymbol.Name).OfType<IMethodSymbol>();
+            IEnumerable<IMethodSymbol>? otherOverloads = methodSymbol.ContainingType.GetMembers(methodSymbol.Name).OfType<IMethodSymbol>();
             AnalyzeCall(context, invokedMethodName.GetLocation(), argList, methodSymbol, otherOverloads);
         }
 
         private void AnalyzerObjectCreation(OperationAnalysisContext context)
         {
             var objectCreation = (IObjectCreationOperation)context.Operation;
-            var methodSymbol = objectCreation.Constructor;
+            IMethodSymbol? methodSymbol = objectCreation.Constructor;
             AnalyzeCall(
                 context,
                 this.LanguageUtils.IsolateMethodName(objectCreation).GetLocation(),

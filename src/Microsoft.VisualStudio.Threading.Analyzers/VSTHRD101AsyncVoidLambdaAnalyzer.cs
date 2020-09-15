@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
@@ -73,8 +70,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         private void AnalyzeOperation(OperationAnalysisContext context)
         {
             var operation = (IAnonymousFunctionOperation)context.Operation;
-            var methodSymbol = operation.Symbol;
-            if (methodSymbol != null && methodSymbol.IsAsync && methodSymbol.ReturnsVoid)
+            IMethodSymbol? methodSymbol = operation.Symbol;
+            if (methodSymbol is object && methodSymbol.IsAsync && methodSymbol.ReturnsVoid)
             {
                 context.ReportDiagnostic(Diagnostic.Create(Descriptor, operation.Syntax.GetLocation()));
             }

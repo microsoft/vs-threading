@@ -1,4 +1,7 @@
-﻿namespace Microsoft.VisualStudio.Threading.Analyzers
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
     using System.Collections.Generic;
@@ -40,8 +43,8 @@
         /// <inheritdoc />
         public override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
-            var diagnostic = context.Diagnostics.FirstOrDefault(d => d.Properties.ContainsKey(VSTHRD103UseAsyncOptionAnalyzer.AsyncMethodKeyName));
-            if (diagnostic != null)
+            Diagnostic? diagnostic = context.Diagnostics.FirstOrDefault(d => d.Properties.ContainsKey(VSTHRD103UseAsyncOptionAnalyzer.AsyncMethodKeyName));
+            if (diagnostic is object)
             {
                 // Check that the method we're replacing the sync blocking call with actually exists.
                 // This is particularly useful when the method is an extension method, since the using directive
@@ -53,8 +56,8 @@
                     asyncMethodName = "GetAwaiter";
                 }
 
-                var semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
-                var syntaxRoot = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
+                SemanticModel? semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
+                SyntaxNode? syntaxRoot = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
                 var blockingIdentifier = syntaxRoot.FindNode(diagnostic.Location.SourceSpan) as IdentifierNameSyntax;
                 var memberAccessExpression = blockingIdentifier?.Parent as MemberAccessExpressionSyntax;
 
@@ -64,8 +67,8 @@
                 if (!asyncAlternativeExists)
                 {
                     // If we fail to recognize the container, assume it exists since the analyzer thought it would.
-                    var container = memberAccessExpression != null ? semanticModel.GetTypeInfo(memberAccessExpression.Expression, context.CancellationToken).ConvertedType : null;
-                    asyncAlternativeExists = container == null || semanticModel.LookupSymbols(diagnostic.Location.SourceSpan.Start, name: asyncMethodName, container: container, includeReducedExtensionMethods: true).Any();
+                    ITypeSymbol? container = memberAccessExpression is object ? semanticModel.GetTypeInfo(memberAccessExpression.Expression, context.CancellationToken).ConvertedType : null;
+                    asyncAlternativeExists = container is null || semanticModel.LookupSymbols(diagnostic.Location.SourceSpan.Start, name: asyncMethodName, container: container, includeReducedExtensionMethods: true).Any();
                 }
 
                 if (asyncAlternativeExists)
@@ -93,7 +96,7 @@
             {
                 get
                 {
-                    return this.AlternativeAsyncMethod != string.Empty
+                    return !string.IsNullOrEmpty(this.AlternativeAsyncMethod)
                         ? string.Format(CultureInfo.CurrentCulture, Strings.AwaitXInstead, this.AlternativeAsyncMethod)
                         : Strings.UseAwaitInstead;
                 }
@@ -108,16 +111,16 @@
 
             protected override async Task<Solution> GetChangedSolutionAsync(CancellationToken cancellationToken)
             {
-                var document = this.document;
-                var root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+                Document? document = this.document;
+                SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
 
                 // Find the synchronously blocking call member,
                 // and bookmark it so we can find it again after some mutations have taken place.
                 var syncAccessBookmark = new SyntaxAnnotation();
                 SimpleNameSyntax syncMethodName = (SimpleNameSyntax)root.FindNode(this.diagnostic.Location.SourceSpan);
-                if (syncMethodName == null)
+                if (syncMethodName is null)
                 {
-                    var syncMemberAccess = root.FindNode(this.diagnostic.Location.SourceSpan).FirstAncestorOrSelf<MemberAccessExpressionSyntax>();
+                    MemberAccessExpressionSyntax? syncMemberAccess = root.FindNode(this.diagnostic.Location.SourceSpan).FirstAncestorOrSelf<MemberAccessExpressionSyntax>();
                     syncMethodName = syncMemberAccess.Name;
                 }
 
@@ -132,15 +135,15 @@
                 // and that renders the default semantic model broken (even though we've already updated the document's SyntaxRoot?!).
                 // So after acquiring the semantic model, update it with the new method body.
                 SemanticModel? semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
-                var originalAnonymousMethodContainerIfApplicable = syncMethodName.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>();
-                var originalMethodDeclaration = syncMethodName.FirstAncestorOrSelf<MethodDeclarationSyntax>();
+                AnonymousFunctionExpressionSyntax? originalAnonymousMethodContainerIfApplicable = syncMethodName.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>();
+                MethodDeclarationSyntax? originalMethodDeclaration = syncMethodName.FirstAncestorOrSelf<MethodDeclarationSyntax>();
 
-                var enclosingSymbol = semanticModel.GetEnclosingSymbol(this.diagnostic.Location.SourceSpan.Start, cancellationToken);
+                ISymbol? enclosingSymbol = semanticModel.GetEnclosingSymbol(this.diagnostic.Location.SourceSpan.Start, cancellationToken);
                 var hasReturnValue = ((enclosingSymbol as IMethodSymbol)?.ReturnType as INamedTypeSymbol)?.IsGenericType ?? false;
 
                 // Ensure that the method or anonymous delegate is using the async keyword.
                 MethodDeclarationSyntax updatedMethod;
-                if (originalAnonymousMethodContainerIfApplicable != null)
+                if (originalAnonymousMethodContainerIfApplicable is object)
                 {
                     updatedMethod = originalMethodDeclaration.ReplaceNode(
                         originalAnonymousMethodContainerIfApplicable,
@@ -158,14 +161,14 @@
                     syncMethodName = (SimpleNameSyntax)updatedMethod.GetAnnotatedNodes(syncAccessBookmark).Single();
                 }
 
-                var syncExpression = GetSynchronousExpression(syncMethodName);
+                ExpressionSyntax? syncExpression = GetSynchronousExpression(syncMethodName);
 
                 ExpressionSyntax awaitExpression;
-                if (this.AlternativeAsyncMethod != string.Empty)
+                if (!string.IsNullOrEmpty(this.AlternativeAsyncMethod))
                 {
                     // Replace the member being called and await the invocation expression.
                     // While doing so, move leading trivia to the surrounding await expression.
-                    var asyncMethodName = syncMethodName.WithIdentifier(SyntaxFactory.Identifier(this.diagnostic.Properties[VSTHRD103UseAsyncOptionAnalyzer.AsyncMethodKeyName]));
+                    SimpleNameSyntax? asyncMethodName = syncMethodName.WithIdentifier(SyntaxFactory.Identifier(this.diagnostic.Properties[VSTHRD103UseAsyncOptionAnalyzer.AsyncMethodKeyName]));
                     awaitExpression = SyntaxFactory.AwaitExpression(
                         syncExpression.ReplaceNode(syncMethodName, asyncMethodName).WithoutLeadingTrivia())
                         .WithLeadingTrivia(syncExpression.GetLeadingTrivia());
@@ -173,8 +176,8 @@
                 else
                 {
                     // Remove the member being accessed that causes a synchronous block and simply await the object.
-                    var syncMemberAccess = syncMethodName.FirstAncestorOrSelf<MemberAccessExpressionSyntax>();
-                    var syncMemberStrippedExpression = syncMemberAccess.Expression;
+                    MemberAccessExpressionSyntax? syncMemberAccess = syncMethodName.FirstAncestorOrSelf<MemberAccessExpressionSyntax>();
+                    ExpressionSyntax? syncMemberStrippedExpression = syncMemberAccess.Expression;
 
                     // Special case a common pattern of calling task.GetAwaiter().GetResult() and remove both method calls.
                     var expressionMethodCall = (syncMemberStrippedExpression as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax;
@@ -196,8 +199,8 @@
                 updatedMethod = updatedMethod
                     .ReplaceNode(syncExpression, awaitExpression);
 
-                var newRoot = root.ReplaceNode(originalMethodDeclaration, updatedMethod);
-                var newDocument = document.WithSyntaxRoot(newRoot);
+                SyntaxNode? newRoot = root.ReplaceNode(originalMethodDeclaration, updatedMethod);
+                Document? newDocument = document.WithSyntaxRoot(newRoot);
                 return newDocument.Project.Solution;
             }
 

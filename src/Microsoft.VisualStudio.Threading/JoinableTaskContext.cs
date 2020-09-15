@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading
 {
@@ -161,13 +158,13 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                if (this.nonJoinableFactory == null)
+                if (this.nonJoinableFactory is null)
                 {
                     using (this.NoMessagePumpSynchronizationContext.Apply())
                     {
                         lock (this.SyncContextLock)
                         {
-                            if (this.nonJoinableFactory == null)
+                            if (this.nonJoinableFactory is null)
                             {
                                 this.nonJoinableFactory = this.CreateDefaultFactory();
                             }
@@ -200,7 +197,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </remarks>
         public bool IsWithinJoinableTask
         {
-            get { return this.AmbientTask != null; }
+            get { return this.AmbientTask is object; }
         }
 
         /// <summary>
@@ -294,8 +291,8 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         public bool IsMainThreadBlocked()
         {
-            var ambientTask = this.AmbientTask;
-            if (ambientTask != null)
+            JoinableTask? ambientTask = this.AmbientTask;
+            if (ambientTask is object)
             {
                 if (JoinableTaskDependencyGraph.HasMainThreadSynchronousTaskWaiting(ambientTask))
                 {
@@ -317,7 +314,7 @@ namespace Microsoft.VisualStudio.Threading
                             {
                                 // our read lock doesn't cover this collection
                                 var allJoinedJobs = new HashSet<JoinableTask>();
-                                foreach (var initializingTask in this.initializingSynchronouslyMainThreadTasks)
+                                foreach (JoinableTask? initializingTask in this.initializingSynchronouslyMainThreadTasks)
                                 {
                                     if (!JoinableTaskDependencyGraph.HasMainThreadSynchronousTaskWaiting(initializingTask))
                                     {
@@ -367,98 +364,6 @@ namespace Microsoft.VisualStudio.Threading
         {
             this.Dispose(true);
             GC.SuppressFinalize(this);
-        }
-
-        /// <summary>
-        /// Disposes managed and unmanaged resources held by this instance.
-        /// </summary>
-        /// <param name="disposing"><c>true</c> if <see cref="Dispose()"/> was called; <c>false</c> if the object is being finalized.</param>
-        protected virtual void Dispose(bool disposing)
-        {
-        }
-
-        /// <summary>
-        /// Invoked when a hang is suspected to have occurred involving the main thread.
-        /// </summary>
-        /// <param name="hangDuration">The duration of the current hang.</param>
-        /// <param name="notificationCount">The number of times this hang has been reported, including this one.</param>
-        /// <param name="hangId">A random GUID that uniquely identifies this particular hang.</param>
-        /// <remarks>
-        /// A single hang occurrence may invoke this method multiple times, with increasing
-        /// values in the <paramref name="hangDuration"/> parameter.
-        /// </remarks>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        protected internal virtual void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId)
-        {
-            List<JoinableTaskContextNode> listeners;
-            using (this.NoMessagePumpSynchronizationContext.Apply())
-            {
-                lock (this.hangNotifications)
-                {
-                    listeners = this.hangNotifications.ToList();
-                }
-            }
-
-            var blockingTask = JoinableTask.TaskCompletingOnThisThread;
-            var hangDetails = new HangDetails(
-                hangDuration,
-                notificationCount,
-                hangId,
-                blockingTask?.EntryMethodInfo);
-            foreach (var listener in listeners)
-            {
-                try
-                {
-                    listener.OnHangDetected(hangDetails);
-                }
-                catch (Exception ex)
-                {
-                    // Report it in CHK, but don't throw. In a hang situation, we don't want the product
-                    // to fail for another reason, thus hiding the hang issue.
-                    Report.Fail("Exception thrown from OnHangDetected listener. {0}", ex);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Invoked when an earlier hang report is false alarm.
-        /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        protected internal virtual void OnFalseHangDetected(TimeSpan hangDuration, Guid hangId)
-        {
-            List<JoinableTaskContextNode> listeners;
-            using (this.NoMessagePumpSynchronizationContext.Apply())
-            {
-                lock (this.hangNotifications)
-                {
-                    listeners = this.hangNotifications.ToList();
-                }
-            }
-
-            foreach (var listener in listeners)
-            {
-                try
-                {
-                    listener.OnFalseHangDetected(hangDuration, hangId);
-                }
-                catch (Exception ex)
-                {
-                    // Report it in CHK, but don't throw. In a hang situation, we don't want the product
-                    // to fail for another reason, thus hiding the hang issue.
-                    Report.Fail("Exception thrown from OnHangDetected listener. {0}", ex);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Creates a factory without a <see cref="JoinableTaskCollection"/>.
-        /// </summary>
-        /// <remarks>
-        /// Used for initializing the <see cref="Factory"/> property.
-        /// </remarks>
-        protected internal virtual JoinableTaskFactory CreateDefaultFactory()
-        {
-            return new JoinableTaskFactory(this);
         }
 
         /// <summary>
@@ -546,6 +451,98 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Invoked when a hang is suspected to have occurred involving the main thread.
+        /// </summary>
+        /// <param name="hangDuration">The duration of the current hang.</param>
+        /// <param name="notificationCount">The number of times this hang has been reported, including this one.</param>
+        /// <param name="hangId">A random GUID that uniquely identifies this particular hang.</param>
+        /// <remarks>
+        /// A single hang occurrence may invoke this method multiple times, with increasing
+        /// values in the <paramref name="hangDuration"/> parameter.
+        /// </remarks>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+        protected internal virtual void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId)
+        {
+            List<JoinableTaskContextNode> listeners;
+            using (this.NoMessagePumpSynchronizationContext.Apply())
+            {
+                lock (this.hangNotifications)
+                {
+                    listeners = this.hangNotifications.ToList();
+                }
+            }
+
+            JoinableTask? blockingTask = JoinableTask.TaskCompletingOnThisThread;
+            var hangDetails = new HangDetails(
+                hangDuration,
+                notificationCount,
+                hangId,
+                blockingTask?.EntryMethodInfo);
+            foreach (JoinableTaskContextNode? listener in listeners)
+            {
+                try
+                {
+                    listener.OnHangDetected(hangDetails);
+                }
+                catch (Exception ex)
+                {
+                    // Report it in CHK, but don't throw. In a hang situation, we don't want the product
+                    // to fail for another reason, thus hiding the hang issue.
+                    Report.Fail("Exception thrown from OnHangDetected listener. {0}", ex);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Invoked when an earlier hang report is false alarm.
+        /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
+        protected internal virtual void OnFalseHangDetected(TimeSpan hangDuration, Guid hangId)
+        {
+            List<JoinableTaskContextNode> listeners;
+            using (this.NoMessagePumpSynchronizationContext.Apply())
+            {
+                lock (this.hangNotifications)
+                {
+                    listeners = this.hangNotifications.ToList();
+                }
+            }
+
+            foreach (JoinableTaskContextNode? listener in listeners)
+            {
+                try
+                {
+                    listener.OnFalseHangDetected(hangDuration, hangId);
+                }
+                catch (Exception ex)
+                {
+                    // Report it in CHK, but don't throw. In a hang situation, we don't want the product
+                    // to fail for another reason, thus hiding the hang issue.
+                    Report.Fail("Exception thrown from OnHangDetected listener. {0}", ex);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Creates a factory without a <see cref="JoinableTaskCollection"/>.
+        /// </summary>
+        /// <remarks>
+        /// Used for initializing the <see cref="Factory"/> property.
+        /// </remarks>
+        protected internal virtual JoinableTaskFactory CreateDefaultFactory()
+        {
+            return new JoinableTaskFactory(this);
+        }
+
+        /// <summary>
+        /// Disposes managed and unmanaged resources held by this instance.
+        /// </summary>
+        /// <param name="disposing"><c>true</c> if <see cref="Dispose()"/> was called; <c>false</c> if the object is being finalized.</param>
+        protected virtual void Dispose(bool disposing)
+        {
+        }
+
+        /// <summary>
         /// A structure that clears CallContext and SynchronizationContext async/thread statics and
         /// restores those values when this structure is disposed.
         /// </summary>
@@ -588,7 +585,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             public void Dispose()
             {
-                if (this.pump != null)
+                if (this.pump is object)
                 {
                     this.pump.AmbientTask = this.oldJoinable;
                 }
@@ -598,51 +595,13 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// A value whose disposal cancels hang registration.
-        /// </summary>
-        private class HangNotificationRegistration : IDisposable
-        {
-            /// <summary>
-            /// The node to receive notifications. May be <c>null</c> if <see cref="Dispose"/> has already been called.
-            /// </summary>
-            private JoinableTaskContextNode? node;
-
-            /// <summary>
-            /// Initializes a new instance of the <see cref="HangNotificationRegistration"/> class.
-            /// </summary>
-            internal HangNotificationRegistration(JoinableTaskContextNode node)
-            {
-                Requires.NotNull(node, nameof(node));
-                this.node = node;
-            }
-
-            /// <summary>
-            /// Removes the node from hang notifications.
-            /// </summary>
-            public void Dispose()
-            {
-                var node = this.node;
-                if (node != null)
-                {
-                    using (node.Context.NoMessagePumpSynchronizationContext.Apply())
-                    {
-                        lock (node.Context.hangNotifications)
-                        {
-                            Assumes.True(node.Context.hangNotifications.Remove(node));
-                        }
-                    }
-
-                    this.node = null;
-                }
-            }
-        }
-
-        /// <summary>
         /// A class to encapsulate the details of a possible hang.
         /// An instance of this <see cref="HangDetails"/> class will be passed to the
         /// <see cref="JoinableTaskContextNode"/> instances who registered the hang notifications.
         /// </summary>
+#pragma warning disable CA1034 // Nested types should not be visible
         public class HangDetails
+#pragma warning restore CA1034 // Nested types should not be visible
         {
             /// <summary>Initializes a new instance of the <see cref="HangDetails"/> class.</summary>
             /// <param name="hangDuration">The duration of the current hang.</param>
@@ -686,6 +645,46 @@ namespace Microsoft.VisualStudio.Threading
             /// This value may be used to assign the hangs to different buckets based on this method info.
             /// </remarks>
             public MethodInfo? EntryMethod { get; private set; }
+        }
+
+        /// <summary>
+        /// A value whose disposal cancels hang registration.
+        /// </summary>
+        private class HangNotificationRegistration : IDisposable
+        {
+            /// <summary>
+            /// The node to receive notifications. May be <c>null</c> if <see cref="Dispose"/> has already been called.
+            /// </summary>
+            private JoinableTaskContextNode? node;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="HangNotificationRegistration"/> class.
+            /// </summary>
+            internal HangNotificationRegistration(JoinableTaskContextNode node)
+            {
+                Requires.NotNull(node, nameof(node));
+                this.node = node;
+            }
+
+            /// <summary>
+            /// Removes the node from hang notifications.
+            /// </summary>
+            public void Dispose()
+            {
+                JoinableTaskContextNode? node = this.node;
+                if (node is object)
+                {
+                    using (node.Context.NoMessagePumpSynchronizationContext.Apply())
+                    {
+                        lock (node.Context.hangNotifications)
+                        {
+                            Assumes.True(node.Context.hangNotifications.Remove(node));
+                        }
+                    }
+
+                    this.node = null;
+                }
+            }
         }
     }
 }

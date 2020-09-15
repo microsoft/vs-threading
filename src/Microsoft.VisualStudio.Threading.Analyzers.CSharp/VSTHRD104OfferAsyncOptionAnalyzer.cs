@@ -1,4 +1,7 @@
-﻿namespace Microsoft.VisualStudio.Threading.Analyzers
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
     using System.Collections.Generic;
@@ -64,7 +67,7 @@
 
             private void InspectMemberAccess(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax? memberAccessSyntax, IEnumerable<CommonInterest.SyncBlockingMethod> problematicMethods)
             {
-                if (memberAccessSyntax == null)
+                if (memberAccessSyntax is null)
                 {
                     return;
                 }
@@ -75,7 +78,7 @@
                     return;
                 }
 
-                if (context.Node.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>() != null)
+                if (context.Node.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>() is object)
                 {
                     // We do not analyze JTF.Run inside anonymous functions because
                     // they are so often used as callbacks where the signature is constrained.
@@ -88,14 +91,14 @@
                     return;
                 }
 
-                var invokedMember = context.SemanticModel.GetSymbolInfo(memberAccessSyntax, context.CancellationToken).Symbol;
-                if (invokedMember != null)
+                ISymbol? invokedMember = context.SemanticModel.GetSymbolInfo(memberAccessSyntax, context.CancellationToken).Symbol;
+                if (invokedMember is object)
                 {
-                    foreach (var item in problematicMethods)
+                    foreach (CommonInterest.SyncBlockingMethod item in problematicMethods)
                     {
                         if (item.Method.IsMatch(invokedMember))
                         {
-                            var location = memberAccessSyntax.Name.GetLocation();
+                            Location? location = memberAccessSyntax.Name.GetLocation();
                             context.ReportDiagnostic(Diagnostic.Create(Descriptor, location));
                             this.diagnosticReported = true;
                         }

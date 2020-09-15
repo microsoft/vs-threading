@@ -1,3 +1,6 @@
+// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
@@ -92,24 +95,24 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 string typeName = typeNameElements[typeNameElements.Length - 1];
                 var containingNamespace = typeNameElements.Take(typeNameElements.Length - 1).ToImmutableArray();
                 var type = new QualifiedType(containingNamespace, typeName);
-                var member = match.Groups["memberName"].Success ? new QualifiedMember(type, match.Groups["memberName"].Value) : default(QualifiedMember);
+                QualifiedMember member = match.Groups["memberName"].Success ? new QualifiedMember(type, match.Groups["memberName"].Value) : default(QualifiedMember);
                 yield return new TypeMatchSpec(type, member, inverted);
             }
         }
 
         internal static IEnumerable<string> ReadAdditionalFiles(AnalyzerOptions analyzerOptions, Regex fileNamePattern, CancellationToken cancellationToken)
         {
-            if (analyzerOptions == null)
+            if (analyzerOptions is null)
             {
                 throw new ArgumentNullException(nameof(analyzerOptions));
             }
 
-            if (fileNamePattern == null)
+            if (fileNamePattern is null)
             {
                 throw new ArgumentNullException(nameof(fileNamePattern));
             }
 
-            var docs = from file in analyzerOptions.AdditionalFiles.OrderBy(x => x.Path, StringComparer.Ordinal)
+            IEnumerable<SourceText>? docs = from file in analyzerOptions.AdditionalFiles.OrderBy(x => x.Path, StringComparer.Ordinal)
                         let fileName = Path.GetFileName(file.Path)
                         where fileNamePattern.IsMatch(fileName)
                         let text = file.GetText(cancellationToken)
@@ -119,7 +122,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static bool Contains(this ImmutableArray<QualifiedMember> methods, ISymbol symbol)
         {
-            foreach (var method in methods)
+            foreach (QualifiedMember method in methods)
             {
                 if (method.IsMatch(symbol))
                 {
@@ -133,7 +136,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         internal static bool Contains(this ImmutableArray<TypeMatchSpec> types, [NotNullWhen(true)] ITypeSymbol? typeSymbol, ISymbol? memberSymbol)
         {
             TypeMatchSpec matching = default(TypeMatchSpec);
-            foreach (var type in types)
+            foreach (TypeMatchSpec type in types)
             {
                 if (type.IsMatch(typeSymbol, memberSymbol))
                 {
@@ -154,7 +157,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static IEnumerable<string> ReadLinesFromAdditionalFile(SourceText text)
         {
-            if (text == null)
+            if (text is null)
             {
                 throw new ArgumentNullException(nameof(text));
             }
@@ -163,7 +166,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             {
                 string lineText = line.ToString();
 
-                if (!string.IsNullOrWhiteSpace(lineText) && !lineText.StartsWith("#"))
+                if (!string.IsNullOrWhiteSpace(lineText) && !lineText.StartsWith("#", StringComparison.OrdinalIgnoreCase))
                 {
                     yield return lineText;
                 }
@@ -193,7 +196,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 this.Type = type;
                 this.Member = member;
 
-                if (this.IsWildcard && this.Member.Name != null)
+                if (this.IsWildcard && this.Member.Name is object)
                 {
                     throw new ArgumentException("Wildcard use is not allowed when member of type is specified.");
                 }
@@ -217,7 +220,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             /// <summary>
             /// Gets a value indicating whether a member match is reuqired.
             /// </summary>
-            internal bool IsMember => this.Member.Name != null;
+            internal bool IsMember => this.Member.Name is object;
 
             /// <summary>
             /// Gets a value indicating whether the typename is a wildcard.
@@ -227,14 +230,14 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             /// <summary>
             /// Gets a value indicating whether this is an uninitialized (default) instance.
             /// </summary>
-            internal bool IsEmpty => this.Type.Namespace == null;
+            internal bool IsEmpty => this.Type.Namespace is null;
 
             /// <summary>
             /// Tests whether a given symbol matches the description of a type (independent of its <see cref="InvertedLogic"/> property).
             /// </summary>
             internal bool IsMatch([NotNullWhen(true)] ITypeSymbol? typeSymbol, ISymbol? memberSymbol)
             {
-                if (typeSymbol == null)
+                if (typeSymbol is null)
                 {
                     return false;
                 }

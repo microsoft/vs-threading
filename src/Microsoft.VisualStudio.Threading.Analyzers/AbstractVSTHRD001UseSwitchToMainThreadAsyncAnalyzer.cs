@@ -1,4 +1,5 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
@@ -51,10 +52,10 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             internal void AnalyzeInvocation(OperationAnalysisContext context)
             {
                 var invocation = (IInvocationOperation)context.Operation;
-                var invokeMethod = invocation.TargetMethod;
-                if (invokeMethod != null)
+                IMethodSymbol? invokeMethod = invocation.TargetMethod;
+                if (invokeMethod is object)
                 {
-                    foreach (var legacyMethod in this.legacyThreadSwitchingMembers)
+                    foreach (CommonInterest.QualifiedMember legacyMethod in this.legacyThreadSwitchingMembers)
                     {
                         context.CancellationToken.ThrowIfCancellationRequested();
 

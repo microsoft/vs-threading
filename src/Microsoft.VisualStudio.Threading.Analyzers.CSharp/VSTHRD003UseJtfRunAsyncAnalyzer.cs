@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
@@ -52,11 +49,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             defaultSeverity: DiagnosticSeverity.Warning,
             isEnabledByDefault: true);
 
-        private static readonly IReadOnlyCollection<Type> DoNotPassTypesInSearchForAnonFuncInvocation = new[]
-        {
-            typeof(MethodDeclarationSyntax),
-        };
-
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         {
@@ -84,7 +76,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             var arrowExpressionClause = (ArrowExpressionClauseSyntax)context.Node;
             if (arrowExpressionClause.Parent is MethodDeclarationSyntax)
             {
-                var diagnostic = this.AnalyzeAwaitedOrReturnedExpression(arrowExpressionClause.Expression, context, context.CancellationToken);
+                Diagnostic? diagnostic = this.AnalyzeAwaitedOrReturnedExpression(arrowExpressionClause.Expression, context, context.CancellationToken);
                 if (diagnostic is object)
                 {
                     context.ReportDiagnostic(diagnostic);
@@ -97,8 +89,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             var lambdaExpression = (LambdaExpressionSyntax)context.Node;
             if (lambdaExpression.Body is ExpressionSyntax expression)
             {
-                var diagnostic = this.AnalyzeAwaitedOrReturnedExpression(expression, context, context.CancellationToken);
-                if (diagnostic != null)
+                Diagnostic? diagnostic = this.AnalyzeAwaitedOrReturnedExpression(expression, context, context.CancellationToken);
+                if (diagnostic is object)
                 {
                     context.ReportDiagnostic(diagnostic);
                 }
@@ -108,8 +100,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         private void AnalyzeReturnStatement(SyntaxNodeAnalysisContext context)
         {
             var returnStatement = (ReturnStatementSyntax)context.Node;
-            var diagnostic = this.AnalyzeAwaitedOrReturnedExpression(returnStatement.Expression, context, context.CancellationToken);
-            if (diagnostic != null)
+            Diagnostic? diagnostic = this.AnalyzeAwaitedOrReturnedExpression(returnStatement.Expression, context, context.CancellationToken);
+            if (diagnostic is object)
             {
                 context.ReportDiagnostic(diagnostic);
             }
@@ -118,8 +110,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         private void AnalyzeAwaitExpression(SyntaxNodeAnalysisContext context)
         {
             AwaitExpressionSyntax awaitExpressionSyntax = (AwaitExpressionSyntax)context.Node;
-            var diagnostic = this.AnalyzeAwaitedOrReturnedExpression(awaitExpressionSyntax.Expression, context, context.CancellationToken);
-            if (diagnostic != null)
+            Diagnostic? diagnostic = this.AnalyzeAwaitedOrReturnedExpression(awaitExpressionSyntax.Expression, context, context.CancellationToken);
+            if (diagnostic is object)
             {
                 context.ReportDiagnostic(diagnostic);
             }
@@ -127,14 +119,14 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         private Diagnostic? AnalyzeAwaitedOrReturnedExpression(ExpressionSyntax expressionSyntax, SyntaxNodeAnalysisContext context, CancellationToken cancellationToken)
         {
-            if (expressionSyntax == null)
+            if (expressionSyntax is null)
             {
                 return null;
             }
 
             // Get the semantic model for the SyntaxTree for the given ExpressionSyntax, since it *may* not be in the same syntax tree
             // as the original context.Node.
-            if (!context.TryGetNewOrExistingSemanticModel(expressionSyntax.SyntaxTree, out var semanticModel))
+            if (!context.TryGetNewOrExistingSemanticModel(expressionSyntax.SyntaxTree, out SemanticModel? semanticModel))
             {
                 return null;
             }
@@ -174,12 +166,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                             return null;
                         }
 
-                        foreach (var syntaxReference in fieldSymbol.DeclaringSyntaxReferences)
+                        foreach (SyntaxReference? syntaxReference in fieldSymbol.DeclaringSyntaxReferences)
                         {
                             if (syntaxReference.GetSyntax(cancellationToken) is VariableDeclaratorSyntax declarationSyntax)
                             {
                                 if (declarationSyntax.Initializer?.Value is InvocationExpressionSyntax invocationSyntax &&
-                                    invocationSyntax.Expression != null)
+                                    invocationSyntax.Expression is object)
                                 {
                                     if (!context.Compilation.ContainsSyntaxTree(invocationSyntax.SyntaxTree))
                                     {
@@ -188,7 +180,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                                     }
 
                                     // Whitelist Task.From*() methods.
-                                    if (!context.TryGetNewOrExistingSemanticModel(invocationSyntax.SyntaxTree, out var declarationSemanticModel))
+                                    if (!context.TryGetNewOrExistingSemanticModel(invocationSyntax.SyntaxTree, out SemanticModel? declarationSemanticModel))
                                     {
                                         return null;
                                     }
@@ -203,12 +195,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                                 }
                                 else if (declarationSyntax.Initializer?.Value is MemberAccessExpressionSyntax memberAccessSyntax && memberAccessSyntax.Expression is object)
                                 {
-                                    if (!context.TryGetNewOrExistingSemanticModel(memberAccessSyntax.SyntaxTree, out var declarationSemanticModel))
+                                    if (!context.TryGetNewOrExistingSemanticModel(memberAccessSyntax.SyntaxTree, out SemanticModel? declarationSemanticModel))
                                     {
                                         return null;
                                     }
 
-                                    var definition = declarationSemanticModel.GetSymbolInfo(memberAccessSyntax, cancellationToken).Symbol;
+                                    ISymbol? definition = declarationSemanticModel.GetSymbolInfo(memberAccessSyntax, cancellationToken).Symbol;
                                     if (definition is IFieldSymbol field)
                                     {
                                         // Whitelist the TplExtensions.CompletedTask and related fields.
@@ -237,7 +229,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     if (Utils.IsTask(methodSymbol.ReturnType) && expressionSyntax is InvocationExpressionSyntax invocationExpressionSyntax)
                     {
                         // Consider all arguments
-                        var expressionsToConsider = invocationExpressionSyntax.ArgumentList.Arguments.Select(a => a.Expression);
+                        IEnumerable<ExpressionSyntax>? expressionsToConsider = invocationExpressionSyntax.ArgumentList.Arguments.Select(a => a.Expression);
 
                         // Consider the implicit first argument when this method is invoked as an extension method.
                         if (methodSymbol.IsExtensionMethod && invocationExpressionSyntax.Expression is MemberAccessExpressionSyntax invokedMember)
@@ -248,7 +240,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                             }
                         }
 
-                        return expressionsToConsider.Select(e => this.AnalyzeAwaitedOrReturnedExpression(e, context, cancellationToken)).FirstOrDefault(r => r != null);
+                        return expressionsToConsider.Select(e => this.AnalyzeAwaitedOrReturnedExpression(e, context, cancellationToken)).FirstOrDefault(r => r is object);
                     }
 
                     return null;
@@ -262,7 +254,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
 
             // Report warning if the task was not initialized within the current delegate or lambda expression
-            var containingFunc = CSharpUtils.GetContainingFunction(expressionSyntax);
+            CSharpUtils.ContainingFunctionData containingFunc = CSharpUtils.GetContainingFunction(expressionSyntax);
             if (containingFunc.BlockOrExpression is BlockSyntax delegateBlock)
             {
                 if (dataflowAnalysisCompatibleVariable)

@@ -1,4 +1,7 @@
-﻿namespace Microsoft.VisualStudio.Threading.Analyzers
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
     using System.Collections.Generic;
@@ -30,17 +33,17 @@
 
         public override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
-            foreach (var diagnostic in context.Diagnostics)
+            foreach (Diagnostic? diagnostic in context.Diagnostics)
             {
-                var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
+                SyntaxNode? root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
                 ExpressionSyntax? syntaxNode = root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: true) as ExpressionSyntax;
                 if (syntaxNode is null)
                 {
                     continue;
                 }
 
-                var container = CSharpUtils.GetContainingFunction(syntaxNode);
-                if (container.BlockOrExpression == null)
+                CSharpUtils.ContainingFunctionData container = CSharpUtils.GetContainingFunction(syntaxNode);
+                if (container.BlockOrExpression is null)
                 {
                     return;
                 }
@@ -54,25 +57,25 @@
                     }
                 }
 
-                var semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
-                var enclosingSymbol = semanticModel.GetEnclosingSymbol(diagnostic.Location.SourceSpan.Start, context.CancellationToken);
-                if (enclosingSymbol == null)
+                SemanticModel? semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
+                ISymbol? enclosingSymbol = semanticModel.GetEnclosingSymbol(diagnostic.Location.SourceSpan.Start, context.CancellationToken);
+                if (enclosingSymbol is null)
                 {
                     return;
                 }
 
                 var hasReturnValue = ((enclosingSymbol as IMethodSymbol)?.ReturnType as INamedTypeSymbol)?.IsGenericType ?? false;
-                var options = await CommonFixes.ReadMethodsAsync(context, CommonInterest.FileNamePatternForMethodsThatSwitchToMainThread, context.CancellationToken);
+                ImmutableArray<CommonInterest.QualifiedMember> options = await CommonFixes.ReadMethodsAsync(context, CommonInterest.FileNamePatternForMethodsThatSwitchToMainThread, context.CancellationToken);
                 int positionForLookup = diagnostic.Location.SourceSpan.Start;
                 ISymbol cancellationTokenSymbol = Utils.FindCancellationToken(semanticModel, positionForLookup, context.CancellationToken).FirstOrDefault();
-                foreach (var option in options)
+                foreach (CommonInterest.QualifiedMember option in options)
                 {
                     // We're looking for methods that either require no parameters,
                     // or (if we have one to give) that have just one parameter that is a CancellationToken.
-                    var proposedMethod = Utils.FindMethodGroup(semanticModel, option)
+                    IMethodSymbol? proposedMethod = Utils.FindMethodGroup(semanticModel, option)
                         .FirstOrDefault(m => !m.Parameters.Any(p => !p.HasExplicitDefaultValue) ||
-                            (cancellationTokenSymbol != null && m.Parameters.Length == 1 && Utils.IsCancellationTokenParameter(m.Parameters[0])));
-                    if (proposedMethod == null)
+                            (cancellationTokenSymbol is object && m.Parameters.Length == 1 && Utils.IsCancellationTokenParameter(m.Parameters[0])));
+                    if (proposedMethod is null)
                     {
                         // We can't find it, so don't offer to use it.
                         continue;
@@ -84,7 +87,7 @@
                     }
                     else
                     {
-                        foreach (var candidate in Utils.FindInstanceOf(proposedMethod.ContainingType, semanticModel, positionForLookup, context.CancellationToken))
+                        foreach (Tuple<bool, ISymbol>? candidate in Utils.FindInstanceOf(proposedMethod.ContainingType, semanticModel, positionForLookup, context.CancellationToken))
                         {
                             if (candidate.Item1)
                             {
@@ -105,17 +108,17 @@
 
                 async Task<Solution> Fix(string fullyQualifiedMethod, IMethodSymbol methodSymbol, bool hasReturnValue, CancellationToken cancellationToken)
                 {
-                    var assertionStatementToRemove = syntaxNode!.FirstAncestorOrSelf<StatementSyntax>();
+                    StatementSyntax? assertionStatementToRemove = syntaxNode!.FirstAncestorOrSelf<StatementSyntax>();
 
                     int typeAndMethodDelimiterIndex = fullyQualifiedMethod.LastIndexOf('.');
                     IdentifierNameSyntax methodName = SyntaxFactory.IdentifierName(fullyQualifiedMethod.Substring(typeAndMethodDelimiterIndex + 1));
                     ExpressionSyntax invokedMethod = CSharpUtils.MemberAccess(fullyQualifiedMethod.Substring(0, typeAndMethodDelimiterIndex).Split('.'), methodName)
                         .WithAdditionalAnnotations(Simplifier.Annotation);
-                    var invocationExpression = SyntaxFactory.InvocationExpression(invokedMethod);
-                    var cancellationTokenParameter = methodSymbol.Parameters.FirstOrDefault(Utils.IsCancellationTokenParameter);
-                    if (cancellationTokenParameter != null && cancellationTokenSymbol != null)
+                    InvocationExpressionSyntax? invocationExpression = SyntaxFactory.InvocationExpression(invokedMethod);
+                    IParameterSymbol? cancellationTokenParameter = methodSymbol.Parameters.FirstOrDefault(Utils.IsCancellationTokenParameter);
+                    if (cancellationTokenParameter is object && cancellationTokenSymbol is object)
                     {
-                        var arg = SyntaxFactory.Argument(SyntaxFactory.IdentifierName(cancellationTokenSymbol.Name));
+                        ArgumentSyntax? arg = SyntaxFactory.Argument(SyntaxFactory.IdentifierName(cancellationTokenSymbol.Name));
                         if (methodSymbol.Parameters.IndexOf(cancellationTokenParameter) > 0)
                         {
                             arg = arg.WithNameColon(SyntaxFactory.NameColon(SyntaxFactory.IdentifierName(cancellationTokenParameter.Name)));
@@ -125,14 +128,14 @@
                     }
 
                     ExpressionSyntax awaitExpression = SyntaxFactory.AwaitExpression(invocationExpression);
-                    var addedStatement = SyntaxFactory.ExpressionStatement(awaitExpression)
+                    ExpressionStatementSyntax? addedStatement = SyntaxFactory.ExpressionStatement(awaitExpression)
                         .WithAdditionalAnnotations(Simplifier.Annotation, Formatter.Annotation);
 
                     var methodAnnotation = new SyntaxAnnotation();
                     CSharpSyntaxNode methodSyntax = container.Function.ReplaceNode(assertionStatementToRemove, addedStatement)
                         .WithAdditionalAnnotations(methodAnnotation);
                     Document newDocument = context.Document.WithSyntaxRoot(root.ReplaceNode(container.Function, methodSyntax));
-                    var newSyntaxRoot = await newDocument.GetSyntaxRootAsync(cancellationToken);
+                    SyntaxNode? newSyntaxRoot = await newDocument.GetSyntaxRootAsync(cancellationToken);
                     methodSyntax = (CSharpSyntaxNode)newSyntaxRoot.GetAnnotatedNodes(methodAnnotation).Single();
                     if (!container.IsAsync)
                     {

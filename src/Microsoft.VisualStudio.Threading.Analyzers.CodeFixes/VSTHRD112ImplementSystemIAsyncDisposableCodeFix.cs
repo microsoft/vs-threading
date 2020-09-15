@@ -1,4 +1,5 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
@@ -23,10 +24,10 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         public override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
-            foreach (var diagnostic in context.Diagnostics)
+            foreach (Diagnostic? diagnostic in context.Diagnostics)
             {
-                var semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken);
-                var compilation = await context.Document.Project.GetCompilationAsync(context.CancellationToken);
+                SemanticModel? semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken);
+                Compilation? compilation = await context.Document.Project.GetCompilationAsync(context.CancellationToken);
                 if (compilation is null)
                 {
                     continue;
@@ -38,9 +39,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     continue;
                 }
 
-                var syntaxRoot = await context.Document.GetSyntaxRootAsync(context.CancellationToken);
+                SyntaxNode? syntaxRoot = await context.Document.GetSyntaxRootAsync(context.CancellationToken);
                 var generator = SyntaxGenerator.GetGenerator(context.Document);
-                var originalTypeDeclaration = generator.TryGetContainingDeclaration(syntaxRoot.FindNode(diagnostic.Location.SourceSpan));
+                SyntaxNode? originalTypeDeclaration = generator.TryGetContainingDeclaration(syntaxRoot.FindNode(diagnostic.Location.SourceSpan));
                 if (originalTypeDeclaration is null)
                 {
                     continue;
@@ -52,13 +53,21 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                         ct =>
                         {
                             // Declare that the type implements the System.IAsyncDisposable interface.
-                            var newBaseType = generator.TypeExpression(bclAsyncDisposableType);
-                            var typeDeclaration = generator.AddInterfaceType(originalTypeDeclaration, newBaseType);
+                            SyntaxNode? newBaseType = generator.TypeExpression(bclAsyncDisposableType);
+                            SyntaxNode? typeDeclaration = generator.AddInterfaceType(originalTypeDeclaration, newBaseType);
 
                             // Implement the interface, if we're on a non-interface type.
                             if (semanticModel.GetDeclaredSymbol(originalTypeDeclaration, ct) is ITypeSymbol changedSymbol && changedSymbol.TypeKind != TypeKind.Interface)
                             {
                                 var disposeAsyncMethod = (IMethodSymbol)bclAsyncDisposableType.GetMembers().Single();
+                                var statements = new SyntaxNode[]
+                                {
+                                    generator.ReturnStatement(
+                                        generator.ObjectCreationExpression(
+                                            disposeAsyncMethod.ReturnType,
+                                            generator.InvocationExpression(
+                                                generator.MemberAccessExpression(generator.ThisExpression(), "DisposeAsync")))),
+                                };
                                 typeDeclaration = generator.AddMembers(
                                     typeDeclaration,
                                     generator.AsPrivateInterfaceImplementation(
@@ -66,14 +75,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                                             disposeAsyncMethod.Name,
                                             returnType: generator.TypeExpression(disposeAsyncMethod.ReturnType),
                                             accessibility: Accessibility.Public,
-                                            statements: new SyntaxNode[]
-                                            {
-                                                generator.ReturnStatement(
-                                                    generator.ObjectCreationExpression(
-                                                        disposeAsyncMethod.ReturnType,
-                                                        generator.InvocationExpression(
-                                                            generator.MemberAccessExpression(generator.ThisExpression(), "DisposeAsync")))),
-                                            }),
+                                            statements: statements),
                                         generator.TypeExpression(bclAsyncDisposableType)));
                             }
 

@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
@@ -52,7 +49,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// <inheritdoc />
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
-            var diagnostic = context.Diagnostics.First();
+            Diagnostic? diagnostic = context.Diagnostics.First();
             context.RegisterCodeFix(new VoidToTaskCodeAction(context.Document, diagnostic), diagnostic);
             return Task.FromResult<object?>(null);
         }
@@ -79,14 +76,14 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             protected override async Task<Document> GetChangedDocumentAsync(CancellationToken cancellationToken)
             {
-                var root = await this.document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-                var methodDeclaration = root.FindNode(this.diagnostic.Location.SourceSpan).FirstAncestorOrSelf<MethodDeclarationSyntax>();
-                var taskType = SyntaxFactory.ParseTypeName(typeof(Task).FullName)
+                SyntaxNode? root = await this.document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+                MethodDeclarationSyntax? methodDeclaration = root.FindNode(this.diagnostic.Location.SourceSpan).FirstAncestorOrSelf<MethodDeclarationSyntax>();
+                TypeSyntax? taskType = SyntaxFactory.ParseTypeName(typeof(Task).FullName)
                     .WithAdditionalAnnotations(Simplifier.Annotation)
                     .WithTrailingTrivia(methodDeclaration.ReturnType.GetTrailingTrivia());
-                var newMethodDeclaration = methodDeclaration.WithReturnType(taskType);
-                var newRoot = root.ReplaceNode(methodDeclaration, newMethodDeclaration);
-                var newDocument = this.document.WithSyntaxRoot(newRoot);
+                MethodDeclarationSyntax? newMethodDeclaration = methodDeclaration.WithReturnType(taskType);
+                SyntaxNode? newRoot = root.ReplaceNode(methodDeclaration, newMethodDeclaration);
+                Document? newDocument = this.document.WithSyntaxRoot(newRoot);
                 return newDocument;
             }
         }

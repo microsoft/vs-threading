@@ -1,18 +1,20 @@
+#!/usr/bin/env pwsh
+
 <#
 .SYNOPSIS
-Installs the .NET SDK specified in the global.json file at the root of this repository,
-along with supporting .NET Core runtimes used for testing.
+    Installs the .NET SDK specified in the global.json file at the root of this repository,
+    along with supporting .NET Core runtimes used for testing.
 .DESCRIPTION
-This MAY not require elevation, as the SDK and runtimes are installed locally to this repo location,
-unless `-InstallLocality machine` is specified.
+    This MAY not require elevation, as the SDK and runtimes are installed locally to this repo location,
+    unless `-InstallLocality machine` is specified.
 .PARAMETER InstallLocality
-A value indicating whether dependencies should be installed locally to the repo or at a per-user location.
-Per-user allows sharing the installed dependencies across repositories and allows use of a shared expanded package cache.
-Visual Studio will only notice and use these SDKs/runtimes if VS is launched from the environment that runs this script.
-Per-repo allows for high isolation, allowing for a more precise recreation of the environment within an Azure Pipelines build.
-When using 'repo', environment variables are set to cause the locally installed dotnet SDK to be used.
-Per-repo can lead to file locking issues when dotnet.exe is left running as a build server and can be mitigated by running `dotnet build-server shutdown`.
-Per-machine requires elevation and will download and install all SDKs and runtimes to machine-wide locations so all applications can find it.
+    A value indicating whether dependencies should be installed locally to the repo or at a per-user location.
+    Per-user allows sharing the installed dependencies across repositories and allows use of a shared expanded package cache.
+    Visual Studio will only notice and use these SDKs/runtimes if VS is launched from the environment that runs this script.
+    Per-repo allows for high isolation, allowing for a more precise recreation of the environment within an Azure Pipelines build.
+    When using 'repo', environment variables are set to cause the locally installed dotnet SDK to be used.
+    Per-repo can lead to file locking issues when dotnet.exe is left running as a build server and can be mitigated by running `dotnet build-server shutdown`.
+    Per-machine requires elevation and will download and install all SDKs and runtimes to machine-wide locations so all applications can find it.
 #>
 [CmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='Medium')]
 Param (
@@ -21,7 +23,7 @@ Param (
 )
 
 $DotNetInstallScriptRoot = "$PSScriptRoot/../obj/tools"
-if (!(Test-Path $DotNetInstallScriptRoot)) { New-Item -ItemType Directory -Path $DotNetInstallScriptRoot | Out-Null }
+if (!(Test-Path $DotNetInstallScriptRoot)) { New-Item -ItemType Directory -Path $DotNetInstallScriptRoot -WhatIf:$false | Out-Null }
 $DotNetInstallScriptRoot = Resolve-Path $DotNetInstallScriptRoot
 
 # Look up actual required .NET Core SDK version from global.json
@@ -29,7 +31,7 @@ $sdkVersion = & "$PSScriptRoot/../azure-pipelines/variables/DotNetSdkVersion.ps1
 
 # Search for all .NET Core runtime versions referenced from MSBuild projects and arrange to install them.
 $runtimeVersions = @()
-Get-ChildItem "$PSScriptRoot\..\src\*.*proj" -Recurse |% {
+Get-ChildItem "$PSScriptRoot\..\src\*.*proj","$PSScriptRoot\..\test\*.*proj","$PSScriptRoot\..\Directory.Build.props" -Recurse |% {
     $projXml = [xml](Get-Content -Path $_)
     $targetFrameworks = $projXml.Project.PropertyGroup.TargetFramework
     if (!$targetFrameworks) {
@@ -63,7 +65,7 @@ Function Get-InstallerExe($Version, [switch]$Runtime) {
 
     # Get the latest/actual version for the specified one
     if (([Version]$Version).Build -eq -1) {
-        $versionInfo = -Split (Invoke-WebRequest -Uri "https://dotnetcli.blob.core.windows.net/dotnet/$sdkOrRuntime/$Version/latest.version")
+        $versionInfo = -Split (Invoke-WebRequest -Uri "https://dotnetcli.blob.core.windows.net/dotnet/$sdkOrRuntime/$Version/latest.version" -UseBasicParsing)
         $Version = $versionInfo[-1]
     }
 
@@ -75,29 +77,12 @@ Function Install-DotNet($Version, [switch]$Runtime) {
     Write-Host "Downloading .NET Core $sdkSubstring$Version..."
     $Installer = Get-InstallerExe -Version $Version -Runtime:$Runtime
     Write-Host "Installing .NET Core $sdkSubstring$Version..."
-    cmd /c start /wait $Installer /install /quiet
-    if ($LASTEXITCODE -ne 0) {
+    cmd /c start /wait $Installer /install /passive /norestart
+    if ($LASTEXITCODE -eq 3010) {
+        Write-Verbose "Restart required"
+    } elseif ($LASTEXITCODE -ne 0) {
         throw "Failure to install .NET Core SDK"
     }
-}
-
-if ($InstallLocality -eq 'machine') {
-    if ($IsMacOS -or $IsLinux) {
-        Write-Error "Installing the .NET Core SDK or runtime at a machine-wide location is only supported by this script on Windows."
-        exit 1
-    }
-
-    if ($PSCmdlet.ShouldProcess(".NET Core SDK $sdkVersion", "Install")) {
-        Install-DotNet -Version $sdkVersion
-    }
-
-    $runtimeVersions |% {
-        if ($PSCmdlet.ShouldProcess(".NET Core runtime $_", "Install")) {
-            Install-DotNet -Version $_ -Runtime
-        }
-    }
-
-    return
 }
 
 $switches = @(
@@ -108,7 +93,31 @@ $envVars = @{
     'DOTNET_SKIP_FIRST_TIME_EXPERIENCE' = 'true';
 }
 
-if ($InstallLocality -eq 'repo') {
+if ($InstallLocality -eq 'machine') {
+    if ($IsMacOS -or $IsLinux) {
+        $DotNetInstallDir = '/usr/share/dotnet'
+    } else {
+        $restartRequired = $false
+        if ($PSCmdlet.ShouldProcess(".NET Core SDK $sdkVersion", "Install")) {
+            Install-DotNet -Version $sdkVersion
+            $restartRequired = $restartRequired -or ($LASTEXITCODE -eq 3010)
+        }
+
+        $runtimeVersions | Get-Unique |% {
+            if ($PSCmdlet.ShouldProcess(".NET Core runtime $_", "Install")) {
+                Install-DotNet -Version $_ -Runtime
+                $restartRequired = $restartRequired -or ($LASTEXITCODE -eq 3010)
+            }
+        }
+
+        if ($restartRequired) {
+            Write-Host -ForegroundColor Yellow "System restart required"
+            Exit 3010
+        }
+
+        return
+    }
+} elseif ($InstallLocality -eq 'repo') {
     $DotNetInstallDir = "$DotNetInstallScriptRoot/.dotnet"
 } elseif ($env:AGENT_TOOLSDIRECTORY) {
     $DotNetInstallDir = "$env:AGENT_TOOLSDIRECTORY/dotnet"
@@ -133,13 +142,16 @@ if ($IsMacOS -or $IsLinux) {
 }
 
 if (-not (Test-Path $DotNetInstallScriptPath)) {
-    Invoke-WebRequest -Uri $DownloadUri -OutFile $DotNetInstallScriptPath
+    Invoke-WebRequest -Uri $DownloadUri -OutFile $DotNetInstallScriptPath -UseBasicParsing
     if ($IsMacOS -or $IsLinux) {
         chmod +x $DotNetInstallScriptPath
     }
 }
 
+$anythingInstalled = $false
+
 if ($PSCmdlet.ShouldProcess(".NET Core SDK $sdkVersion", "Install")) {
+    $anythingInstalled = $true
     Invoke-Expression -Command "$DotNetInstallScriptPath -Version $sdkVersion $switches"
 } else {
     Invoke-Expression -Command "$DotNetInstallScriptPath -Version $sdkVersion $switches -DryRun"
@@ -149,6 +161,7 @@ $switches += '-Runtime','dotnet'
 
 $runtimeVersions | Get-Unique |% {
     if ($PSCmdlet.ShouldProcess(".NET Core runtime $_", "Install")) {
+        $anythingInstalled = $true
         Invoke-Expression -Command "$DotNetInstallScriptPath -Channel $_ $switches"
     } else {
         Invoke-Expression -Command "$DotNetInstallScriptPath -Channel $_ $switches -DryRun"
@@ -156,41 +169,9 @@ $runtimeVersions | Get-Unique |% {
 }
 
 if ($PSCmdlet.ShouldProcess("Set DOTNET environment variables to discover these installed runtimes?")) {
-    if ($env:TF_BUILD) {
-        Write-Host "Azure Pipelines detected. Logging commands will be used to propagate environment variables and prepend path."
-    }
-
-    if ($IsMacOS -or $IsLinux) {
-        $envVars['PATH'] = "${DotNetInstallDir}:$env:PATH"
-    } else {
-        $envVars['PATH'] = "$DotNetInstallDir;$env:PATH"
-    }
-
-    $envVars.GetEnumerator() |% {
-        Set-Item -Path env:$($_.Key) -Value $_.Value
-
-        # If we're running in Azure Pipelines, set these environment variables
-        if ($env:TF_BUILD) {
-            Write-Host "##vso[task.setvariable variable=$($_.Key);]$($_.Value)"
-        }
-    }
-
-    if ($env:TF_BUILD) {
-        Write-Host "##vso[task.prependpath]$DotNetInstallDir"
-    }
+    & "$PSScriptRoot/Set-EnvVars.ps1" -Variables $envVars -PrependPath $DotNetInstallDir | Out-Null
 }
 
-if ($env:PS1UnderCmd -eq '1') {
-    Write-Warning "Environment variable changes will be lost because you're running under cmd.exe. Run these commands manually:"
-    $envVars.GetEnumerator() |% {
-        if ($_.Key -eq 'PATH') {
-            # Special case this one for readability
-            Write-Host "SET PATH=$DotNetInstallDir;%PATH%"
-        } else {
-            Write-Host "SET $($_.Key)=$($_.Value)"
-        }
-    }
-} else {
-    Write-Host "Environment variables set:" -ForegroundColor Blue
-    $envVars
+if ($anythingInstalled -and ($InstallLocality -ne 'machine') -and !$env:TF_BUILD -and !$env:GITHUB_ACTIONS) {
+    Write-Warning ".NET Core runtimes or SDKs were installed to a non-machine location. Perform your builds or open Visual Studio from this same environment in order for tools to discover the location of these dependencies."
 }

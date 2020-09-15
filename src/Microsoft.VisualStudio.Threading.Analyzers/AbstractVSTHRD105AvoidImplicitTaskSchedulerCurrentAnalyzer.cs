@@ -1,4 +1,5 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
@@ -51,7 +52,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         private void AnalyzeInvocation(OperationAnalysisContext context)
         {
             var operation = (IInvocationOperation)context.Operation;
-            var invokeMethod = operation.TargetMethod;
+            IMethodSymbol? invokeMethod = operation.TargetMethod;
             if (invokeMethod?.ContainingType.BelongsToNamespace(Namespaces.SystemThreadingTasks) ?? false)
             {
                 bool reportDiagnostic = false;

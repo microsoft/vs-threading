@@ -1,4 +1,7 @@
-﻿namespace Microsoft.VisualStudio.Threading.Analyzers
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
     using System.Collections.Generic;
@@ -48,15 +51,14 @@
                 var methodSymbol = ctxt.OwningSymbol as IMethodSymbol;
                 if (!methodSymbol.HasAsyncCompatibleReturnType() && !Utils.IsPublic(methodSymbol) && !Utils.IsEntrypointMethod(methodSymbol, ctxt.SemanticModel, ctxt.CancellationToken) && !methodSymbol.FindInterfacesImplemented().Any(Utils.IsPublic))
                 {
-                    var methodAnalyzer = new MethodAnalyzer();
-                    ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeInvocation), SyntaxKind.InvocationExpression);
+                    ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(MethodAnalyzer.AnalyzeInvocation), SyntaxKind.InvocationExpression);
                 }
             });
         }
 
-        private class MethodAnalyzer
+        private static class MethodAnalyzer
         {
-            internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
+            internal static void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
             {
                 var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
                 CSharpCommonInterest.InspectMemberAccess(

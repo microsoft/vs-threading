@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading
 {
@@ -32,6 +29,11 @@ namespace Microsoft.VisualStudio.Threading
             protected override int InitialCapacity
             {
                 get { return 1; } // in non-concurrent cases, 1 is sufficient.
+            }
+
+            internal void OnExecuting(object sender, EventArgs e)
+            {
+                this.Scavenge();
             }
 
             protected override void OnEnqueued(SingleExecuteProtector value, bool alreadyDispatched)
@@ -68,11 +70,6 @@ namespace Microsoft.VisualStudio.Threading
                 base.OnCompleted();
 
                 this.owningJob.OnQueueCompleted();
-            }
-
-            internal void OnExecuting(object sender, EventArgs e)
-            {
-                this.Scavenge();
             }
 
             private void Scavenge()

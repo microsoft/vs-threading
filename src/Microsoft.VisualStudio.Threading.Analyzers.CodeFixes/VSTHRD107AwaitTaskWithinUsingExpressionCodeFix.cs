@@ -1,4 +1,7 @@
-﻿namespace Microsoft.VisualStudio.Threading.Analyzers
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
     using System.Collections.Generic;
@@ -44,16 +47,16 @@
 
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
-            var diagnostic = context.Diagnostics.First();
+            Diagnostic? diagnostic = context.Diagnostics.First();
 
             context.RegisterCodeFix(
                 CodeAction.Create(
                     Strings.VSTHRD107_CodeFix_Title,
                     async ct =>
                     {
-                        var document = context.Document;
-                        var root = await document.GetSyntaxRootAsync(ct).ConfigureAwait(false);
-                        var method = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<MethodDeclarationSyntax>();
+                        Document? document = context.Document;
+                        SyntaxNode? root = await document.GetSyntaxRootAsync(ct).ConfigureAwait(false);
+                        MethodDeclarationSyntax? method = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<MethodDeclarationSyntax>();
 
                         (document, method, _) = await FixUtils.UpdateDocumentAsync(
                             document,
@@ -61,10 +64,10 @@
                             m =>
                             {
                                 root = m.SyntaxTree.GetRoot(ct);
-                                var usingStatement = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<UsingStatementSyntax>();
-                                var awaitExpression = SyntaxFactory.AwaitExpression(
+                                UsingStatementSyntax usingStatement = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<UsingStatementSyntax>();
+                                AwaitExpressionSyntax awaitExpression = SyntaxFactory.AwaitExpression(
                                     SyntaxFactory.ParenthesizedExpression(usingStatement.Expression));
-                                var modifiedUsingStatement = usingStatement.WithExpression(awaitExpression)
+                                UsingStatementSyntax modifiedUsingStatement = usingStatement.WithExpression(awaitExpression)
                                     .WithAdditionalAnnotations(Simplifier.Annotation);
                                 return m.ReplaceNode(usingStatement, modifiedUsingStatement);
                             },

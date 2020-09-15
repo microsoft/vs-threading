@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
@@ -63,18 +60,18 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             context.RegisterCompilationStartAction(compilationContext =>
             {
-                var taskSymbol = compilationContext.Compilation.GetTypeByMetadataName(Types.Task.FullName);
-                if (taskSymbol != null)
+                INamedTypeSymbol? taskSymbol = compilationContext.Compilation.GetTypeByMetadataName(Types.Task.FullName);
+                if (taskSymbol is object)
                 {
                     compilationContext.RegisterCodeBlockStartAction<SyntaxKind>(codeBlockContext =>
                     {
                         // We want to scan properties and methods that do not return Task or Task<T>.
                         var methodSymbol = codeBlockContext.OwningSymbol as IMethodSymbol;
                         var propertySymbol = codeBlockContext.OwningSymbol as IPropertySymbol;
-                        if (propertySymbol != null || (methodSymbol != null && !methodSymbol.HasAsyncCompatibleReturnType()))
+                        if (propertySymbol is object || (methodSymbol is object && !methodSymbol.HasAsyncCompatibleReturnType()))
                         {
-                            codeBlockContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => this.AnalyzeInvocation(c, taskSymbol)), SyntaxKind.InvocationExpression);
-                            codeBlockContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => this.AnalyzeMemberAccess(c, taskSymbol)), SyntaxKind.SimpleMemberAccessExpression);
+                            codeBlockContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => AnalyzeInvocation(c, taskSymbol)), SyntaxKind.InvocationExpression);
+                            codeBlockContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => AnalyzeMemberAccess(c, taskSymbol)), SyntaxKind.SimpleMemberAccessExpression);
                         }
                     });
                 }
@@ -96,43 +93,23 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return null;
         }
 
-        private void AnalyzeInvocation(SyntaxNodeAnalysisContext context, INamedTypeSymbol taskSymbol)
-        {
-            var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
-            this.InspectMemberAccess(
-                context,
-                invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax,
-                CommonInterest.ProblematicSyncBlockingMethods,
-                taskSymbol);
-        }
-
-        private void AnalyzeMemberAccess(SyntaxNodeAnalysisContext context, INamedTypeSymbol taskSymbol)
-        {
-            var memberAccessSyntax = (MemberAccessExpressionSyntax)context.Node;
-            this.InspectMemberAccess(
-                context,
-                memberAccessSyntax,
-                CommonInterest.SyncBlockingProperties,
-                taskSymbol);
-        }
-
-        private void InspectMemberAccess(
+        private static void InspectMemberAccess(
             SyntaxNodeAnalysisContext context,
             MemberAccessExpressionSyntax? memberAccessSyntax,
             IEnumerable<CommonInterest.SyncBlockingMethod> problematicMethods,
             INamedTypeSymbol taskSymbol)
         {
-            if (memberAccessSyntax == null)
+            if (memberAccessSyntax is null)
             {
                 return;
             }
 
             // Are we in the context of an anonymous function that is passed directly in as an argument to another method?
-            var anonymousFunctionSyntax = context.Node.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>();
+            AnonymousFunctionExpressionSyntax? anonymousFunctionSyntax = context.Node.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>();
             var anonFuncAsArgument = anonymousFunctionSyntax?.Parent as ArgumentSyntax;
             var invocationPassingExpression = anonFuncAsArgument?.Parent?.Parent as InvocationExpressionSyntax;
             var invokedMemberAccess = invocationPassingExpression?.Expression as MemberAccessExpressionSyntax;
-            if (invokedMemberAccess?.Name != null)
+            if (invokedMemberAccess?.Name is object)
             {
                 // Does the anonymous function appear as the first argument to Task.ContinueWith?
                 var invokedMemberSymbol = context.SemanticModel.GetSymbolInfo(invokedMemberAccess.Name, context.CancellationToken).Symbol as IMethodSymbol;
@@ -141,8 +118,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     invocationPassingExpression?.ArgumentList?.Arguments.FirstOrDefault() == anonFuncAsArgument)
                 {
                     // Does the member access being analyzed belong to the Task that just completed?
-                    var firstParameter = GetFirstParameter(anonymousFunctionSyntax);
-                    if (firstParameter != null)
+                    ParameterSyntax? firstParameter = GetFirstParameter(anonymousFunctionSyntax);
+                    if (firstParameter is object)
                     {
                         // Are we accessing a member of the completed task?
                         ISymbol invokedObjectSymbol = context.SemanticModel.GetSymbolInfo(memberAccessSyntax.Expression, context.CancellationToken).Symbol;
@@ -157,6 +134,26 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
 
             CSharpCommonInterest.InspectMemberAccess(context, memberAccessSyntax, Descriptor, problematicMethods);
+        }
+
+        private static void AnalyzeInvocation(SyntaxNodeAnalysisContext context, INamedTypeSymbol taskSymbol)
+        {
+            var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
+            InspectMemberAccess(
+                context,
+                invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax,
+                CommonInterest.ProblematicSyncBlockingMethods,
+                taskSymbol);
+        }
+
+        private static void AnalyzeMemberAccess(SyntaxNodeAnalysisContext context, INamedTypeSymbol taskSymbol)
+        {
+            var memberAccessSyntax = (MemberAccessExpressionSyntax)context.Node;
+            InspectMemberAccess(
+                context,
+                memberAccessSyntax,
+                CommonInterest.SyncBlockingProperties,
+                taskSymbol);
         }
     }
 }

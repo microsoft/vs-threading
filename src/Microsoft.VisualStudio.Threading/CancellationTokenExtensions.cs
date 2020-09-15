@@ -1,4 +1,5 @@
-﻿// Copyright (c) PlaceholderCompany. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading
 {
@@ -51,7 +52,7 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             int cancelableTokensCount = original.CanBeCanceled ? 1 : 0;
-            foreach (var other in others)
+            foreach (CancellationToken other in others)
             {
                 if (other.IsCancellationRequested)
                 {
@@ -74,7 +75,7 @@ namespace Microsoft.VisualStudio.Threading
                         return new CombinedCancellationToken(original);
                     }
 
-                    foreach (var other in others)
+                    foreach (CancellationToken other in others)
                     {
                         if (other.CanBeCanceled)
                         {
@@ -92,7 +93,7 @@ namespace Microsoft.VisualStudio.Threading
                         first = original;
                     }
 
-                    foreach (var other in others)
+                    foreach (CancellationToken other in others)
                     {
                         if (other.CanBeCanceled)
                         {
@@ -116,7 +117,7 @@ namespace Microsoft.VisualStudio.Threading
                     // Before this point we've checked every condition that would allow us to avoid it.
                     var cancelableTokens = new CancellationToken[cancelableTokensCount];
                     int i = 0;
-                    foreach (var other in others)
+                    foreach (CancellationToken other in others)
                     {
                         if (other.CanBeCanceled)
                         {
@@ -132,7 +133,9 @@ namespace Microsoft.VisualStudio.Threading
         /// Provides access to a <see cref="System.Threading.CancellationToken"/> that combines multiple other tokens,
         /// and allows convenient disposal of any applicable <see cref="CancellationTokenSource"/>.
         /// </summary>
+#pragma warning disable CA1034 // Nested types should not be visible
         public readonly struct CombinedCancellationToken : IDisposable, IEquatable<CombinedCancellationToken>
+#pragma warning restore CA1034 // Nested types should not be visible
         {
             /// <summary>
             /// The object to dispose when this struct is disposed.
@@ -163,6 +166,11 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
+            /// Gets the combined cancellation token.
+            /// </summary>
+            public CancellationToken Token { get; }
+
+            /// <summary>
             /// Checks whether two instances of <see cref="CombinedCancellationToken"/> are equal.
             /// </summary>
             /// <param name="left">The left operand.</param>
@@ -177,11 +185,6 @@ namespace Microsoft.VisualStudio.Threading
             /// <param name="right">The right operand.</param>
             /// <returns><c>true</c> if they are not equal; <c>false</c> if they are equal.</returns>
             public static bool operator !=(CombinedCancellationToken left, CombinedCancellationToken right) => !(left == right);
-
-            /// <summary>
-            /// Gets the combined cancellation token.
-            /// </summary>
-            public CancellationToken Token { get; }
 
             /// <summary>
             /// Disposes the <see cref="CancellationTokenSource"/> behind this combined token, if any.

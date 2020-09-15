@@ -1,44 +1,41 @@
 steps:
-
 # We use VSBuild instead of "dotnet build" on Windows where MicroBuild tasks have to run (since they don't support MSBuild Core yet).
 - task: VSBuild@1
+  displayName: Build Visual Studio solution
   inputs:
     msbuildArgs: /t:build,pack /m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/msbuild.binlog"
     platform: Any CPU
     configuration: $(BuildConfiguration)
-  displayName: Build Visual Studio solution
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - script: dotnet build /t:build,pack --no-restore -c $(BuildConfiguration) /p:Platform=NonWindows /v:m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/build.binlog"
-  displayName: dotnet build and pack
-  workingDirectory: src
+  displayName: dotnet build & pack
   condition: and(succeeded(), ne(variables['Agent.OS'], 'Windows_NT'))
 
 - task: DotNetCoreCLI@2
   displayName: dotnet test -f net472
   inputs:
     command: test
-    arguments: --no-build -c $(BuildConfiguration) -f net472 --filter "TestCategory!=FailsInCloudTest" -v n /p:CollectCoverage=true
+    arguments: --no-build -c $(BuildConfiguration) -f net472 --filter "TestCategory!=FailsInCloudTest" -v n /p:CollectCoverage=true --settings "$(Build.Repository.LocalPath)/azure-pipelines/$(Agent.OS).runsettings"
     testRunTitle: net472-$(Agent.JobName)
-    workingDirectory: src
   condition: and(ne(variables['OptProf'], 'true'), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: DotNetCoreCLI@2
   displayName: dotnet test -f netcoreapp2.1
   inputs:
     command: test
-    arguments: --no-build -c $(BuildConfiguration) -f netcoreapp2.1 --filter "TestCategory!=FailsInCloudTest" -v n /p:CollectCoverage=true
+    arguments: --no-build -c $(BuildConfiguration) -f netcoreapp2.1 --filter "TestCategory!=FailsInCloudTest" -v n /p:CollectCoverage=true --settings "$(Build.Repository.LocalPath)/azure-pipelines/$(Agent.OS).runsettings"
     testRunTitle: netcoreapp2.1-$(Agent.JobName)
-    workingDirectory: src/Microsoft.VisualStudio.Threading.Tests
+    workingDirectory: test/Microsoft.VisualStudio.Threading.Tests
   condition: ne(variables['OptProf'], 'true')
 
 - task: DotNetCoreCLI@2
   displayName: dotnet test -f netcoreapp3.1
   inputs:
     command: test
-    arguments: --no-build -c $(BuildConfiguration) -f netcoreapp3.1 --filter "TestCategory!=FailsInCloudTest" -v n /p:CollectCoverage=true
+    arguments: --no-build -c $(BuildConfiguration) -f netcoreapp3.1 --filter "TestCategory!=FailsInCloudTest" -v n /p:CollectCoverage=true --settings "$(Build.Repository.LocalPath)/azure-pipelines/$(Agent.OS).runsettings"
     testRunTitle: netcoreapp3.1-$(Agent.JobName)
-    workingDirectory: src/Microsoft.VisualStudio.Threading.Tests
+    workingDirectory: test/Microsoft.VisualStudio.Threading.Tests
   condition: ne(variables['OptProf'], 'true')
 
 # We have to artifically run this script so that the extra .nupkg is produced for variables/InsertConfigValues.ps1 to notice.
@@ -46,23 +43,19 @@ steps:
   displayName: Prepare VSInsertion artifact
   condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
 
-- task: PowerShell@2
-  inputs:
-    filePath: azure-pipelines/variables/_pipelines.ps1
-    failOnStderr: true
+- powershell: azure-pipelines/variables/_pipelines.ps1
+  failOnStderr: true
   displayName: Update pipeline variables based on build outputs
   condition: succeededOrFailed()
 
-- task: PowerShell@2
-  inputs:
-    filePath: azure-pipelines/artifacts/_pipelines.ps1
-    arguments: -ArtifactNameSuffix "-$(Agent.JobName)"
+- powershell: azure-pipelines/artifacts/_pipelines.ps1 -ArtifactNameSuffix "-$(Agent.JobName)"
+  failOnStderr: true
   displayName: Publish artifacts
   condition: succeededOrFailed()
 
 - task: PublishSymbols@2
   inputs:
-    SymbolsFolder: $(Build.ArtifactStagingDirectory)/symbols-Windows
+    SymbolsFolder: $(Build.ArtifactStagingDirectory)/symbols-$(Agent.JobName)
     SearchPattern: '**/*.pdb'
     IndexSources: false
     SymbolServerType: TeamServices

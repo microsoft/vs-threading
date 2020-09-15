@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
@@ -63,7 +60,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         private void AnalyzeNode(SyntaxNodeAnalysisContext context)
         {
             var usingStatement = (UsingStatementSyntax)context.Node;
-            if (usingStatement.Expression != null)
+            if (usingStatement.Expression is object)
             {
                 TypeInfo expressionTypeInfo = context.SemanticModel.GetTypeInfo(usingStatement.Expression, context.CancellationToken);
                 ITypeSymbol expressionType = expressionTypeInfo.Type;

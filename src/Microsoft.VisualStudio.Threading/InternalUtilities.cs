@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading
 {
@@ -71,8 +68,8 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="continuationDelegate">The delegate that represents the head of an async continuation chain.</param>
         internal static IEnumerable<string> GetAsyncReturnStackFrames(this Delegate continuationDelegate)
         {
-            var stateMachine = FindAsyncStateMachine(continuationDelegate);
-            if (stateMachine == null)
+            IAsyncStateMachine? stateMachine = FindAsyncStateMachine(continuationDelegate);
+            if (stateMachine is null)
             {
                 // Did not find the async state machine, so returns the method name as top frame and stop walking.
                 yield return GetDelegateLabel(continuationDelegate);
@@ -90,7 +87,7 @@ namespace Microsoft.VisualStudio.Threading
                     AsyncReturnStackPrefix,
                     (int)GetAddress(stateMachine)); // the int cast allows hex formatting
 
-                var continuationDelegates = FindContinuationDelegates(stateMachine).ToArray();
+                Delegate[]? continuationDelegates = FindContinuationDelegates(stateMachine).ToArray();
                 if (continuationDelegates.Length == 0)
                 {
                     break;
@@ -100,12 +97,13 @@ namespace Microsoft.VisualStudio.Threading
                 // Here we just choose the first awaiting "async method" as that should be good enough for postmortem.
                 // In future we might want to revisit this to cover the other awaiting "async methods".
                 stateMachine = continuationDelegates.Select((d) => FindAsyncStateMachine(d))
-                    .FirstOrDefault((s) => s != null);
-                if (stateMachine == null)
+                    .FirstOrDefault((s) => s is object);
+                if (stateMachine is null)
                 {
                     yield return GetDelegateLabel(continuationDelegates.First());
                 }
-            } while (stateMachine != null);
+            }
+            while (stateMachine is object);
         }
 
         /// <summary>
@@ -116,7 +114,7 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(invokeDelegate, nameof(invokeDelegate));
 
             MethodInfo? method = invokeDelegate.GetMethodInfo();
-            if (invokeDelegate.Target != null)
+            if (invokeDelegate.Target is object)
             {
                 string instanceType = string.Empty;
                 if (!(method?.DeclaringType?.Equals(invokeDelegate.Target.GetType()) ?? false))
@@ -162,7 +160,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             Requires.NotNull(invokeDelegate, nameof(invokeDelegate));
 
-            if (invokeDelegate.Target != null)
+            if (invokeDelegate.Target is object)
             {
                 // Some delegates are wrapped with a ContinuationWrapper object. We have to unwrap that in those cases.
                 // In testing, this m_continuation field jump is only required when the debugger is attached -- weird.
@@ -171,7 +169,7 @@ namespace Microsoft.VisualStudio.Threading
                 if (GetFieldValue(invokeDelegate.Target, "m_continuation") is Action continuation)
                 {
                     invokeDelegate = continuation;
-                    if (invokeDelegate.Target == null)
+                    if (invokeDelegate.Target is null)
                     {
                         return null;
                     }
@@ -198,37 +196,37 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(stateMachine, nameof(stateMachine));
 
             var builder = GetStateMachineFieldValueOnSuffix(stateMachine, "__builder");
-            if (builder == null)
+            if (builder is null)
             {
                 yield break;
             }
 
             var task = GetFieldValue(builder, "m_task");
-            if (task == null)
+            if (task is null)
             {
                 // Probably this builder is an instance of "AsyncTaskMethodBuilder", so we need to get its inner "AsyncTaskMethodBuilder<VoidTaskResult>"
                 builder = GetFieldValue(builder, "m_builder");
-                if (builder != null)
+                if (builder is object)
                 {
                     task = GetFieldValue(builder, "m_task");
                 }
             }
 
-            if (task == null)
+            if (task is null)
             {
                 yield break;
             }
 
             // "task" might be an instance of the type deriving from "Task", but "m_continuationObject" is a private field in "Task",
             // so we need to use "typeof(Task)" to access "m_continuationObject".
-            var continuationField = typeof(Task).GetTypeInfo().GetDeclaredField("m_continuationObject");
-            if (continuationField == null)
+            FieldInfo? continuationField = typeof(Task).GetTypeInfo().GetDeclaredField("m_continuationObject");
+            if (continuationField is null)
             {
                 yield break;
             }
 
             var continuationObject = continuationField.GetValue(task);
-            if (continuationObject == null)
+            if (continuationObject is null)
             {
                 yield break;
             }
@@ -237,8 +235,8 @@ namespace Microsoft.VisualStudio.Threading
             {
                 foreach (var item in items)
                 {
-                    var action = item as Delegate ?? GetFieldValue(item!, "m_action") as Delegate;
-                    if (action != null)
+                    Delegate? action = item as Delegate ?? GetFieldValue(item!, "m_action") as Delegate;
+                    if (action is object)
                     {
                         yield return action;
                     }
@@ -246,8 +244,8 @@ namespace Microsoft.VisualStudio.Threading
             }
             else
             {
-                var action = continuationObject as Delegate ?? GetFieldValue(continuationObject, "m_action") as Delegate;
-                if (action != null)
+                Delegate? action = continuationObject as Delegate ?? GetFieldValue(continuationObject, "m_action") as Delegate;
+                if (action is object)
                 {
                     yield return action;
                 }
@@ -262,8 +260,8 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(obj, nameof(obj));
             Requires.NotNullOrEmpty(fieldName, nameof(fieldName));
 
-            var field = obj.GetType().GetTypeInfo().GetDeclaredField(fieldName);
-            if (field != null)
+            FieldInfo? field = obj.GetType().GetTypeInfo().GetDeclaredField(fieldName);
+            if (field is object)
             {
                 return field.GetValue(obj);
             }
@@ -279,9 +277,9 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(stateMachine, nameof(stateMachine));
             Requires.NotNullOrEmpty(suffix, nameof(suffix));
 
-            var fields = stateMachine.GetType().GetTypeInfo().DeclaredFields;
-            var field = fields.FirstOrDefault((f) => f.Name.EndsWith(suffix, StringComparison.Ordinal));
-            if (field != null)
+            IEnumerable<FieldInfo>? fields = stateMachine.GetType().GetTypeInfo().DeclaredFields;
+            FieldInfo? field = fields.FirstOrDefault((f) => f.Name.EndsWith(suffix, StringComparison.Ordinal));
+            if (field is object)
             {
                 return field.GetValue(stateMachine);
             }

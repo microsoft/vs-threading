@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
@@ -43,7 +40,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         private void AnalyzeInvocation(OperationAnalysisContext context)
         {
             var invocation = (IInvocationOperation)context.Operation;
-            var methodSymbol = invocation.TargetMethod;
+            IMethodSymbol? methodSymbol = invocation.TargetMethod;
             if (methodSymbol.Name == Types.JoinableTaskFactory.SwitchToMainThreadAsync &&
                 methodSymbol.ContainingType.Name == Types.JoinableTaskFactory.TypeName &&
                 methodSymbol.ContainingType.BelongsToNamespace(Types.JoinableTaskFactory.Namespace))
@@ -51,7 +48,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 // This is a call to JTF.SwitchToMainThreadAsync(). Is it being (directly) awaited?
                 if (!(invocation.Parent is IAwaitOperation))
                 {
-                    var location = (this.LanguageUtils.IsolateMethodName(invocation) ?? invocation.Syntax).GetLocation();
+                    Location? location = (this.LanguageUtils.IsolateMethodName(invocation) ?? invocation.Syntax).GetLocation();
                     context.ReportDiagnostic(Diagnostic.Create(Descriptor, location));
                 }
             }

@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading
 {
@@ -75,7 +72,7 @@ namespace Microsoft.VisualStudio.Threading
         internal JoinableTaskFactory(JoinableTaskContext owner, JoinableTaskCollection? collection)
         {
             Requires.NotNull(owner, nameof(owner));
-            Assumes.True(collection == null || collection.Context == owner);
+            Assumes.True(collection is null || collection.Context == owner);
 
             this.owner = owner;
             this.jobCollection = collection;
@@ -206,6 +203,169 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Runs the specified asynchronous method to completion while synchronously blocking the calling thread.
+        /// </summary>
+        /// <param name="asyncMethod">The asynchronous method to execute.</param>
+        /// <remarks>
+        /// <para>Any exception thrown by the delegate is rethrown in its original type to the caller of this method.</para>
+        /// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
+        /// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
+        /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
+        /// <example>
+        /// <code>
+        /// // On threadpool or Main thread, this method will block
+        /// // the calling thread until all async operations in the
+        /// // delegate complete.
+        /// joinableTaskFactory.Run(async delegate {
+        ///     // still on the threadpool or Main thread as before.
+        ///     await OperationAsync();
+        ///     // still on the threadpool or Main thread as before.
+        ///     await Task.Run(async delegate {
+        ///          // Now we're on a threadpool thread.
+        ///          await Task.Yield();
+        ///          // still on a threadpool thread.
+        ///     });
+        ///     // Now back on the Main thread (or threadpool thread if that's where we started).
+        /// });
+        /// </code>
+        /// </example>
+        /// </remarks>
+        public void Run(Func<Task> asyncMethod)
+        {
+            this.Run(asyncMethod, JoinableTaskCreationOptions.None, entrypointOverride: null);
+        }
+
+        /// <summary>
+        /// Runs the specified asynchronous method to completion while synchronously blocking the calling thread.
+        /// </summary>
+        /// <param name="asyncMethod">The asynchronous method to execute.</param>
+        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior.</param>
+        public void Run(Func<Task> asyncMethod, JoinableTaskCreationOptions creationOptions)
+        {
+            this.Run(asyncMethod, creationOptions, entrypointOverride: null);
+        }
+
+        /// <summary>
+        /// Runs the specified asynchronous method to completion while synchronously blocking the calling thread.
+        /// </summary>
+        /// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
+        /// <param name="asyncMethod">The asynchronous method to execute.</param>
+        /// <returns>The result of the Task returned by <paramref name="asyncMethod"/>.</returns>
+        /// <remarks>
+        /// <para>Any exception thrown by the delegate is rethrown in its original type to the caller of this method.</para>
+        /// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
+        /// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
+        /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
+        /// <para>See the <see cref="Run(Func{Task})" /> overload documentation for an example.</para>
+        /// </remarks>
+        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
+        public T Run<T>(Func<Task<T>> asyncMethod)
+        {
+            return this.Run(asyncMethod, JoinableTaskCreationOptions.None);
+        }
+
+        /// <summary>
+        /// Runs the specified asynchronous method to completion while synchronously blocking the calling thread.
+        /// </summary>
+        /// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
+        /// <param name="asyncMethod">The asynchronous method to execute.</param>
+        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior.</param>
+        /// <returns>The result of the Task returned by <paramref name="asyncMethod"/>.</returns>
+        /// <remarks>
+        /// <para>Any exception thrown by the delegate is rethrown in its original type to the caller of this method.</para>
+        /// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
+        /// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
+        /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
+        /// </remarks>
+        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
+        public T Run<T>(Func<Task<T>> asyncMethod, JoinableTaskCreationOptions creationOptions)
+        {
+            VerifyNoNonConcurrentSyncContext();
+            JoinableTask<T>? joinable = this.RunAsync(asyncMethod, synchronouslyBlocking: true, creationOptions: creationOptions);
+            return joinable.CompleteOnCurrentThread();
+        }
+
+        /// <summary>
+        /// Invokes an async delegate on the caller's thread, and yields back to the caller when the async method yields.
+        /// The async delegate is invoked in such a way as to mitigate deadlocks in the event that the async method
+        /// requires the main thread while the main thread is blocked waiting for the async method's completion.
+        /// </summary>
+        /// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
+        /// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
+        /// <remarks>
+        /// <para>Exceptions thrown by the delegate are captured by the returned <see cref="JoinableTask" />.</para>
+        /// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
+        /// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
+        /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
+        /// </remarks>
+        public JoinableTask RunAsync(Func<Task> asyncMethod)
+        {
+            return this.RunAsync(asyncMethod, synchronouslyBlocking: false, creationOptions: JoinableTaskCreationOptions.None);
+        }
+
+        /// <summary>
+        /// Invokes an async delegate on the caller's thread, and yields back to the caller when the async method yields.
+        /// The async delegate is invoked in such a way as to mitigate deadlocks in the event that the async method
+        /// requires the main thread while the main thread is blocked waiting for the async method's completion.
+        /// </summary>
+        /// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
+        /// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
+        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior.</param>
+        /// <remarks>
+        /// <para>Exceptions thrown by the delegate are captured by the returned <see cref="JoinableTask" />.</para>
+        /// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
+        /// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
+        /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
+        /// </remarks>
+        public JoinableTask RunAsync(Func<Task> asyncMethod, JoinableTaskCreationOptions creationOptions)
+        {
+            return this.RunAsync(asyncMethod, synchronouslyBlocking: false, creationOptions: creationOptions);
+        }
+
+        /// <summary>
+        /// Invokes an async delegate on the caller's thread, and yields back to the caller when the async method yields.
+        /// The async delegate is invoked in such a way as to mitigate deadlocks in the event that the async method
+        /// requires the main thread while the main thread is blocked waiting for the async method's completion.
+        /// </summary>
+        /// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
+        /// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
+        /// <returns>
+        /// An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.
+        /// </returns>
+        /// <remarks>
+        /// <para>Exceptions thrown by the delegate are captured by the returned <see cref="JoinableTask" />.</para>
+        /// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
+        /// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
+        /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
+        /// </remarks>
+        public JoinableTask<T> RunAsync<T>(Func<Task<T>> asyncMethod)
+        {
+            return this.RunAsync(asyncMethod, synchronouslyBlocking: false, creationOptions: JoinableTaskCreationOptions.None);
+        }
+
+        /// <summary>
+        /// Invokes an async delegate on the caller's thread, and yields back to the caller when the async method yields.
+        /// The async delegate is invoked in such a way as to mitigate deadlocks in the event that the async method
+        /// requires the main thread while the main thread is blocked waiting for the async method's completion.
+        /// </summary>
+        /// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
+        /// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
+        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior.</param>
+        /// <returns>
+        /// An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.
+        /// </returns>
+        /// <remarks>
+        /// <para>Exceptions thrown by the delegate are captured by the returned <see cref="JoinableTask" />.</para>
+        /// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
+        /// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
+        /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
+        /// </remarks>
+        public JoinableTask<T> RunAsync<T>(Func<Task<T>> asyncMethod, JoinableTaskCreationOptions creationOptions)
+        {
+            return this.RunAsync(asyncMethod, synchronouslyBlocking: false, creationOptions: creationOptions);
+        }
+
+        /// <summary>
         /// Responds to calls to <see cref="JoinableTaskFactory.MainThreadAwaiter.OnCompleted(Action)"/>
         /// by scheduling a continuation to execute on the Main thread.
         /// </summary>
@@ -220,11 +380,11 @@ namespace Microsoft.VisualStudio.Threading
             // there is no ambient job, or the ambient job does not belong to the collection, we must create
             // a (child) job and add that to this job factory's collection so that folks joining that factory
             // can help this switch to complete.
-            var ambientJob = this.Context.AmbientTask;
+            JoinableTask? ambientJob = this.Context.AmbientTask;
             SingleExecuteProtector? wrapper = null;
-            if (ambientJob == null || (this.jobCollection != null && !this.jobCollection.Contains(ambientJob)))
+            if (ambientJob is null || (this.jobCollection is object && !this.jobCollection.Contains(ambientJob)))
             {
-                var transient = this.RunAsync(
+                JoinableTask? transient = this.RunAsync(
                     delegate
                     {
                         RoslynDebug.Assert(this.Context.AmbientTask is object, $"{nameof(this.Context.AmbientTask)} is always set for {nameof(this.RunAsync)} callbacks.");
@@ -252,6 +412,61 @@ namespace Microsoft.VisualStudio.Threading
 
             Assumes.NotNull(wrapper);
             return wrapper;
+        }
+
+        /// <summary>
+        /// Posts a callback to the main thread via the underlying dispatcher,
+        /// or to the threadpool when no dispatcher exists on the main thread.
+        /// </summary>
+        internal void PostToUnderlyingSynchronizationContextOrThreadPool(SingleExecuteProtector callback)
+        {
+            Requires.NotNull(callback, nameof(callback));
+
+            if (this.UnderlyingSynchronizationContext is object)
+            {
+                this.PostToUnderlyingSynchronizationContext(SingleExecuteProtector.ExecuteOnce, callback);
+            }
+            else
+            {
+                ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, callback);
+            }
+        }
+
+        /// <summary>Runs the specified asynchronous method.</summary>
+        /// <param name="asyncMethod">The asynchronous method to execute.</param>
+        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior.</param>
+        /// <param name="entrypointOverride">The delegate to record as the entrypoint for this JoinableTask.</param>
+        internal void Run(Func<Task> asyncMethod, JoinableTaskCreationOptions creationOptions, Delegate? entrypointOverride)
+        {
+            VerifyNoNonConcurrentSyncContext();
+            JoinableTask? joinable = this.RunAsync(asyncMethod, synchronouslyBlocking: true, creationOptions: creationOptions, entrypointOverride: entrypointOverride);
+            joinable.CompleteOnCurrentThread();
+        }
+
+        internal void Post(SendOrPostCallback callback, object? state, bool mainThreadAffinitized)
+        {
+            Requires.NotNull(callback, nameof(callback));
+
+            if (mainThreadAffinitized)
+            {
+                JoinableTask? transient = this.RunAsync(delegate
+                {
+                    RoslynDebug.Assert(this.Context.AmbientTask is object, $"{nameof(this.Context.AmbientTask)} is always set for {nameof(this.RunAsync)} callbacks.");
+
+                    this.Context.AmbientTask.Post(callback, state, true);
+                    return Task.CompletedTask;
+                });
+
+                if (transient.Task.IsFaulted)
+                {
+                    // rethrow the exception.
+                    transient.Task.GetAwaiter().GetResult();
+                }
+            }
+            else
+            {
+                ThreadPool.QueueUserWorkItem(new WaitCallback(callback), state);
+            }
         }
 
         /// <summary>
@@ -291,24 +506,6 @@ namespace Microsoft.VisualStudio.Threading
         protected internal virtual void OnTransitionedToMainThread(JoinableTask joinableTask, bool canceled)
         {
             Requires.NotNull(joinableTask, nameof(joinableTask));
-        }
-
-        /// <summary>
-        /// Posts a callback to the main thread via the underlying dispatcher,
-        /// or to the threadpool when no dispatcher exists on the main thread.
-        /// </summary>
-        internal void PostToUnderlyingSynchronizationContextOrThreadPool(SingleExecuteProtector callback)
-        {
-            Requires.NotNull(callback, nameof(callback));
-
-            if (this.UnderlyingSynchronizationContext != null)
-            {
-                this.PostToUnderlyingSynchronizationContext(SingleExecuteProtector.ExecuteOnce, callback);
-            }
-            else
-            {
-                ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, callback);
-            }
         }
 
         /// <summary>
@@ -400,8 +597,8 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns>Return true if the current synchronous task on the thread is waiting on a long running task.</returns>
         protected bool IsWaitingOnLongRunningTask()
         {
-            var currentBlockingTask = JoinableTask.TaskCompletingOnThisThread;
-            if (currentBlockingTask != null)
+            JoinableTask? currentBlockingTask = JoinableTask.TaskCompletingOnThisThread;
+            if (currentBlockingTask is object)
             {
                 if ((currentBlockingTask.CreationOptions & JoinableTaskCreationOptions.LongRunning) == JoinableTaskCreationOptions.LongRunning)
                 {
@@ -423,230 +620,12 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Runs the specified asynchronous method to completion while synchronously blocking the calling thread.
-        /// </summary>
-        /// <param name="asyncMethod">The asynchronous method to execute.</param>
-        /// <remarks>
-        /// <para>Any exception thrown by the delegate is rethrown in its original type to the caller of this method.</para>
-        /// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
-        /// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
-        /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
-        /// <example>
-        /// <code>
-        /// // On threadpool or Main thread, this method will block
-        /// // the calling thread until all async operations in the
-        /// // delegate complete.
-        /// joinableTaskFactory.Run(async delegate {
-        ///     // still on the threadpool or Main thread as before.
-        ///     await OperationAsync();
-        ///     // still on the threadpool or Main thread as before.
-        ///     await Task.Run(async delegate {
-        ///          // Now we're on a threadpool thread.
-        ///          await Task.Yield();
-        ///          // still on a threadpool thread.
-        ///     });
-        ///     // Now back on the Main thread (or threadpool thread if that's where we started).
-        /// });
-        /// </code>
-        /// </example>
-        /// </remarks>
-        public void Run(Func<Task> asyncMethod)
-        {
-            this.Run(asyncMethod, JoinableTaskCreationOptions.None, entrypointOverride: null);
-        }
-
-        /// <summary>
-        /// Runs the specified asynchronous method to completion while synchronously blocking the calling thread.
-        /// </summary>
-        /// <param name="asyncMethod">The asynchronous method to execute.</param>
-        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior.</param>
-        public void Run(Func<Task> asyncMethod, JoinableTaskCreationOptions creationOptions)
-        {
-            this.Run(asyncMethod, creationOptions, entrypointOverride: null);
-        }
-
-        /// <summary>
-        /// Runs the specified asynchronous method to completion while synchronously blocking the calling thread.
-        /// </summary>
-        /// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
-        /// <param name="asyncMethod">The asynchronous method to execute.</param>
-        /// <returns>The result of the Task returned by <paramref name="asyncMethod"/>.</returns>
-        /// <remarks>
-        /// <para>Any exception thrown by the delegate is rethrown in its original type to the caller of this method.</para>
-        /// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
-        /// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
-        /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
-        /// <para>See the <see cref="Run(Func{Task})" /> overload documentation for an example.</para>
-        /// </remarks>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public T Run<T>(Func<Task<T>> asyncMethod)
-        {
-            return this.Run(asyncMethod, JoinableTaskCreationOptions.None);
-        }
-
-        /// <summary>
-        /// Runs the specified asynchronous method to completion while synchronously blocking the calling thread.
-        /// </summary>
-        /// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
-        /// <param name="asyncMethod">The asynchronous method to execute.</param>
-        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior.</param>
-        /// <returns>The result of the Task returned by <paramref name="asyncMethod"/>.</returns>
-        /// <remarks>
-        /// <para>Any exception thrown by the delegate is rethrown in its original type to the caller of this method.</para>
-        /// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
-        /// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
-        /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
-        /// </remarks>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
-        public T Run<T>(Func<Task<T>> asyncMethod, JoinableTaskCreationOptions creationOptions)
-        {
-            VerifyNoNonConcurrentSyncContext();
-            var joinable = this.RunAsync(asyncMethod, synchronouslyBlocking: true, creationOptions: creationOptions);
-            return joinable.CompleteOnCurrentThread();
-        }
-
-        /// <summary>
-        /// Invokes an async delegate on the caller's thread, and yields back to the caller when the async method yields.
-        /// The async delegate is invoked in such a way as to mitigate deadlocks in the event that the async method
-        /// requires the main thread while the main thread is blocked waiting for the async method's completion.
-        /// </summary>
-        /// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
-        /// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
-        /// <remarks>
-        /// <para>Exceptions thrown by the delegate are captured by the returned <see cref="JoinableTask" />.</para>
-        /// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
-        /// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
-        /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
-        /// </remarks>
-        public JoinableTask RunAsync(Func<Task> asyncMethod)
-        {
-            return this.RunAsync(asyncMethod, synchronouslyBlocking: false, creationOptions: JoinableTaskCreationOptions.None);
-        }
-
-        /// <summary>
-        /// Invokes an async delegate on the caller's thread, and yields back to the caller when the async method yields.
-        /// The async delegate is invoked in such a way as to mitigate deadlocks in the event that the async method
-        /// requires the main thread while the main thread is blocked waiting for the async method's completion.
-        /// </summary>
-        /// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
-        /// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
-        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior.</param>
-        /// <remarks>
-        /// <para>Exceptions thrown by the delegate are captured by the returned <see cref="JoinableTask" />.</para>
-        /// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
-        /// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
-        /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
-        /// </remarks>
-        public JoinableTask RunAsync(Func<Task> asyncMethod, JoinableTaskCreationOptions creationOptions)
-        {
-            return this.RunAsync(asyncMethod, synchronouslyBlocking: false, creationOptions: creationOptions);
-        }
-
-        /// <summary>Runs the specified asynchronous method.</summary>
-        /// <param name="asyncMethod">The asynchronous method to execute.</param>
-        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior.</param>
-        /// <param name="entrypointOverride">The delegate to record as the entrypoint for this JoinableTask.</param>
-        internal void Run(Func<Task> asyncMethod, JoinableTaskCreationOptions creationOptions, Delegate? entrypointOverride)
-        {
-            VerifyNoNonConcurrentSyncContext();
-            var joinable = this.RunAsync(asyncMethod, synchronouslyBlocking: true, creationOptions: creationOptions, entrypointOverride: entrypointOverride);
-            joinable.CompleteOnCurrentThread();
-        }
-
-        /// <summary>
-        /// Wraps the invocation of an async method such that it may
-        /// execute asynchronously, but may potentially be
-        /// synchronously completed (waited on) in the future.
-        /// </summary>
-        /// <param name="asyncMethod">The asynchronous method to execute.</param>
-        /// <param name="synchronouslyBlocking">A value indicating whether the launching thread will synchronously block for this job's completion.</param>
-        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior.</param>
-        /// <param name="entrypointOverride">The entry method's info for diagnostics.</param>
-        private JoinableTask RunAsync(Func<Task> asyncMethod, bool synchronouslyBlocking, JoinableTaskCreationOptions creationOptions, Delegate? entrypointOverride = null)
-        {
-            Requires.NotNull(asyncMethod, nameof(asyncMethod));
-
-            var job = new JoinableTask(this, synchronouslyBlocking, creationOptions, entrypointOverride ?? asyncMethod);
-            this.ExecuteJob<EmptyStruct>(asyncMethod, job);
-            return job;
-        }
-
-        /// <summary>
-        /// Invokes an async delegate on the caller's thread, and yields back to the caller when the async method yields.
-        /// The async delegate is invoked in such a way as to mitigate deadlocks in the event that the async method
-        /// requires the main thread while the main thread is blocked waiting for the async method's completion.
-        /// </summary>
-        /// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
-        /// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
-        /// <returns>
-        /// An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.
-        /// </returns>
-        /// <remarks>
-        /// <para>Exceptions thrown by the delegate are captured by the returned <see cref="JoinableTask" />.</para>
-        /// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
-        /// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
-        /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
-        /// </remarks>
-        public JoinableTask<T> RunAsync<T>(Func<Task<T>> asyncMethod)
-        {
-            return this.RunAsync(asyncMethod, synchronouslyBlocking: false, creationOptions: JoinableTaskCreationOptions.None);
-        }
-
-        /// <summary>
-        /// Invokes an async delegate on the caller's thread, and yields back to the caller when the async method yields.
-        /// The async delegate is invoked in such a way as to mitigate deadlocks in the event that the async method
-        /// requires the main thread while the main thread is blocked waiting for the async method's completion.
-        /// </summary>
-        /// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
-        /// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
-        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior.</param>
-        /// <returns>
-        /// An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.
-        /// </returns>
-        /// <remarks>
-        /// <para>Exceptions thrown by the delegate are captured by the returned <see cref="JoinableTask" />.</para>
-        /// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
-        /// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
-        /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
-        /// </remarks>
-        public JoinableTask<T> RunAsync<T>(Func<Task<T>> asyncMethod, JoinableTaskCreationOptions creationOptions)
-        {
-            return this.RunAsync(asyncMethod, synchronouslyBlocking: false, creationOptions: creationOptions);
-        }
-
-        internal void Post(SendOrPostCallback callback, object? state, bool mainThreadAffinitized)
-        {
-            Requires.NotNull(callback, nameof(callback));
-
-            if (mainThreadAffinitized)
-            {
-                var transient = this.RunAsync(delegate
-                {
-                    RoslynDebug.Assert(this.Context.AmbientTask is object, $"{nameof(this.Context.AmbientTask)} is always set for {nameof(this.RunAsync)} callbacks.");
-
-                    this.Context.AmbientTask.Post(callback, state, true);
-                    return Task.CompletedTask;
-                });
-
-                if (transient.Task.IsFaulted)
-                {
-                    // rethrow the exception.
-                    transient.Task.GetAwaiter().GetResult();
-                }
-            }
-            else
-            {
-                ThreadPool.QueueUserWorkItem(new WaitCallback(callback), state);
-            }
-        }
-
-        /// <summary>
         /// Adds the specified joinable task to the applicable collection.
         /// </summary>
         protected void Add(JoinableTask joinable)
         {
             Requires.NotNull(joinable, nameof(joinable));
-            if (this.jobCollection != null)
+            if (this.jobCollection is object)
             {
                 this.jobCollection.Add(joinable);
             }
@@ -677,6 +656,24 @@ namespace Microsoft.VisualStudio.Threading
 #endif
                 Verify.FailOperation(Strings.NotAllowedUnderURorWLock); // actually throws, even in RET.
             }
+        }
+
+        /// <summary>
+        /// Wraps the invocation of an async method such that it may
+        /// execute asynchronously, but may potentially be
+        /// synchronously completed (waited on) in the future.
+        /// </summary>
+        /// <param name="asyncMethod">The asynchronous method to execute.</param>
+        /// <param name="synchronouslyBlocking">A value indicating whether the launching thread will synchronously block for this job's completion.</param>
+        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior.</param>
+        /// <param name="entrypointOverride">The entry method's info for diagnostics.</param>
+        private JoinableTask RunAsync(Func<Task> asyncMethod, bool synchronouslyBlocking, JoinableTaskCreationOptions creationOptions, Delegate? entrypointOverride = null)
+        {
+            Requires.NotNull(asyncMethod, nameof(asyncMethod));
+
+            var job = new JoinableTask(this, synchronouslyBlocking, creationOptions, entrypointOverride ?? asyncMethod);
+            this.ExecuteJob<EmptyStruct>(asyncMethod, job);
+            return job;
         }
 
         private JoinableTask<T> RunAsync<T>(Func<Task<T>> asyncMethod, bool synchronouslyBlocking, JoinableTaskCreationOptions creationOptions)
@@ -755,7 +752,9 @@ namespace Microsoft.VisualStudio.Threading
         /// An awaiter struct that facilitates an asynchronous transition to the Main thread.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
+#pragma warning disable CA1034 // Nested types should not be visible
         public readonly struct MainThreadAwaiter : ICriticalNotifyCompletion
+#pragma warning restore CA1034 // Nested types should not be visible
         {
             private static readonly Action<object> SafeCancellationAction = state => ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, state);
 
@@ -818,9 +817,9 @@ namespace Microsoft.VisualStudio.Threading
                     }
 
                     return this.synchronousCancellation
-                        || this.jobFactory == null
+                        || this.jobFactory is null
                         || this.jobFactory.Context.IsOnMainThread
-                        || this.jobFactory.Context.UnderlyingSynchronizationContext == null;
+                        || this.jobFactory.Context.UnderlyingSynchronizationContext is null;
                 }
             }
 
@@ -848,14 +847,14 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             public void GetResult()
             {
-                Assumes.True(this.jobFactory != null);
-                if (!(this.jobFactory.Context.IsOnMainThread || this.jobFactory.Context.UnderlyingSynchronizationContext == null || this.cancellationToken.IsCancellationRequested))
+                Assumes.True(this.jobFactory is object);
+                if (!(this.jobFactory.Context.IsOnMainThread || this.jobFactory.Context.UnderlyingSynchronizationContext is null || this.cancellationToken.IsCancellationRequested))
                 {
                     throw new JoinableTaskContextException(Strings.SwitchToMainThreadFailedToReachExpectedThread);
                 }
 
                 // Release memory associated with the cancellation request.
-                if (this.cancellationRegistrationPtr != null)
+                if (this.cancellationRegistrationPtr is object)
                 {
                     CancellationTokenRegistration registration = default(CancellationTokenRegistration);
                     using (this.jobFactory.Context.NoMessagePumpSynchronizationContext.Apply())
@@ -893,7 +892,7 @@ namespace Microsoft.VisualStudio.Threading
                 // We don't have an opportunity to revert the sync context change, but it turns out we don't need to because
                 // this method should only be called from async methods, which automatically revert any execution context
                 // changes they apply (including SynchronizationContext) when they complete, thanks to the way .NET 4.5 works.
-                var syncContext = this.job != null ? this.job.ApplicableJobSyncContext : this.jobFactory.ApplicableJobSyncContext;
+                SynchronizationContext? syncContext = this.job is object ? this.job.ApplicableJobSyncContext : this.jobFactory.ApplicableJobSyncContext;
                 syncContext.Apply();
 
                 // Cancel if requested, even if we arrived on the main thread.
@@ -911,7 +910,7 @@ namespace Microsoft.VisualStudio.Threading
             [SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters", MessageId = "System.Environment.FailFast(System.String,System.Exception)"), SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Justification = "Failing here is worth crashing the process for.")]
             private void OnCompleted(Action continuation, bool flowExecutionContext)
             {
-                Assumes.True(this.jobFactory != null);
+                Assumes.True(this.jobFactory is object);
 
                 bool restoreFlow = !flowExecutionContext && !ExecutionContext.IsFlowSuppressed();
                 if (restoreFlow)
@@ -925,15 +924,15 @@ namespace Microsoft.VisualStudio.Threading
                     // or the main thread will execute the continuation first. So we must wrap the continuation
                     // in a SingleExecuteProtector so that it can't be executed twice by accident.
                     // Success case of the main thread.
-                    var wrapper = this.jobFactory.RequestSwitchToMainThread(continuation);
+                    SingleExecuteProtector? wrapper = this.jobFactory.RequestSwitchToMainThread(continuation);
 
                     // Cancellation case of a threadpool thread.
-                    if (this.cancellationRegistrationPtr != null)
+                    if (this.cancellationRegistrationPtr is object)
                     {
                         // Store the cancellation token registration in the struct pointer. This way,
                         // if the awaiter has been copied (since it's a struct), each copy of the awaiter
                         // points to the same registration. Without this we can have a memory leak.
-                        var registration = this.cancellationToken.Register(
+                        CancellationTokenRegistration registration = this.cancellationToken.Register(
                             NullableHelpers.AsNullableArgAction(flowExecutionContext ? SafeCancellationAction : UnsafeCancellationAction),
                             wrapper,
                             useSynchronizationContext: false);
@@ -1012,12 +1011,12 @@ namespace Microsoft.VisualStudio.Threading
                 this.syncContextRevert = this.joinable.ApplicableJobSyncContext.Apply();
 
                 // Join the ambient parent job, so the parent can dequeue this job's work.
-                if (this.previousJoinable != null && !this.previousJoinable.IsCompleted)
+                if (this.previousJoinable is object && !this.previousJoinable.IsCompleted)
                 {
                     JoinableTaskDependencyGraph.AddDependency(this.previousJoinable, joinable);
 
                     // By definition we inherit the nesting factories of our immediate nesting task.
-                    var nestingFactories = this.previousJoinable.NestingFactories;
+                    ListOfOftenOne<JoinableTaskFactory> nestingFactories = this.previousJoinable.NestingFactories;
 
                     // And we may add our immediate nesting parent's factory to the list of
                     // ancestors if it isn't already in the list.
@@ -1096,7 +1095,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             internal bool HasBeenExecuted
             {
-                get { return this.invokeDelegate == null; }
+                get { return this.invokeDelegate is null; }
             }
 
             /// <summary>
@@ -1110,65 +1109,6 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     return this.WalkAsyncReturnStackFrames().First(); // Top frame of the return callstack.
                 }
-            }
-
-            /// <summary>
-            /// Registers for a callback when this instance is executed.
-            /// </summary>
-            internal void AddExecutingCallback(JoinableTask.ExecutionQueue callbackReceiver)
-            {
-                if (!this.HasBeenExecuted)
-                {
-                    this.executingCallbacks.Add(callbackReceiver);
-                }
-            }
-
-            /// <summary>
-            /// Unregisters a callback for when this instance is executed.
-            /// </summary>
-            internal void RemoveExecutingCallback(JoinableTask.ExecutionQueue callbackReceiver)
-            {
-                this.executingCallbacks.Remove(callbackReceiver);
-            }
-
-            /// <summary>
-            /// Walk the continuation objects inside "async state machines" to generate the return callstack.
-            /// FOR DIAGNOSTIC PURPOSES ONLY.
-            /// </summary>
-            internal IEnumerable<string> WalkAsyncReturnStackFrames()
-            {
-                // This instance might be a wrapper of another instance of "SingleExecuteProtector".
-                // If that is true, we need to follow the chain to find the inner instance of "SingleExecuteProtector".
-                var singleExecuteProtector = this;
-                while (singleExecuteProtector.state is SingleExecuteProtector)
-                {
-                    singleExecuteProtector = (SingleExecuteProtector)singleExecuteProtector.state;
-                }
-
-                var invokeDelegate = singleExecuteProtector.invokeDelegate as Delegate;
-                var stateDelegate = singleExecuteProtector.state as Delegate;
-
-                // We are in favor of "state" when "invokeDelegate" is a static method and "state" is the actual delegate.
-                Delegate? actualDelegate = (stateDelegate != null && stateDelegate.Target != null) ? stateDelegate : invokeDelegate;
-                if (actualDelegate == null)
-                {
-                    yield return "<COMPLETED>";
-                    yield break;
-                }
-
-                foreach (var frame in actualDelegate.GetAsyncReturnStackFrames())
-                {
-                    yield return frame;
-                }
-            }
-
-            internal void RaiseTransitioningEvents()
-            {
-                Assumes.False(this.raiseTransitionComplete); // if this method is called twice, that's the sign of a problem.
-                RoslynDebug.Assert(this.job is object);
-
-                this.raiseTransitionComplete = true;
-                this.job.Factory.OnTransitioningToMainThread(this.job);
             }
 
             /// <summary>
@@ -1200,7 +1140,7 @@ namespace Microsoft.VisualStudio.Threading
                 // As an optimization, recognize if what we're being handed is already an instance of this type,
                 // because if it is, we don't need to wrap it with yet another instance.
                 var existing = state as SingleExecuteProtector;
-                if (callback == ExecuteOnce && existing != null && job == existing.job)
+                if (callback == ExecuteOnce && existing is object && job == existing.job)
                 {
                     return existing;
                 }
@@ -1213,16 +1153,75 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
+            /// Registers for a callback when this instance is executed.
+            /// </summary>
+            internal void AddExecutingCallback(JoinableTask.ExecutionQueue callbackReceiver)
+            {
+                if (!this.HasBeenExecuted)
+                {
+                    this.executingCallbacks.Add(callbackReceiver);
+                }
+            }
+
+            /// <summary>
+            /// Unregisters a callback for when this instance is executed.
+            /// </summary>
+            internal void RemoveExecutingCallback(JoinableTask.ExecutionQueue callbackReceiver)
+            {
+                this.executingCallbacks.Remove(callbackReceiver);
+            }
+
+            /// <summary>
+            /// Walk the continuation objects inside "async state machines" to generate the return callstack.
+            /// FOR DIAGNOSTIC PURPOSES ONLY.
+            /// </summary>
+            internal IEnumerable<string> WalkAsyncReturnStackFrames()
+            {
+                // This instance might be a wrapper of another instance of "SingleExecuteProtector".
+                // If that is true, we need to follow the chain to find the inner instance of "SingleExecuteProtector".
+                SingleExecuteProtector? singleExecuteProtector = this;
+                while (singleExecuteProtector.state is SingleExecuteProtector)
+                {
+                    singleExecuteProtector = (SingleExecuteProtector)singleExecuteProtector.state;
+                }
+
+                var invokeDelegate = singleExecuteProtector.invokeDelegate as Delegate;
+                var stateDelegate = singleExecuteProtector.state as Delegate;
+
+                // We are in favor of "state" when "invokeDelegate" is a static method and "state" is the actual delegate.
+                Delegate? actualDelegate = (stateDelegate is object && stateDelegate.Target is object) ? stateDelegate : invokeDelegate;
+                if (actualDelegate is null)
+                {
+                    yield return "<COMPLETED>";
+                    yield break;
+                }
+
+                foreach (var frame in actualDelegate.GetAsyncReturnStackFrames())
+                {
+                    yield return frame;
+                }
+            }
+
+            internal void RaiseTransitioningEvents()
+            {
+                Assumes.False(this.raiseTransitionComplete); // if this method is called twice, that's the sign of a problem.
+                RoslynDebug.Assert(this.job is object);
+
+                this.raiseTransitionComplete = true;
+                this.job.Factory.OnTransitioningToMainThread(this.job);
+            }
+
+            /// <summary>
             /// Executes the delegate if it has not already executed.
             /// </summary>
             internal bool TryExecute()
             {
                 object? invokeDelegate = Interlocked.Exchange(ref this.invokeDelegate, null);
-                if (invokeDelegate != null)
+                if (invokeDelegate is object)
                 {
                     this.OnExecuting();
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
-                    var syncContext = this.job != null ? this.job.ApplicableJobSyncContext : this.job.Factory.ApplicableJobSyncContext;
+                    SynchronizationContext? syncContext = this.job is object ? this.job.ApplicableJobSyncContext : this.job.Factory.ApplicableJobSyncContext;
 #pragma warning restore CS8602 // Dereference of a possibly null reference.
                     using (syncContext.Apply(checkForChangesOnRevert: false))
                     {
@@ -1262,7 +1261,7 @@ namespace Microsoft.VisualStudio.Threading
                 // While raising the event, automatically remove the handlers since we'll only
                 // raise them once, and we'd like to avoid holding references that may extend
                 // the lifetime of our recipients.
-                using (var enumerator = this.executingCallbacks.EnumerateAndClear())
+                using (ListOfOftenOne<JoinableTask.ExecutionQueue>.Enumerator enumerator = this.executingCallbacks.EnumerateAndClear())
                 {
                     while (enumerator.MoveNext())
                     {

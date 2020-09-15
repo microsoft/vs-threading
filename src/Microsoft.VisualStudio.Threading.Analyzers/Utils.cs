@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
@@ -115,8 +112,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
                     for (int i = 0; i < ctxt.OperationBlocks.Length; i++)
                     {
-                        var operation = ctxt.OperationBlocks[i];
-                        var lineSpan = operation.Syntax.GetLocation()?.GetLineSpan();
+                        IOperation? operation = ctxt.OperationBlocks[i];
+                        FileLinePositionSpan? lineSpan = operation.Syntax.GetLocation()?.GetLineSpan();
 
                         if (i > 0)
                         {
@@ -154,7 +151,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         internal static bool IsDerivedFrom(ITypeSymbol? type, ITypeSymbol expectedType)
         {
             type = type?.BaseType;
-            while (type != null)
+            while (type is object)
             {
                 if (EqualityComparer<ITypeSymbol>.Default.Equals(type.OriginalDefinition, expectedType))
                 {
@@ -215,12 +212,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// <returns><c>true</c> if the symbol belongs to the given namespace; otherwise <c>false</c>.</returns>
         internal static bool BelongsToNamespace(this ISymbol symbol, IReadOnlyList<string> namespaces)
         {
-            if (namespaces == null)
+            if (namespaces is null)
             {
                 throw new ArgumentNullException(nameof(namespaces));
             }
 
-            if (symbol == null)
+            if (symbol is null)
             {
                 return false;
             }
@@ -241,8 +238,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static IBlockOperation? GetContainingFunctionBlock(IOperation operation)
         {
-            var previousAncestor = operation;
-            var ancestor = previousAncestor;
+            IOperation? previousAncestor = operation;
+            IOperation? ancestor = previousAncestor;
             do
             {
                 if (previousAncestor != ancestor)
@@ -252,7 +249,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
                 ancestor = ancestor.Parent;
             }
-            while (ancestor != null && ancestor.Kind != OperationKind.MethodBodyOperation && ancestor.Kind != OperationKind.AnonymousFunction &&
+            while (ancestor is object && ancestor.Kind != OperationKind.MethodBodyOperation && ancestor.Kind != OperationKind.AnonymousFunction &&
                 ancestor.Kind != OperationKind.LocalFunction);
 
             return previousAncestor as IBlockOperation;
@@ -260,7 +257,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static ISymbol GetContainingFunction(IOperation operation, ISymbol operationBlockContainingSymbol)
         {
-            for (var current = operation; current is object; current = current.Parent)
+            for (IOperation? current = operation; current is object; current = current.Parent)
             {
                 if (current.Kind == OperationKind.AnonymousFunction)
                 {
@@ -289,7 +286,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// </remarks>
         internal static bool IsAsyncCompatibleReturnType([NotNullWhen(true)] this ITypeSymbol? typeSymbol)
         {
-            if (typeSymbol == null)
+            if (typeSymbol is null)
             {
                 return false;
             }
@@ -365,7 +362,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// </returns>
         internal static bool IsPublic([NotNullWhen(true)] ISymbol? symbol)
         {
-            if (symbol == null)
+            if (symbol is null)
             {
                 return false;
             }
@@ -392,7 +389,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 case Accessibility.Protected:
                 case Accessibility.ProtectedOrInternal:
                 case Accessibility.Public:
-                    return symbol.ContainingType == null || IsPublic(symbol.ContainingType);
+                    return symbol.ContainingType is null || IsPublic(symbol.ContainingType);
                 case Accessibility.NotApplicable:
                 default:
                     return false;
@@ -401,7 +398,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static bool IsEntrypointMethod([NotNullWhen(true)] ISymbol? symbol, SemanticModel semanticModel, CancellationToken cancellationToken)
         {
-            return semanticModel.Compilation != null && IsEntrypointMethod(symbol, semanticModel.Compilation, cancellationToken);
+            return semanticModel.Compilation is object && IsEntrypointMethod(symbol, semanticModel.Compilation, cancellationToken);
         }
 
         internal static bool IsEntrypointMethod([NotNullWhen(true)] ISymbol? symbol, Compilation compilation, CancellationToken cancellationToken)
@@ -416,12 +413,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static IEnumerable<ITypeSymbol> FindInterfacesImplemented(this ISymbol? symbol)
         {
-            if (symbol == null)
+            if (symbol is null)
             {
                 return Enumerable.Empty<ITypeSymbol>();
             }
 
-            var interfaceImplementations = from iface in symbol.ContainingType.AllInterfaces
+            IEnumerable<INamedTypeSymbol>? interfaceImplementations = from iface in symbol.ContainingType.AllInterfaces
                                            from member in iface.GetMembers()
                                            let implementingMember = symbol.ContainingType.FindImplementationForInterfaceMember(member)
                                            where implementingMember?.Equals(symbol) ?? false
@@ -432,20 +429,20 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static string GetFullName(ISymbol symbol)
         {
-            if (symbol == null)
+            if (symbol is null)
             {
                 throw new ArgumentNullException(nameof(symbol));
             }
 
             var sb = new StringBuilder();
             sb.Append(symbol.Name);
-            while (symbol.ContainingType != null)
+            while (symbol.ContainingType is object)
             {
                 sb.Insert(0, symbol.ContainingType.Name + ".");
                 symbol = symbol.ContainingType;
             }
 
-            while (symbol.ContainingNamespace != null)
+            while (symbol.ContainingNamespace is object)
             {
                 if (!string.IsNullOrEmpty(symbol.ContainingNamespace.Name))
                 {
@@ -494,18 +491,18 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// <returns>Candidate <see cref="CancellationToken"/> symbols.</returns>
         internal static IEnumerable<ISymbol>? FindCancellationToken(SemanticModel semanticModel, int positionForLookup, CancellationToken cancellationToken)
         {
-            if (semanticModel == null)
+            if (semanticModel is null)
             {
                 throw new ArgumentNullException(nameof(semanticModel));
             }
 
-            var enclosingSymbol = semanticModel.GetEnclosingSymbol(positionForLookup, cancellationToken);
-            if (enclosingSymbol == null)
+            ISymbol? enclosingSymbol = semanticModel.GetEnclosingSymbol(positionForLookup, cancellationToken);
+            if (enclosingSymbol is null)
             {
                 return null;
             }
 
-            var cancellationTokenSymbols = semanticModel.LookupSymbols(positionForLookup)
+            IOrderedEnumerable<ISymbol>? cancellationTokenSymbols = semanticModel.LookupSymbols(positionForLookup)
                 .Where(s => (s.IsStatic || !enclosingSymbol.IsStatic) && s.CanBeReferencedByName && IsSymbolTheRightType(s, nameof(CancellationToken), Namespaces.SystemThreading))
                 .OrderBy(s => s.ContainingSymbol.Equals(enclosingSymbol) ? 1 : s.ContainingType.Equals(enclosingSymbol.ContainingType) ? 2 : 3); // prefer locality
             return cancellationTokenSymbols;
@@ -519,7 +516,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// <returns>An enumeration of method symbols with a matching name.</returns>
         internal static IEnumerable<IMethodSymbol> FindMethodGroup(SemanticModel semanticModel, string methodAsString)
         {
-            if (semanticModel == null)
+            if (semanticModel is null)
             {
                 throw new ArgumentNullException(nameof(semanticModel));
             }
@@ -529,15 +526,15 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 throw new ArgumentException("A non-empty value is required.", nameof(methodAsString));
             }
 
-            var (fullTypeName, methodName) = SplitOffLastElement(methodAsString);
-            var (ns, leafTypeName) = SplitOffLastElement(fullTypeName);
+            (string? fullTypeName, string? methodName) = SplitOffLastElement(methodAsString);
+            (string? ns, string? leafTypeName) = SplitOffLastElement(fullTypeName);
             string[]? namespaces = ns?.Split('.');
-            if (fullTypeName == null)
+            if (fullTypeName is null)
             {
                 return Enumerable.Empty<IMethodSymbol>();
             }
 
-            var proposedType = semanticModel.Compilation.GetTypeByMetadataName(fullTypeName);
+            INamedTypeSymbol? proposedType = semanticModel.Compilation.GetTypeByMetadataName(fullTypeName);
 
             return proposedType?.GetMembers(methodName).OfType<IMethodSymbol>() ?? Enumerable.Empty<IMethodSymbol>();
         }
@@ -550,12 +547,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// <returns>An enumeration of method symbols with a matching name.</returns>
         internal static IEnumerable<IMethodSymbol> FindMethodGroup(SemanticModel semanticModel, CommonInterest.QualifiedMember method)
         {
-            if (semanticModel == null)
+            if (semanticModel is null)
             {
                 throw new ArgumentNullException(nameof(semanticModel));
             }
 
-            var proposedType = semanticModel.Compilation.GetTypeByMetadataName(method.ContainingType.ToString());
+            INamedTypeSymbol? proposedType = semanticModel.Compilation.GetTypeByMetadataName(method.ContainingType.ToString());
             return proposedType?.GetMembers(method.Name).OfType<IMethodSymbol>() ?? Enumerable.Empty<IMethodSymbol>();
         }
 
@@ -570,40 +567,40 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// <returns>An enumeration of symbols that can provide a value of the required type, together with a flag indicating whether they are accessible using "local" syntax (i.e. the symbol is a local variable or a field on the enclosing type).</returns>
         internal static IEnumerable<Tuple<bool, ISymbol>> FindInstanceOf(INamedTypeSymbol typeSymbol, SemanticModel semanticModel, int positionForLookup, CancellationToken cancellationToken)
         {
-            if (typeSymbol == null)
+            if (typeSymbol is null)
             {
                 throw new ArgumentNullException(nameof(typeSymbol));
             }
 
-            if (semanticModel == null)
+            if (semanticModel is null)
             {
                 throw new ArgumentNullException(nameof(semanticModel));
             }
 
-            var enclosingSymbol = semanticModel.GetEnclosingSymbol(positionForLookup, cancellationToken);
+            ISymbol? enclosingSymbol = semanticModel.GetEnclosingSymbol(positionForLookup, cancellationToken);
 
             // Search fields on the declaring type.
             // Consider local variables too, if they're captured in a closure from some surrounding code block
             // such that they would presumably be initialized by the time the first statement in our own code block runs.
             ITypeSymbol enclosingTypeSymbol = enclosingSymbol as ITypeSymbol ?? enclosingSymbol.ContainingType;
-            if (enclosingTypeSymbol != null)
+            if (enclosingTypeSymbol is object)
             {
-                var candidateMembers = from symbol in semanticModel.LookupSymbols(positionForLookup, enclosingTypeSymbol)
+                IEnumerable<ISymbol>? candidateMembers = from symbol in semanticModel.LookupSymbols(positionForLookup, enclosingTypeSymbol)
                                        where symbol.IsStatic || !enclosingSymbol.IsStatic
                                        where IsSymbolTheRightType(symbol, typeSymbol.Name, typeSymbol.ContainingNamespace)
                                        select symbol;
-                foreach (var candidate in candidateMembers)
+                foreach (ISymbol? candidate in candidateMembers)
                 {
                     yield return Tuple.Create(true, candidate);
                 }
             }
 
             // Find static fields/properties that return the matching type from other public, non-generic types.
-            var candidateStatics = from offering in semanticModel.LookupStaticMembers(positionForLookup).OfType<ITypeSymbol>()
+            IEnumerable<ISymbol>? candidateStatics = from offering in semanticModel.LookupStaticMembers(positionForLookup).OfType<ITypeSymbol>()
                                    from symbol in offering.GetMembers()
                                    where symbol.IsStatic && symbol.CanBeReferencedByName && IsSymbolTheRightType(symbol, typeSymbol.Name, typeSymbol.ContainingNamespace)
                                    select symbol;
-            foreach (var candidate in candidateStatics)
+            foreach (ISymbol? candidate in candidateStatics)
             {
                 yield return Tuple.Create(false, candidate);
             }
@@ -612,13 +609,13 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         internal static T? FirstAncestor<T>(this SyntaxNode startingNode, IReadOnlyCollection<Type> doNotPassNodeTypes)
             where T : SyntaxNode
         {
-            if (doNotPassNodeTypes == null)
+            if (doNotPassNodeTypes is null)
             {
                 throw new ArgumentNullException(nameof(doNotPassNodeTypes));
             }
 
-            var syntaxNode = startingNode;
-            while (syntaxNode != null)
+            SyntaxNode? syntaxNode = startingNode;
+            while (syntaxNode is object)
             {
                 if (syntaxNode is T result)
                 {
@@ -638,7 +635,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static Tuple<string?, string?> SplitOffLastElement(string? qualifiedName)
         {
-            if (qualifiedName == null)
+            if (qualifiedName is null)
             {
                 return Tuple.Create<string?, string?>(null, null);
             }
@@ -704,7 +701,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             var propertySymbol = symbol as IPropertySymbol;
             var parameterSymbol = symbol as IParameterSymbol;
             var localSymbol = symbol as ILocalSymbol;
-            var memberType = fieldSymbol?.Type ?? propertySymbol?.Type ?? parameterSymbol?.Type ?? localSymbol?.Type;
+            ITypeSymbol? memberType = fieldSymbol?.Type ?? propertySymbol?.Type ?? parameterSymbol?.Type ?? localSymbol?.Type;
             return memberType?.Name == typeName && memberType.BelongsToNamespace(namespaces);
         }
 
@@ -714,7 +711,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             var propertySymbol = symbol as IPropertySymbol;
             var parameterSymbol = symbol as IParameterSymbol;
             var localSymbol = symbol as ILocalSymbol;
-            var memberType = fieldSymbol?.Type ?? propertySymbol?.Type ?? parameterSymbol?.Type ?? localSymbol?.Type;
+            ITypeSymbol? memberType = fieldSymbol?.Type ?? propertySymbol?.Type ?? parameterSymbol?.Type ?? localSymbol?.Type;
             return memberType?.Name == typeName && memberType.ContainingNamespace.Equals(namespaces);
         }
 

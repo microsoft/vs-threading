@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading
 {
@@ -19,6 +16,11 @@ namespace Microsoft.VisualStudio.Threading
     [EventSource(Name = "Microsoft-VisualStudio-Threading")]
     internal sealed partial class ThreadingEventSource : EventSource
     {
+        /// <summary>
+        /// The singleton instance used for logging.
+        /// </summary>
+        internal static readonly ThreadingEventSource Instance = new ThreadingEventSource();
+
         /// <summary>
         /// The event ID for the <see cref="ReaderWriterLockIssued(int, AsyncReaderWriterLock.LockKind, int, int)"/> event.
         /// </summary>
@@ -65,13 +67,6 @@ namespace Microsoft.VisualStudio.Threading
         private const int PostExecutionStopEvent = 16;
 
         /// <summary>
-        /// The singleton instance used for logging.
-        /// </summary>
-        internal static readonly ThreadingEventSource Instance = new ThreadingEventSource();
-
-#region ReaderWriterLock Events
-
-        /// <summary>
         /// Logs an issued lock.
         /// </summary>
         [Event(ReaderWriterLockIssuedLockCountsEvent, Task = Tasks.LockRequest, Opcode = Opcodes.ReaderWriterLockIssued)]
@@ -97,8 +92,6 @@ namespace Microsoft.VisualStudio.Threading
         {
             this.WriteEvent(WaitReaderWriterLockStopEvent, lockId, kind);
         }
-
-#endregion
 
         /// <summary>
         /// Enters a synchronously task.

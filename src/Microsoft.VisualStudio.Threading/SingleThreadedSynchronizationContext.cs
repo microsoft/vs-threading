@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading
 {
@@ -111,7 +108,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
 
                 evt.Wait();
-                if (caughtException != null)
+                if (caughtException is object)
                 {
                     throw new TargetInvocationException(caughtException);
                 }
@@ -162,7 +159,7 @@ namespace Microsoft.VisualStudio.Threading
                         }
                     }
 
-                    if (message.Context != null)
+                    if (message.Context is object)
                     {
                         ExecutionContext.Run(
                             message.Context,
@@ -198,7 +195,9 @@ namespace Microsoft.VisualStudio.Threading
         /// A message pumping frame that may be pushed with <see cref="PushFrame(Frame)"/> to pump messages
         /// on the owning thread.
         /// </summary>
+#pragma warning disable CA1034 // Nested types should not be visible
         public class Frame
+#pragma warning restore CA1034 // Nested types should not be visible
         {
             /// <summary>
             /// The owning sync context.
@@ -223,7 +222,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 set
                 {
-                    Verify.Operation(this.owner != null, Strings.FrameMustBePushedFirst);
+                    Verify.Operation(this.owner is object, Strings.FrameMustBePushedFirst);
 
                     this.@continue = value;
 
@@ -243,7 +242,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 if (context != this.owner)
                 {
-                    Verify.Operation(this.owner == null, Strings.SyncContextFrameMismatchedAffinity);
+                    Verify.Operation(this.owner is null, Strings.SyncContextFrameMismatchedAffinity);
                     this.owner = context;
                 }
             }

@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
@@ -33,7 +30,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// <inheritdoc />
         public override Task RegisterCodeFixesAsync(CodeFixContext context)
         {
-            var diagnostic = context.Diagnostics.First();
+            Diagnostic? diagnostic = context.Diagnostics.First();
             context.RegisterCodeFix(new AddAsyncSuffixCodeAction(context.Document, diagnostic), diagnostic);
             return Task.FromResult<object?>(null);
         }
@@ -64,14 +61,14 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             protected override async Task<Solution> GetChangedSolutionAsync(CancellationToken cancellationToken)
             {
-                var root = await this.document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+                SyntaxNode? root = await this.document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
                 var methodDeclaration = (MethodDeclarationSyntax)root.FindNode(this.diagnostic.Location.SourceSpan);
 
-                var semanticModel = await this.document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
-                var methodSymbol = semanticModel.GetDeclaredSymbol(methodDeclaration, cancellationToken);
+                SemanticModel? semanticModel = await this.document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
+                IMethodSymbol? methodSymbol = semanticModel.GetDeclaredSymbol(methodDeclaration, cancellationToken);
 
-                var solution = this.document.Project.Solution;
-                var updatedSolution = await Renamer.RenameSymbolAsync(
+                Solution? solution = this.document.Project.Solution;
+                Solution? updatedSolution = await Renamer.RenameSymbolAsync(
                     solution,
                     methodSymbol,
                     this.NewName,

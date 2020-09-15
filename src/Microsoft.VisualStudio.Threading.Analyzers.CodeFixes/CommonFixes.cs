@@ -1,4 +1,7 @@
-﻿namespace Microsoft.VisualStudio.Threading.Analyzers
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
     using System.Collections.Generic;
@@ -22,7 +25,7 @@
     {
         internal static async Task<ImmutableArray<QualifiedMember>> ReadMethodsAsync(CodeFixContext codeFixContext, Regex fileNamePattern, CancellationToken cancellationToken)
         {
-            var result = ImmutableArray.CreateBuilder<QualifiedMember>();
+            ImmutableArray<QualifiedMember>.Builder? result = ImmutableArray.CreateBuilder<QualifiedMember>();
             foreach (string line in await ReadAdditionalFilesAsync(codeFixContext.Document.Project.AdditionalDocuments, fileNamePattern, cancellationToken))
             {
                 result.Add(ParseAdditionalFileMethodLine(line));
@@ -33,24 +36,24 @@
 
         internal static async Task<ImmutableArray<string>> ReadAdditionalFilesAsync(IEnumerable<TextDocument> additionalFiles, Regex fileNamePattern, CancellationToken cancellationToken)
         {
-            if (additionalFiles == null)
+            if (additionalFiles is null)
             {
                 throw new ArgumentNullException(nameof(additionalFiles));
             }
 
-            if (fileNamePattern == null)
+            if (fileNamePattern is null)
             {
                 throw new ArgumentNullException(nameof(fileNamePattern));
             }
 
-            var docs = from doc in additionalFiles.OrderBy(x => x.FilePath, StringComparer.Ordinal)
+            IEnumerable<TextDocument>? docs = from doc in additionalFiles.OrderBy(x => x.FilePath, StringComparer.Ordinal)
                        let fileName = Path.GetFileName(doc.Name)
                        where fileNamePattern.IsMatch(fileName)
                        select doc;
-            var result = ImmutableArray.CreateBuilder<string>();
-            foreach (var doc in docs)
+            ImmutableArray<string>.Builder? result = ImmutableArray.CreateBuilder<string>();
+            foreach (TextDocument? doc in docs)
             {
-                var text = await doc.GetTextAsync(cancellationToken);
+                SourceText? text = await doc.GetTextAsync(cancellationToken);
                 result.AddRange(ReadLinesFromAdditionalFile(text));
             }
 

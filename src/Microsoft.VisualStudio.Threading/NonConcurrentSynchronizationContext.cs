@@ -1,4 +1,5 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading
 {
@@ -117,13 +118,15 @@ namespace Microsoft.VisualStudio.Threading
             this.Post(
                 s2 =>
                 {
-                    var (cb, s, m) = (Tuple<SendOrPostCallback, object, TaskCompletionSource<object?>>)s2!;
+                    (SendOrPostCallback cb, object s, TaskCompletionSource<object?> m) = (Tuple<SendOrPostCallback, object, TaskCompletionSource<object?>>)s2!;
                     try
                     {
                         cb(s);
                         m.SetResult(null);
                     }
+#pragma warning disable CA1031 // Do not catch general exception types
                     catch (Exception ex)
+#pragma warning restore CA1031 // Do not catch general exception types
                     {
                         m.SetException(ex);
                     }
@@ -146,7 +149,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 while (true)
                 {
-                    var work = await this.queue!.DequeueAsync().ConfigureAwait(false);
+                    (SendOrPostCallback, object?) work = await this.queue!.DequeueAsync().ConfigureAwait(false);
                     this.activeManagedThreadId = Environment.CurrentManagedThreadId;
                     try
                     {
@@ -155,7 +158,9 @@ namespace Microsoft.VisualStudio.Threading
                             work.Item1(work.Item2);
                         }
                     }
+#pragma warning disable CA1031 // Do not catch general exception types
                     catch (Exception ex)
+#pragma warning restore CA1031 // Do not catch general exception types
                     {
                         this.UnhandledException?.Invoke(this, ex);
                     }
@@ -165,7 +170,9 @@ namespace Microsoft.VisualStudio.Threading
                     }
                 }
             }
+#pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception ex)
+#pragma warning restore CA1031 // Do not catch general exception types
             {
                 // A failure to schedule work is fatal because it can lead to hangs that are
                 // very hard to diagnose to a failure in the scheduler, and even harder to identify

@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading
 {
@@ -197,44 +194,6 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Gets JoinableTaskContext for <see cref="JoinableTaskContextNode"/> to access locks.
-        /// </summary>
-        private JoinableTaskContext JoinableTaskContext => this.owner.Context;
-
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private Task QueueNeedProcessEvent
-        {
-            get
-            {
-                using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
-                {
-                    lock (this.JoinableTaskContext.SyncContextLock)
-                    {
-                        if (this.queueNeedProcessEvent == null)
-                        {
-                            // We pass in allowInliningWaiters: true,
-                            // since we control all waiters and their continuations
-                            // are benign, and it makes it more efficient.
-                            this.queueNeedProcessEvent = new AsyncManualResetEvent(allowInliningAwaiters: true);
-                        }
-
-                        return this.queueNeedProcessEvent.WaitAsync();
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets the set of nesting factories (excluding <see cref="owner"/>)
-        /// that own JoinableTasks that are nesting this one.
-        /// </summary>
-        internal ListOfOftenOne<JoinableTaskFactory> NestingFactories
-        {
-            get { return this.nestingFactories; }
-            set { this.nestingFactories = value; }
-        }
-
-        /// <summary>
         /// Gets a value indicating whether the async operation represented by this instance has completed.
         /// </summary>
         public bool IsCompleted
@@ -250,12 +209,12 @@ namespace Microsoft.VisualStudio.Threading
                             return false;
                         }
 
-                        if (this.mainThreadQueue != null && !this.mainThreadQueue.IsCompleted)
+                        if (this.mainThreadQueue is object && !this.mainThreadQueue.IsCompleted)
                         {
                             return false;
                         }
 
-                        if (this.threadPoolQueue != null && !this.threadPoolQueue.IsCompleted)
+                        if (this.threadPoolQueue is object && !this.threadPoolQueue.IsCompleted)
                         {
                             return false;
                         }
@@ -273,13 +232,13 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                if (this.wrappedTask == null)
+                if (this.wrappedTask is null)
                 {
                     using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
                     {
                         lock (this.JoinableTaskContext.SyncContextLock)
                         {
-                            if (this.wrappedTask == null)
+                            if (this.wrappedTask is null)
                             {
                                 // We'd rather not do this. The field is assigned elsewhere later on if we haven't hit this first.
                                 // But some caller needs a Task that we don't yet have, so we have to spin one up.
@@ -308,6 +267,30 @@ namespace Microsoft.VisualStudio.Threading
             get { return CompletingTask.Value; }
         }
 
+        /// <summary>
+        /// Gets a value indicating whether an awaiter should capture the
+        /// <see cref="SynchronizationContext"/>.
+        /// </summary>
+        /// <remarks>
+        /// As a library, we generally wouldn't capture the <see cref="SynchronizationContext"/>
+        /// when awaiting, except that where our thread is synchronously blocking anyway, it is actually
+        /// more efficient to capture the <see cref="SynchronizationContext"/> so that the continuation
+        /// will resume on the blocking thread instead of occupying yet another one in order to execute.
+        /// In fact, when threadpool starvation conditions exist, resuming on the calling thread
+        /// can avoid significant delays in executing an often trivial continuation.
+        /// </remarks>
+        internal static bool AwaitShouldCaptureSyncContext => SynchronizationContext.Current is JoinableTaskSynchronizationContext;
+
+        /// <summary>
+        /// Gets or sets the set of nesting factories (excluding <see cref="owner"/>)
+        /// that own JoinableTasks that are nesting this one.
+        /// </summary>
+        internal ListOfOftenOne<JoinableTaskFactory> NestingFactories
+        {
+            get { return this.nestingFactories; }
+            set { this.nestingFactories = value; }
+        }
+
         internal JoinableTaskFactory Factory
         {
             get { return this.owner; }
@@ -320,13 +303,13 @@ namespace Microsoft.VisualStudio.Threading
             {
                 if (this.JoinableTaskContext.IsOnMainThread)
                 {
-                    if (this.mainThreadJobSyncContext == null)
+                    if (this.mainThreadJobSyncContext is null)
                     {
                         using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
                         {
                             lock (this.JoinableTaskContext.SyncContextLock)
                             {
-                                if (this.mainThreadJobSyncContext == null)
+                                if (this.mainThreadJobSyncContext is null)
                                 {
                                     this.mainThreadJobSyncContext = new JoinableTaskSynchronizationContext(this, true);
                                 }
@@ -345,13 +328,13 @@ namespace Microsoft.VisualStudio.Threading
                     // must be operable after that point anyway.
                     if (this.SynchronouslyBlockingThreadPool)
                     {
-                        if (this.threadPoolJobSyncContext == null)
+                        if (this.threadPoolJobSyncContext is null)
                         {
                             using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
                             {
                                 lock (this.JoinableTaskContext.SyncContextLock)
                                 {
-                                    if (this.threadPoolJobSyncContext == null)
+                                    if (this.threadPoolJobSyncContext is null)
                                     {
                                         this.threadPoolJobSyncContext = new JoinableTaskSynchronizationContext(this, false);
                                     }
@@ -377,7 +360,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                if (this.weakSelf == null)
+                if (this.weakSelf is null)
                 {
                     this.weakSelf = new WeakReference<JoinableTask>(this);
                 }
@@ -402,8 +385,6 @@ namespace Microsoft.VisualStudio.Threading
             get { return this.creationOptions; }
         }
 
-        #region Diagnostics collection
-
         /// <summary>
         /// Gets the entry method's info so we could show its full name in hang report.
         /// </summary>
@@ -419,8 +400,8 @@ namespace Microsoft.VisualStudio.Threading
             get
             {
                 Assumes.True(Monitor.IsEntered(this.JoinableTaskContext.SyncContextLock));
-                return (this.mainThreadQueue != null && this.mainThreadQueue.Count > 0)
-                    || (this.threadPoolQueue != null && this.threadPoolQueue.Count > 0);
+                return (this.mainThreadQueue is object && this.mainThreadQueue.Count > 0)
+                    || (this.threadPoolQueue is object && this.threadPoolQueue.Count > 0);
             }
         }
 
@@ -434,7 +415,7 @@ namespace Microsoft.VisualStudio.Threading
             get
             {
                 Assumes.True(Monitor.IsEntered(this.JoinableTaskContext.SyncContextLock));
-                if (this.mainThreadQueue == null)
+                if (this.mainThreadQueue is null)
                 {
                     return Enumerable.Empty<SingleExecuteProtector>();
                 }
@@ -453,7 +434,7 @@ namespace Microsoft.VisualStudio.Threading
             get
             {
                 Assumes.True(Monitor.IsEntered(this.JoinableTaskContext.SyncContextLock));
-                if (this.threadPoolQueue == null)
+                if (this.threadPoolQueue is null)
                 {
                     return Enumerable.Empty<SingleExecuteProtector>();
                 }
@@ -475,8 +456,6 @@ namespace Microsoft.VisualStudio.Threading
                 return this.dependencyParents.OfType<JoinableTaskCollection>().ToList();
             }
         }
-
-        #endregion
 
         /// <summary>
         /// Gets or sets a value indicating whether this task has had its Complete() method called..
@@ -521,18 +500,32 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Gets a value indicating whether an awaiter should capture the
-        /// <see cref="SynchronizationContext"/>.
+        /// Gets JoinableTaskContext for <see cref="JoinableTaskContextNode"/> to access locks.
         /// </summary>
-        /// <remarks>
-        /// As a library, we generally wouldn't capture the <see cref="SynchronizationContext"/>
-        /// when awaiting, except that where our thread is synchronously blocking anyway, it is actually
-        /// more efficient to capture the <see cref="SynchronizationContext"/> so that the continuation
-        /// will resume on the blocking thread instead of occupying yet another one in order to execute.
-        /// In fact, when threadpool starvation conditions exist, resuming on the calling thread
-        /// can avoid significant delays in executing an often trivial continuation.
-        /// </remarks>
-        internal static bool AwaitShouldCaptureSyncContext => SynchronizationContext.Current is JoinableTaskSynchronizationContext;
+        private JoinableTaskContext JoinableTaskContext => this.owner.Context;
+
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        private Task QueueNeedProcessEvent
+        {
+            get
+            {
+                using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
+                {
+                    lock (this.JoinableTaskContext.SyncContextLock)
+                    {
+                        if (this.queueNeedProcessEvent is null)
+                        {
+                            // We pass in allowInliningWaiters: true,
+                            // since we control all waiters and their continuations
+                            // are benign, and it makes it more efficient.
+                            this.queueNeedProcessEvent = new AsyncManualResetEvent(allowInliningAwaiters: true);
+                        }
+
+                        return this.queueNeedProcessEvent.WaitAsync();
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// Synchronously blocks the calling thread until the operation has completed.
@@ -571,6 +564,41 @@ namespace Microsoft.VisualStudio.Threading
             {
                 await this.Task.WithCancellation(AwaitShouldCaptureSyncContext, cancellationToken).ConfigureAwait(AwaitShouldCaptureSyncContext);
             }
+        }
+
+        /// <summary>
+        /// Gets an awaiter that is equivalent to calling <see cref="JoinAsync"/>.
+        /// </summary>
+        /// <returns>A task whose result is the result of the asynchronous operation.</returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
+        public TaskAwaiter GetAwaiter()
+        {
+            return this.JoinAsync().GetAwaiter();
+        }
+
+        ref JoinableTaskDependencyGraph.JoinableTaskDependentData IJoinableTaskDependent.GetJoinableTaskDependentData()
+        {
+            return ref this.dependentData;
+        }
+
+        void IJoinableTaskDependent.OnAddedToDependency(IJoinableTaskDependent parentNode)
+        {
+            Requires.NotNull(parentNode, nameof(parentNode));
+            this.dependencyParents.Add(parentNode);
+        }
+
+        void IJoinableTaskDependent.OnRemovedFromDependency(IJoinableTaskDependent parentNode)
+        {
+            Requires.NotNull(parentNode, nameof(parentNode));
+            this.dependencyParents.Remove(parentNode);
+        }
+
+        void IJoinableTaskDependent.OnDependencyAdded(IJoinableTaskDependent joinChild)
+        {
+        }
+
+        void IJoinableTaskDependent.OnDependencyRemoved(IJoinableTaskDependent joinChild)
+        {
         }
 
         internal void Post(SendOrPostCallback d, object? state, bool mainThreadAffinitized)
@@ -615,7 +643,7 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         if (mainThreadAffinitized)
                         {
-                            if (this.mainThreadQueue == null)
+                            if (this.mainThreadQueue is null)
                             {
                                 this.mainThreadQueue = new ExecutionQueue(this);
                             }
@@ -630,7 +658,7 @@ namespace Microsoft.VisualStudio.Threading
                         {
                             if (this.SynchronouslyBlockingThreadPool)
                             {
-                                if (this.threadPoolQueue == null)
+                                if (this.threadPoolQueue is null)
                                 {
                                     this.threadPoolQueue = new ExecutionQueue(this);
                                 }
@@ -649,19 +677,19 @@ namespace Microsoft.VisualStudio.Threading
 
                         if (mainThreadQueueUpdated || backgroundThreadQueueUpdated)
                         {
-                            var tasksNeedNotify = JoinableTaskDependencyGraph.GetDependingSynchronousTasks(this, mainThreadQueueUpdated);
+                            IReadOnlyCollection<JoinableTask>? tasksNeedNotify = JoinableTaskDependencyGraph.GetDependingSynchronousTasks(this, mainThreadQueueUpdated);
                             if (tasksNeedNotify.Count > 0)
                             {
                                 eventsNeedNotify = new List<AsyncManualResetEvent>(tasksNeedNotify.Count);
-                                foreach (var taskToNotify in tasksNeedNotify)
+                                foreach (JoinableTask? taskToNotify in tasksNeedNotify)
                                 {
-                                    if (taskToNotify.pendingEventSource == null || taskToNotify == this)
+                                    if (taskToNotify.pendingEventSource is null || taskToNotify == this)
                                     {
                                         taskToNotify.pendingEventSource = this.WeakSelf;
                                     }
 
                                     taskToNotify.pendingEventCount++;
-                                    if (taskToNotify.queueNeedProcessEvent != null)
+                                    if (taskToNotify.queueNeedProcessEvent is object)
                                     {
                                         eventsNeedNotify.Add(taskToNotify.queueNeedProcessEvent);
                                     }
@@ -672,9 +700,9 @@ namespace Microsoft.VisualStudio.Threading
                 }
 
                 // Notify tasks which can process the event queue.
-                if (eventsNeedNotify != null)
+                if (eventsNeedNotify is object)
                 {
-                    foreach (var queueEvent in eventsNeedNotify)
+                    foreach (AsyncManualResetEvent? queueEvent in eventsNeedNotify)
                     {
                         queueEvent.PulseAll();
                     }
@@ -691,7 +719,7 @@ namespace Microsoft.VisualStudio.Threading
                     Assumes.NotNull(wrapper); // this should have been initialized in the above logic.
                     this.owner.PostToUnderlyingSynchronizationContextOrThreadPool(wrapper);
 
-                    foreach (var nestingFactory in this.nestingFactories)
+                    foreach (JoinableTaskFactory? nestingFactory in this.nestingFactories)
                     {
                         if (nestingFactory != this.owner)
                         {
@@ -700,16 +728,6 @@ namespace Microsoft.VisualStudio.Threading
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// Gets an awaiter that is equivalent to calling <see cref="JoinAsync"/>.
-        /// </summary>
-        /// <returns>A task whose result is the result of the asynchronous operation.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
-        public TaskAwaiter GetAwaiter()
-        {
-            return this.JoinAsync().GetAwaiter();
         }
 
         /// <summary>
@@ -744,7 +762,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 lock (this.JoinableTaskContext.SyncContextLock)
                 {
-                    if (this.wrappedTask == null)
+                    if (this.wrappedTask is null)
                     {
                         this.wrappedTask = wrappedTask;
                     }
@@ -791,12 +809,12 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         this.IsCompleteRequested = true;
 
-                        if (this.mainThreadQueue != null)
+                        if (this.mainThreadQueue is object)
                         {
                             this.mainThreadQueue.Complete();
                         }
 
-                        if (this.threadPoolQueue != null)
+                        if (this.threadPoolQueue is object)
                         {
                             this.threadPoolQueue.Complete();
                         }
@@ -811,7 +829,7 @@ namespace Microsoft.VisualStudio.Threading
                     }
                 }
 
-                if (queueNeedProcessEvent != null)
+                if (queueNeedProcessEvent is object)
                 {
                     // We explicitly do this outside our lock.
                     queueNeedProcessEvent.PulseAll();
@@ -830,7 +848,7 @@ namespace Microsoft.VisualStudio.Threading
             try
             {
                 bool onMainThread = false;
-                var additionalFlags = JoinableTaskFlags.CompletingSynchronously;
+                JoinableTaskFlags additionalFlags = JoinableTaskFlags.CompletingSynchronously;
                 if (this.JoinableTaskContext.IsOnMainThread)
                 {
                     additionalFlags |= JoinableTaskFlags.SynchronouslyBlockingMainThread;
@@ -874,7 +892,7 @@ namespace Microsoft.VisualStudio.Threading
                             {
                                 work.TryExecute();
                             }
-                            else if (tryAgainAfter != null)
+                            else if (tryAgainAfter is object)
                             {
                                 ThreadingEventSource.Instance.WaitSynchronouslyStart();
                                 this.owner.WaitSynchronously(tryAgainAfter);
@@ -929,17 +947,17 @@ namespace Microsoft.VisualStudio.Threading
                 // notifications come in.
                 this.JoinableTaskContext.OnJoinableTaskCompleted(this);
 
-                foreach (var collection in this.dependencyParents)
+                foreach (IJoinableTaskDependent? collection in this.dependencyParents)
                 {
                     JoinableTaskDependencyGraph.RemoveDependency(collection, this);
                 }
 
-                if (this.mainThreadJobSyncContext != null)
+                if (this.mainThreadJobSyncContext is object)
                 {
                     this.mainThreadJobSyncContext.OnCompleted();
                 }
 
-                if (this.threadPoolJobSyncContext != null)
+                if (this.threadPoolJobSyncContext is object)
                 {
                     this.threadPoolJobSyncContext.OnCompleted();
                 }
@@ -950,31 +968,6 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
-        ref JoinableTaskDependencyGraph.JoinableTaskDependentData IJoinableTaskDependent.GetJoinableTaskDependentData()
-        {
-            return ref this.dependentData;
-        }
-
-        void IJoinableTaskDependent.OnAddedToDependency(IJoinableTaskDependent parentNode)
-        {
-            Requires.NotNull(parentNode, nameof(parentNode));
-            this.dependencyParents.Add(parentNode);
-        }
-
-        void IJoinableTaskDependent.OnRemovedFromDependency(IJoinableTaskDependent parentNode)
-        {
-            Requires.NotNull(parentNode, nameof(parentNode));
-            this.dependencyParents.Remove(parentNode);
-        }
-
-        void IJoinableTaskDependent.OnDependencyAdded(IJoinableTaskDependent joinChild)
-        {
-        }
-
-        void IJoinableTaskDependent.OnDependencyRemoved(IJoinableTaskDependent joinChild)
-        {
-        }
-
         /// <summary>
         /// Get the number of pending messages to be process for the synchronous task.
         /// </summary>
@@ -983,10 +976,10 @@ namespace Microsoft.VisualStudio.Threading
         internal int GetPendingEventCountForSynchronousTask(JoinableTask synchronousTask)
         {
             Requires.NotNull(synchronousTask, nameof(synchronousTask));
-            var queue = ((synchronousTask.state & JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTaskFlags.SynchronouslyBlockingMainThread)
+            ExecutionQueue? queue = ((synchronousTask.state & JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTaskFlags.SynchronouslyBlockingMainThread)
                 ? this.mainThreadQueue
                 : this.threadPoolQueue;
-            return queue != null ? queue.Count : 0;
+            return queue is object ? queue.Count : 0;
         }
 
         /// <summary>
@@ -1000,13 +993,51 @@ namespace Microsoft.VisualStudio.Threading
             Assumes.True(Monitor.IsEntered(this.JoinableTaskContext.SyncContextLock));
             Assumes.True((this.state & JoinableTaskFlags.CompletingSynchronously) == JoinableTaskFlags.CompletingSynchronously);
 
-            if (this.pendingEventSource == null || taskHasPendingMessages == this)
+            if (this.pendingEventSource is null || taskHasPendingMessages == this)
             {
                 this.pendingEventSource = new WeakReference<JoinableTask>(taskHasPendingMessages);
             }
 
             this.pendingEventCount += newPendingMessagesCount;
             return this.queueNeedProcessEvent;
+        }
+
+        private static bool TryDequeueSelfOrDependencies(IJoinableTaskDependent currentNode, bool onMainThread, HashSet<IJoinableTaskDependent> visited, [NotNullWhen(true)] out SingleExecuteProtector? work)
+        {
+            Requires.NotNull(currentNode, nameof(currentNode));
+            Requires.NotNull(visited, nameof(visited));
+            Report.IfNot(Monitor.IsEntered(currentNode.JoinableTaskContext.SyncContextLock));
+
+            // We only need to find the first work item.
+            work = null;
+            if (visited.Add(currentNode))
+            {
+                JoinableTask? joinableTask = currentNode as JoinableTask;
+                if (joinableTask is object)
+                {
+                    ExecutionQueue? queue = onMainThread ? joinableTask.mainThreadQueue : joinableTask.threadPoolQueue;
+                    if (queue is object && !queue.IsCompleted)
+                    {
+                        queue.TryDequeue(out work);
+                    }
+                }
+
+                if (work is null)
+                {
+                    if (joinableTask?.IsCompleted != true)
+                    {
+                        foreach (IJoinableTaskDependent? item in JoinableTaskDependencyGraph.GetDirectDependentNodes(currentNode))
+                        {
+                            if (TryDequeueSelfOrDependencies(item, onMainThread, visited, out work))
+                            {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return work is object;
         }
 
         private bool TryDequeueSelfOrDependencies(bool onMainThread, ref HashSet<IJoinableTaskDependent>? visited, [NotNullWhen(true)] out SingleExecuteProtector? work, out Task? tryAgainAfter)
@@ -1026,12 +1057,12 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         this.pendingEventCount--;
 
-                        if (this.pendingEventSource != null)
+                        if (this.pendingEventSource is object)
                         {
                             if (this.pendingEventSource.TryGetTarget(out JoinableTask? pendingSource) && JoinableTaskDependencyGraph.IsDependingSynchronousTask(pendingSource, this))
                             {
-                                var queue = onMainThread ? pendingSource.mainThreadQueue : pendingSource.threadPoolQueue;
-                                if (queue != null && !queue.IsCompleted && queue.TryDequeue(out work))
+                                ExecutionQueue? queue = onMainThread ? pendingSource.mainThreadQueue : pendingSource.threadPoolQueue;
+                                if (queue is object && !queue.IsCompleted && queue.TryDequeue(out work))
                                 {
                                     if (queue.Count == 0)
                                     {
@@ -1046,7 +1077,7 @@ namespace Microsoft.VisualStudio.Threading
                             this.pendingEventSource = null;
                         }
 
-                        if (visited == null)
+                        if (visited is null)
                         {
                             visited = new HashSet<IJoinableTaskDependent>();
                         }
@@ -1071,44 +1102,6 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
-        private static bool TryDequeueSelfOrDependencies(IJoinableTaskDependent currentNode, bool onMainThread, HashSet<IJoinableTaskDependent> visited, [NotNullWhen(true)] out SingleExecuteProtector? work)
-        {
-            Requires.NotNull(currentNode, nameof(currentNode));
-            Requires.NotNull(visited, nameof(visited));
-            Report.IfNot(Monitor.IsEntered(currentNode.JoinableTaskContext.SyncContextLock));
-
-            // We only need to find the first work item.
-            work = null;
-            if (visited.Add(currentNode))
-            {
-                JoinableTask? joinableTask = currentNode as JoinableTask;
-                if (joinableTask != null)
-                {
-                    var queue = onMainThread ? joinableTask.mainThreadQueue : joinableTask.threadPoolQueue;
-                    if (queue != null && !queue.IsCompleted)
-                    {
-                        queue.TryDequeue(out work);
-                    }
-                }
-
-                if (work == null)
-                {
-                    if (joinableTask?.IsCompleted != true)
-                    {
-                        foreach (var item in JoinableTaskDependencyGraph.GetDirectDependentNodes(currentNode))
-                        {
-                            if (TryDequeueSelfOrDependencies(item, onMainThread, visited, out work))
-                            {
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-
-            return work != null;
-        }
-
         /// <summary>
         /// Adds the specified flags to the <see cref="state"/> field.
         /// </summary>
@@ -1131,8 +1124,8 @@ namespace Microsoft.VisualStudio.Threading
         {
             if (!this.IsCompleted)
             {
-                var ambientJob = this.JoinableTaskContext.AmbientTask;
-                if (ambientJob != null && ambientJob != this)
+                JoinableTask? ambientJob = this.JoinableTaskContext.AmbientTask;
+                if (ambientJob is object && ambientJob != this)
                 {
                     return JoinableTaskDependencyGraph.AddDependency(ambientJob, this);
                 }

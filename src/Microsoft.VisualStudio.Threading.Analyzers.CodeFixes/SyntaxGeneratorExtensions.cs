@@ -1,4 +1,5 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
@@ -19,7 +20,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             var qualifiedNameSyntaxKind = generator.QualifiedName(generator.IdentifierName("ignored"), generator.IdentifierName("ignored")).RawKind;
             var memberAccessExpressionSyntaxKind = generator.MemberAccessExpression(generator.IdentifierName("ignored"), "ignored").RawKind;
 
-            var typeExpression = generator.TypeExpression(typeSymbol);
+            SyntaxNode? typeExpression = generator.TypeExpression(typeSymbol);
             return QualifiedNameToMemberAccess(qualifiedNameSyntaxKind, memberAccessExpressionSyntaxKind, typeExpression, generator);
 
             // Local function
@@ -27,8 +28,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             {
                 if (expression.RawKind == qualifiedNameSyntaxKind)
                 {
-                    var left = QualifiedNameToMemberAccess(qualifiedNameSyntaxKind, memberAccessExpressionSyntaxKind, expression.ChildNodes().First(), generator);
-                    var right = expression.ChildNodes().Last();
+                    SyntaxNode? left = QualifiedNameToMemberAccess(qualifiedNameSyntaxKind, memberAccessExpressionSyntaxKind, expression.ChildNodes().First(), generator);
+                    SyntaxNode? right = expression.ChildNodes().Last();
                     return generator.MemberAccessExpression(left, right);
                 }
 
@@ -43,7 +44,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 return null;
             }
 
-            var declarationKind = generator.GetDeclarationKind(node);
+            DeclarationKind declarationKind = generator.GetDeclarationKind(node);
             while ((kind.HasValue && declarationKind != kind) || (!kind.HasValue && declarationKind == DeclarationKind.None))
             {
                 node = generator.GetDeclaration(node.Parent);

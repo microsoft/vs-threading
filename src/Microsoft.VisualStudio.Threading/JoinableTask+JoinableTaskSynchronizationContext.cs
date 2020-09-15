@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading
 {
@@ -13,7 +10,7 @@ namespace Microsoft.VisualStudio.Threading
     using System.Threading;
     using System.Threading.Tasks;
 
-    partial class JoinableTask
+    public partial class JoinableTask
     {
         /// <summary>
         /// A synchronization context that forwards posted messages to the ambient job.
@@ -76,7 +73,7 @@ namespace Microsoft.VisualStudio.Threading
             public override void Post(SendOrPostCallback d, object? state)
             {
                 JoinableTask? job = this.job; // capture as local in case field becomes null later.
-                if (job != null)
+                if (job is object)
                 {
                     job.Post(d, state, this.mainThreadAffinitized);
                 }

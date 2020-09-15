@@ -95,7 +95,7 @@ public static class LibrarySettings
     {
         get
         {
-            if (joinableTaskContext == null)
+            if (joinableTaskContext is null)
             {
                 // This self-initializer is for when an app does not have a `JoinableTaskContext` to pass to the library.
                 // Our private instance will only work if this property getter first runs on the main thread of the application
@@ -108,7 +108,7 @@ public static class LibrarySettings
 
         set
         {
-            Assumes.True(joinableTaskContext == null || joinableTaskContext == value, "This property has already been set to another value or is set after its value has been retrieved with a self-created value. Set this property once, before it is used elsewhere.");
+            Assumes.True(joinableTaskContext is null || joinableTaskContext == value, "This property has already been set to another value or is set after its value has been retrieved with a self-created value. Set this property once, before it is used elsewhere.");
             joinableTaskContext = value;
         }
     }
@@ -117,7 +117,7 @@ public static class LibrarySettings
 
 This pattern and self-initializer allows all the rest of your library code to assume JTF is always present (so you can use JTF.Run and JTF.RunAsync everywhere w/o feature that JTF will be null), and it mitigates all the deadlocks possible given the host constraints.
 
-Note that when you create your own default instance of JoinableTaskContext (i.e. when the host doesn't), it will consider the thread you're on to be the main thread. If SynchronizationContext.Current != null it will capture it and use it to switch to the main thread when you ask it to (very similar to how VS works today), otherwise any request to SwitchToMainThreadAsync will never switch the thread (since no `SynchronizationContext` was supplied to do so) but otherwise JTF continues to work.
+Note that when you create your own default instance of JoinableTaskContext (i.e. when the host doesn't), it will consider the thread you're on to be the main thread. If SynchronizationContext.Current is object it will capture it and use it to switch to the main thread when you ask it to (very similar to how VS works today), otherwise any request to SwitchToMainThreadAsync will never switch the thread (since no `SynchronizationContext` was supplied to do so) but otherwise JTF continues to work.
 
 ## <a name="ctor"></a>Accept `JoinableTaskContext` as a constructor argument
 

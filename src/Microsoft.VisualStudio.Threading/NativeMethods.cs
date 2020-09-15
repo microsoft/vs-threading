@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading
 {
@@ -16,6 +13,12 @@ namespace Microsoft.VisualStudio.Threading
     internal static partial class NativeMethods
     {
         /// <summary>
+        /// Indicates that the lifetime of the registration must not be tied to the lifetime of the thread issuing the RegNotifyChangeKeyValue call.
+        /// Note: This flag value is only supported in Windows 8 and later.
+        /// </summary>
+        internal const RegistryChangeNotificationFilters REG_NOTIFY_THREAD_AGNOSTIC = (RegistryChangeNotificationFilters)0x10000000L;
+
+        /// <summary>
         /// Really truly non pumping wait.
         /// Raw IntPtrs have to be used, because the marshaller does not support arrays of SafeHandle, only
         /// single SafeHandles.
@@ -26,12 +29,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="millisecondsTimeout">A timeout that will cause this method to return.</param>
         [DllImport("kernel32.dll", SetLastError = true, ExactSpelling = true)]
         internal static extern int WaitForMultipleObjects(uint handleCount, IntPtr[] waitHandles, [MarshalAs(UnmanagedType.Bool)] bool waitAll, uint millisecondsTimeout);
-
-        /// <summary>
-        /// Indicates that the lifetime of the registration must not be tied to the lifetime of the thread issuing the RegNotifyChangeKeyValue call.
-        /// Note: This flag value is only supported in Windows 8 and later.
-        /// </summary>
-        internal const RegistryChangeNotificationFilters REG_NOTIFY_THREAD_AGNOSTIC = (RegistryChangeNotificationFilters)0x10000000L;
 
         /// <summary>
         /// Registers to receive notification of changes to a registry key.

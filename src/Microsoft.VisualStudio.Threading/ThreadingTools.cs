@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading
 {
@@ -15,6 +12,11 @@ namespace Microsoft.VisualStudio.Threading
     /// </summary>
     public static class ThreadingTools
     {
+        internal interface ICancellationNotification
+        {
+            void OnCanceled();
+        }
+
         /// <summary>
         /// Optimistically performs some value transformation based on some field and tries to apply it back to the field,
         /// retrying as many times as necessary until no other thread is manipulating the same field.
@@ -236,7 +238,9 @@ namespace Microsoft.VisualStudio.Threading
                                             var t2 = (CancelableTaskCompletionSource<T>)s2!;
                                             t2.CancellationTokenRegistration.Dispose();
                                         }
+#pragma warning disable CA1031 // Do not catch general exception types
                                         catch (Exception ex)
+#pragma warning restore CA1031 // Do not catch general exception types
                                         {
                                             // Swallow any exception.
                                             Report.Fail(ex.Message);
@@ -308,11 +312,6 @@ namespace Microsoft.VisualStudio.Threading
             // But if we skipped the above if branch, this will actually yield
             // on an incompleted task.
             await task.ConfigureAwait(continueOnCapturedContext);
-        }
-
-        internal interface ICancellationNotification
-        {
-            void OnCanceled();
         }
 
         /// <summary>

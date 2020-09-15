@@ -1,4 +1,5 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
@@ -45,8 +46,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             // Emit the diagnostic if the awaited expression is a Task or ValueTask.
             // They obviously aren't using ConfigureAwait in that case since the awaited expression type would be a
             // ConfiguredTaskAwaitable instead.
-            var awaitedTypeInfo = awaitOperation.Operation.Type;
-            if (awaitedTypeInfo != null && awaitedTypeInfo.BelongsToNamespace(Namespaces.SystemThreadingTasks) &&
+            ITypeSymbol? awaitedTypeInfo = awaitOperation.Operation.Type;
+            if (awaitedTypeInfo is object && awaitedTypeInfo.BelongsToNamespace(Namespaces.SystemThreadingTasks) &&
                 (awaitedTypeInfo.Name == Types.Task.TypeName || awaitedTypeInfo.Name == Types.ValueTask.TypeName))
             {
                 context.ReportDiagnostic(Diagnostic.Create(Descriptor, awaitOperation.Operation.Syntax.GetLocation()));

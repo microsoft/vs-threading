@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading
 {
@@ -14,7 +11,7 @@ namespace Microsoft.VisualStudio.Threading
     using System.Threading.Tasks;
     using System.Xml.Linq;
 
-    partial class JoinableTaskContext : IHangReportContributor
+    public partial class JoinableTaskContext : IHangReportContributor
     {
         /// <summary>
         /// Contributes data for a hang report.
@@ -36,11 +33,11 @@ namespace Microsoft.VisualStudio.Threading
             {
                 lock (this.SyncContextLock)
                 {
-                    var dgml = CreateTemplateDgml(out XElement nodes, out XElement links);
+                    XDocument? dgml = CreateTemplateDgml(out XElement nodes, out XElement links);
 
-                    var pendingTasksElements = this.CreateNodesForPendingTasks();
-                    var taskLabels = CreateNodeLabels(pendingTasksElements);
-                    var pendingTaskCollections = CreateNodesForJoinableTaskCollections(pendingTasksElements.Keys);
+                    Dictionary<JoinableTask, XElement>? pendingTasksElements = this.CreateNodesForPendingTasks();
+                    List<Tuple<XElement, XElement>>? taskLabels = CreateNodeLabels(pendingTasksElements);
+                    Dictionary<JoinableTaskCollection, XElement>? pendingTaskCollections = CreateNodesForJoinableTaskCollections(pendingTasksElements.Keys);
                     nodes.Add(pendingTasksElements.Values);
                     nodes.Add(pendingTaskCollections.Values);
                     nodes.Add(taskLabels.Select(t => t.Item1));
@@ -69,9 +66,9 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(pendingTasksElements, nameof(pendingTasksElements));
 
             var links = new List<XElement>();
-            foreach (var joinableTaskAndElement in pendingTasksElements)
+            foreach (KeyValuePair<JoinableTask, XElement> joinableTaskAndElement in pendingTasksElements)
             {
-                foreach (var joinedTask in JoinableTaskDependencyGraph.GetAllDirectlyDependentJoinableTasks(joinableTaskAndElement.Key))
+                foreach (JoinableTask? joinedTask in JoinableTaskDependencyGraph.GetAllDirectlyDependentJoinableTasks(joinableTaskAndElement.Key))
                 {
                     if (pendingTasksElements.TryGetValue(joinedTask, out XElement? joinedTaskElement))
                     {
@@ -89,11 +86,11 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(collections, nameof(collections));
 
             var result = new List<XElement>();
-            foreach (var task in tasks)
+            foreach (KeyValuePair<JoinableTask, XElement> task in tasks)
             {
-                foreach (var collection in task.Key.ContainingCollections)
+                foreach (JoinableTaskCollection? collection in task.Key.ContainingCollections)
                 {
-                    var collectionElement = collections[collection];
+                    XElement? collectionElement = collections[collection];
                     result.Add(Dgml.Link(collectionElement, task.Value).WithCategories("Contains"));
                 }
             }
@@ -108,11 +105,11 @@ namespace Microsoft.VisualStudio.Threading
             var collectionsSet = new HashSet<JoinableTaskCollection>(tasks.SelectMany(t => t.ContainingCollections));
             var result = new Dictionary<JoinableTaskCollection, XElement>(collectionsSet.Count);
             int collectionId = 0;
-            foreach (var collection in collectionsSet)
+            foreach (JoinableTaskCollection? collection in collectionsSet)
             {
                 collectionId++;
                 var label = string.IsNullOrEmpty(collection.DisplayName) ? "Collection #" + collectionId : collection.DisplayName;
-                var element = Dgml.Node("Collection#" + collectionId, label, group: "Expanded")
+                XElement? element = Dgml.Node("Collection#" + collectionId, label, group: "Expanded")
                     .WithCategories("Collection");
                 result.Add(collection, element);
             }
@@ -125,69 +122,29 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(tasksAndElements, nameof(tasksAndElements));
 
             var result = new List<Tuple<XElement, XElement>>();
-            foreach (var tasksAndElement in tasksAndElements)
+            foreach (KeyValuePair<JoinableTask, XElement> tasksAndElement in tasksAndElements)
             {
-                var pendingTask = tasksAndElement.Key;
-                var node = tasksAndElement.Value;
+                JoinableTask? pendingTask = tasksAndElement.Key;
+                XElement? node = tasksAndElement.Value;
                 int queueIndex = 0;
-                foreach (var pendingTasksElement in pendingTask.MainThreadQueueContents)
+                foreach (JoinableTaskFactory.SingleExecuteProtector? pendingTasksElement in pendingTask.MainThreadQueueContents)
                 {
                     queueIndex++;
-                    var callstackNode = Dgml.Node(node.Attribute("Id").Value + "MTQueue#" + queueIndex, GetAsyncReturnStack(pendingTasksElement));
-                    var callstackLink = Dgml.Link(callstackNode, node);
+                    XElement? callstackNode = Dgml.Node(node.Attribute("Id").Value + "MTQueue#" + queueIndex, GetAsyncReturnStack(pendingTasksElement));
+                    XElement? callstackLink = Dgml.Link(callstackNode, node);
                     result.Add(Tuple.Create(callstackNode, callstackLink));
                 }
 
-                foreach (var pendingTasksElement in pendingTask.ThreadPoolQueueContents)
+                foreach (JoinableTaskFactory.SingleExecuteProtector? pendingTasksElement in pendingTask.ThreadPoolQueueContents)
                 {
                     queueIndex++;
-                    var callstackNode = Dgml.Node(node.Attribute("Id").Value + "TPQueue#" + queueIndex, GetAsyncReturnStack(pendingTasksElement));
-                    var callstackLink = Dgml.Link(callstackNode, node);
+                    XElement? callstackNode = Dgml.Node(node.Attribute("Id").Value + "TPQueue#" + queueIndex, GetAsyncReturnStack(pendingTasksElement));
+                    XElement? callstackLink = Dgml.Link(callstackNode, node);
                     result.Add(Tuple.Create(callstackNode, callstackLink));
                 }
             }
 
             return result;
-        }
-
-        private Dictionary<JoinableTask, XElement> CreateNodesForPendingTasks()
-        {
-            var pendingTasksElements = new Dictionary<JoinableTask, XElement>();
-            lock (this.pendingTasks)
-            {
-                int taskId = 0;
-                foreach (var pendingTask in this.pendingTasks)
-                {
-                    taskId++;
-
-                    string methodName = string.Empty;
-                    var entryMethodInfo = pendingTask.EntryMethodInfo;
-                    if (entryMethodInfo != null)
-                    {
-                        methodName = string.Format(
-                            CultureInfo.InvariantCulture,
-                            " ({0}.{1})",
-                            entryMethodInfo.DeclaringType?.FullName,
-                            entryMethodInfo.Name);
-                    }
-
-                    var node = Dgml.Node("Task#" + taskId, "Task #" + taskId + methodName)
-                        .WithCategories("Task");
-                    if (pendingTask.HasNonEmptyQueue)
-                    {
-                        node.WithCategories("NonEmptyQueue");
-                    }
-
-                    if (pendingTask.State.HasFlag(JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread))
-                    {
-                        node.WithCategories("MainThreadBlocking");
-                    }
-
-                    pendingTasksElements.Add(pendingTask, node);
-                }
-            }
-
-            return pendingTasksElements;
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
@@ -210,6 +167,46 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             return stringBuilder.ToString().TrimEnd();
+        }
+
+        private Dictionary<JoinableTask, XElement> CreateNodesForPendingTasks()
+        {
+            var pendingTasksElements = new Dictionary<JoinableTask, XElement>();
+            lock (this.pendingTasks)
+            {
+                int taskId = 0;
+                foreach (JoinableTask? pendingTask in this.pendingTasks)
+                {
+                    taskId++;
+
+                    string methodName = string.Empty;
+                    System.Reflection.MethodInfo? entryMethodInfo = pendingTask.EntryMethodInfo;
+                    if (entryMethodInfo is object)
+                    {
+                        methodName = string.Format(
+                            CultureInfo.InvariantCulture,
+                            " ({0}.{1})",
+                            entryMethodInfo.DeclaringType?.FullName,
+                            entryMethodInfo.Name);
+                    }
+
+                    XElement? node = Dgml.Node("Task#" + taskId, "Task #" + taskId + methodName)
+                        .WithCategories("Task");
+                    if (pendingTask.HasNonEmptyQueue)
+                    {
+                        node.WithCategories("NonEmptyQueue");
+                    }
+
+                    if (pendingTask.State.HasFlag(JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread))
+                    {
+                        node.WithCategories("MainThreadBlocking");
+                    }
+
+                    pendingTasksElements.Add(pendingTask, node);
+                }
+            }
+
+            return pendingTasksElements;
         }
     }
 }

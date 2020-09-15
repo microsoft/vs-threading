@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading
 {
@@ -365,8 +362,8 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                var ctxt = SynchronizationContext.Current;
-                bool supported = ctxt == null || ctxt is NonConcurrentSynchronizationContext;
+                SynchronizationContext? ctxt = SynchronizationContext.Current;
+                bool supported = ctxt is null || ctxt is NonConcurrentSynchronizationContext;
                 return !supported;
             }
         }
@@ -529,11 +526,11 @@ namespace Microsoft.VisualStudio.Threading
         {
             LockFlags aggregateFlags = LockFlags.None;
             Awaiter? awaiter = handle.Awaiter;
-            if (awaiter != null)
+            if (awaiter is object)
             {
                 lock (this.syncObject)
                 {
-                    while (awaiter != null)
+                    while (awaiter is object)
                     {
                         if (this.IsLockActive(awaiter, considerStaActive: true, checkSyncContextCompatibility: true))
                         {
@@ -565,12 +562,12 @@ namespace Microsoft.VisualStudio.Threading
         protected LockFlags GetAggregateLockFlags()
         {
             LockFlags aggregateFlags = LockFlags.None;
-            var awaiter = this.topAwaiter.Value;
-            if (awaiter != null)
+            Awaiter? awaiter = this.topAwaiter.Value;
+            if (awaiter is object)
             {
                 lock (this.syncObject)
                 {
-                    while (awaiter != null)
+                    while (awaiter is object)
                     {
                         if (this.IsLockActive(awaiter, considerStaActive: true, checkSyncContextCompatibility: true))
                         {
@@ -645,6 +642,90 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Invoked after an exclusive lock is released but before anyone has a chance to enter the lock.
+        /// </summary>
+        /// <remarks>
+        /// This method is called while holding a private lock in order to block future lock consumers till this method is finished.
+        /// </remarks>
+        protected virtual Task OnExclusiveLockReleasedAsync()
+        {
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Invoked when a top-level upgradeable read lock is released, leaving no remaining (write) lock.
+        /// </summary>
+        protected virtual void OnUpgradeableReadLockReleased()
+        {
+        }
+
+        /// <summary>
+        /// Invoked when the lock detects an internal error or illegal usage pattern that
+        /// indicates a serious flaw that should be immediately reported to the application
+        /// and/or bring down the process to avoid hangs or data corruption.
+        /// </summary>
+        /// <param name="ex">The exception that captures the details of the failure.</param>
+        /// <returns>An exception that may be returned by some implementations of tis method for he caller to rethrow.</returns>
+        protected virtual Exception OnCriticalFailure(Exception ex)
+        {
+            Requires.NotNull(ex, nameof(ex));
+
+            Report.Fail(ex.Message);
+            Environment.FailFast(ex.ToString(), ex);
+            throw Assumes.NotReachable();
+        }
+
+        /// <summary>
+        /// Invoked when the lock detects an internal error or illegal usage pattern that
+        /// indicates a serious flaw that should be immediately reported to the application
+        /// and/or bring down the process to avoid hangs or data corruption.
+        /// </summary>
+        /// <param name="message">The message to use for the exception.</param>
+        /// <returns>An exception that may be returned by some implementations of tis method for he caller to rethrow.</returns>
+        protected Exception OnCriticalFailure(string message)
+        {
+            try
+            {
+                throw Assumes.Fail(message);
+            }
+            catch (Exception ex)
+            {
+                throw this.OnCriticalFailure(ex);
+            }
+        }
+
+        /// <summary>
+        /// Checks whether the specified lock has any active nested locks.
+        /// </summary>
+        private static bool HasAnyNestedLocks(Awaiter lck, HashSet<Awaiter> lockCollection)
+        {
+            Requires.NotNull(lck, nameof(lck));
+            Requires.NotNull(lockCollection, nameof(lockCollection));
+
+            if (lockCollection.Count > 0)
+            {
+                foreach (Awaiter? nestedCandidate in lockCollection)
+                {
+                    if (nestedCandidate == lck)
+                    {
+                        // This isn't nested -- it's the lock itself.
+                        continue;
+                    }
+
+                    for (Awaiter? a = nestedCandidate.NestingLock; a is object; a = a.NestingLock)
+                    {
+                        if (a == lck)
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Throws an exception if called on an STA thread.
         /// </summary>
         private void ThrowIfUnsupportedThreadOrSyncContext()
@@ -695,7 +776,7 @@ namespace Microsoft.VisualStudio.Threading
 
             if (this.completeInvoked &&
                 !this.completionSource.Task.IsCompleted &&
-                this.reenterConcurrencyPrepRunning == null &&
+                this.reenterConcurrencyPrepRunning is null &&
                 this.issuedReadLocks.Count == 0 && this.issuedUpgradeableReadLocks.Count == 0 && this.issuedWriteLocks.Count == 0 &&
                 this.waitingReaders.Count == 0 && this.waitingUpgradeableReaders.Count == 0 && this.waitingWriters.Count == 0)
             {
@@ -718,11 +799,11 @@ namespace Microsoft.VisualStudio.Threading
             upgradeableRead = false;
             write = false;
 
-            if (awaiter != null)
+            if (awaiter is object)
             {
                 lock (this.syncObject)
                 {
-                    while (awaiter != null)
+                    while (awaiter is object)
                     {
                         // It's possible that this lock has been released (even mid-stack, due to our async nature),
                         // so only consider locks that are still active.
@@ -759,13 +840,13 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns><c>true</c> if all issued locks are the specified lock or nesting locks of it.</returns>
         private bool AllHeldLocksAreByThisStack(Awaiter? awaiter)
         {
-            Assumes.True(awaiter == null || !this.IsLockHeld(LockKind.Write, awaiter)); // this method doesn't yet handle sticky upgraded read locks (that appear in the write lock set).
+            Assumes.True(awaiter is null || !this.IsLockHeld(LockKind.Write, awaiter)); // this method doesn't yet handle sticky upgraded read locks (that appear in the write lock set).
             lock (this.syncObject)
             {
-                if (awaiter != null)
+                if (awaiter is object)
                 {
                     int locksMatched = 0;
-                    while (awaiter != null)
+                    while (awaiter is object)
                     {
                         if (this.GetActiveLockSet(awaiter.Kind).Contains(awaiter))
                         {
@@ -792,12 +873,12 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns><c>true</c> if the lock holder (also) holds the specified kind of lock.</returns>
         private bool LockStackContains(LockKind kind, Awaiter? awaiter)
         {
-            if (awaiter != null)
+            if (awaiter is object)
             {
                 lock (this.syncObject)
                 {
-                    var lockSet = this.GetActiveLockSet(kind);
-                    while (awaiter != null)
+                    HashSet<Awaiter>? lockSet = this.GetActiveLockSet(kind);
+                    while (awaiter is object)
                     {
                         // It's possible that this lock has been released (even mid-stack, due to our async nature),
                         // so only consider locks that are still active.
@@ -929,7 +1010,7 @@ namespace Microsoft.VisualStudio.Threading
                 if (this.completeInvoked && !previouslyQueued)
                 {
                     // If this is a new top-level lock request, reject it completely.
-                    if (awaiter.NestingLock == null)
+                    if (awaiter.NestingLock is null)
                     {
                         awaiter.SetFault(new InvalidOperationException(Strings.LockCompletionAlreadyRequested));
                         return false;
@@ -937,7 +1018,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
 
                 bool issued = false;
-                if (this.reenterConcurrencyPrepRunning == null)
+                if (this.reenterConcurrencyPrepRunning is null)
                 {
                     if (this.issuedWriteLocks.Count == 0 && this.issuedUpgradeableReadLocks.Count == 0 && this.issuedReadLocks.Count == 0)
                     {
@@ -1005,8 +1086,8 @@ namespace Microsoft.VisualStudio.Threading
                                 {
                                     issued = true;
 
-                                    var stickyWriteAwaiter = this.FindRootUpgradeableReadWithStickyWrite(awaiter);
-                                    if (stickyWriteAwaiter != null)
+                                    Awaiter? stickyWriteAwaiter = this.FindRootUpgradeableReadWithStickyWrite(awaiter);
+                                    if (stickyWriteAwaiter is object)
                                     {
                                         // Add the upgradeable reader as a write lock as well.
                                         this.issuedWriteLocks.Add(stickyWriteAwaiter);
@@ -1047,13 +1128,13 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns>The least nested upgradeable reader lock with sticky write flag; or <c>null</c> if none was found.</returns>
         private Awaiter? FindRootUpgradeableReadWithStickyWrite(Awaiter? headAwaiter)
         {
-            if (headAwaiter == null)
+            if (headAwaiter is null)
             {
                 return null;
             }
 
-            var lowerMatch = this.FindRootUpgradeableReadWithStickyWrite(headAwaiter.NestingLock);
-            if (lowerMatch != null)
+            Awaiter? lowerMatch = this.FindRootUpgradeableReadWithStickyWrite(headAwaiter.NestingLock);
+            if (lowerMatch is object)
             {
                 return lowerMatch;
             }
@@ -1119,7 +1200,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns>The first active lock encountered, or <c>null</c> if none.</returns>
         private Awaiter? GetFirstActiveSelfOrAncestor(Awaiter? awaiter)
         {
-            while (awaiter != null)
+            while (awaiter is object)
             {
                 if (this.IsLockActive(awaiter, considerStaActive: true))
                 {
@@ -1142,90 +1223,6 @@ namespace Microsoft.VisualStudio.Threading
             EventsHelper.WaitStop(awaiter);
             Assumes.True(this.TryIssueLock(awaiter, previouslyQueued: true));
             Assumes.True(this.ExecuteOrHandleCancellation(awaiter, stillInQueue: false));
-        }
-
-        /// <summary>
-        /// Invoked after an exclusive lock is released but before anyone has a chance to enter the lock.
-        /// </summary>
-        /// <remarks>
-        /// This method is called while holding a private lock in order to block future lock consumers till this method is finished.
-        /// </remarks>
-        protected virtual Task OnExclusiveLockReleasedAsync()
-        {
-            return Task.CompletedTask;
-        }
-
-        /// <summary>
-        /// Invoked when a top-level upgradeable read lock is released, leaving no remaining (write) lock.
-        /// </summary>
-        protected virtual void OnUpgradeableReadLockReleased()
-        {
-        }
-
-        /// <summary>
-        /// Invoked when the lock detects an internal error or illegal usage pattern that
-        /// indicates a serious flaw that should be immediately reported to the application
-        /// and/or bring down the process to avoid hangs or data corruption.
-        /// </summary>
-        /// <param name="ex">The exception that captures the details of the failure.</param>
-        /// <returns>An exception that may be returned by some implementations of tis method for he caller to rethrow.</returns>
-        protected virtual Exception OnCriticalFailure(Exception ex)
-        {
-            Requires.NotNull(ex, nameof(ex));
-
-            Report.Fail(ex.Message);
-            Environment.FailFast(ex.ToString(), ex);
-            throw Assumes.NotReachable();
-        }
-
-        /// <summary>
-        /// Invoked when the lock detects an internal error or illegal usage pattern that
-        /// indicates a serious flaw that should be immediately reported to the application
-        /// and/or bring down the process to avoid hangs or data corruption.
-        /// </summary>
-        /// <param name="message">The message to use for the exception.</param>
-        /// <returns>An exception that may be returned by some implementations of tis method for he caller to rethrow.</returns>
-        protected Exception OnCriticalFailure(string message)
-        {
-            try
-            {
-                throw Assumes.Fail(message);
-            }
-            catch (Exception ex)
-            {
-                throw this.OnCriticalFailure(ex);
-            }
-        }
-
-        /// <summary>
-        /// Checks whether the specified lock has any active nested locks.
-        /// </summary>
-        private static bool HasAnyNestedLocks(Awaiter lck, HashSet<Awaiter> lockCollection)
-        {
-            Requires.NotNull(lck, nameof(lck));
-            Requires.NotNull(lockCollection, nameof(lockCollection));
-
-            if (lockCollection.Count > 0)
-            {
-                foreach (var nestedCandidate in lockCollection)
-                {
-                    if (nestedCandidate == lck)
-                    {
-                        // This isn't nested -- it's the lock itself.
-                        continue;
-                    }
-
-                    for (Awaiter? a = nestedCandidate.NestingLock; a != null; a = a.NestingLock)
-                    {
-                        if (a == lck)
-                        {
-                            return true;
-                        }
-                    }
-                }
-            }
-
-            return false;
         }
 
         /// <summary>
@@ -1255,7 +1252,7 @@ namespace Microsoft.VisualStudio.Threading
             // access to concurrent access while someone is actually holding a lock (as such transition requires
             // the lock class itself to have the exclusive lock to protect the resources going through the transition).
             Awaiter? illegalConcurrentLock = this.reenterConcurrencyPrepRunning; // capture to local to preserve evidence in a concurrently reset field.
-            if (illegalConcurrentLock != null)
+            if (illegalConcurrentLock is object)
             {
                 try
                 {
@@ -1326,7 +1323,7 @@ namespace Microsoft.VisualStudio.Threading
                     }
                 }
 
-                if (reenterConcurrentOutsideCode == null)
+                if (reenterConcurrentOutsideCode is null)
                 {
                     this.OnReleaseReenterConcurrencyComplete(awaiter, upgradedStickyWrite, searchAllWaiters: false);
                 }
@@ -1337,7 +1334,7 @@ namespace Microsoft.VisualStudio.Threading
             // Updating the topAwaiter requires touching the CallContext, which significantly increases the perf/GC hit
             // for releasing locks. So we prefer to leave a released lock in the context and walk up the lock stack when
             // necessary. But we will clean it up if it's the last lock released.
-            if (remainingAwaiter == null)
+            if (remainingAwaiter is null)
             {
                 // This assignment is outside the lock because it doesn't need the lock and it's a relatively expensive call
                 // that we needn't hold the lock for.
@@ -1346,7 +1343,7 @@ namespace Microsoft.VisualStudio.Threading
 
             if (synchronousRequired || true)
             { // the "|| true" bit is to force us to always be synchronous when releasing locks until we can get all tests passing the other way.
-                if (reenterConcurrentOutsideCode != null && (synchronousCallbackExecution != null && !synchronousCallbackExecution.IsCompleted))
+                if (reenterConcurrentOutsideCode is object && (synchronousCallbackExecution is object && !synchronousCallbackExecution.IsCompleted))
                 {
                     return Task.WhenAll(reenterConcurrentOutsideCode, synchronousCallbackExecution);
                 }
@@ -1374,7 +1371,9 @@ namespace Microsoft.VisualStudio.Threading
             {
                 await beginAfterPrerequisite.ConfigureAwait(SynchronizationContext.Current is NonConcurrentSynchronizationContext);
             }
+#pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception ex)
+#pragma warning restore CA1031 // Do not catch general exception types
             {
                 prereqException = ex;
             }
@@ -1409,7 +1408,9 @@ namespace Microsoft.VisualStudio.Threading
             {
                 await onExclusiveLockReleasedTask.ConfigureAwait(false);
             }
+#pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception ex)
+#pragma warning restore CA1031 // Do not catch general exception types
             {
                 onExclusiveLockReleasedTaskException = ex;
             }
@@ -1431,13 +1432,13 @@ namespace Microsoft.VisualStudio.Threading
                 this.OnReleaseReenterConcurrencyComplete(awaiter, upgradedStickyWrite, searchAllWaiters: true);
             }
 
-            if (prereqException != null)
+            if (prereqException is object)
             {
                 // rethrow the exception we experienced before, such that it doesn't wipe out its callstack.
                 System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(prereqException).Throw();
             }
 
-            if (onExclusiveLockReleasedTaskException != null)
+            if (onExclusiveLockReleasedTaskException is object)
             {
                 // rethrow the exception we experienced before, such that it doesn't wipe out its callstack.
                 System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(onExclusiveLockReleasedTaskException).Throw();
@@ -1518,9 +1519,11 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         await callback().ConfigureAwait(true);
                     }
+#pragma warning disable CA1031 // Do not catch general exception types
                     catch (Exception ex)
+#pragma warning restore CA1031 // Do not catch general exception types
                     {
-                        if (exceptions == null)
+                        if (exceptions is null)
                         {
                             exceptions = new List<Exception>();
                         }
@@ -1529,7 +1532,7 @@ namespace Microsoft.VisualStudio.Threading
                     }
                 }
 
-                if (exceptions != null)
+                if (exceptions is object)
                 {
                     throw new AggregateException(exceptions);
                 }
@@ -1564,7 +1567,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="topAwaiter">The awaiter that tracks the lock to grant to the caller.</param>
         private void ApplyLockToCallContext(Awaiter? topAwaiter)
         {
-            var awaiter = this.GetFirstActiveSelfOrAncestor(topAwaiter);
+            Awaiter? awaiter = this.GetFirstActiveSelfOrAncestor(topAwaiter);
             this.topAwaiter.Value = awaiter;
         }
 
@@ -1580,7 +1583,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 while (this.waitingReaders.Count > 0)
                 {
-                    var pendingReader = this.waitingReaders.Dequeue();
+                    Awaiter? pendingReader = this.waitingReaders.Dequeue();
                     Assumes.True(pendingReader.Kind == LockKind.Read);
                     this.IssueAndExecute(pendingReader);
                     invoked = true;
@@ -1608,7 +1611,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 if (this.waitingUpgradeableReaders.Count > 0)
                 {
-                    var pendingUpgradeableReader = this.waitingUpgradeableReaders.Dequeue();
+                    Awaiter? pendingUpgradeableReader = this.waitingUpgradeableReaders.Dequeue();
                     Assumes.True(pendingUpgradeableReader.Kind == LockKind.UpgradeableRead);
                     this.IssueAndExecute(pendingUpgradeableReader);
                     return true;
@@ -1637,7 +1640,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 if (this.waitingWriters.Count > 0)
                 {
-                    var pendingWriter = this.waitingWriters.Dequeue();
+                    Awaiter? pendingWriter = this.waitingWriters.Dequeue();
                     Assumes.True(pendingWriter.Kind == LockKind.Write);
                     this.IssueAndExecute(pendingWriter);
                     return true;
@@ -1669,7 +1672,7 @@ namespace Microsoft.VisualStudio.Threading
             do
             {
                 invokedThisLoop = false;
-                foreach (var lockWaiter in waiters)
+                foreach (Awaiter? lockWaiter in waiters)
                 {
                     if (this.TryIssueLock(lockWaiter, previouslyQueued: true))
                     {
@@ -1691,7 +1694,8 @@ namespace Microsoft.VisualStudio.Threading
                         break;
                     }
                 }
-            } while (invokedThisLoop); // keep looping while we find matching locks.
+            }
+            while (invokedThisLoop); // keep looping while we find matching locks.
 
             return invoked;
         }
@@ -1712,7 +1716,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
                 else
                 {
-                    var queue = this.GetLockQueue(awaiter.Kind);
+                    Queue<Awaiter>? queue = this.GetLockQueue(awaiter.Kind);
                     queue.Enqueue(awaiter);
                 }
             }
@@ -1734,7 +1738,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     // The lock class can't deal well with cancelled lock requests remaining in its queue.
                     // Remove the awaiter, wherever in the queue it happens to be.
-                    var queue = this.GetLockQueue(awaiter.Kind);
+                    Queue<Awaiter>? queue = this.GetLockQueue(awaiter.Kind);
                     if (!queue.RemoveMidQueue(awaiter))
                     {
                         // This can happen when the lock request is cancelled, but during a race
@@ -1783,9 +1787,11 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Gets the awaiter value.
             /// </summary>
+#pragma warning disable CA1034 // Nested types should not be visible
             public Awaiter GetAwaiter()
+#pragma warning restore CA1034 // Nested types should not be visible
             {
-                if (this.awaiter == null)
+                if (this.awaiter is null)
                 {
                     throw new InvalidOperationException();
                 }
@@ -1798,7 +1804,9 @@ namespace Microsoft.VisualStudio.Threading
         /// A value whose disposal releases a held lock.
         /// </summary>
         [DebuggerDisplay("{awaiter.kind}")]
+#pragma warning disable CA1034 // Nested types should not be visible
         public readonly struct Releaser : IDisposable, System.IAsyncDisposable
+#pragma warning restore CA1034 // Nested types should not be visible
         {
             /// <summary>
             /// The awaiter who manages the lifetime of a lock.
@@ -1819,7 +1827,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             public void Dispose()
             {
-                if (this.awaiter != null)
+                if (this.awaiter is object)
                 {
                     var nonConcurrentSyncContext = SynchronizationContext.Current as NonConcurrentSynchronizationContext;
 
@@ -1829,9 +1837,9 @@ namespace Microsoft.VisualStudio.Threading
                     // blocked and wait until it is done, and that makes it possible to run into the thread pool exhaustion trap.
                     if (!this.awaiter.IsReleased)
                     {
-                        using (nonConcurrentSyncContext != null ? nonConcurrentSyncContext.LoanBackAnyHeldResource(this.awaiter.OwningLock) : default(NonConcurrentSynchronizationContext.LoanBack))
+                        using (nonConcurrentSyncContext is object ? nonConcurrentSyncContext.LoanBackAnyHeldResource(this.awaiter.OwningLock) : default(NonConcurrentSynchronizationContext.LoanBack))
                         {
-                            var releaseTask = this.awaiter.ReleaseAsync();
+                            Task? releaseTask = this.awaiter.ReleaseAsync();
                             using (NoMessagePumpSyncContext.Default.Apply())
                             {
                                 try
@@ -1849,7 +1857,7 @@ namespace Microsoft.VisualStudio.Threading
                         }
                     }
 
-                    if (nonConcurrentSyncContext != null && !this.awaiter.OwningLock.AmbientLock.IsValid)
+                    if (nonConcurrentSyncContext is object && !this.awaiter.OwningLock.AmbientLock.IsValid)
                     {
                         // The lock holder is taking the synchronous path to release the last UR/W lock held.
                         // Since they may go synchronously on their merry way for a while, forcibly release
@@ -1881,10 +1889,12 @@ namespace Microsoft.VisualStudio.Threading
             /// </remarks>
             public Task ReleaseAsync()
             {
-                if (this.awaiter != null)
+                if (this.awaiter is object)
                 {
                     var nonConcurrentSyncContext = SynchronizationContext.Current as NonConcurrentSynchronizationContext;
-                    using (nonConcurrentSyncContext != null ? nonConcurrentSyncContext.LoanBackAnyHeldResource(this.awaiter.OwningLock) : default(NonConcurrentSynchronizationContext.LoanBack))
+#pragma warning disable CA1034 // Nested types should not be visible
+                    using (nonConcurrentSyncContext is object ? nonConcurrentSyncContext.LoanBackAnyHeldResource(this.awaiter.OwningLock) : default(NonConcurrentSynchronizationContext.LoanBack))
+#pragma warning restore CA1034 // Nested types should not be visible
                     {
                         return this.awaiter.ReleaseAsync();
                     }
@@ -1897,7 +1907,9 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// A value whose disposal restores visibility of any locks held by the caller.
         /// </summary>
+#pragma warning disable CA1034 // Nested types should not be visible
         public readonly struct Suppression : IDisposable
+#pragma warning restore CA1034 // Nested types should not be visible
         {
             /// <summary>
             /// The locking class.
@@ -1917,7 +1929,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 this.lck = lck;
                 this.awaiter = this.lck.topAwaiter.Value;
-                if (this.awaiter != null)
+                if (this.awaiter is object)
                 {
                     this.lck.topAwaiter.Value = null;
                 }
@@ -1928,7 +1940,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             public void Dispose()
             {
-                if (this.lck != null)
+                if (this.lck is object)
                 {
                     this.lck.ApplyLockToCallContext(this.awaiter);
                 }
@@ -1958,7 +1970,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             public bool IsValid
             {
-                get { return this.awaiter != null; }
+                get { return this.awaiter is object; }
             }
 
             /// <summary>
@@ -2047,7 +2059,9 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             public LockHandle NestingLock
             {
+#pragma warning disable CA1034 // Nested types should not be visible
                 get { return this.IsValid ? new LockHandle(this.awaiter!.NestingLock) : default(LockHandle); }
+#pragma warning restore CA1034 // Nested types should not be visible
             }
 
             /// <summary>
@@ -2063,10 +2077,10 @@ namespace Microsoft.VisualStudio.Threading
         /// Manages asynchronous access to a lock.
         /// </summary>
         [DebuggerDisplay("{kind}")]
+#pragma warning disable CA1034 // Nested types should not be visible
         public class Awaiter : ICriticalNotifyCompletion
+#pragma warning restore CA1034 // Nested types should not be visible
         {
-#region Fields
-
             /// <summary>
             /// A singleton delegate for use in cancellation token registration to avoid memory allocations for delegates each time.
             /// </summary>
@@ -2149,8 +2163,6 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             private object? data;
 
-#endregion
-
             /// <summary>
             /// Initializes a new instance of the <see cref="Awaiter"/> class.
             /// </summary>
@@ -2177,7 +2189,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 get
                 {
-                    if (this.fault != null)
+                    if (this.fault is object)
                     {
                         return true;
                     }
@@ -2268,7 +2280,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 get
                 {
-                    return this.releaseAsyncTask != null && this.releaseAsyncTask.Status == TaskStatus.RanToCompletion;
+                    return this.releaseAsyncTask is object && this.releaseAsyncTask.Status == TaskStatus.RanToCompletion;
                 }
             }
 
@@ -2304,7 +2316,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     this.cancellationRegistration.Dispose();
 
-                    if (!this.LockIssued && this.continuation == null && !this.cancellationToken.IsCancellationRequested)
+                    if (!this.LockIssued && this.continuation is null && !this.cancellationToken.IsCancellationRequested)
                     {
                         using (var synchronousBlock = new ManualResetEventSlim())
                         {
@@ -2313,7 +2325,7 @@ namespace Microsoft.VisualStudio.Threading
                         }
                     }
 
-                    if (this.fault != null)
+                    if (this.fault is object)
                     {
                         throw this.fault;
                     }
@@ -2360,7 +2372,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             internal Task ReleaseAsync(bool lockConsumerCanceled = false)
             {
-                if (this.releaseAsyncTask == null)
+                if (this.releaseAsyncTask is null)
                 {
                     // This method does NOT use the async keyword in its signature to avoid CallContext changes that we make
                     // causing a fork/clone of the CallContext, which defeats our alloc-free uncontested lock story.
@@ -2390,14 +2402,14 @@ namespace Microsoft.VisualStudio.Threading
             /// <returns><c>true</c> if the continuation was (asynchronously) invoked; <c>false</c> if there was no continuation available to invoke.</returns>
             internal bool TryScheduleContinuationExecution()
             {
-                var continuation = Interlocked.Exchange(ref this.continuation, null);
+                Action? continuation = Interlocked.Exchange(ref this.continuation, null);
 
-                if (continuation != null)
+                if (continuation is object)
                 {
                     this.continuationAfterLockIssued = continuation;
 
-                    var synchronizationContext = this.GetEffectiveSynchronizationContext();
-                    if (this.continuationTaskScheduler != null && synchronizationContext == DefaultSynchronizationContext)
+                    SynchronizationContext? synchronizationContext = this.GetEffectiveSynchronizationContext();
+                    if (this.continuationTaskScheduler is object && synchronizationContext == DefaultSynchronizationContext)
                     {
                         Task.Factory.StartNew(continuation, CancellationToken.None, TaskCreationOptions.PreferFairness, this.continuationTaskScheduler);
                     }
@@ -2420,52 +2432,6 @@ namespace Microsoft.VisualStudio.Threading
             internal void SetFault(Exception ex)
             {
                 this.fault = ex;
-            }
-
-            /// <summary>
-            /// Get the correct SynchronizationContext to execute code executing within the lock.
-            /// Note: we need get the NonConcurrentSynchronizationContext from the nesting exclusive lock, because the child lock is essentially under the same context.
-            /// When we don't have a valid nesting lock, we will create a new NonConcurrentSynchronizationContext for an exclusive lock.  For read lock, we don't put it within a NonConcurrentSynchronizationContext,
-            /// we set it to DefaultSynchronizationContext to mark we have computed it.  The result is cached.
-            /// </summary>
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Justification = "NonConcurrentSynchronizationContext is shared among locks, and cannot be disposed.")]
-            private SynchronizationContext GetEffectiveSynchronizationContext()
-            {
-                if (this.synchronizationContext == null)
-                {
-                    // Only read locks can be executed trivially. The locks that have some level of exclusivity (upgradeable read and write)
-                    // must be executed via the NonConcurrentSynchronizationContext.
-                    SynchronizationContext? synchronizationContext = null;
-
-                    Awaiter? awaiter = this.NestingLock;
-                    while (awaiter != null)
-                    {
-                        if (this.lck.IsLockActive(awaiter, considerStaActive: true))
-                        {
-                            synchronizationContext = awaiter.GetEffectiveSynchronizationContext();
-                            break;
-                        }
-
-                        awaiter = awaiter.NestingLock;
-                    }
-
-                    if (synchronizationContext == null)
-                    {
-                        if (this.kind == LockKind.Read)
-                        {
-                            // We use DefaultSynchronizationContext to indicate that we have already computed the synchronizationContext once, and prevent repeating this logic second time.
-                            synchronizationContext = DefaultSynchronizationContext;
-                        }
-                        else
-                        {
-                            synchronizationContext = new NonConcurrentSynchronizationContext();
-                        }
-                    }
-
-                    Interlocked.CompareExchange(ref this.synchronizationContext, synchronizationContext, null);
-                }
-
-                return this.synchronizationContext;
             }
 
             /// <summary>
@@ -2496,6 +2462,52 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
+            /// Get the correct SynchronizationContext to execute code executing within the lock.
+            /// Note: we need get the NonConcurrentSynchronizationContext from the nesting exclusive lock, because the child lock is essentially under the same context.
+            /// When we don't have a valid nesting lock, we will create a new NonConcurrentSynchronizationContext for an exclusive lock.  For read lock, we don't put it within a NonConcurrentSynchronizationContext,
+            /// we set it to DefaultSynchronizationContext to mark we have computed it.  The result is cached.
+            /// </summary>
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Justification = "NonConcurrentSynchronizationContext is shared among locks, and cannot be disposed.")]
+            private SynchronizationContext GetEffectiveSynchronizationContext()
+            {
+                if (this.synchronizationContext is null)
+                {
+                    // Only read locks can be executed trivially. The locks that have some level of exclusivity (upgradeable read and write)
+                    // must be executed via the NonConcurrentSynchronizationContext.
+                    SynchronizationContext? synchronizationContext = null;
+
+                    Awaiter? awaiter = this.NestingLock;
+                    while (awaiter is object)
+                    {
+                        if (this.lck.IsLockActive(awaiter, considerStaActive: true))
+                        {
+                            synchronizationContext = awaiter.GetEffectiveSynchronizationContext();
+                            break;
+                        }
+
+                        awaiter = awaiter.NestingLock;
+                    }
+
+                    if (synchronizationContext is null)
+                    {
+                        if (this.kind == LockKind.Read)
+                        {
+                            // We use DefaultSynchronizationContext to indicate that we have already computed the synchronizationContext once, and prevent repeating this logic second time.
+                            synchronizationContext = DefaultSynchronizationContext;
+                        }
+                        else
+                        {
+                            synchronizationContext = new NonConcurrentSynchronizationContext();
+                        }
+                    }
+
+                    Interlocked.CompareExchange(ref this.synchronizationContext, synchronizationContext, null);
+                }
+
+                return this.synchronizationContext;
+            }
+
+            /// <summary>
             /// Sets the delegate to execute when the lock is available.
             /// </summary>
             /// <param name="continuation">The delegate.</param>
@@ -2507,7 +2519,7 @@ namespace Microsoft.VisualStudio.Threading
                     throw new InvalidOperationException();
                 }
 
-                if (Interlocked.CompareExchange(ref this.continuation, continuation, null) != null)
+                if (Interlocked.CompareExchange(ref this.continuation, continuation, null) is object)
                 {
                     throw new NotSupportedException(Strings.MultipleContinuationsNotSupported);
                 }
@@ -2654,7 +2666,9 @@ namespace Microsoft.VisualStudio.Threading
                         delegateInvoked = true; // set now, before the delegate might throw.
                         d(state);
                     }
+#pragma warning disable CA1031 // Do not catch general exception types
                     catch (Exception ex)
+#pragma warning restore CA1031 // Do not catch general exception types
                     {
                         // We just eat these up to avoid crashing the process by throwing on a threadpool thread.
                         Report.Fail("An unhandled exception was thrown from within a posted message. {0}", ex);
@@ -2683,7 +2697,9 @@ namespace Microsoft.VisualStudio.Threading
                             delegateInvoked = true; // set now, before the delegate might throw.
                             d(state);
                         }
+#pragma warning disable CA1031 // Do not catch general exception types
                         catch (Exception ex)
+#pragma warning restore CA1031 // Do not catch general exception types
                         {
                             // We just eat these up to avoid crashing the process by throwing on a threadpool thread.
                             Report.Fail("An unhandled exception was thrown from within a posted message. {0}", ex);
@@ -2709,7 +2725,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 public void Dispose()
                 {
-                    if (this.syncContext != null)
+                    if (this.syncContext is object)
                     {
                         Assumes.False(Monitor.IsEntered(this.asyncLock.syncObject), "Should not wait on the Semaphore, when we hold the syncObject. This causes deadlocks");
                         this.syncContext.semaphore.Wait();
@@ -2729,6 +2745,14 @@ namespace Microsoft.VisualStudio.Threading
                 this.lck = lck;
             }
 
+            internal static void WaitStop(Awaiter lckAwaiter)
+            {
+                if (ThreadingEventSource.Instance.IsEnabled())
+                {
+                    ThreadingEventSource.Instance.WaitReaderWriterLockStop(lckAwaiter.GetHashCode(), lckAwaiter.Kind);
+                }
+            }
+
             internal void Issued(Awaiter lckAwaiter)
             {
                 if (ThreadingEventSource.Instance.IsEnabled())
@@ -2742,14 +2766,6 @@ namespace Microsoft.VisualStudio.Threading
                 if (ThreadingEventSource.Instance.IsEnabled())
                 {
                     ThreadingEventSource.Instance.WaitReaderWriterLockStart(lckAwaiter.GetHashCode(), lckAwaiter.Kind, this.lck.issuedWriteLocks.Count, this.lck.issuedUpgradeableReadLocks.Count, this.lck.issuedReadLocks.Count);
-                }
-            }
-
-            internal static void WaitStop(Awaiter lckAwaiter)
-            {
-                if (ThreadingEventSource.Instance.IsEnabled())
-                {
-                    ThreadingEventSource.Instance.WaitReaderWriterLockStop(lckAwaiter.GetHashCode(), lckAwaiter.Kind);
                 }
             }
         }

@@ -1,4 +1,5 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
@@ -53,11 +54,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         private void AnalyzeNode(OperationAnalysisContext context)
         {
             var objectCreation = (IObjectCreationOperation)context.Operation;
-            var methodSymbol = objectCreation.Constructor;
+            IMethodSymbol? methodSymbol = objectCreation.Constructor;
             var constructedType = methodSymbol?.ReceiverType as INamedTypeSymbol;
             if (Utils.IsLazyOfT(constructedType))
             {
-                var typeArg = constructedType.TypeArguments.FirstOrDefault();
+                ITypeSymbol? typeArg = constructedType.TypeArguments.FirstOrDefault();
                 bool typeArgIsTask = typeArg?.Name == nameof(Task)
                     && typeArg.BelongsToNamespace(Namespaces.SystemThreadingTasks);
                 if (typeArgIsTask)
@@ -66,15 +67,15 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 }
                 else
                 {
-                    var firstArgExpression = objectCreation.Arguments.FirstOrDefault()?.Value;
+                    IOperation? firstArgExpression = objectCreation.Arguments.FirstOrDefault()?.Value;
                     if (firstArgExpression is IDelegateCreationOperation { Target: IAnonymousFunctionOperation anonFunc })
                     {
-                        var problems = from invocation in anonFunc.Descendants().OfType<IInvocationOperation>()
+                        System.Collections.Generic.IEnumerable<IInvocationOperation>? problems = from invocation in anonFunc.Descendants().OfType<IInvocationOperation>()
                                        let invokedSymbol = invocation.TargetMethod
-                                       where invokedSymbol != null && CommonInterest.SyncBlockingMethods.Any(m => m.Method.IsMatch(invokedSymbol))
+                                       where invokedSymbol is object && CommonInterest.SyncBlockingMethods.Any(m => m.Method.IsMatch(invokedSymbol))
                                        select invocation;
-                        var firstProblem = problems.FirstOrDefault();
-                        if (firstProblem != null)
+                        IInvocationOperation? firstProblem = problems.FirstOrDefault();
+                        if (firstProblem is object)
                         {
                             context.ReportDiagnostic(Diagnostic.Create(SyncBlockInValueFactoryDescriptor, this.LanguageUtils.IsolateMethodName(firstProblem).GetLocation()));
                         }

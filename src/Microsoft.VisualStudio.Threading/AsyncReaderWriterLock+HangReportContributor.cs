@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading
 {
@@ -15,7 +12,7 @@ namespace Microsoft.VisualStudio.Threading
     using System.Threading.Tasks;
     using System.Xml.Linq;
 
-    partial class AsyncReaderWriterLock : IHangReportContributor
+    public partial class AsyncReaderWriterLock : IHangReportContributor
     {
         [Flags]
         private enum AwaiterCollection
@@ -70,7 +67,7 @@ namespace Microsoft.VisualStudio.Threading
                 try
                 {
                     Monitor.TryEnter(this.syncObject, 1000, ref lockAcquired);
-                    var dgml = CreateDgml(out XElement nodes, out XElement links);
+                    XDocument? dgml = CreateDgml(out XElement nodes, out XElement links);
 
                     if (!lockAcquired)
                     {
@@ -85,7 +82,7 @@ namespace Microsoft.VisualStudio.Threading
                     liveAwaiterMetadata.UnionWith(this.issuedUpgradeableReadLocks.Select(a => new AwaiterMetadata(a, AwaiterCollection.Issued | AwaiterCollection.UpgradeableReadLock)));
                     liveAwaiterMetadata.UnionWith(this.issuedWriteLocks.Select(a => new AwaiterMetadata(a, AwaiterCollection.Issued | AwaiterCollection.WriteLock)));
 
-                    var liveAwaiters = liveAwaiterMetadata.Select(am => am.Awaiter);
+                    IEnumerable<Awaiter>? liveAwaiters = liveAwaiterMetadata.Select(am => am.Awaiter);
                     var releasedAwaiterMetadata = new HashSet<AwaiterMetadata>(liveAwaiters.SelectMany(GetLockStack).Distinct().Except(liveAwaiters).Select(AwaiterMetadata.Released));
                     var allAwaiterMetadata = new HashSet<AwaiterMetadata>(liveAwaiterMetadata.Concat(releasedAwaiterMetadata));
 
@@ -96,7 +93,7 @@ namespace Microsoft.VisualStudio.Threading
                     nodes.Add(allAwaiterMetadata.Select(am => CreateAwaiterNode(am.Awaiter).WithCategories(am.Categories.ToArray()).ContainedBy(am.GroupId, dgml)));
 
                     // Link the lock stacks among themselves.
-                    links.Add(allAwaiterMetadata.Where(a => a.Awaiter.NestingLock != null).Select(a => Dgml.Link(GetAwaiterId(a.Awaiter.NestingLock!), GetAwaiterId(a.Awaiter))));
+                    links.Add(allAwaiterMetadata.Where(a => a.Awaiter.NestingLock is object).Select(a => Dgml.Link(GetAwaiterId(a.Awaiter.NestingLock!), GetAwaiterId(a.Awaiter))));
 
                     return new HangReportContribution(
                         dgml.ToString(),
@@ -141,12 +138,12 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             Delegate? lockWaitingContinuation;
-            if (awaiter.RequestingStackTrace != null)
+            if (awaiter.RequestingStackTrace is object)
             {
                 label.AppendLine(awaiter.RequestingStackTrace.ToString());
             }
 
-            if ((lockWaitingContinuation = awaiter.LockRequestingContinuation) != null)
+            if ((lockWaitingContinuation = awaiter.LockRequestingContinuation) is object)
             {
                 try
                 {
@@ -180,7 +177,7 @@ namespace Microsoft.VisualStudio.Threading
         private static string GetAwaiterGroupId(Awaiter awaiter)
         {
             Requires.NotNull(awaiter, nameof(awaiter));
-            while (awaiter.NestingLock != null)
+            while (awaiter.NestingLock is object)
             {
                 awaiter = awaiter.NestingLock;
             }
@@ -191,7 +188,7 @@ namespace Microsoft.VisualStudio.Threading
         private static IEnumerable<Awaiter> GetLockStack(Awaiter awaiter)
         {
             Requires.NotNull(awaiter, nameof(awaiter));
-            for (Awaiter? current = awaiter; current != null; current = current.NestingLock)
+            for (Awaiter? current = awaiter; current is object; current = current.NestingLock)
             {
                 yield return awaiter;
             }
@@ -240,14 +237,14 @@ namespace Microsoft.VisualStudio.Threading
             public override bool Equals(object? obj)
             {
                 var otherAwaiter = obj as AwaiterMetadata;
-                return otherAwaiter != null && this.Awaiter.Equals(otherAwaiter.Awaiter);
+                return otherAwaiter is object && this.Awaiter.Equals(otherAwaiter.Awaiter);
             }
 
             internal static AwaiterMetadata Released(Awaiter awaiter)
             {
                 Requires.NotNull(awaiter, nameof(awaiter));
 
-                var membership = AwaiterCollection.Released;
+                AwaiterCollection membership = AwaiterCollection.Released;
                 switch (awaiter.Kind)
                 {
                     case LockKind.Read:

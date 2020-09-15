@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading
 {
@@ -55,7 +52,7 @@ namespace Microsoft.VisualStudio.Threading
             if (!task.IsCompleted)
             {
                 // Waiting on a continuation of a task won't ever inline the predecessor (in .NET 4.x anyway).
-                var continuation = task.ContinueWith(t => { }, CancellationToken.None, TaskContinuationOptions.RunContinuationsAsynchronously, TaskScheduler.Default);
+                Task? continuation = task.ContinueWith(t => { }, CancellationToken.None, TaskContinuationOptions.RunContinuationsAsynchronously, TaskScheduler.Default);
                 continuation.Wait();
             }
 
@@ -216,7 +213,7 @@ namespace Microsoft.VisualStudio.Threading
 
             if (ultimateCancellation.CanBeCanceled)
             {
-                var registeredCallback = ultimateCancellation.Register(
+                CancellationTokenRegistration registeredCallback = ultimateCancellation.Register(
                     state =>
                     {
                         var tuple = (Tuple<TaskCompletionSource<FollowCancelableTaskState<T>, T>, CancellationToken>)state!;
@@ -228,7 +225,7 @@ namespace Microsoft.VisualStudio.Threading
 
             FollowCancelableTaskToCompletionHelper(tcs, taskToFollow());
 
-            if (taskThatFollows == null)
+            if (taskThatFollows is null)
             {
                 return tcs.Task;
             }
@@ -286,9 +283,9 @@ namespace Microsoft.VisualStudio.Threading
         /// <exception cref="AggregateException">Thrown if any handlers fail. It contains a collection of all failures.</exception>
         public static async Task InvokeAsync(this AsyncEventHandler? handlers, object? sender, EventArgs args)
         {
-            if (handlers != null)
+            if (handlers is object)
             {
-                var individualHandlers = handlers.GetInvocationList();
+                Delegate[]? individualHandlers = handlers.GetInvocationList();
                 List<Exception>? exceptions = null;
                 foreach (AsyncEventHandler handler in individualHandlers)
                 {
@@ -296,9 +293,11 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         await handler(sender, args).ConfigureAwait(true);
                     }
+#pragma warning disable CA1031 // Do not catch general exception types
                     catch (Exception ex)
+#pragma warning restore CA1031 // Do not catch general exception types
                     {
-                        if (exceptions == null)
+                        if (exceptions is null)
                         {
                             exceptions = new List<Exception>(2);
                         }
@@ -307,7 +306,7 @@ namespace Microsoft.VisualStudio.Threading
                     }
                 }
 
-                if (exceptions != null)
+                if (exceptions is object)
                 {
                     throw new AggregateException(exceptions);
                 }
@@ -326,9 +325,9 @@ namespace Microsoft.VisualStudio.Threading
         /// <exception cref="AggregateException">Thrown if any handlers fail. It contains a collection of all failures.</exception>
         public static async Task InvokeAsync<TEventArgs>(this AsyncEventHandler<TEventArgs>? handlers, object? sender, TEventArgs args)
         {
-            if (handlers != null)
+            if (handlers is object)
             {
-                var individualHandlers = handlers.GetInvocationList();
+                Delegate[]? individualHandlers = handlers.GetInvocationList();
                 List<Exception>? exceptions = null;
                 foreach (AsyncEventHandler<TEventArgs> handler in individualHandlers)
                 {
@@ -336,9 +335,11 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         await handler(sender, args).ConfigureAwait(true);
                     }
+#pragma warning disable CA1031 // Do not catch general exception types
                     catch (Exception ex)
+#pragma warning restore CA1031 // Do not catch general exception types
                     {
-                        if (exceptions == null)
+                        if (exceptions is null)
                         {
                             exceptions = new List<Exception>(2);
                         }
@@ -347,7 +348,7 @@ namespace Microsoft.VisualStudio.Threading
                     }
                 }
 
-                if (exceptions != null)
+                if (exceptions is object)
                 {
                     throw new AggregateException(exceptions);
                 }
@@ -369,7 +370,7 @@ namespace Microsoft.VisualStudio.Threading
 
             if (task.AsyncState == state)
             {
-                if (callback != null)
+                if (callback is object)
                 {
                     task.ContinueWith(
                         (t, cb) => ((AsyncCallback)cb!)(t),
@@ -411,7 +412,7 @@ namespace Microsoft.VisualStudio.Threading
 
             if (task.AsyncState == state)
             {
-                if (callback != null)
+                if (callback is object)
                 {
                     task.ContinueWith(
                         (t, cb) => ((AsyncCallback)cb!)(t),
@@ -666,7 +667,7 @@ namespace Microsoft.VisualStudio.Threading
                             tcsNested.SourceState.RegisteredCallback.Dispose();
                             break;
                         case TaskStatus.Canceled:
-                            var newTask = tcsNested.SourceState.CurrentTask;
+                            Task<T>? newTask = tcsNested.SourceState.CurrentTask;
                             Assumes.True(newTask != t, "A canceled task was not replaced with a new task.");
                             FollowCancelableTaskToCompletionHelper(tcsNested, newTask);
                             break;
@@ -680,11 +681,15 @@ namespace Microsoft.VisualStudio.Threading
             return tcs.Task;
         }
 
+#pragma warning disable CA1034 // Nested types should not be visible
         /// <summary>
         /// An awaitable that wraps a task and never throws an exception when waited on.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
+#pragma warning restore CA1034 // Nested types should not be visible
+#pragma warning disable CA1034 // Nested types should not be visible
         public readonly struct NoThrowTaskAwaitable
+#pragma warning restore CA1034 // Nested types should not be visible
         {
             /// <summary>
             /// The task.
@@ -719,11 +724,15 @@ namespace Microsoft.VisualStudio.Threading
             }
         }
 
-        /// <summary>
+#pragma warning disable CA1034 // Nested types should not be visible
+/// <summary>
         /// An awaiter that wraps a task and never throws an exception when waited on.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
+#pragma warning restore CA1034 // Nested types should not be visible
+#pragma warning disable CA1034 // Nested types should not be visible
         public readonly struct NoThrowTaskAwaiter : ICriticalNotifyCompletion
+#pragma warning restore CA1034 // Nested types should not be visible
         {
             /// <summary>
             /// The task.
@@ -837,7 +846,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 get
                 {
-                    var task = this.getTaskToFollow();
+                    Task<T>? task = this.getTaskToFollow();
                     Assumes.NotNull(task);
                     return task;
                 }
@@ -845,6 +854,19 @@ namespace Microsoft.VisualStudio.Threading
 
             internal FollowCancelableTaskState<T> WithRegisteredCallback(CancellationTokenRegistration registeredCallback)
                 => new FollowCancelableTaskState<T>(this.getTaskToFollow, registeredCallback, this.UltimateCancellation);
+        }
+
+        /// <summary>
+        /// A cache for canceled <see cref="Task{T}"/> instances.
+        /// </summary>
+        /// <typeparam name="T">The type parameter for the returned task.</typeparam>
+        private static class CanceledTaskOfTCache<T>
+        {
+            /// <summary>
+            /// A task that is already canceled.
+            /// </summary>
+            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
+            internal static readonly Task<T> CanceledTask = Task.FromCanceled<T>(new CancellationToken(canceled: true));
         }
 
         /// <summary>
@@ -870,19 +892,6 @@ namespace Microsoft.VisualStudio.Threading
             /// Gets or sets the state passed into the constructor.
             /// </summary>
             internal TState SourceState { get; set; }
-        }
-
-        /// <summary>
-        /// A cache for canceled <see cref="Task{T}"/> instances.
-        /// </summary>
-        /// <typeparam name="T">The type parameter for the returned task.</typeparam>
-        private static class CanceledTaskOfTCache<T>
-        {
-            /// <summary>
-            /// A task that is already canceled.
-            /// </summary>
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
-            internal static readonly Task<T> CanceledTask = Task.FromCanceled<T>(new CancellationToken(canceled: true));
         }
     }
 }

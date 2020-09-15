@@ -1,4 +1,5 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace CpsDbg
 {
@@ -22,20 +23,20 @@ namespace CpsDbg
             ChainStateMachinesBasedOnTaskContinuations(context, knownStateMachines);
             ChainStateMachinesBasedOnJointableTasks(context, allStateMachines);
             MarkThreadingBlockTasks(context, allStateMachines);
-            MarkUIThreadDependingTasks(context, allStateMachines);
+            MarkUIThreadDependingTasks(allStateMachines);
             FixBrokenDependencies(allStateMachines);
 
             PrintOutStateMachines(allStateMachines, context.Output);
-            this.LoadCodePages(context, allStateMachines);
+            LoadCodePages(context, allStateMachines);
         }
 
         private static void GetAllStateMachines(DebuggerContext context, ClrHeap heap, List<AsyncStateMachine> allStateMachines, Dictionary<ulong, AsyncStateMachine> knownStateMachines)
         {
-            foreach (var obj in heap.GetObjectsOfType("System.Runtime.CompilerServices.AsyncMethodBuilderCore+MoveNextRunner"))
+            foreach (ClrObject obj in heap.GetObjectsOfType("System.Runtime.CompilerServices.AsyncMethodBuilderCore+MoveNextRunner"))
             {
                 try
                 {
-                    var stateMachine = obj.ReadObjectField("m_stateMachine");
+                    ClrObject stateMachine = obj.ReadObjectField("m_stateMachine");
                     if (!knownStateMachines.ContainsKey(stateMachine.Address))
                     {
                         try
@@ -44,7 +45,7 @@ namespace CpsDbg
                             if (state >= -1)
                             {
                                 ClrObject taskField = default(ClrObject);
-                                var asyncBuilder = stateMachine.TryGetValueClassField("<>t__builder");
+                                ClrValueType? asyncBuilder = stateMachine.TryGetValueClassField("<>t__builder");
                                 if (asyncBuilder.HasValue)
                                 {
                                     while (asyncBuilder.HasValue)
@@ -82,7 +83,7 @@ namespace CpsDbg
 
                                 if (stateMachine.Type is object)
                                 {
-                                    foreach (var method in stateMachine.Type.Methods)
+                                    foreach (ClrMethod? method in stateMachine.Type.Methods)
                                     {
                                         if (method.Name == "MoveNext" && method.NativeCode != ulong.MaxValue)
                                         {
@@ -92,13 +93,17 @@ namespace CpsDbg
                                 }
                             }
                         }
+#pragma warning disable CA1031 // Do not catch general exception types
                         catch (Exception ex)
+#pragma warning restore CA1031 // Do not catch general exception types
                         {
                             context.Output.WriteLine($"Fail to process state machine {stateMachine.Address:x} Type:'{stateMachine.Type?.Name}' Module:'{stateMachine.Type?.Module?.Name}' Error: {ex.Message}");
                         }
                     }
                 }
+#pragma warning disable CA1031 // Do not catch general exception types
                 catch (Exception ex)
+#pragma warning restore CA1031 // Do not catch general exception types
                 {
                     context.Output.WriteLine($"Fail to process AsyncStateMachine Runner {obj.Address:x} Error: {ex.Message}");
                 }
@@ -107,9 +112,9 @@ namespace CpsDbg
 
         private static void ChainStateMachinesBasedOnTaskContinuations(DebuggerContext context, Dictionary<ulong, AsyncStateMachine> knownStateMachines)
         {
-            foreach (var stateMachine in knownStateMachines.Values)
+            foreach (AsyncStateMachine? stateMachine in knownStateMachines.Values)
             {
-                var taskObject = stateMachine.Task;
+                ClrObject taskObject = stateMachine.Task;
                 try
                 {
                     while (!taskObject.IsNull)
@@ -118,7 +123,7 @@ namespace CpsDbg
                         // 1. m_continuationObject.m_action._target
                         // 2. m_continuationObject._target
                         // 3. m_continuationObject.m_task.m_stateObject._target
-                        var continuationObject = taskObject.TryGetObjectField("m_continuationObject");
+                        ClrObject continuationObject = taskObject.TryGetObjectField("m_continuationObject");
                         if (continuationObject.IsNull)
                         {
                             break;
@@ -129,7 +134,9 @@ namespace CpsDbg
                         taskObject = continuationObject;
                     }
                 }
+#pragma warning disable CA1031 // Do not catch general exception types
                 catch (Exception ex)
+#pragma warning restore CA1031 // Do not catch general exception types
                 {
                     context.Output.WriteLine($"Fail to fix continuation of state {stateMachine.StateMachine.Address:x} Error: {ex.Message}");
                 }
@@ -138,10 +145,10 @@ namespace CpsDbg
 
         private static void ChainStateMachineBasedOnTaskContinuations(Dictionary<ulong, AsyncStateMachine> knownStateMachines, AsyncStateMachine stateMachine, ClrObject continuationObject)
         {
-            var continuationAction = continuationObject.TryGetObjectField("m_action");
+            ClrObject continuationAction = continuationObject.TryGetObjectField("m_action");
 
             // case 1
-            var continuationTarget = continuationAction.TryGetObjectField("_target");
+            ClrObject continuationTarget = continuationAction.TryGetObjectField("_target");
             if (continuationTarget.IsNull)
             {
                 // case 2
@@ -156,7 +163,7 @@ namespace CpsDbg
             while (!continuationTarget.IsNull)
             {
                 // now get the continuation from the target
-                var continuationTargetStateMachine = continuationTarget.TryGetObjectField("m_stateMachine");
+                ClrObject continuationTargetStateMachine = continuationTarget.TryGetObjectField("m_stateMachine");
                 if (!continuationTargetStateMachine.IsNull)
                 {
                     AsyncStateMachine targetAsyncState;
@@ -171,19 +178,19 @@ namespace CpsDbg
                 }
                 else
                 {
-                    var nextContinuation = continuationTarget.TryGetObjectField("m_continuation");
+                    ClrObject nextContinuation = continuationTarget.TryGetObjectField("m_continuation");
                     continuationTarget = nextContinuation.TryGetObjectField("_target");
                 }
             }
 
-            var items = continuationObject.TryGetObjectField("_items");
+            ClrObject items = continuationObject.TryGetObjectField("_items");
             if (!items.IsNull && items.IsArray && items.ContainsPointers)
             {
-                foreach (var promise in items.EnumerateReferences(true))
+                foreach (ClrObject promise in items.EnumerateReferences(true))
                 {
                     if (!promise.IsNull)
                     {
-                        var innerContinuationObject = promise.TryGetObjectField("m_continuationObject");
+                        ClrObject innerContinuationObject = promise.TryGetObjectField("m_continuationObject");
                         if (!innerContinuationObject.IsNull)
                         {
                             ChainStateMachineBasedOnTaskContinuations(knownStateMachines, stateMachine, innerContinuationObject);
@@ -199,17 +206,17 @@ namespace CpsDbg
 
         private static void ChainStateMachinesBasedOnJointableTasks(DebuggerContext context, List<AsyncStateMachine> allStateMachines)
         {
-            foreach (var stateMachine in allStateMachines)
+            foreach (AsyncStateMachine? stateMachine in allStateMachines)
             {
                 if (stateMachine.Previous is null)
                 {
                     try
                     {
-                        var joinableTask = stateMachine.StateMachine.TryGetObjectField("<>4__this");
-                        var wrappedTask = joinableTask.TryGetObjectField("wrappedTask");
+                        ClrObject joinableTask = stateMachine.StateMachine.TryGetObjectField("<>4__this");
+                        ClrObject wrappedTask = joinableTask.TryGetObjectField("wrappedTask");
                         if (!wrappedTask.IsNull)
                         {
-                            var previousStateMachine = allStateMachines
+                            AsyncStateMachine? previousStateMachine = allStateMachines
                                 .FirstOrDefault(s => s.Task.Address == wrappedTask.Address);
                             if (previousStateMachine is object && stateMachine != previousStateMachine)
                             {
@@ -219,7 +226,9 @@ namespace CpsDbg
                             }
                         }
                     }
+#pragma warning disable CA1031 // Do not catch general exception types
                     catch (Exception ex)
+#pragma warning restore CA1031 // Do not catch general exception types
                     {
                         context.Output.WriteLine($"Fail to fix continuation of state {stateMachine.StateMachine.Address:x} Error: {ex.Message}");
                     }
@@ -229,9 +238,9 @@ namespace CpsDbg
 
         private static void MarkThreadingBlockTasks(DebuggerContext context, List<AsyncStateMachine> allStateMachines)
         {
-            foreach (var thread in context.Runtime.Threads)
+            foreach (ClrThread? thread in context.Runtime.Threads)
             {
-                var stackFrame = thread.EnumerateStackTrace().Take(50).FirstOrDefault(
+                ClrStackFrame? stackFrame = thread.EnumerateStackTrace().Take(50).FirstOrDefault(
                     f => f.Method is { } method
                         && string.Equals(f.Method.Name, "CompleteOnCurrentThread", StringComparison.Ordinal)
                         && string.Equals(f.Method.Type?.Name, "Microsoft.VisualStudio.Threading.JoinableTask", StringComparison.Ordinal));
@@ -252,10 +261,10 @@ namespace CpsDbg
                                 if ((state & 0x10) == 0x10)
                                 {
                                     // This flag indicates the JTF is blocking the thread
-                                    var wrappedTask = joinableTaskObject.TryGetObjectField("wrappedTask");
+                                    ClrObject wrappedTask = joinableTaskObject.TryGetObjectField("wrappedTask");
                                     if (!wrappedTask.IsNull)
                                     {
-                                        var blockingStateMachine = allStateMachines
+                                        AsyncStateMachine? blockingStateMachine = allStateMachines
                                             .FirstOrDefault(s => s.Task.Address == wrappedTask.Address);
                                         if (blockingStateMachine is object)
                                         {
@@ -273,25 +282,27 @@ namespace CpsDbg
             }
         }
 
-        private static void MarkUIThreadDependingTasks(DebuggerContext context, List<AsyncStateMachine> allStateMachines)
+        private static void MarkUIThreadDependingTasks(List<AsyncStateMachine> allStateMachines)
         {
-            foreach (var stateMachine in allStateMachines)
+            foreach (AsyncStateMachine? stateMachine in allStateMachines)
             {
                 if (stateMachine.Previous is null && stateMachine.State >= 0)
                 {
                     try
                     {
-                        var awaitField = stateMachine.StateMachine.Type?.GetFieldByName($"<>u__{stateMachine.State + 1}");
-                        if (awaitField is object && awaitField.IsValueType && string.Equals(awaitField.Type?.Name, "Microsoft.VisualStudio.Threading.JoinableTaskFactory+MainThreadAwaiter"))
+                        ClrInstanceField? awaitField = stateMachine.StateMachine.Type?.GetFieldByName($"<>u__{stateMachine.State + 1}");
+                        if (awaitField is object && awaitField.IsValueType && string.Equals(awaitField.Type?.Name, "Microsoft.VisualStudio.Threading.JoinableTaskFactory+MainThreadAwaiter", StringComparison.Ordinal))
                         {
-                            var awaitObject = stateMachine.StateMachine.TryGetValueClassField($"<>u__{stateMachine.State + 1}");
+                            ClrValueType? awaitObject = stateMachine.StateMachine.TryGetValueClassField($"<>u__{stateMachine.State + 1}");
                             if (awaitObject.HasValue)
                             {
                                 stateMachine.SwitchToMainThreadTask = awaitObject.TryGetObjectField("job");
                             }
                         }
                     }
+#pragma warning disable CA1031 // Do not catch general exception types
                     catch (Exception)
+#pragma warning restore CA1031 // Do not catch general exception types
                     {
                     }
                 }
@@ -300,7 +311,7 @@ namespace CpsDbg
 
         private static void FixBrokenDependencies(List<AsyncStateMachine> allStateMachines)
         {
-            foreach (var stateMachine in allStateMachines)
+            foreach (AsyncStateMachine? stateMachine in allStateMachines)
             {
                 if (stateMachine.Previous is object && stateMachine.Previous.Next != stateMachine)
                 {
@@ -314,7 +325,7 @@ namespace CpsDbg
         private static void PrintOutStateMachines(List<AsyncStateMachine> allStateMachines, DebuggerOutput output)
         {
             int loopMark = -1;
-            foreach (var stateMachine in allStateMachines)
+            foreach (AsyncStateMachine? stateMachine in allStateMachines)
             {
                 int depth = 0;
                 if (stateMachine.Previous is null)
@@ -344,7 +355,7 @@ namespace CpsDbg
 
             var printedMachines = new HashSet<AsyncStateMachine>();
 
-            foreach (var node in allStateMachines
+            foreach (AsyncStateMachine? node in allStateMachines
                 .Where(m => m.Depth > 0)
                 .OrderByDescending(m => m.Depth)
                 .ThenByDescending(m => m.SwitchToMainThreadTask.Address))
@@ -361,7 +372,7 @@ namespace CpsDbg
             if (allStateMachines.Count > printedMachines.Count)
             {
                 output.WriteLine("States form dependencies loop -- could be an error caused by the analysis tool");
-                foreach (var node in allStateMachines)
+                foreach (AsyncStateMachine? node in allStateMachines)
                 {
                     if (!printedMachines.Contains(node))
                     {
@@ -442,10 +453,10 @@ namespace CpsDbg
             return multipleLineBlock;
         }
 
-        private void LoadCodePages(DebuggerContext context, List<AsyncStateMachine> allStateMachines)
+        private static void LoadCodePages(DebuggerContext context, List<AsyncStateMachine> allStateMachines)
         {
             var loadedAddresses = new HashSet<ulong>();
-            foreach (var stateMachine in allStateMachines)
+            foreach (AsyncStateMachine? stateMachine in allStateMachines)
             {
                 ulong codeAddress = stateMachine.CodeAddress;
                 if (loadedAddresses.Add(codeAddress))

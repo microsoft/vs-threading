@@ -5,8 +5,6 @@
     <ExtrasBuildEachRuntimeIdentifier>true</ExtrasBuildEachRuntimeIdentifier>
 
     <AssemblyName>$(MSBuildProjectName)</AssemblyName>
-    <CodeAnalysisRuleSet>SosThreadingTools.ruleset</CodeAnalysisRuleSet>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <DebugSymbols>true</DebugSymbols>
     <DllExportOurILAsm>false</DllExportOurILAsm>
 

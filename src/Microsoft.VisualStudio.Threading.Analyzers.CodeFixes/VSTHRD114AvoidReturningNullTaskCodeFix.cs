@@ -1,4 +1,7 @@
-﻿namespace Microsoft.VisualStudio.Threading.Analyzers
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System.Collections.Immutable;
     using System.Threading;
@@ -23,27 +26,27 @@
 
         public override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
-            foreach (var diagnostic in context.Diagnostics)
+            foreach (Diagnostic? diagnostic in context.Diagnostics)
             {
-                var semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
-                var syntaxRoot = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
-                var nullLiteral = syntaxRoot.FindNode(diagnostic.Location.SourceSpan);
+                SemanticModel? semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
+                SyntaxNode? syntaxRoot = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
+                SyntaxNode? nullLiteral = syntaxRoot.FindNode(diagnostic.Location.SourceSpan);
                 if (semanticModel.GetOperation(nullLiteral, context.CancellationToken) is ILiteralOperation { ConstantValue: { HasValue: true, Value: null } })
                 {
-                    var typeInfo = semanticModel.GetTypeInfo(nullLiteral, context.CancellationToken);
+                    TypeInfo typeInfo = semanticModel.GetTypeInfo(nullLiteral, context.CancellationToken);
                     if (typeInfo.ConvertedType is INamedTypeSymbol returnType)
                     {
                         if (returnType.IsGenericType)
                         {
-                            context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD114_CodeFix_FromResult, ct => ApplyTaskFromResultFix(returnType, ct), nameof(Task.FromResult)), diagnostic);
+                            context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD114_CodeFix_FromResult, ct => ApplyTaskFromResultFix(returnType), nameof(Task.FromResult)), diagnostic);
                         }
                         else
                         {
-                            context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD114_CodeFix_CompletedTask, ct => ApplyTaskCompletedTaskFix(returnType, ct), nameof(Task.CompletedTask)), diagnostic);
+                            context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD114_CodeFix_CompletedTask, ct => ApplyTaskCompletedTaskFix(returnType), nameof(Task.CompletedTask)), diagnostic);
                         }
                     }
 
-                    Task<Document> ApplyTaskCompletedTaskFix(INamedTypeSymbol returnType, CancellationToken cancellationToken)
+                    Task<Document> ApplyTaskCompletedTaskFix(INamedTypeSymbol returnType)
                     {
                         var generator = SyntaxGenerator.GetGenerator(context.Document);
                         SyntaxNode completedTaskExpression = generator.MemberAccessExpression(
@@ -53,7 +56,7 @@
                         return Task.FromResult(context.Document.WithSyntaxRoot(syntaxRoot.ReplaceNode(nullLiteral, completedTaskExpression)));
                     }
 
-                    Task<Document> ApplyTaskFromResultFix(INamedTypeSymbol returnType, CancellationToken cancellationToken)
+                    Task<Document> ApplyTaskFromResultFix(INamedTypeSymbol returnType)
                     {
                         var generator = SyntaxGenerator.GetGenerator(context.Document);
                         SyntaxNode taskFromResultExpression = generator.InvocationExpression(

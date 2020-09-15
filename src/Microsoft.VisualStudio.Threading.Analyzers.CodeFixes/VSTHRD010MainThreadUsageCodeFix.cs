@@ -1,4 +1,7 @@
-﻿namespace Microsoft.VisualStudio.Threading.Analyzers
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
     using System.Collections.Generic;
@@ -30,20 +33,20 @@
 
         public override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
-            var diagnostic = context.Diagnostics.First();
+            Diagnostic? diagnostic = context.Diagnostics.First();
 
-            var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
+            SyntaxNode? root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
             var syntaxNode = (ExpressionSyntax)root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: true);
 
-            var container = CSharpUtils.GetContainingFunction(syntaxNode);
-            if (container.BlockOrExpression == null)
+            CSharpUtils.ContainingFunctionData container = CSharpUtils.GetContainingFunction(syntaxNode);
+            if (container.BlockOrExpression is null)
             {
                 return;
             }
 
-            var semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
-            var enclosingSymbol = semanticModel.GetEnclosingSymbol(diagnostic.Location.SourceSpan.Start, context.CancellationToken);
-            if (enclosingSymbol == null)
+            SemanticModel? semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
+            ISymbol? enclosingSymbol = semanticModel.GetEnclosingSymbol(diagnostic.Location.SourceSpan.Start, context.CancellationToken);
+            if (enclosingSymbol is null)
             {
                 return;
             }
@@ -70,10 +73,10 @@
                 {
                     // We're looking for methods that either require no parameters,
                     // or (if we have one to give) that have just one parameter that is a CancellationToken.
-                    var proposedMethod = Utils.FindMethodGroup(semanticModel, option)
+                    IMethodSymbol? proposedMethod = Utils.FindMethodGroup(semanticModel, option)
                         .FirstOrDefault(m => !m.Parameters.Any(p => !p.HasExplicitDefaultValue) ||
-                            (cancellationTokenSymbol.Value != null && m.Parameters.Length == 1 && Utils.IsCancellationTokenParameter(m.Parameters[0])));
-                    if (proposedMethod == null)
+                            (cancellationTokenSymbol.Value is object && m.Parameters.Length == 1 && Utils.IsCancellationTokenParameter(m.Parameters[0])));
+                    if (proposedMethod is null)
                     {
                         // We can't find it, so don't offer to use it.
                         continue;
@@ -85,7 +88,7 @@
                     }
                     else
                     {
-                        foreach (var candidate in Utils.FindInstanceOf(proposedMethod.ContainingType, semanticModel, positionForLookup, context.CancellationToken))
+                        foreach (Tuple<bool, ISymbol>? candidate in Utils.FindInstanceOf(proposedMethod.ContainingType, semanticModel, positionForLookup, context.CancellationToken))
                         {
                             if (candidate.Item1)
                             {
@@ -100,21 +103,21 @@
 
                     void OfferFix(string fullyQualifiedMethod)
                     {
-                        context.RegisterCodeFix(CodeAction.Create($"Add call to {fullyQualifiedMethod}", ct => Fix(fullyQualifiedMethod, proposedMethod, cancellationTokenSymbol, ct), fullyQualifiedMethod), context.Diagnostics);
+                        context.RegisterCodeFix(CodeAction.Create($"Add call to {fullyQualifiedMethod}", ct => Fix(fullyQualifiedMethod, proposedMethod, cancellationTokenSymbol), fullyQualifiedMethod), context.Diagnostics);
                     }
                 }
             }
 
-            Task<Document> Fix(string fullyQualifiedMethod, IMethodSymbol methodSymbol, Lazy<ISymbol> cancellationTokenSymbol, CancellationToken cancellationToken)
+            Task<Document> Fix(string fullyQualifiedMethod, IMethodSymbol methodSymbol, Lazy<ISymbol> cancellationTokenSymbol)
             {
                 int typeAndMethodDelimiterIndex = fullyQualifiedMethod.LastIndexOf('.');
                 IdentifierNameSyntax methodName = SyntaxFactory.IdentifierName(fullyQualifiedMethod.Substring(typeAndMethodDelimiterIndex + 1));
                 ExpressionSyntax invokedMethod = CSharpUtils.MemberAccess(fullyQualifiedMethod.Substring(0, typeAndMethodDelimiterIndex).Split('.'), methodName);
-                var invocationExpression = SyntaxFactory.InvocationExpression(invokedMethod);
-                var cancellationTokenParameter = methodSymbol.Parameters.FirstOrDefault(Utils.IsCancellationTokenParameter);
-                if (cancellationTokenParameter != null && cancellationTokenSymbol.Value != null)
+                InvocationExpressionSyntax? invocationExpression = SyntaxFactory.InvocationExpression(invokedMethod);
+                IParameterSymbol? cancellationTokenParameter = methodSymbol.Parameters.FirstOrDefault(Utils.IsCancellationTokenParameter);
+                if (cancellationTokenParameter is object && cancellationTokenSymbol.Value is object)
                 {
-                    var arg = SyntaxFactory.Argument(SyntaxFactory.IdentifierName(cancellationTokenSymbol.Value.Name));
+                    ArgumentSyntax? arg = SyntaxFactory.Argument(SyntaxFactory.IdentifierName(cancellationTokenSymbol.Value.Name));
                     if (methodSymbol.Parameters.IndexOf(cancellationTokenParameter) > 0)
                     {
                         arg = arg.WithNameColon(SyntaxFactory.NameColon(SyntaxFactory.IdentifierName(cancellationTokenParameter.Name)));
@@ -124,16 +127,16 @@
                 }
 
                 ExpressionSyntax? awaitExpression = container.IsAsync ? SyntaxFactory.AwaitExpression(invocationExpression) : null;
-                var addedStatement = SyntaxFactory.ExpressionStatement(awaitExpression ?? invocationExpression)
+                ExpressionStatementSyntax? addedStatement = SyntaxFactory.ExpressionStatement(awaitExpression ?? invocationExpression)
                     .WithAdditionalAnnotations(Simplifier.Annotation, Formatter.Annotation);
                 var initialBlockSyntax = container.BlockOrExpression as BlockSyntax;
-                if (initialBlockSyntax == null)
+                if (initialBlockSyntax is null)
                 {
                     initialBlockSyntax = SyntaxFactory.Block(SyntaxFactory.ReturnStatement((ExpressionSyntax)container.BlockOrExpression))
                         .WithAdditionalAnnotations(Formatter.Annotation);
                 }
 
-                var newBlock = initialBlockSyntax.WithStatements(initialBlockSyntax.Statements.Insert(0, addedStatement));
+                BlockSyntax? newBlock = initialBlockSyntax.WithStatements(initialBlockSyntax.Statements.Insert(0, addedStatement));
                 return Task.FromResult(context.Document.WithSyntaxRoot(root.ReplaceNode(container.BlockOrExpression, newBlock)));
             }
         }

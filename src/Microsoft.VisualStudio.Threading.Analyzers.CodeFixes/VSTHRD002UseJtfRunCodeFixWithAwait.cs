@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
@@ -32,9 +29,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         public override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
-            var diagnostic = context.Diagnostics.First();
+            Diagnostic? diagnostic = context.Diagnostics.First();
 
-            var root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
+            SyntaxNode? root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
 
             if (TryFindNodeAtSource(diagnostic, root, out _, out _))
             {
@@ -43,16 +40,16 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                         Strings.VSTHRD002_CodeFix_Await_Title,
                         async ct =>
                         {
-                            var document = context.Document;
-                            if (TryFindNodeAtSource(diagnostic, root, out var node, out var transform))
+                            Document? document = context.Document;
+                            if (TryFindNodeAtSource(diagnostic, root, out ExpressionSyntax? node, out Func<ExpressionSyntax, CancellationToken, ExpressionSyntax>? transform))
                             {
                                 (document, node, _) = await FixUtils.UpdateDocumentAsync(
                                     document,
                                     node,
                                     n => SyntaxFactory.AwaitExpression(transform(n, ct)),
                                     ct).ConfigureAwait(false);
-                                var method = node.FirstAncestorOrSelf<MethodDeclarationSyntax>();
-                                if (method != null)
+                                MethodDeclarationSyntax? method = node.FirstAncestorOrSelf<MethodDeclarationSyntax>();
+                                if (method is object)
                                 {
                                     (document, method) = await FixUtils.MakeMethodAsync(method, document, ct).ConfigureAwait(false);
                                 }
@@ -74,15 +71,15 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             target = null;
 
             var syntaxNode = (ExpressionSyntax)root.FindNode(diagnostic.Location.SourceSpan);
-            if (syntaxNode.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>() != null)
+            if (syntaxNode.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>() is object)
             {
                 // We don't support converting anonymous delegates to async.
                 return false;
             }
 
-            SimpleNameSyntax? FindStaticWaitInvocation(ExpressionSyntax from, CancellationToken cancellationToken = default(CancellationToken))
+            SimpleNameSyntax? FindStaticWaitInvocation(ExpressionSyntax from)
             {
-                var name = ((from as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax)?.Name;
+                SimpleNameSyntax? name = ((from as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax)?.Name;
                 return name?.Identifier.ValueText switch
                 {
                     nameof(Task.WaitAny) => name,
@@ -93,7 +90,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             ExpressionSyntax? TransformStaticWhatInvocation(ExpressionSyntax from, CancellationToken cancellationToken = default(CancellationToken))
             {
-                var name = FindStaticWaitInvocation(from);
+                SimpleNameSyntax? name = FindStaticWaitInvocation(from);
                 var newIdentifier = name!.Identifier.ValueText switch
                 {
                     nameof(Task.WaitAny) => nameof(Task.WhenAny),
@@ -111,27 +108,27 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             ExpressionSyntax? FindParentMemberAccess(ExpressionSyntax from, CancellationToken cancellationToken = default(CancellationToken)) =>
                 (from as MemberAccessExpressionSyntax)?.Expression;
 
-            var parentInvocation = syntaxNode.FirstAncestorOrSelf<InvocationExpressionSyntax>();
-            var parentMemberAccess = syntaxNode.FirstAncestorOrSelf<MemberAccessExpressionSyntax>();
-            if (FindTwoLevelDeepIdentifierInvocation(parentInvocation) != null)
+            InvocationExpressionSyntax? parentInvocation = syntaxNode.FirstAncestorOrSelf<InvocationExpressionSyntax>();
+            MemberAccessExpressionSyntax? parentMemberAccess = syntaxNode.FirstAncestorOrSelf<MemberAccessExpressionSyntax>();
+            if (FindTwoLevelDeepIdentifierInvocation(parentInvocation) is object)
             {
                 // This method will not return null for the provided 'target' argument
                 transform = NullableHelpers.AsNonNullReturnUnchecked<ExpressionSyntax, CancellationToken, ExpressionSyntax>(FindTwoLevelDeepIdentifierInvocation);
                 target = parentInvocation;
             }
-            else if (FindStaticWaitInvocation(parentInvocation) != null)
+            else if (FindStaticWaitInvocation(parentInvocation) is object)
             {
                 // This method will not return null for the provided 'target' argument
                 transform = NullableHelpers.AsNonNullReturnUnchecked<ExpressionSyntax, CancellationToken, ExpressionSyntax>(TransformStaticWhatInvocation);
                 target = parentInvocation;
             }
-            else if (FindOneLevelDeepIdentifierInvocation(parentInvocation) != null)
+            else if (FindOneLevelDeepIdentifierInvocation(parentInvocation) is object)
             {
                 // This method will not return null for the provided 'target' argument
                 transform = NullableHelpers.AsNonNullReturnUnchecked<ExpressionSyntax, CancellationToken, ExpressionSyntax>(FindOneLevelDeepIdentifierInvocation);
                 target = parentInvocation;
             }
-            else if (FindParentMemberAccess(parentMemberAccess) != null)
+            else if (FindParentMemberAccess(parentMemberAccess) is object)
             {
                 // This method will not return null for the provided 'target' argument
                 transform = NullableHelpers.AsNonNullReturnUnchecked<ExpressionSyntax, CancellationToken, ExpressionSyntax>(FindParentMemberAccess);

@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading
 {
@@ -123,7 +120,7 @@ namespace Microsoft.VisualStudio.Threading
                 else
                 {
                     WaiterInfo info = new WaiterInfo(this, cancellationToken);
-                    var node = this.GetNode(info);
+                    LinkedListNode<WaiterInfo>? node = this.GetNode(info);
 
                     // Careful: consider that if the token was cancelled just now (after we checked it on entry to this method)
                     // or the timeout expires,
@@ -204,12 +201,35 @@ namespace Microsoft.VisualStudio.Threading
 
                 if (waitersCopy is object)
                 {
-                    foreach (var waitInfo in waitersCopy)
+                    foreach (WaiterInfo? waitInfo in waitersCopy)
                     {
                         waitInfo.Cleanup();
                     }
                 }
             }
+        }
+
+        private static void CancellationHandler(object? state)
+        {
+            var waiterInfo = (WaiterInfo)state!;
+
+            // The party that manages to complete or cancel the task is responsible to remove it from the queue.
+            if (waiterInfo.Trigger.TrySetCanceled(waiterInfo.CancellationToken.IsCancellationRequested ? waiterInfo.CancellationToken : new CancellationToken(true)))
+            {
+                // If the node is in the queue, remove it.
+                // It might not have been added yet if cancellation was already requested by the time we called Register.
+                lock (waiterInfo.Owner.syncObject)
+                {
+                    if (waiterInfo.Node is { } node)
+                    {
+                        waiterInfo.Owner.waiters.Remove(node);
+                        waiterInfo.Owner.RecycleNode(node);
+                    }
+                }
+            }
+
+            // Clear registration and references.
+            waiterInfo.Cleanup();
         }
 
         private void Release()
@@ -243,11 +263,38 @@ namespace Microsoft.VisualStudio.Threading
             info?.Cleanup();
         }
 
+        private void RecycleNode(LinkedListNode<WaiterInfo> node)
+        {
+            Assumes.True(Monitor.IsEntered(this.syncObject));
+            node.Value.Node = null;
+            if (this.nodePool.Count < 10)
+            {
+                LinkedListNode<WaiterInfo?> nullableNode = node!;
+                nullableNode.Value = null;
+                this.nodePool.Push(nullableNode);
+            }
+        }
+
+        private LinkedListNode<WaiterInfo> GetNode(WaiterInfo info)
+        {
+            Assumes.True(Monitor.IsEntered(this.syncObject));
+            if (this.nodePool.Count > 0)
+            {
+                LinkedListNode<WaiterInfo?>? node = this.nodePool.Pop();
+                node.Value = info;
+                return node!;
+            }
+
+            return new LinkedListNode<WaiterInfo>(info);
+        }
+
         /// <summary>
         /// A value whose disposal triggers the release of a lock.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
+#pragma warning disable CA1034 // Nested types should not be visible
         public readonly struct Releaser : IDisposable
+#pragma warning restore CA1034 // Nested types should not be visible
         {
             /// <summary>
             /// The lock instance to release.
@@ -268,59 +315,11 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             public void Dispose()
             {
-                if (this.toRelease != null)
+                if (this.toRelease is object)
                 {
                     this.toRelease.Release();
                 }
             }
-        }
-
-        private static void CancellationHandler(object? state)
-        {
-            var waiterInfo = (WaiterInfo)state!;
-
-            // The party that manages to complete or cancel the task is responsible to remove it from the queue.
-            if (waiterInfo.Trigger.TrySetCanceled(waiterInfo.CancellationToken.IsCancellationRequested ? waiterInfo.CancellationToken : new CancellationToken(true)))
-            {
-                // If the node is in the queue, remove it.
-                // It might not have been added yet if cancellation was already requested by the time we called Register.
-                lock (waiterInfo.Owner.syncObject)
-                {
-                    if (waiterInfo.Node is { } node)
-                    {
-                        waiterInfo.Owner.waiters.Remove(node);
-                        waiterInfo.Owner.RecycleNode(node);
-                    }
-                }
-            }
-
-            // Clear registration and references.
-            waiterInfo.Cleanup();
-        }
-
-        private void RecycleNode(LinkedListNode<WaiterInfo> node)
-        {
-            Assumes.True(Monitor.IsEntered(this.syncObject));
-            node.Value.Node = null;
-            if (this.nodePool.Count < 10)
-            {
-                LinkedListNode<WaiterInfo?> nullableNode = node!;
-                nullableNode.Value = null;
-                this.nodePool.Push(nullableNode);
-            }
-        }
-
-        private LinkedListNode<WaiterInfo> GetNode(WaiterInfo info)
-        {
-            Assumes.True(Monitor.IsEntered(this.syncObject));
-            if (this.nodePool.Count > 0)
-            {
-                var node = this.nodePool.Pop();
-                node.Value = info;
-                return node!;
-            }
-
-            return new LinkedListNode<WaiterInfo>(info);
         }
 
         private class WaiterInfo

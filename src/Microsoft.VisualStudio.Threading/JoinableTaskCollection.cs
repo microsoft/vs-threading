@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading
 {
@@ -135,8 +132,8 @@ namespace Microsoft.VisualStudio.Threading
         /// </remarks>
         public JoinRelease Join()
         {
-            var ambientJob = this.Context.AmbientTask;
-            if (ambientJob == null)
+            JoinableTask? ambientJob = this.Context.AmbientTask;
+            if (ambientJob is null)
             {
                 // The caller isn't running in the context of a joinable task, so there is nothing to join with this collection.
                 return default(JoinRelease);
@@ -160,7 +157,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (this.emptyEvent == null)
+            if (this.emptyEvent is null)
             {
                 // We need a read lock to protect against the emptiness of this collection changing
                 // while we're setting the initial set state of the new event.
@@ -170,14 +167,14 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         // We use interlocked here to mitigate race conditions in lazily initializing this field.
                         // We *could* take a write lock above, but that would needlessly increase lock contention.
-                        var nowait = Interlocked.CompareExchange(ref this.emptyEvent, new AsyncManualResetEvent(JoinableTaskDependencyGraph.HasNoChildDependentNode(this)), null);
+                        AsyncManualResetEvent? nowait = Interlocked.CompareExchange(ref this.emptyEvent, new AsyncManualResetEvent(JoinableTaskDependencyGraph.HasNoChildDependentNode(this)), null);
                     }
                 }
             }
 
             using (this.Join())
             {
-                await this.emptyEvent.WaitAsync().WithCancellation(cancellationToken).ConfigureAwait(false);
+                await this.emptyEvent.WaitAsync(cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -207,7 +204,7 @@ namespace Microsoft.VisualStudio.Threading
                 var joinables = new List<JoinableTask>();
                 lock (this.Context.SyncContextLock)
                 {
-                    foreach (var item in JoinableTaskDependencyGraph.GetDirectDependentNodes(this))
+                    foreach (IJoinableTaskDependent? item in JoinableTaskDependencyGraph.GetDirectDependentNodes(this))
                     {
                         if (item is JoinableTask joinableTask)
                         {
@@ -238,7 +235,7 @@ namespace Microsoft.VisualStudio.Threading
 
         void IJoinableTaskDependent.OnDependencyAdded(IJoinableTaskDependent joinChild)
         {
-            if (this.emptyEvent != null && joinChild is JoinableTask)
+            if (this.emptyEvent is object && joinChild is JoinableTask)
             {
                 this.emptyEvent.Reset();
             }
@@ -246,7 +243,7 @@ namespace Microsoft.VisualStudio.Threading
 
         void IJoinableTaskDependent.OnDependencyRemoved(IJoinableTaskDependent joinChild)
         {
-            if (this.emptyEvent != null && JoinableTaskDependencyGraph.HasNoChildDependentNode(this))
+            if (this.emptyEvent is object && JoinableTaskDependencyGraph.HasNoChildDependentNode(this))
             {
                 this.emptyEvent.Set();
             }
@@ -256,7 +253,9 @@ namespace Microsoft.VisualStudio.Threading
         /// A value whose disposal cancels a <see cref="Join"/> operation.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
+#pragma warning disable CA1034 // Nested types should not be visible
         public struct JoinRelease : IDisposable
+#pragma warning restore CA1034 // Nested types should not be visible
         {
             private IJoinableTaskDependent? parentDependencyNode;
             private IJoinableTaskDependent? childDependencyNode;
@@ -280,7 +279,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             public void Dispose()
             {
-                if (this.parentDependencyNode != null)
+                if (this.parentDependencyNode is object)
                 {
                     RoslynDebug.Assert(this.childDependencyNode is object, $"{nameof(this.childDependencyNode)} can only be null when {nameof(this.parentDependencyNode)} is null.");
 

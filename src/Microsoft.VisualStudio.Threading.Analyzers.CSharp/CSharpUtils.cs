@@ -1,4 +1,5 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
@@ -22,7 +23,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static ExpressionSyntax IsolateMethodName(InvocationExpressionSyntax invocation)
         {
-            if (invocation == null)
+            if (invocation is null)
             {
                 throw new ArgumentNullException(nameof(invocation));
             }
@@ -39,7 +40,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// <returns>The containing function, and metadata for it.</returns>
         internal static ContainingFunctionData GetContainingFunction(CSharpSyntaxNode syntaxNode)
         {
-            while (syntaxNode != null)
+            while (syntaxNode is object)
             {
                 if (syntaxNode is SimpleLambdaExpressionSyntax simpleLambda)
                 {
@@ -75,7 +76,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         internal static bool IsOnLeftHandOfAssignment(SyntaxNode syntaxNode)
         {
             SyntaxNode? parent = null;
-            while ((parent = syntaxNode.Parent) != null)
+            while ((parent = syntaxNode.Parent) is object)
             {
                 if (parent is AssignmentExpressionSyntax assignment)
                 {
@@ -90,26 +91,26 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static bool IsAssignedWithin(SyntaxNode container, SemanticModel semanticModel, ISymbol variable, CancellationToken cancellationToken)
         {
-            if (semanticModel == null)
+            if (semanticModel is null)
             {
                 throw new ArgumentNullException(nameof(semanticModel));
             }
 
-            if (variable == null)
+            if (variable is null)
             {
                 throw new ArgumentNullException(nameof(variable));
             }
 
-            if (container == null)
+            if (container is null)
             {
                 return false;
             }
 
-            foreach (var node in container.DescendantNodesAndSelf(n => !(n is AnonymousFunctionExpressionSyntax)))
+            foreach (SyntaxNode? node in container.DescendantNodesAndSelf(n => !(n is AnonymousFunctionExpressionSyntax)))
             {
                 if (node is AssignmentExpressionSyntax assignment)
                 {
-                    var assignedSymbol = semanticModel.GetSymbolInfo(assignment.Left, cancellationToken).Symbol;
+                    ISymbol? assignedSymbol = semanticModel.GetSymbolInfo(assignment.Left, cancellationToken).Symbol;
                     if (variable.Equals(assignedSymbol))
                     {
                         return true;
@@ -122,12 +123,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static MemberAccessExpressionSyntax MemberAccess(IReadOnlyList<string> qualifiers, SimpleNameSyntax simpleName)
         {
-            if (qualifiers == null)
+            if (qualifiers is null)
             {
                 throw new ArgumentNullException(nameof(qualifiers));
             }
 
-            if (simpleName == null)
+            if (simpleName is null)
             {
                 throw new ArgumentNullException(nameof(simpleName));
             }
@@ -140,7 +141,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             ExpressionSyntax result = SyntaxFactory.IdentifierName(qualifiers[0]);
             for (int i = 1; i < qualifiers.Count; i++)
             {
-                var rightSide = SyntaxFactory.IdentifierName(qualifiers[i]);
+                IdentifierNameSyntax? rightSide = SyntaxFactory.IdentifierName(qualifiers[i]);
                 result = SyntaxFactory.MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, result, rightSide);
             }
 
@@ -152,7 +153,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// </summary>
         internal static bool IsWithinNameOf([NotNullWhen(true)] SyntaxNode? syntaxNode)
         {
-            var invocation = syntaxNode?.FirstAncestorOrSelf<InvocationExpressionSyntax>();
+            InvocationExpressionSyntax? invocation = syntaxNode?.FirstAncestorOrSelf<InvocationExpressionSyntax>();
             return invocation is object
                 && (invocation.Expression as IdentifierNameSyntax)?.Identifier.Text == "nameof"
                 && invocation.ArgumentList.Arguments.Count == 1;
@@ -160,14 +161,14 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal override Location? GetLocationOfBaseTypeName(INamedTypeSymbol symbol, INamedTypeSymbol baseType, Compilation compilation, CancellationToken cancellationToken)
         {
-            foreach (var syntaxReference in symbol.DeclaringSyntaxReferences)
+            foreach (SyntaxReference? syntaxReference in symbol.DeclaringSyntaxReferences)
             {
-                var syntaxNode = syntaxReference.GetSyntax(cancellationToken);
+                SyntaxNode? syntaxNode = syntaxReference.GetSyntax(cancellationToken);
                 if (syntaxNode is TypeDeclarationSyntax typeDeclarationSyntax)
                 {
                     if (compilation.GetSemanticModel(typeDeclarationSyntax.SyntaxTree) is { } semanticModel)
                     {
-                        foreach (var baseTypeSyntax in typeDeclarationSyntax.BaseList.Types)
+                        foreach (BaseTypeSyntax? baseTypeSyntax in typeDeclarationSyntax.BaseList.Types)
                         {
                             SymbolInfo baseTypeSymbolInfo = semanticModel.GetSymbolInfo(baseTypeSyntax.Type, cancellationToken);
                             if (Equals(baseTypeSymbolInfo.Symbol, baseType))

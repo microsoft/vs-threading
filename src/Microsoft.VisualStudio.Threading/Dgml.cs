@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading
 {
@@ -31,9 +28,10 @@ namespace Microsoft.VisualStudio.Threading
         {
             var dgml = new XDocument();
             dgml.Add(
-                new XElement(XName.Get("DirectedGraph", Namespace),
+                new XElement(
+                    XName.Get("DirectedGraph", Namespace),
                     new XAttribute("Layout", layout)));
-            if (direction != null)
+            if (direction is object)
             {
                 dgml.Root.Add(new XAttribute("GraphDirection", direction));
             }
@@ -44,28 +42,6 @@ namespace Microsoft.VisualStudio.Threading
             dgml.Root.Add(links);
             dgml.WithCategories(Category("Contains", isContainment: true));
             return dgml;
-        }
-
-        private static XElement GetRootElement(this XDocument document, XName name)
-        {
-            Requires.NotNull(document, nameof(document));
-            Requires.NotNull(name, nameof(name));
-
-            var container = document.Root.Element(name);
-            if (container == null)
-            {
-                document.Root.Add(container = new XElement(name));
-            }
-
-            return container;
-        }
-
-        private static XElement GetRootElement(XDocument document, string elementName)
-        {
-            Requires.NotNull(document, nameof(document));
-            Requires.NotNullOrEmpty(elementName, nameof(elementName));
-
-            return GetRootElement(document, XName.Get(elementName, Namespace));
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
@@ -114,7 +90,7 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(document, nameof(document));
             Requires.NotNull(node, nameof(node));
 
-            var nodes = document.GetRootElement(NodesName);
+            XElement? nodes = document.GetRootElement(NodesName);
             nodes.Add(node);
             return document;
         }
@@ -140,7 +116,7 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(document, nameof(document));
             Requires.NotNull(link, nameof(link));
 
-            var links = document.GetRootElement(LinksName);
+            XElement? links = document.GetRootElement(LinksName);
             links.Add(link);
             return document;
         }
@@ -195,7 +171,7 @@ namespace Microsoft.VisualStudio.Threading
 
         internal static XDocument WithContainers(this XDocument document, IEnumerable<XElement> containers)
         {
-            foreach (var container in containers)
+            foreach (XElement? container in containers)
             {
                 WithNode(document, container);
             }
@@ -234,7 +210,7 @@ namespace Microsoft.VisualStudio.Threading
 
             foreach (var category in categories)
             {
-                if (element.Attribute("Category") == null)
+                if (element.Attribute("Category") is null)
                 {
                     element.SetAttributeValue("Category", category);
                 }
@@ -257,13 +233,14 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(properties, nameof(properties));
             Requires.NotNullOrEmpty(targetType, nameof(targetType));
 
-            var container = document.Root.Element(StylesName);
-            if (container == null)
+            XElement? container = document.Root.Element(StylesName);
+            if (container is null)
             {
                 document.Root.Add(container = new XElement(StylesName));
             }
 
-            var style = new XElement(StyleName,
+            var style = new XElement(
+                StyleName,
                 new XAttribute("TargetType", targetType),
                 new XAttribute("GroupLabel", categoryId),
                 new XElement(XName.Get("Condition", Namespace), new XAttribute("Expression", "HasCategory('" + categoryId + "')")));
@@ -294,6 +271,28 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             return WithStyle(document, categoryId, properties, targetType);
+        }
+
+        private static XElement GetRootElement(this XDocument document, XName name)
+        {
+            Requires.NotNull(document, nameof(document));
+            Requires.NotNull(name, nameof(name));
+
+            XElement? container = document.Root.Element(name);
+            if (container is null)
+            {
+                document.Root.Add(container = new XElement(name));
+            }
+
+            return container;
+        }
+
+        private static XElement GetRootElement(XDocument document, string elementName)
+        {
+            Requires.NotNull(document, nameof(document));
+            Requires.NotNullOrEmpty(elementName, nameof(elementName));
+
+            return GetRootElement(document, XName.Get(elementName, Namespace));
         }
     }
 }

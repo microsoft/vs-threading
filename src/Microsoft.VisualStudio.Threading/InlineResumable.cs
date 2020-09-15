@@ -1,8 +1,5 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading
 {
@@ -83,7 +80,7 @@ namespace Microsoft.VisualStudio.Threading
         public void Resume()
         {
             this.resumed = true;
-            var continuation = this.continuation;
+            Action? continuation = this.continuation;
             this.continuation = null;
             using (this.capturedSynchronizationContext.Apply())
             {

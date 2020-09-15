@@ -1,4 +1,7 @@
-﻿namespace Microsoft.VisualStudio.Threading.Analyzers
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+namespace Microsoft.VisualStudio.Threading.Analyzers
 {
     using System;
     using System.Collections.Generic;
@@ -30,13 +33,13 @@
 
         public override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
-            foreach (var diagnostic in context.Diagnostics)
+            foreach (Diagnostic? diagnostic in context.Diagnostics)
             {
-                var semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
-                var syntaxRoot = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
+                SemanticModel? semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
+                SyntaxNode? syntaxRoot = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
                 var awaitedExpression = syntaxRoot.FindNode(diagnostic.Location.SourceSpan) as ExpressionSyntax;
 
-                Task<Document> ApplyFix(bool captureContext, CancellationToken cancellationToken)
+                Task<Document> ApplyFix(bool captureContext)
                 {
                     ExpressionSyntax configuredAwaitExpression = SyntaxFactory.ParenthesizedExpression(
                         SyntaxFactory.InvocationExpression(
@@ -50,8 +53,8 @@
                     return Task.FromResult(context.Document.WithSyntaxRoot(syntaxRoot.ReplaceNode(awaitedExpression, configuredAwaitExpression)));
                 }
 
-                context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD111_CodeFix_True_Title, ct => ApplyFix(true, ct), true.ToString()), diagnostic);
-                context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD111_CodeFix_False_Title, ct => ApplyFix(false, ct), false.ToString()), diagnostic);
+                context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD111_CodeFix_True_Title, ct => ApplyFix(true), true.ToString()), diagnostic);
+                context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD111_CodeFix_False_Title, ct => ApplyFix(false), false.ToString()), diagnostic);
             }
         }
     }

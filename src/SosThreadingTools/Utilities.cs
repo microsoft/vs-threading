@@ -1,4 +1,5 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace CpsDbg
 {
@@ -13,7 +14,7 @@ namespace CpsDbg
         {
             if (!clrObject.IsNull)
             {
-                var field = clrObject.Type?.GetFieldByName(fieldName);
+                ClrInstanceField? field = clrObject.Type?.GetFieldByName(fieldName);
                 if (field is object && field.IsObjectReference)
                 {
                     return field.ReadObject(clrObject.Address, interior: false);
@@ -27,7 +28,7 @@ namespace CpsDbg
         {
             if (!clrObject.IsNull)
             {
-                var field = clrObject.Type?.GetFieldByName(fieldName);
+                ClrInstanceField? field = clrObject.Type?.GetFieldByName(fieldName);
                 if (field?.Type is object && field.Type.IsValueType)
                 {
                     // System.Console.WriteLine("{0} {1:x} Field {2} {3} {4} {5}", clrObject.Type.Name, clrObject.Address, fieldName, field.Type.Name, field.Type.IsValueType, field.Type.IsRuntimeType);
@@ -42,7 +43,7 @@ namespace CpsDbg
         {
             if (clrObject is object)
             {
-                var field = clrObject.Value.Type?.GetFieldByName(fieldName);
+                ClrInstanceField? field = clrObject.Value.Type?.GetFieldByName(fieldName);
                 if (field is object && field.IsObjectReference)
                 {
                     return clrObject.Value.ReadObjectField(fieldName);
@@ -56,7 +57,7 @@ namespace CpsDbg
         {
             if (clrObject.HasValue)
             {
-                var field = clrObject.Value.Type?.GetFieldByName(fieldName);
+                ClrInstanceField? field = clrObject.Value.Type?.GetFieldByName(fieldName);
                 if (field is object && field.IsValueType)
                 {
                     return clrObject.Value.ReadValueTypeField(fieldName);

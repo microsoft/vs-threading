@@ -1,5 +1,4 @@
 parameters:
-- name: SignType
 - name: ShouldSkipOptimize
 
 steps:
@@ -13,6 +12,6 @@ steps:
 
 - task: MicroBuildSigningPlugin@2
   inputs:
-    signType: ${{ parameters.SignType }}
+    signType: $(SignType)
     zipSources: false
   displayName: Install MicroBuild Signing Plugin

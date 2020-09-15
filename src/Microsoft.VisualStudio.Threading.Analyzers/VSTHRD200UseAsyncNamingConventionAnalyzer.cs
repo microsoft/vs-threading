@@ -1,11 +1,9 @@
-﻿/********************************************************
-*                                                        *
-*   © Copyright (C) Microsoft. All rights reserved.      *
-*                                                        *
-*********************************************************/
+﻿// Copyright (c) Microsoft. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
+    using System;
     using System.Collections.Immutable;
     using System.Linq;
     using Microsoft.CodeAnalysis;
@@ -71,7 +69,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
                 bool hasAsyncFocusedReturnType = Utils.HasAsyncCompatibleReturnType(methodSymbol);
 
-                bool actuallyEndsWithAsync = methodSymbol.Name.EndsWith(MandatoryAsyncSuffix);
+                bool actuallyEndsWithAsync = methodSymbol.Name.EndsWith(MandatoryAsyncSuffix, StringComparison.CurrentCulture);
 
                 if (hasAsyncFocusedReturnType != actuallyEndsWithAsync)
                 {
@@ -86,7 +84,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     {
                         // We actively encourage folks to use the Async keyword only for clearly async-focused types.
                         // Not just any awaitable, since some stray extension method shouldn't change the world for everyone.
-                        var properties = ImmutableDictionary<string, string>.Empty
+                        ImmutableDictionary<string, string>? properties = ImmutableDictionary<string, string>.Empty
                             .Add(NewNameKey, methodSymbol.Name + MandatoryAsyncSuffix);
                         context.ReportDiagnostic(Diagnostic.Create(
                             AddAsyncDescriptor,
@@ -96,7 +94,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     else if (!this.IsAwaitableType(methodSymbol.ReturnType, context.Compilation, context.CancellationToken))
                     {
                         // Only warn about abusing the Async suffix if the return type is not awaitable.
-                        var properties = ImmutableDictionary<string, string>.Empty
+                        ImmutableDictionary<string, string>? properties = ImmutableDictionary<string, string>.Empty
                             .Add(NewNameKey, methodSymbol.Name.Substring(0, methodSymbol.Name.Length - MandatoryAsyncSuffix.Length));
                         context.ReportDiagnostic(Diagnostic.Create(
                             RemoveAsyncDescriptor,
