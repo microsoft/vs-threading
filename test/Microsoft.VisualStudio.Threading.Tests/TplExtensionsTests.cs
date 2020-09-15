@@ -981,7 +981,8 @@ namespace Microsoft.VisualStudio.Threading.Tests
                 {
                     while (this.tasks.Count > 0)
                     {
-                        Task.Run(() => this.TryExecuteTask(this.tasks.Dequeue()));
+                        Task task = this.tasks.Dequeue();
+                        Task.Run(() => this.TryExecuteTask(task));
                     }
                 }
             }
