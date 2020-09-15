@@ -468,6 +468,102 @@ public partial class AwaitExtensionsTests : TestBase
         }
     }
 
+    [Fact]
+    public async Task ConfigureAwaitForAggregateException_WithoutThrowing()
+    {
+        Task task = Task.FromResult(0);
+        await task.ConfigureAwaitForAggregateException();
+    }
+
+    [Theory]
+    [CombinatorialData]
+    public void ConfigureAwaitForAggregateException_OnDispatcher(bool continueOnCapturedContext)
+    {
+        this.ExecuteOnDispatcher(async delegate
+        {
+            int dispatcherThread = Environment.CurrentManagedThreadId;
+            var tcs = new TaskCompletionSource<object?>();
+
+            async Task Helper()
+            {
+                await tcs.Task.ConfigureAwaitForAggregateException(continueOnCapturedContext);
+                Assert.Equal(continueOnCapturedContext, dispatcherThread == Environment.CurrentManagedThreadId);
+            }
+
+            Task helperTask = Helper();
+            tcs.SetResult(null);
+            await helperTask;
+        });
+    }
+
+    [Fact]
+    public async Task ConfigureAwaitForAggregateException_ThrowsAggregateException()
+    {
+        Task fail1 = Task.FromException(new InvalidOperationException());
+        Task fail2 = Task.FromException(new ApplicationException());
+        Task joint = Task.WhenAll(fail1, fail2);
+        try
+        {
+            await joint.ConfigureAwaitForAggregateException();
+            Assert.False(true, "Exception was not thrown.");
+        }
+        catch (AggregateException ex)
+        {
+            Assert.Contains(fail1.Exception!.InnerException, ex.InnerExceptions);
+            Assert.Contains(fail2.Exception!.InnerException, ex.InnerExceptions);
+        }
+    }
+
+    [Fact]
+    public async Task ConfigureAwaitForAggregateException_Canceled()
+    {
+        Task canceled = Task.FromCanceled(new CancellationToken(true));
+        try
+        {
+            await canceled.ConfigureAwaitForAggregateException();
+            Assert.False(true, "Exception was not thrown.");
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    [Fact]
+    public async Task ConfigureAwaitForAggregateException_InnerCanceled()
+    {
+        Task canceled1 = Task.FromCanceled(new CancellationToken(true));
+        Task canceled2 = Task.FromCanceled(new CancellationToken(true));
+        Task result = Task.FromResult<object?>(null);
+        Task joint = Task.WhenAll(canceled1, canceled2, result);
+        try
+        {
+            await joint.ConfigureAwaitForAggregateException();
+            Assert.False(true, "Exception was not thrown.");
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    [Fact]
+    public async Task ConfigureAwaitForAggregateException_InnerCanceledAndFaulted()
+    {
+        Task canceled = Task.FromCanceled(new CancellationToken(true));
+        Task faulted = Task.FromException(new InvalidOperationException());
+        Task result = Task.FromResult<object?>(null);
+        Task joint = Task.WhenAll(canceled, faulted, result);
+        try
+        {
+            await joint.ConfigureAwaitForAggregateException();
+            Assert.False(true, "Exception was not thrown.");
+        }
+        catch (AggregateException ex)
+        {
+            Assert.Contains(faulted.Exception!.InnerException, ex.InnerExceptions);
+            Assert.Single(ex.InnerExceptions);
+        }
+    }
+
     [SkippableFact]
     public async Task AwaitRegKeyChange()
     {

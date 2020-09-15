@@ -4572,7 +4572,7 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
         // This idea of kicking off lots of async tasks and then awaiting all of them is a common
         // pattern in async code.  The async lock should protect against the continuations accidentally
         // running concurrently, thereby forking the write lock across multiple threads.
-        await Task.WhenAll(asyncFuncs.Select(f => f()));
+        await Task.WhenAll(asyncFuncs.Select(f => f())).ConfigureAwaitForAggregateException(false);
     }
 
     private async Task CheckContinuationsConcurrencyBeforeYieldHelper()
