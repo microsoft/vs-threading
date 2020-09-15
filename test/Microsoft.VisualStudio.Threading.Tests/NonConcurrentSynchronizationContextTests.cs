@@ -8,7 +8,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
-using Microsoft.VisualStudio.Threading.Tests;
 using Xunit;
 using Xunit.Abstractions;
 
