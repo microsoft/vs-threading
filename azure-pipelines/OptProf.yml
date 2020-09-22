@@ -28,8 +28,6 @@ variables:
   value: Any CPU
 - name: NUGET_PACKAGES
   value: $(Agent.TempDirectory)/.nuget/packages
-- name: push_to_ci
-  value: true
 - name: PublicRelease
   value: false # avoid using nice version since we're building a preliminary/unoptimized package
 - name: SignType

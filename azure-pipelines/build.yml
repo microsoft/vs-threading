@@ -56,7 +56,7 @@ jobs:
   - macOS
   pool:
     vmImage: Ubuntu 18.04
-  condition: succeededOrFailed()
+  condition: ne(variables['OptProf'], 'true')
   steps:
   - checkout: self
     clean: true

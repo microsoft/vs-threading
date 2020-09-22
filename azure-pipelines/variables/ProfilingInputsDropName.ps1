@@ -1,5 +1,5 @@
-if ($env:System_TeamProject) {
-    "ProfilingInputs/$env:System_TeamProject/$env:Build_Repository_Name/$env:Build_SourceBranchName/$env:Build_BuildId"
+if ($env:SYSTEM_TEAMPROJECT) {
+    "ProfilingInputs/$env:SYSTEM_TEAMPROJECT/$env:BUILD_REPOSITORY_NAME/$env:BUILD_SOURCEBRANCHNAME/$env:BUILD_BUILDID"
 } else {
-    Write-Warning "No Azure Pipelines build detected. No VSTS drop name will be computed."
+    Write-Warning "No Azure Pipelines build detected. No Azure Pipelines drop name will be computed."
 }

@@ -1,4 +1,4 @@
-$BinPath = [System.IO.Path]::GetFullPath("$PSScriptRoot\..\..\bin\Packages\$env:BuildConfiguration")
+$BinPath = [System.IO.Path]::GetFullPath("$PSScriptRoot\..\..\bin\Packages\$env:BUILDCONFIGURATION")
 
 $dirsToSearch = "$BinPath\NuGet\*.nupkg" |? { Test-Path $_ }
 $icv=@()
