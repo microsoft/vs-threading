@@ -25,7 +25,7 @@
     <PackageReference Include="coverlet.msbuild" Version="2.9.0" />
     <PackageReference Include="MicroBuild.Nonshipping" Version="$(MicroBuildVersion)" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.7.1" />
-    <PackageReference Include="Nullable" Version="1.2.1">
+    <PackageReference Include="Nullable" Version="1.3.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
