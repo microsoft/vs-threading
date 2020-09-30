@@ -2525,9 +2525,10 @@ namespace Microsoft.VisualStudio.Threading
                 }
 
                 bool restoreFlow = !flowExecutionContext && !ExecutionContext.IsFlowSuppressed();
+                AsyncFlowControl flowControl = default;
                 if (restoreFlow)
                 {
-                    ExecutionContext.SuppressFlow();
+                    flowControl = ExecutionContext.SuppressFlow();
                 }
 
                 try
@@ -2549,7 +2550,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     if (restoreFlow)
                     {
-                        ExecutionContext.RestoreFlow();
+                        flowControl.Dispose();
                     }
                 }
             }

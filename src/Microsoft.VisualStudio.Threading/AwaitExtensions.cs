@@ -423,8 +423,21 @@ namespace Microsoft.VisualStudio.Threading
                 }
                 else
                 {
-                    // There is no API for scheduling a Task without capturing the ExecutionContext.
+#if NETFRAMEWORK // Only bother suppressing flow on .NET Framework where the perf would improve from doing so.
+                    if (ExecutionContext.IsFlowSuppressed())
+                    {
+                        Task.Factory.StartNew(continuation, CancellationToken.None, TaskCreationOptions.None, this.scheduler);
+                    }
+                    else
+                    {
+                        using (ExecutionContext.SuppressFlow())
+                        {
+                            Task.Factory.StartNew(continuation, CancellationToken.None, TaskCreationOptions.None, this.scheduler);
+                        }
+                    }
+#else
                     Task.Factory.StartNew(continuation, CancellationToken.None, TaskCreationOptions.None, this.scheduler);
+#endif
                 }
             }
 
@@ -567,7 +580,7 @@ namespace Microsoft.VisualStudio.Threading
         /// A Task awaiter that has affinity to executing callbacks synchronously on the completing callstack.
         /// </summary>
         [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "Awaitables are not compared.")]
-        public readonly struct ExecuteContinuationSynchronouslyAwaiter : INotifyCompletion
+        public readonly struct ExecuteContinuationSynchronouslyAwaiter : ICriticalNotifyCompletion
         {
             /// <summary>
             /// The task whose completion will execute the continuation.
@@ -609,6 +622,26 @@ namespace Microsoft.VisualStudio.Threading
                     TaskContinuationOptions.ExecuteSynchronously,
                     TaskScheduler.Default);
             }
+
+            /// <inheritdoc cref="OnCompleted(Action)"/>
+            public void UnsafeOnCompleted(Action continuation)
+            {
+#if NETFRAMEWORK // Only bother suppressing flow on .NET Framework where the perf would improve from doing so.
+                if (ExecutionContext.IsFlowSuppressed())
+                {
+                    this.OnCompleted(continuation);
+                }
+                else
+                {
+                    using (ExecutionContext.SuppressFlow())
+                    {
+                        this.OnCompleted(continuation);
+                    }
+                }
+#else
+                this.OnCompleted(continuation);
+#endif
+            }
         }
 
         /// <summary>
@@ -645,7 +678,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <typeparam name="T">The type of value returned by the awaited <see cref="Task"/>.</typeparam>
         [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "Awaitables are not compared.")]
-        public readonly struct ExecuteContinuationSynchronouslyAwaiter<T> : INotifyCompletion
+        public readonly struct ExecuteContinuationSynchronouslyAwaiter<T> : ICriticalNotifyCompletion
         {
             /// <summary>
             /// The task whose completion will execute the continuation.
@@ -686,6 +719,26 @@ namespace Microsoft.VisualStudio.Threading
                     CancellationToken.None,
                     TaskContinuationOptions.ExecuteSynchronously,
                     TaskScheduler.Default);
+            }
+
+            /// <inheritdoc cref="OnCompleted(Action)"/>
+            public void UnsafeOnCompleted(Action continuation)
+            {
+#if NETFRAMEWORK // Only bother suppressing flow on .NET Framework where the perf would improve from doing so.
+                if (ExecutionContext.IsFlowSuppressed())
+                {
+                    this.OnCompleted(continuation);
+                }
+                else
+                {
+                    using (ExecutionContext.SuppressFlow())
+                    {
+                        this.OnCompleted(continuation);
+                    }
+                }
+#else
+                this.OnCompleted(continuation);
+#endif
             }
         }
 
