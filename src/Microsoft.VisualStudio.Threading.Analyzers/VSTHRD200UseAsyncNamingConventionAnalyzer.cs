@@ -67,7 +67,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     return;
                 }
 
-                bool hasAsyncFocusedReturnType = Utils.HasAsyncCompatibleReturnType(methodSymbol);
+                bool isAsync = methodSymbol.IsAsync;
 
                 bool actuallyEndsWithAsync = methodSymbol.Name.EndsWith(MandatoryAsyncSuffix, StringComparison.CurrentCulture);
 
