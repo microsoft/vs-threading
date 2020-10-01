@@ -71,7 +71,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
                 bool actuallyEndsWithAsync = methodSymbol.Name.EndsWith(MandatoryAsyncSuffix, StringComparison.CurrentCulture);
 
-                if (hasAsyncFocusedReturnType != actuallyEndsWithAsync)
+                if (isAsync != actuallyEndsWithAsync)
                 {
                     // Now that we have done the cheap checks to find that this method may deserve a diagnostic,
                     // Do deeper checks to skip over methods that implement API contracts that are controlled elsewhere.
@@ -80,7 +80,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                         return;
                     }
 
-                    if (hasAsyncFocusedReturnType)
+                    if (isAsync)
                     {
                         // We actively encourage folks to use the Async keyword only for clearly async-focused types.
                         // Not just any awaitable, since some stray extension method shouldn't change the world for everyone.
