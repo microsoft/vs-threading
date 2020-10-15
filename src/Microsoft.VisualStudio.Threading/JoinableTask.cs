@@ -248,7 +248,12 @@ namespace Microsoft.VisualStudio.Threading
                     }
                 }
 
-                return this.wrappedTask as Task ?? this.GetTaskFromCompletionSource(this.wrappedTask);
+                // Read 'wrappedTask' once to a local variable. Since this read occurs outside a lock, we need to ensure
+                // that writes to the field between the 'Task' type check and the call to 'GetTaskFromCompletionSource'
+                // do not result in passing the wrong object type to the latter (which would result in an
+                // InvalidCastException).
+                var wrappedTask = this.wrappedTask;
+                return wrappedTask as Task ?? this.GetTaskFromCompletionSource(wrappedTask);
             }
         }
 
