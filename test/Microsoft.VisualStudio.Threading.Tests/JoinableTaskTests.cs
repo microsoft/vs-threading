@@ -3836,7 +3836,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
     }
 
     [Fact]
-    public void IsResultAvailableTrueDoesNotLock()
+    public void IsCompletedTrueDoesNotLock()
     {
         using var context = new JoinableTaskContext();
         var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(context);
@@ -3859,8 +3859,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
         Assert.False(Monitor.TryEnter(syncContextLock));
 
         // This should complete without needing the lock
-        var isResultAvailable = typeof(JoinableTask).GetProperty("IsResultAvailable", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(joinableTask);
-        Assert.Equal(true, isResultAvailable);
+        Assert.True(joinableTask.IsCompleted);
 
         // Verify the lock is still held (as opposed to released by timeout)
         Assert.False(Monitor.TryEnter(syncContextLock));

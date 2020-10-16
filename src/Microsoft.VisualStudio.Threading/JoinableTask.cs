@@ -200,28 +200,8 @@ namespace Microsoft.VisualStudio.Threading
         {
             get
             {
-                using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
-                {
-                    lock (this.JoinableTaskContext.SyncContextLock)
-                    {
-                        if (!this.IsCompleteRequested)
-                        {
-                            return false;
-                        }
-
-                        if (this.mainThreadQueue is object && !this.mainThreadQueue.IsCompleted)
-                        {
-                            return false;
-                        }
-
-                        if (this.threadPoolQueue is object && !this.threadPoolQueue.IsCompleted)
-                        {
-                            return false;
-                        }
-
-                        return true;
-                    }
-                }
+                return this.TryGetTask(out Task? task)
+                    && task.IsCompleted;
             }
         }
 
@@ -281,12 +261,32 @@ namespace Microsoft.VisualStudio.Threading
         /// </remarks>
         internal static bool AwaitShouldCaptureSyncContext => SynchronizationContext.Current is JoinableTaskSynchronizationContext;
 
-        internal bool IsResultAvailable
+        internal bool IsFullyCompleted
         {
             get
             {
-                return this.TryGetTask(out Task? task)
-                    && task.IsCompleted;
+                using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
+                {
+                    lock (this.JoinableTaskContext.SyncContextLock)
+                    {
+                        if (!this.IsCompleteRequested)
+                        {
+                            return false;
+                        }
+
+                        if (this.mainThreadQueue is object && !this.mainThreadQueue.IsCompleted)
+                        {
+                            return false;
+                        }
+
+                        if (this.threadPoolQueue is object && !this.threadPoolQueue.IsCompleted)
+                        {
+                            return false;
+                        }
+
+                        return true;
+                    }
+                }
             }
         }
 
@@ -545,7 +545,7 @@ namespace Microsoft.VisualStudio.Threading
         public void Join(CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (this.IsResultAvailable)
+            if (this.IsCompleted)
             {
                 return;
             }
@@ -974,7 +974,7 @@ namespace Microsoft.VisualStudio.Threading
 
         internal void OnQueueCompleted()
         {
-            if (this.IsCompleted)
+            if (this.IsFullyCompleted)
             {
                 // Note this code may execute more than once, as multiple queue completion
                 // notifications come in.
@@ -1057,7 +1057,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 if (work is null)
                 {
-                    if (joinableTask?.IsCompleted != true)
+                    if (joinableTask?.IsFullyCompleted != true)
                     {
                         foreach (IJoinableTaskDependent? item in JoinableTaskDependencyGraph.GetDirectDependentNodes(currentNode))
                         {
@@ -1079,7 +1079,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 lock (this.JoinableTaskContext.SyncContextLock)
                 {
-                    if (this.IsCompleted)
+                    if (this.IsFullyCompleted)
                     {
                         work = null;
                         tryAgainAfter = null;
@@ -1155,7 +1155,7 @@ namespace Microsoft.VisualStudio.Threading
 
         private JoinRelease AmbientJobJoinsThis()
         {
-            if (!this.IsResultAvailable)
+            if (!this.IsCompleted)
             {
                 JoinableTask? ambientJob = this.JoinableTaskContext.AmbientTask;
                 if (ambientJob is object && ambientJob != this)
