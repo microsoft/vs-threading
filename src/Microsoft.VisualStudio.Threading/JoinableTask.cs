@@ -281,6 +281,15 @@ namespace Microsoft.VisualStudio.Threading
         /// </remarks>
         internal static bool AwaitShouldCaptureSyncContext => SynchronizationContext.Current is JoinableTaskSynchronizationContext;
 
+        internal bool IsResultAvailable
+        {
+            get
+            {
+                return this.TryGetTask(out Task? task)
+                    && task.IsCompleted;
+            }
+        }
+
         /// <summary>
         /// Gets or sets the set of nesting factories (excluding <see cref="owner"/>)
         /// that own JoinableTasks that are nesting this one.
@@ -535,6 +544,12 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="cancellationToken">A cancellation token that will exit this method before the task is completed.</param>
         public void Join(CancellationToken cancellationToken = default(CancellationToken))
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (this.IsResultAvailable)
+            {
+                return;
+            }
+
             // We don't simply call this.CompleteOnCurrentThread because that doesn't take CancellationToken.
             // And it really can't be made to, since it sets state flags indicating the JoinableTask is
             // blocking till completion.
@@ -599,6 +614,24 @@ namespace Microsoft.VisualStudio.Threading
 
         void IJoinableTaskDependent.OnDependencyRemoved(IJoinableTaskDependent joinChild)
         {
+        }
+
+        /// <summary>
+        /// Gets the asynchronous task that completes when the async operation completes, if one has been created.
+        /// </summary>
+        /// <param name="task">The value of <see cref="Task"/>, or <see langword="null"/> if the task is not yet created.</param>
+        /// <returns><see langword="true"/> if the task has been created; otherwise, <see langword="false"/>.</returns>
+        internal bool TryGetTask([NotNullWhen(true)] out Task? task)
+        {
+            var wrappedTask = this.wrappedTask;
+            if (wrappedTask is object)
+            {
+                task = wrappedTask as Task ?? this.GetTaskFromCompletionSource(wrappedTask);
+                return task is object;
+            }
+
+            task = null;
+            return false;
         }
 
         internal void Post(SendOrPostCallback d, object? state, bool mainThreadAffinitized)
@@ -1122,7 +1155,7 @@ namespace Microsoft.VisualStudio.Threading
 
         private JoinRelease AmbientJobJoinsThis()
         {
-            if (!this.IsCompleted)
+            if (!this.IsResultAvailable)
             {
                 JoinableTask? ambientJob = this.JoinableTaskContext.AmbientTask;
                 if (ambientJob is object && ambientJob != this)

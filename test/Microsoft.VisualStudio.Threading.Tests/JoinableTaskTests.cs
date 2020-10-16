@@ -3835,6 +3835,245 @@ public class JoinableTaskTests : JoinableTaskTestBase
         });
     }
 
+    [Fact]
+    public void IsResultAvailableTrueDoesNotLock()
+    {
+        using var context = new JoinableTaskContext();
+        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(context);
+        Assert.NotNull(syncContextLock);
+
+        JoinableTask joinableTask = context.Factory.RunAsync(() => Task.CompletedTask);
+
+        var lockTaken = new ManualResetEventSlim();
+        var unblockLock = new ManualResetEventSlim();
+        var lockHolder = Task.Run(() =>
+        {
+            lock (syncContextLock)
+            {
+                lockTaken.Set();
+                unblockLock.Wait(this.TimeoutToken);
+            }
+        });
+
+        lockTaken.Wait();
+        Assert.False(Monitor.TryEnter(syncContextLock));
+
+        // This should complete without needing the lock
+        var isResultAvailable = typeof(JoinableTask).GetProperty("IsResultAvailable", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(joinableTask);
+        Assert.Equal(true, isResultAvailable);
+
+        // Verify the lock is still held (as opposed to released by timeout)
+        Assert.False(Monitor.TryEnter(syncContextLock));
+        unblockLock.Set();
+        lockHolder.Wait();
+    }
+
+    [Fact]
+    public void JoinCompletedDoesNotLock()
+    {
+        using var context = new JoinableTaskContext();
+        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(context);
+        Assert.NotNull(syncContextLock);
+
+        JoinableTask joinableTask = context.Factory.RunAsync(() => Task.CompletedTask);
+
+        var lockTaken = new ManualResetEventSlim();
+        var unblockLock = new ManualResetEventSlim();
+        var lockHolder = Task.Run(() =>
+        {
+            lock (syncContextLock)
+            {
+                lockTaken.Set();
+                unblockLock.Wait(this.TimeoutToken);
+            }
+        });
+
+        lockTaken.Wait();
+        Assert.False(Monitor.TryEnter(syncContextLock));
+
+        // This should complete without needing the lock
+        joinableTask.Join(this.TimeoutToken);
+
+        // Verify the lock is still held (as opposed to released by timeout)
+        Assert.False(Monitor.TryEnter(syncContextLock));
+        unblockLock.Set();
+        lockHolder.Wait();
+    }
+
+    [Fact]
+    public void JoinAsyncCompletedDoesNotLock()
+    {
+        using var context = new JoinableTaskContext();
+        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(context);
+        Assert.NotNull(syncContextLock);
+
+        JoinableTask joinableTask = context.Factory.RunAsync(() => Task.CompletedTask);
+
+        var lockTaken = new ManualResetEventSlim();
+        var unblockLock = new ManualResetEventSlim();
+        var lockHolder = Task.Run(() =>
+        {
+            lock (syncContextLock)
+            {
+                lockTaken.Set();
+                unblockLock.Wait(this.TimeoutToken);
+            }
+        });
+
+        lockTaken.Wait();
+        Assert.False(Monitor.TryEnter(syncContextLock));
+
+        // This should complete without needing the lock
+        Task joinTask = joinableTask.JoinAsync(this.TimeoutToken);
+        Assert.Equal(TaskStatus.RanToCompletion, joinTask.Status);
+
+        // In addition to not needing the lock, verify that no new task was allocated for subsequent calls
+        Assert.Same(joinTask, joinableTask.JoinAsync(this.TimeoutToken));
+
+        // Verify the lock is still held (as opposed to released by timeout)
+        Assert.False(Monitor.TryEnter(syncContextLock));
+        unblockLock.Set();
+        lockHolder.Wait();
+    }
+
+    [Fact]
+    public void GetAwaiterCompletedDoesNotLock()
+    {
+        using var context = new JoinableTaskContext();
+        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(context);
+        Assert.NotNull(syncContextLock);
+
+        JoinableTask joinableTask = context.Factory.RunAsync(() => Task.CompletedTask);
+
+        var lockTaken = new ManualResetEventSlim();
+        var unblockLock = new ManualResetEventSlim();
+        var lockHolder = Task.Run(() =>
+        {
+            lock (syncContextLock)
+            {
+                lockTaken.Set();
+                unblockLock.Wait(this.TimeoutToken);
+            }
+        });
+
+        lockTaken.Wait();
+        Assert.False(Monitor.TryEnter(syncContextLock));
+
+        // This should complete without needing the lock
+        TaskAwaiter awaiter = joinableTask.GetAwaiter();
+        Assert.True(awaiter.IsCompleted);
+        awaiter.GetResult();
+
+        // Verify the lock is still held (as opposed to released by timeout)
+        Assert.False(Monitor.TryEnter(syncContextLock));
+        unblockLock.Set();
+        lockHolder.Wait();
+    }
+
+    [Fact]
+    public void JoinCompletedTDoesNotLock()
+    {
+        using var context = new JoinableTaskContext();
+        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(context);
+        Assert.NotNull(syncContextLock);
+
+        JoinableTask<int> joinableTask = context.Factory.RunAsync(() => Task.FromResult(0));
+
+        var lockTaken = new ManualResetEventSlim();
+        var unblockLock = new ManualResetEventSlim();
+        var lockHolder = Task.Run(() =>
+        {
+            lock (syncContextLock)
+            {
+                lockTaken.Set();
+                unblockLock.Wait(this.TimeoutToken);
+            }
+        });
+
+        lockTaken.Wait();
+        Assert.False(Monitor.TryEnter(syncContextLock));
+
+        // This should complete without needing the lock
+        Assert.Equal(0, joinableTask.Join(this.TimeoutToken));
+
+        // Verify the lock is still held (as opposed to released by timeout)
+        Assert.False(Monitor.TryEnter(syncContextLock));
+        unblockLock.Set();
+        lockHolder.Wait();
+    }
+
+    [Fact]
+    public void JoinAsyncCompletedTDoesNotLock()
+    {
+        using var context = new JoinableTaskContext();
+        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(context);
+        Assert.NotNull(syncContextLock);
+
+        JoinableTask<int> joinableTask = context.Factory.RunAsync(() => Task.FromResult(0));
+
+        var lockTaken = new ManualResetEventSlim();
+        var unblockLock = new ManualResetEventSlim();
+        var lockHolder = Task.Run(() =>
+        {
+            lock (syncContextLock)
+            {
+                lockTaken.Set();
+                unblockLock.Wait(this.TimeoutToken);
+            }
+        });
+
+        lockTaken.Wait();
+        Assert.False(Monitor.TryEnter(syncContextLock));
+
+        // This should complete without needing the lock
+        Task<int> joinTask = joinableTask.JoinAsync(this.TimeoutToken);
+        Assert.Equal(TaskStatus.RanToCompletion, joinTask.Status);
+        Assert.Equal(0, joinTask.Result);
+
+        // In addition to not needing the lock, verify that no new task was allocated
+        Assert.Same(joinableTask.Task, joinTask);
+        Assert.Same(joinTask, joinableTask.JoinAsync(this.TimeoutToken));
+
+        // Verify the lock is still held (as opposed to released by timeout)
+        Assert.False(Monitor.TryEnter(syncContextLock));
+        unblockLock.Set();
+        lockHolder.Wait();
+    }
+
+    [Fact]
+    public void GetAwaiterCompletedTDoesNotLock()
+    {
+        using var context = new JoinableTaskContext();
+        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(context);
+        Assert.NotNull(syncContextLock);
+
+        JoinableTask<int> joinableTask = context.Factory.RunAsync(() => Task.FromResult(0));
+
+        var lockTaken = new ManualResetEventSlim();
+        var unblockLock = new ManualResetEventSlim();
+        var lockHolder = Task.Run(() =>
+        {
+            lock (syncContextLock)
+            {
+                lockTaken.Set();
+                unblockLock.Wait(this.TimeoutToken);
+            }
+        });
+
+        lockTaken.Wait();
+        Assert.False(Monitor.TryEnter(syncContextLock));
+
+        // This should complete without needing the lock
+        TaskAwaiter<int> awaiter = joinableTask.GetAwaiter();
+        Assert.True(awaiter.IsCompleted);
+        Assert.Equal(0, awaiter.GetResult());
+
+        // Verify the lock is still held (as opposed to released by timeout)
+        Assert.False(Monitor.TryEnter(syncContextLock));
+        unblockLock.Set();
+        lockHolder.Wait();
+    }
+
     protected override JoinableTaskContext CreateJoinableTaskContext()
     {
         return new DerivedJoinableTaskContext();

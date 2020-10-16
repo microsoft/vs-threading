@@ -47,10 +47,27 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="cancellationToken">A cancellation token that will exit this method before the task is completed.</param>
         /// <returns>A task that completes after the asynchronous operation completes and the join is reverted, with the result of the operation.</returns>
-        public new async Task<T> JoinAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public new Task<T> JoinAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            await base.JoinAsync(cancellationToken).ConfigureAwait(AwaitShouldCaptureSyncContext);
-            return await this.Task.ConfigureAwait(AwaitShouldCaptureSyncContext);
+            Task baseJoin = base.JoinAsync(cancellationToken);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return System.Threading.Tasks.Task.FromCanceled<T>(cancellationToken);
+            }
+
+            if (baseJoin.IsCompleted)
+            {
+                Assumes.True(this.Task.IsCompleted);
+                return this.Task;
+            }
+
+            return JoinSlowAsync(baseJoin);
+
+            async Task<T> JoinSlowAsync(Task baseJoin)
+            {
+                await baseJoin.ConfigureAwait(AwaitShouldCaptureSyncContext);
+                return await this.Task.ConfigureAwait(AwaitShouldCaptureSyncContext);
+            }
         }
 
         /// <summary>
