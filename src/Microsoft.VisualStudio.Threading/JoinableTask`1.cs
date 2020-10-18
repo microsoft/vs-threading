@@ -50,12 +50,7 @@ namespace Microsoft.VisualStudio.Threading
         public new Task<T> JoinAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             Task baseJoin = base.JoinAsync(cancellationToken);
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return System.Threading.Tasks.Task.FromCanceled<T>(cancellationToken);
-            }
-
-            if (baseJoin.IsCompleted)
+            if (baseJoin.IsCompleted && !cancellationToken.IsCancellationRequested)
             {
                 Assumes.True(this.Task.IsCompleted);
                 return this.Task;
