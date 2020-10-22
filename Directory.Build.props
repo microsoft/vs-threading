@@ -11,7 +11,7 @@
 
     <Company>Microsoft</Company>
     <Authors>Microsoft</Authors>
-    <Copyright>© Microsoft. All rights reserved.</Copyright>
+    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/Microsoft/vs-threading</PackageProjectUrl>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
