@@ -98,10 +98,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                         return;
                     }
 
-                    MethodDeclarationSyntax invocationDeclaringMethod = invocationExpressionSyntax.FirstAncestorOrSelf<MethodDeclarationSyntax>();
-
                     // Also consider all method calls to check for Async-suffixed alternatives.
-                    ExpressionSyntax invokedMethodName = CSharpUtils.IsolateMethodName(invocationExpressionSyntax);
                     SymbolInfo symbolInfo = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax, context.CancellationToken);
                     if (symbolInfo.Symbol is IMethodSymbol methodSymbol && !methodSymbol.Name.EndsWith(VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix, StringComparison.CurrentCulture) &&
                         !methodSymbol.HasAsyncCompatibleReturnType())
@@ -113,6 +110,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                             asyncMethodName,
                             includeReducedExtensionMethods: true);
 
+                        MethodDeclarationSyntax invocationDeclaringMethod = invocationExpressionSyntax.FirstAncestorOrSelf<MethodDeclarationSyntax>();
+                        ExpressionSyntax invokedMethodName = CSharpUtils.IsolateMethodName(invocationExpressionSyntax);
                         foreach (var m in symbols.OfType<IMethodSymbol>())
                         {
                             if (!m.IsObsolete()
