@@ -103,9 +103,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     // Also consider all method calls to check for Async-suffixed alternatives.
                     ExpressionSyntax invokedMethodName = CSharpUtils.IsolateMethodName(invocationExpressionSyntax);
                     SymbolInfo symbolInfo = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax, context.CancellationToken);
-                    var methodSymbol = symbolInfo.Symbol as IMethodSymbol;
-                    if (methodSymbol is object && !methodSymbol.Name.EndsWith(VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix, StringComparison.CurrentCulture) &&
-                        !(methodSymbol.ReturnType?.Name == nameof(Task) && methodSymbol.ReturnType.BelongsToNamespace(Namespaces.SystemThreadingTasks)))
+                    if (symbolInfo.Symbol is IMethodSymbol methodSymbol && !methodSymbol.Name.EndsWith(VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix, StringComparison.CurrentCulture) &&
+                        !methodSymbol.HasAsyncCompatibleReturnType())
                     {
                         string asyncMethodName = methodSymbol.Name + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix;
                         ImmutableArray<ISymbol> symbols = context.SemanticModel.LookupSymbols(
@@ -114,13 +113,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                             asyncMethodName,
                             includeReducedExtensionMethods: true);
 
-                        foreach (ISymbol? s in symbols)
+                        foreach (var m in symbols.OfType<IMethodSymbol>())
                         {
-                            if (s is IMethodSymbol m
-                                && !m.IsObsolete()
+                            if (!m.IsObsolete()
                                 && HasSupersetOfParameterTypes(m, methodSymbol)
                                 && m.Name != invocationDeclaringMethod?.Identifier.Text
-                                && Utils.HasAsyncCompatibleReturnType(m))
+                                && m.HasAsyncCompatibleReturnType())
                             {
                                 // An async alternative exists.
                                 ImmutableDictionary<string, string>? properties = ImmutableDictionary<string, string>.Empty
@@ -174,9 +172,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     }
                 }
 
-                ITypeSymbol? returnType = methodSymbol?.ReturnType;
-                return returnType?.Name == nameof(Task)
-                    && returnType.BelongsToNamespace(Namespaces.SystemThreadingTasks);
+                return methodSymbol.HasAsyncCompatibleReturnType();
             }
 
             private static bool InspectMemberAccess(SyntaxNodeAnalysisContext context, [NotNullWhen(true)] MemberAccessExpressionSyntax? memberAccessSyntax, IEnumerable<CommonInterest.SyncBlockingMethod> problematicMethods)
