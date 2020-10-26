@@ -2138,6 +2138,34 @@ public class JoinableTaskTests : JoinableTaskTestBase
     }
 
     [Fact]
+    public void Join_AlreadyCompletedWithPrecanceledArgument()
+    {
+        JoinableTask jt = this.asyncPump.RunAsync(() => Task.CompletedTask);
+        Assert.Throws<OperationCanceledException>(() => jt.Join(new CancellationToken(canceled: true)));
+    }
+
+    [Fact]
+    public void Join_AlreadyCompletedWithPrecanceledArgument_Generic()
+    {
+        JoinableTask<int> jt = this.asyncPump.RunAsync<int>(() => Task.FromResult(0));
+        Assert.Throws<OperationCanceledException>(() => jt.Join(new CancellationToken(canceled: true)));
+    }
+
+    [Fact]
+    public async Task JoinAsync_AlreadyCompletedWithPrecanceledArgument()
+    {
+        JoinableTask jt = this.asyncPump.RunAsync(() => Task.CompletedTask);
+        await Assert.ThrowsAsync<OperationCanceledException>(() => jt.JoinAsync(new CancellationToken(canceled: true)));
+    }
+
+    [Fact]
+    public async Task JoinAsync_AlreadyCompletedWithPrecanceledArgument_Generic()
+    {
+        JoinableTask<int> jt = this.asyncPump.RunAsync<int>(() => Task.FromResult(0));
+        await Assert.ThrowsAsync<OperationCanceledException>(() => jt.JoinAsync(new CancellationToken(canceled: true)));
+    }
+
+    [Fact]
     public void JoinFaulted_Throws()
     {
         JoinableTask jt = this.asyncPump.RunAsync(() => throw new InvalidOperationException());
