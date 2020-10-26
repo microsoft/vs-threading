@@ -2138,6 +2138,20 @@ public class JoinableTaskTests : JoinableTaskTestBase
     }
 
     [Fact]
+    public void JoinFaulted_Throws()
+    {
+        JoinableTask jt = this.asyncPump.RunAsync(() => throw new InvalidOperationException());
+        Assert.Throws<InvalidOperationException>(() => jt.Join());
+    }
+
+    [Fact]
+    public void JoinFaulted_Throws_Generic()
+    {
+        JoinableTask<int> jtOfT = this.asyncPump.RunAsync<int>(() => throw new InvalidOperationException());
+        Assert.Throws<InvalidOperationException>(() => jtOfT.Join());
+    }
+
+    [Fact]
     public void RunSynchronouslyTaskOfTWithFireAndForgetMethod()
     {
         this.asyncPump.Run(async delegate
