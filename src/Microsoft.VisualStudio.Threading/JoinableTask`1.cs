@@ -49,18 +49,17 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns>A task that completes after the asynchronous operation completes and the join is reverted, with the result of the operation.</returns>
         public new Task<T> JoinAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            Task baseJoin = base.JoinAsync(cancellationToken);
-            if (baseJoin.IsCompleted && !cancellationToken.IsCancellationRequested)
+            if (this.IsCompleted)
             {
                 Assumes.True(this.Task.IsCompleted);
                 return this.Task;
             }
 
-            return JoinSlowAsync(baseJoin);
+            return JoinSlowAsync(cancellationToken);
 
-            async Task<T> JoinSlowAsync(Task baseJoin)
+            async Task<T> JoinSlowAsync(CancellationToken cancellationToken)
             {
-                await baseJoin.ConfigureAwait(AwaitShouldCaptureSyncContext);
+                await base.JoinAsync(cancellationToken).ConfigureAwait(AwaitShouldCaptureSyncContext);
                 return await this.Task.ConfigureAwait(AwaitShouldCaptureSyncContext);
             }
         }
