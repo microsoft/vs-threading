@@ -541,11 +541,13 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="cancellationToken">A cancellation token that will exit this method before the task is completed.</param>
         public void Join(CancellationToken cancellationToken = default(CancellationToken))
         {
-            cancellationToken.ThrowIfCancellationRequested();
             if (this.IsCompleted)
             {
+                this.Task.GetAwaiter().GetResult(); // rethrow any exceptions
                 return;
             }
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             // We don't simply call this.CompleteOnCurrentThread because that doesn't take CancellationToken.
             // And it really can't be made to, since it sets state flags indicating the JoinableTask is
