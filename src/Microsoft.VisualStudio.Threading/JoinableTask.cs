@@ -194,16 +194,10 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Gets a value indicating whether the async operation represented by this instance has completed.
+        /// Gets a value indicating whether the async operation represented by this instance has completed,
+        /// as represented by its <see cref="Task"/> property's <see cref="Task.IsCompleted"/> value.
         /// </summary>
-        public bool IsCompleted
-        {
-            get
-            {
-                return this.TryGetTask(out Task? task)
-                    && task.IsCompleted;
-            }
-        }
+        public bool IsCompleted => this.IsCompleteRequested;
 
         /// <summary>
         /// Gets the asynchronous task that completes when the async operation completes.
@@ -261,6 +255,9 @@ namespace Microsoft.VisualStudio.Threading
         /// </remarks>
         internal static bool AwaitShouldCaptureSyncContext => SynchronizationContext.Current is JoinableTaskSynchronizationContext;
 
+        /// <summary>
+        /// Gets a value indicating whether the async operation and any extra queues tracked by this instance has completed.
+        /// </summary>
         internal bool IsFullyCompleted
         {
             get
@@ -614,24 +611,6 @@ namespace Microsoft.VisualStudio.Threading
 
         void IJoinableTaskDependent.OnDependencyRemoved(IJoinableTaskDependent joinChild)
         {
-        }
-
-        /// <summary>
-        /// Gets the asynchronous task that completes when the async operation completes, if one has been created.
-        /// </summary>
-        /// <param name="task">The value of <see cref="Task"/>, or <see langword="null"/> if the task is not yet created.</param>
-        /// <returns><see langword="true"/> if the task has been created; otherwise, <see langword="false"/>.</returns>
-        internal bool TryGetTask([NotNullWhen(true)] out Task? task)
-        {
-            var wrappedTask = this.wrappedTask;
-            if (wrappedTask is object)
-            {
-                task = wrappedTask as Task ?? this.GetTaskFromCompletionSource(wrappedTask);
-                return task is object;
-            }
-
-            task = null;
-            return false;
         }
 
         internal void Post(SendOrPostCallback d, object? state, bool mainThreadAffinitized)

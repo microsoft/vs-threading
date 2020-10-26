@@ -3839,7 +3839,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
     public void IsCompletedTrueDoesNotLock()
     {
         using var context = new JoinableTaskContext();
-        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(context);
+        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(context)!;
         Assert.NotNull(syncContextLock);
 
         JoinableTask joinableTask = context.Factory.RunAsync(() => Task.CompletedTask);
@@ -3871,7 +3871,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
     public void JoinCompletedDoesNotLock()
     {
         using var context = new JoinableTaskContext();
-        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(context);
+        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(context)!;
         Assert.NotNull(syncContextLock);
 
         JoinableTask joinableTask = context.Factory.RunAsync(() => Task.CompletedTask);
@@ -3903,7 +3903,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
     public void JoinAsyncCompletedDoesNotLock()
     {
         using var context = new JoinableTaskContext();
-        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(context);
+        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(context)!;
         Assert.NotNull(syncContextLock);
 
         JoinableTask joinableTask = context.Factory.RunAsync(() => Task.CompletedTask);
@@ -3939,7 +3939,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
     public void GetAwaiterCompletedDoesNotLock()
     {
         using var context = new JoinableTaskContext();
-        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(context);
+        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(context)!;
         Assert.NotNull(syncContextLock);
 
         JoinableTask joinableTask = context.Factory.RunAsync(() => Task.CompletedTask);
@@ -3973,7 +3973,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
     public void JoinCompletedTDoesNotLock()
     {
         using var context = new JoinableTaskContext();
-        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(context);
+        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(context)!;
         Assert.NotNull(syncContextLock);
 
         JoinableTask<int> joinableTask = context.Factory.RunAsync(() => Task.FromResult(0));
@@ -4005,7 +4005,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
     public void JoinAsyncCompletedTDoesNotLock()
     {
         using var context = new JoinableTaskContext();
-        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(context);
+        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(context)!;
         Assert.NotNull(syncContextLock);
 
         JoinableTask<int> joinableTask = context.Factory.RunAsync(() => Task.FromResult(0));
@@ -4043,7 +4043,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
     public void GetAwaiterCompletedTDoesNotLock()
     {
         using var context = new JoinableTaskContext();
-        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(context);
+        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(context)!;
         Assert.NotNull(syncContextLock);
 
         JoinableTask<int> joinableTask = context.Factory.RunAsync(() => Task.FromResult(0));
