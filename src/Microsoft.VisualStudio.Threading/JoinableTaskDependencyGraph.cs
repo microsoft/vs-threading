@@ -234,7 +234,7 @@ namespace Microsoft.VisualStudio.Threading
                     lock (parentTaskOrCollection.JoinableTaskContext.SyncContextLock)
                     {
                         var joinableTask = joinChild as JoinableTask;
-                        if (joinableTask?.IsCompleted == true)
+                        if (joinableTask?.IsFullyCompleted == true)
                         {
                             return default(JoinableTaskCollection.JoinRelease);
                         }
@@ -332,7 +332,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 if (taskOrCollection is JoinableTask thisJoinableTask)
                 {
-                    if (thisJoinableTask.IsCompleted || !joinables.Add(thisJoinableTask))
+                    if (thisJoinableTask.IsFullyCompleted || !joinables.Add(thisJoinableTask))
                     {
                         return;
                     }
@@ -563,7 +563,7 @@ namespace Microsoft.VisualStudio.Threading
                 JoinableTask? thisJoinableTask = taskOrCollection as JoinableTask;
                 if (thisJoinableTask is object)
                 {
-                    if (thisJoinableTask.IsCompleted)
+                    if (thisJoinableTask.IsFullyCompleted)
                     {
                         return null;
                     }
@@ -704,7 +704,7 @@ namespace Microsoft.VisualStudio.Threading
                 Requires.NotNull(taskOrCollection, nameof(taskOrCollection));
                 Requires.NotNull(remainNodes, nameof(remainNodes));
                 Requires.NotNull(reachableNodes, nameof(reachableNodes));
-                if ((taskOrCollection as JoinableTask)?.IsCompleted != true)
+                if ((taskOrCollection as JoinableTask)?.IsFullyCompleted != true)
                 {
                     if (reachableNodes.Add(taskOrCollection))
                     {

@@ -1011,7 +1011,7 @@ namespace Microsoft.VisualStudio.Threading
                 this.syncContextRevert = this.joinable.ApplicableJobSyncContext.Apply();
 
                 // Join the ambient parent job, so the parent can dequeue this job's work.
-                if (this.previousJoinable is object && !this.previousJoinable.IsCompleted)
+                if (this.previousJoinable is object && !this.previousJoinable.IsFullyCompleted)
                 {
                     JoinableTaskDependencyGraph.AddDependency(this.previousJoinable, joinable);
 

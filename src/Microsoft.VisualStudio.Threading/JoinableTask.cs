@@ -194,36 +194,10 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Gets a value indicating whether the async operation represented by this instance has completed.
+        /// Gets a value indicating whether the async operation represented by this instance has completed,
+        /// as represented by its <see cref="Task"/> property's <see cref="Task.IsCompleted"/> value.
         /// </summary>
-        public bool IsCompleted
-        {
-            get
-            {
-                using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
-                {
-                    lock (this.JoinableTaskContext.SyncContextLock)
-                    {
-                        if (!this.IsCompleteRequested)
-                        {
-                            return false;
-                        }
-
-                        if (this.mainThreadQueue is object && !this.mainThreadQueue.IsCompleted)
-                        {
-                            return false;
-                        }
-
-                        if (this.threadPoolQueue is object && !this.threadPoolQueue.IsCompleted)
-                        {
-                            return false;
-                        }
-
-                        return true;
-                    }
-                }
-            }
-        }
+        public bool IsCompleted => this.IsCompleteRequested;
 
         /// <summary>
         /// Gets the asynchronous task that completes when the async operation completes.
@@ -285,6 +259,38 @@ namespace Microsoft.VisualStudio.Threading
         /// can avoid significant delays in executing an often trivial continuation.
         /// </remarks>
         internal static bool AwaitShouldCaptureSyncContext => SynchronizationContext.Current is JoinableTaskSynchronizationContext;
+
+        /// <summary>
+        /// Gets a value indicating whether the async operation and any extra queues tracked by this instance has completed.
+        /// </summary>
+        internal bool IsFullyCompleted
+        {
+            get
+            {
+                using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
+                {
+                    lock (this.JoinableTaskContext.SyncContextLock)
+                    {
+                        if (!this.IsCompleteRequested)
+                        {
+                            return false;
+                        }
+
+                        if (this.mainThreadQueue is object && !this.mainThreadQueue.IsCompleted)
+                        {
+                            return false;
+                        }
+
+                        if (this.threadPoolQueue is object && !this.threadPoolQueue.IsCompleted)
+                        {
+                            return false;
+                        }
+
+                        return true;
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// Gets or sets the set of nesting factories (excluding <see cref="owner"/>)
@@ -540,6 +546,14 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="cancellationToken">A cancellation token that will exit this method before the task is completed.</param>
         public void Join(CancellationToken cancellationToken = default(CancellationToken))
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (this.IsCompleted)
+            {
+                this.Task.GetAwaiter().GetResult(); // rethrow any exceptions
+                return;
+            }
+
             // We don't simply call this.CompleteOnCurrentThread because that doesn't take CancellationToken.
             // And it really can't be made to, since it sets state flags indicating the JoinableTask is
             // blocking till completion.
@@ -946,7 +960,7 @@ namespace Microsoft.VisualStudio.Threading
 
         internal void OnQueueCompleted()
         {
-            if (this.IsCompleted)
+            if (this.IsFullyCompleted)
             {
                 // Note this code may execute more than once, as multiple queue completion
                 // notifications come in.
@@ -1029,7 +1043,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 if (work is null)
                 {
-                    if (joinableTask?.IsCompleted != true)
+                    if (joinableTask?.IsFullyCompleted != true)
                     {
                         foreach (IJoinableTaskDependent? item in JoinableTaskDependencyGraph.GetDirectDependentNodes(currentNode))
                         {
@@ -1051,7 +1065,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 lock (this.JoinableTaskContext.SyncContextLock)
                 {
-                    if (this.IsCompleted)
+                    if (this.IsFullyCompleted)
                     {
                         work = null;
                         tryAgainAfter = null;
