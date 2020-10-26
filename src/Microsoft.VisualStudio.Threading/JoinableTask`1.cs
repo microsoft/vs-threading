@@ -49,6 +49,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns>A task that completes after the asynchronous operation completes and the join is reverted, with the result of the operation.</returns>
         public new Task<T> JoinAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (this.IsCompleted)
             {
                 Assumes.True(this.Task.IsCompleted);
