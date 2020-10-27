@@ -8,6 +8,4 @@ Microsoft.VisualStudio.Threading.AwaitExtensions.AggregateExceptionAwaiter.GetRe
 Microsoft.VisualStudio.Threading.AwaitExtensions.AggregateExceptionAwaiter.IsCompleted.get -> bool
 Microsoft.VisualStudio.Threading.AwaitExtensions.AggregateExceptionAwaiter.OnCompleted(System.Action! continuation) -> void
 Microsoft.VisualStudio.Threading.AwaitExtensions.AggregateExceptionAwaiter.UnsafeOnCompleted(System.Action! continuation) -> void
-Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaiter.UnsafeOnCompleted(System.Action! continuation) -> void
-Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaiter<T>.UnsafeOnCompleted(System.Action! continuation) -> void
 static Microsoft.VisualStudio.Threading.AwaitExtensions.ConfigureAwaitForAggregateException(this System.Threading.Tasks.Task! task, bool continueOnCapturedContext = true) -> Microsoft.VisualStudio.Threading.AwaitExtensions.AggregateExceptionAwaitable
