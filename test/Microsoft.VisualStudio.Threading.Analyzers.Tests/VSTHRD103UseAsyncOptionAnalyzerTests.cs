@@ -237,6 +237,68 @@ class Test {
         }
 
         [Fact]
+        public async Task TaskWaitInValueTaskReturningMethodGeneratesWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    ValueTask T() {
+        Task t = null;
+        t.{|#0:Wait|}();
+        return default;
+    }
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    async ValueTask T() {
+        Task t = null;
+        await t;
+    }
+}
+";
+            await Verify.VerifyCodeFixAsync(test, Verify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Wait"), withFix);
+        }
+
+        [Fact]
+        public async Task TaskWait_InIAsyncEnumerableAsyncMethod_ShouldReportWarning()
+        {
+            var test = @"
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+class Test {
+    async IAsyncEnumerable<int> FooAsync()
+    {
+        Task.Delay(TimeSpan.FromSeconds(5)).{|#0:Wait|}();
+        yield return 1;
+    }
+}
+";
+            var withFix = @"
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+class Test {
+    async IAsyncEnumerable<int> FooAsync()
+    {
+        await Task.Delay(TimeSpan.FromSeconds(5));
+        yield return 1;
+    }
+}
+";
+            await Verify.VerifyCodeFixAsync(test, Verify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Wait"), withFix);
+        }
+
+        [Fact]
         public async Task IVsTaskWaitInTaskReturningMethodGeneratesWarning()
         {
             var test = @"
