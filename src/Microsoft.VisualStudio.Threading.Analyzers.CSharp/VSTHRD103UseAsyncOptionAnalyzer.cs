@@ -112,7 +112,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
                         MethodDeclarationSyntax invocationDeclaringMethod = invocationExpressionSyntax.FirstAncestorOrSelf<MethodDeclarationSyntax>();
                         ExpressionSyntax invokedMethodName = CSharpUtils.IsolateMethodName(invocationExpressionSyntax);
-                        foreach (var m in symbols.OfType<IMethodSymbol>())
+                        foreach (IMethodSymbol m in symbols.OfType<IMethodSymbol>())
                         {
                             if (!m.IsObsolete()
                                 && HasSupersetOfParameterTypes(m, methodSymbol)
