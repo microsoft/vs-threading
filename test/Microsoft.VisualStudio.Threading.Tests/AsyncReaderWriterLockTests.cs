@@ -2171,6 +2171,67 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
             newReaderLockHeld.Task);
     }
 
+    [Fact]
+    public async Task NoDeadLockByBlockingReaderLocks()
+    {
+        var firstReadLockHeld = new TaskCompletionSource<object?>();
+        var writerWaitingForLock = new TaskCompletionSource<object?>();
+        var newReaderWaiting = new TaskCompletionSource<object?>();
+        var writeLockReleased = new TaskCompletionSource<object?>();
+
+        var computationTask = Task.Run(async delegate
+        {
+            await writerWaitingForLock.Task;
+
+            this.Logger.WriteLine("About to wait for second read lock.");
+            using (await this.asyncLock.ReadLockAsync())
+            {
+                this.Logger.WriteLine("Second read lock now held.");
+                await Task.Yield();
+                this.Logger.WriteLine("Releasing first read lock.");
+            }
+
+            this.Logger.WriteLine("Second read lock released.");
+        });
+
+        await Task.WhenAll(
+            Task.Run(async delegate
+            {
+                this.Logger.WriteLine("About to wait for first read lock.");
+                using (await this.asyncLock.ReadLockAsync())
+                {
+                    this.Logger.WriteLine("First read lock now held, and waiting a task requiring second read lock.");
+                    await firstReadLockHeld.SetAsync();
+                    await computationTask;
+
+                    this.Logger.WriteLine("Releasing first read lock.");
+                }
+            }),
+            Task.Run(async delegate
+            {
+                await firstReadLockHeld.Task;
+                AsyncReaderWriterLock.Awaiter? writeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
+                Assert.False(writeAwaiter.IsCompleted, "The writer should not be issued a lock while a read lock is held.");
+                this.Logger.WriteLine("Write lock in queue.");
+                writeAwaiter.OnCompleted(delegate
+                {
+                    using (writeAwaiter.GetResult())
+                    {
+                        this.Logger.WriteLine("Write lock issued.");
+                    }
+
+                    writeLockReleased.SetResult(null);
+                });
+
+                await writerWaitingForLock.SetAsync();
+            }),
+            computationTask,
+            firstReadLockHeld.Task,
+            writerWaitingForLock.Task,
+            newReaderWaiting.Task,
+            writeLockReleased.Task);
+    }
+
     /// <summary>Verifies proper behavior when multiple read locks are held, and both read and write locks are in the queue, and a read lock is released.</summary>
     [Fact]
     public async Task ManyReadersBlockWriteAndSubsequentReadRequest()
