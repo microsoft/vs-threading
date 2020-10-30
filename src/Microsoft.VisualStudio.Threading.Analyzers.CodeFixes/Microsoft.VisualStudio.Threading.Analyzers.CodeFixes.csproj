@@ -4,6 +4,7 @@
     <RootNamespace>Microsoft.VisualStudio.Threading.Analyzers</RootNamespace>
 
     <Description>Static code analyzer to detect common mistakes or potential issues regarding threading and async coding.</Description>
+    <DevelopmentDependency>true</DevelopmentDependency>
     <PackageId>Microsoft.VisualStudio.Threading.Analyzers</PackageId>
     <PackageTags>analyzers visualstudio vssdk sdk threading</PackageTags>
     <PackageReleaseNotes>In the v16.0 release, analyzers require at least C# 7.3 (Visual Studio 2017 Update 7).</PackageReleaseNotes>
