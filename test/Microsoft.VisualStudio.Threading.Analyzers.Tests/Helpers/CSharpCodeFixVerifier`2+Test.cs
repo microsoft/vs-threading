@@ -31,7 +31,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                     Project project = solution.GetProject(projectId)!;
 
                     var parseOptions = (CSharpParseOptions)project.ParseOptions!;
-                    project = project.WithParseOptions(parseOptions.WithLanguageVersion(LanguageVersion.CSharp7_1));
+                    project = project.WithParseOptions(parseOptions.WithLanguageVersion(LanguageVersion.CSharp8));
 
                     if (this.HasEntryPoint)
                     {
