@@ -12,6 +12,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
     using Microsoft.CodeAnalysis.Diagnostics;
+    using Microsoft.CodeAnalysis.Operations;
     using Microsoft.CodeAnalysis.Text;
 
     /// <summary>
@@ -84,6 +85,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             DescriptorSync,
             DescriptorAsync);
 
+        private readonly LanguageUtils languageUtils = CSharpUtils.Instance;
+
         private enum ThreadingContext
         {
             /// <summary>
@@ -142,9 +145,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeIsPattern), SyntaxKind.IsPatternExpression);
                 });
 
-                compilationStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => AddToCallerCalleeMap(c, callerToCalleeMap)), SyntaxKind.InvocationExpression);
-                compilationStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => AddToCallerCalleeMap(c, callerToCalleeMap)), SyntaxKind.SimpleMemberAccessExpression);
-                compilationStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => AddToCallerCalleeMap(c, callerToCalleeMap)), SyntaxKind.IdentifierName);
+                compilationStartContext.RegisterOperationAction(Utils.DebuggableWrapper(c => this.AddToCallerCalleeMap(c, callerToCalleeMap)), OperationKind.Invocation);
+                compilationStartContext.RegisterOperationAction(Utils.DebuggableWrapper(c => this.AddToCallerCalleeMap(c, callerToCalleeMap)), OperationKind.PropertyReference);
 
                 compilationStartContext.RegisterCompilationEndAction(compilationEndContext =>
                 {
@@ -201,55 +203,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return result;
         }
 
-        private static void AddToCallerCalleeMap(SyntaxNodeAnalysisContext context, Dictionary<IMethodSymbol, List<CallInfo>> callerToCalleeMap)
-        {
-            if (CSharpUtils.IsWithinNameOf(context.Node))
-            {
-                return;
-            }
-
-            IMethodSymbol? GetPropertyAccessor(IPropertySymbol? propertySymbol)
-            {
-                if (propertySymbol is object)
-                {
-                    return CSharpUtils.IsOnLeftHandOfAssignment(context.Node)
-                        ? propertySymbol.SetMethod
-                        : propertySymbol.GetMethod;
-                }
-
-                return null;
-            }
-
-            ISymbol? targetMethod = null;
-            SyntaxNode locationToBlame = context.Node;
-            switch (context.Node)
-            {
-                case InvocationExpressionSyntax invocationExpressionSyntax:
-                    targetMethod = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax.Expression, context.CancellationToken).Symbol;
-                    locationToBlame = invocationExpressionSyntax.Expression;
-                    break;
-                case MemberAccessExpressionSyntax memberAccessExpressionSyntax:
-                    targetMethod = GetPropertyAccessor(context.SemanticModel.GetSymbolInfo(memberAccessExpressionSyntax.Name, context.CancellationToken).Symbol as IPropertySymbol);
-                    break;
-                case IdentifierNameSyntax identifierNameSyntax:
-                    targetMethod = GetPropertyAccessor(context.SemanticModel.GetSymbolInfo(identifierNameSyntax, context.CancellationToken).Symbol as IPropertySymbol);
-                    break;
-            }
-
-            if (context.ContainingSymbol is IMethodSymbol caller && targetMethod is IMethodSymbol callee)
-            {
-                lock (callerToCalleeMap)
-                {
-                    if (!callerToCalleeMap.TryGetValue(caller, out List<CallInfo> callees))
-                    {
-                        callerToCalleeMap[caller] = callees = new List<CallInfo>();
-                    }
-
-                    callees.Add(new CallInfo(methodSymbol: callee, invocationSyntax: locationToBlame));
-                }
-            }
-        }
-
         private static Dictionary<IMethodSymbol, List<CallInfo>> CreateCalleeToCallerMap(Dictionary<IMethodSymbol, List<CallInfo>> callerToCalleeMap)
         {
             var result = new Dictionary<IMethodSymbol, List<CallInfo>>();
@@ -269,6 +222,52 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
 
             return result;
+        }
+
+        private void AddToCallerCalleeMap(OperationAnalysisContext context, Dictionary<IMethodSymbol, List<CallInfo>> callerToCalleeMap)
+        {
+            if (CSharpUtils.IsWithinNameOf(context.Operation.Syntax))
+            {
+                return;
+            }
+
+            IMethodSymbol? GetPropertyAccessor(IPropertySymbol? propertySymbol)
+            {
+                if (propertySymbol is object)
+                {
+                    return CSharpUtils.IsOnLeftHandOfAssignment(context.Operation.Syntax)
+                        ? propertySymbol.SetMethod
+                        : propertySymbol.GetMethod;
+                }
+
+                return null;
+            }
+
+            ISymbol? targetMethod = null;
+            SyntaxNode locationToBlame = context.Operation.Syntax;
+            switch (context.Operation)
+            {
+                case IInvocationOperation invocationOperation:
+                    targetMethod = invocationOperation.TargetMethod;
+                    locationToBlame = this.languageUtils.IsolateMethodName(invocationOperation);
+                    break;
+                case IPropertyReferenceOperation propertyReference:
+                    targetMethod = GetPropertyAccessor(propertyReference.Property);
+                    break;
+            }
+
+            if (context.ContainingSymbol is IMethodSymbol caller && targetMethod is IMethodSymbol callee)
+            {
+                lock (callerToCalleeMap)
+                {
+                    if (!callerToCalleeMap.TryGetValue(caller, out List<CallInfo> callees))
+                    {
+                        callerToCalleeMap[caller] = callees = new List<CallInfo>();
+                    }
+
+                    callees.Add(new CallInfo(methodSymbol: callee, invocationSyntax: locationToBlame));
+                }
+            }
         }
 
         private readonly struct CallInfo
