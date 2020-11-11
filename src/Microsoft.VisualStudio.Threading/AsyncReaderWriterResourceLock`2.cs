@@ -48,6 +48,21 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="AsyncReaderWriterResourceLock{TMoniker, TResource}"/> class.
+        /// </summary>
+        /// <param name="joinableTaskContext">
+        /// A JoinableTaskContext to help resolve dead locks caused by interdependency between top read lock tasks when there is a pending write lock blocking one of them.
+        /// </param>
+        /// <param name="captureDiagnostics">
+        /// <c>true</c> to spend additional resources capturing diagnostic details that can be used
+        /// to analyze deadlocks or other issues.</param>
+        protected AsyncReaderWriterResourceLock(JoinableTaskContext? joinableTaskContext, bool captureDiagnostics)
+            : base(joinableTaskContext, captureDiagnostics)
+        {
+            this.helper = new Helper(this);
+        }
+
+        /// <summary>
         /// Flags that modify default lock behavior.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1726:UsePreferredTerms", MessageId = "Flags")]

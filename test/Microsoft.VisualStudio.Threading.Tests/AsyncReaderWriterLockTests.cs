@@ -2174,17 +2174,22 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
     [Fact]
     public async Task NoDeadLockByBlockingReaderLocks()
     {
+        var taskContext = new JoinableTaskContext();
+        var taskCollection = new JoinableTaskCollection(taskContext);
+        JoinableTaskFactory? taskFactory = taskContext.CreateFactory(taskCollection);
+
+        var lockService = new ReaderWriterLockWithFastDeadLockCheck(taskContext);
+
         var firstReadLockHeld = new TaskCompletionSource<object?>();
         var writerWaitingForLock = new TaskCompletionSource<object?>();
-        var newReaderWaiting = new TaskCompletionSource<object?>();
         var writeLockReleased = new TaskCompletionSource<object?>();
 
-        var computationTask = Task.Run(async delegate
+        JoinableTask computationTask = taskFactory.RunAsync(async delegate
         {
             await writerWaitingForLock.Task;
 
             this.Logger.WriteLine("About to wait for second read lock.");
-            using (await this.asyncLock.ReadLockAsync())
+            using (await lockService.ReadLockAsync())
             {
                 this.Logger.WriteLine("Second read lock now held.");
                 await Task.Yield();
@@ -2195,22 +2200,25 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
         });
 
         await Task.WhenAll(
-            Task.Run(async delegate
+            Task.Run(delegate
             {
-                this.Logger.WriteLine("About to wait for first read lock.");
-                using (await this.asyncLock.ReadLockAsync())
+                return taskFactory.RunAsync(async delegate
                 {
-                    this.Logger.WriteLine("First read lock now held, and waiting a task requiring second read lock.");
-                    await firstReadLockHeld.SetAsync();
-                    await computationTask;
+                    this.Logger.WriteLine("About to wait for first read lock.");
+                    using (await lockService.ReadLockAsync())
+                    {
+                        this.Logger.WriteLine("First read lock now held, and waiting a task requiring second read lock.");
+                        await firstReadLockHeld.SetAsync();
+                        await computationTask;
 
-                    this.Logger.WriteLine("Releasing first read lock.");
-                }
+                        this.Logger.WriteLine("Releasing first read lock.");
+                    }
+                });
             }),
             Task.Run(async delegate
             {
                 await firstReadLockHeld.Task;
-                AsyncReaderWriterLock.Awaiter? writeAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
+                AsyncReaderWriterLock.Awaiter? writeAwaiter = lockService.WriteLockAsync().GetAwaiter();
                 Assert.False(writeAwaiter.IsCompleted, "The writer should not be issued a lock while a read lock is held.");
                 this.Logger.WriteLine("Write lock in queue.");
                 writeAwaiter.OnCompleted(delegate
@@ -2225,10 +2233,9 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
 
                 await writerWaitingForLock.SetAsync();
             }),
-            computationTask,
+            computationTask.Task,
             firstReadLockHeld.Task,
             writerWaitingForLock.Task,
-            newReaderWaiting.Task,
             writeLockReleased.Task);
     }
 
@@ -5025,6 +5032,16 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
             {
             }
         }
+    }
+
+    private class ReaderWriterLockWithFastDeadLockCheck : AsyncReaderWriterLock
+    {
+        public ReaderWriterLockWithFastDeadLockCheck(JoinableTaskContext joinableTaskContext)
+            : base(joinableTaskContext)
+        {
+        }
+
+        protected override int DeadLockCheckTimeOutInMilliseconds => 50;
     }
 
     private class AsyncReaderWriterLockWithSpecialScheduler : AsyncReaderWriterLock
