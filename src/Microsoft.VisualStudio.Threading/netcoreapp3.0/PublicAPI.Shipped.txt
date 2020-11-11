@@ -442,3 +442,13 @@ override Microsoft.VisualStudio.Threading.NonConcurrentSynchronizationContext.Po
 override Microsoft.VisualStudio.Threading.NonConcurrentSynchronizationContext.Send(System.Threading.SendOrPostCallback! d, object? state) -> void
 static Microsoft.VisualStudio.Threading.TplExtensions.Forget(this System.Threading.Tasks.ValueTask task) -> void
 static Microsoft.VisualStudio.Threading.TplExtensions.Forget<T>(this System.Threading.Tasks.ValueTask<T> task) -> void
+Microsoft.VisualStudio.Threading.AwaitExtensions.AggregateExceptionAwaitable
+Microsoft.VisualStudio.Threading.AwaitExtensions.AggregateExceptionAwaitable.AggregateExceptionAwaitable(System.Threading.Tasks.Task! task, bool continueOnCapturedContext) -> void
+Microsoft.VisualStudio.Threading.AwaitExtensions.AggregateExceptionAwaitable.GetAwaiter() -> Microsoft.VisualStudio.Threading.AwaitExtensions.AggregateExceptionAwaiter
+Microsoft.VisualStudio.Threading.AwaitExtensions.AggregateExceptionAwaiter
+Microsoft.VisualStudio.Threading.AwaitExtensions.AggregateExceptionAwaiter.AggregateExceptionAwaiter(System.Threading.Tasks.Task! task, bool continueOnCapturedContext) -> void
+Microsoft.VisualStudio.Threading.AwaitExtensions.AggregateExceptionAwaiter.GetResult() -> void
+Microsoft.VisualStudio.Threading.AwaitExtensions.AggregateExceptionAwaiter.IsCompleted.get -> bool
+Microsoft.VisualStudio.Threading.AwaitExtensions.AggregateExceptionAwaiter.OnCompleted(System.Action! continuation) -> void
+Microsoft.VisualStudio.Threading.AwaitExtensions.AggregateExceptionAwaiter.UnsafeOnCompleted(System.Action! continuation) -> void
+static Microsoft.VisualStudio.Threading.AwaitExtensions.ConfigureAwaitForAggregateException(this System.Threading.Tasks.Task! task, bool continueOnCapturedContext = true) -> Microsoft.VisualStudio.Threading.AwaitExtensions.AggregateExceptionAwaitable

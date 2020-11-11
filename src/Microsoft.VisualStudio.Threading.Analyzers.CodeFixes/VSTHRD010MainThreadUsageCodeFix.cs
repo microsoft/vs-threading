@@ -132,7 +132,10 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 var initialBlockSyntax = container.BlockOrExpression as BlockSyntax;
                 if (initialBlockSyntax is null)
                 {
-                    initialBlockSyntax = SyntaxFactory.Block(SyntaxFactory.ReturnStatement((ExpressionSyntax)container.BlockOrExpression))
+                    SyntaxToken openBrace = SyntaxFactory.Token(SyntaxFactory.TriviaList(), SyntaxKind.OpenBraceToken, SyntaxFactory.TriviaList(SyntaxFactory.EndOfLine("\r\n")));
+                    SyntaxToken closeBrace = SyntaxFactory.Token(SyntaxKind.CloseBraceToken);
+                    SyntaxList<StatementSyntax> statementList = SyntaxFactory.List<StatementSyntax>(new[] { SyntaxFactory.ReturnStatement((ExpressionSyntax)container.BlockOrExpression) });
+                    initialBlockSyntax = SyntaxFactory.Block(openBrace, statementList, closeBrace)
                         .WithAdditionalAnnotations(Formatter.Annotation);
                 }
 
