@@ -770,7 +770,7 @@ namespace Microsoft.VisualStudio.Threading
             return false;
         }
 
-        private static void PendingWriterLockDeadLockWatchingCallback(object state)
+        private static void PendingWriterLockDeadLockWatchingCallback(object? state)
         {
             var readerWriterLock = state as AsyncReaderWriterLock;
             if (readerWriterLock != null)
