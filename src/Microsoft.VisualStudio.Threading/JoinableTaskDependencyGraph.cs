@@ -168,10 +168,10 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Get all tasks inside the cadidate sets tasks, which are depended by one or more task in the source tasks list.
+        /// Get all tasks inside the candidate sets tasks, which are depended by one or more task in the source tasks list.
         /// </summary>
         /// <param name="sourceTasks">A collection of JoinableTasks represents source tasks.</param>
-        /// <param name="candidateTasks">A collection of JoinableTasks which represents cadidates.</param>
+        /// <param name="candidateTasks">A collection of JoinableTasks which represents candidates.</param>
         /// <returns>A set of tasks matching the condition.</returns>
         internal static HashSet<JoinableTask> GetDependentTasksFromCandidates(IEnumerable<JoinableTask> sourceTasks, IEnumerable<JoinableTask> candidateTasks)
         {
@@ -188,7 +188,7 @@ namespace Microsoft.VisualStudio.Threading
             var visited = new HashSet<IJoinableTaskDependent>();
 
             var queue = new Queue<IJoinableTaskDependent>();
-            foreach (JoinableTask? task in sourceTasks)
+            foreach (JoinableTask task in sourceTasks)
             {
                 if (task != null && visited.Add(task))
                 {

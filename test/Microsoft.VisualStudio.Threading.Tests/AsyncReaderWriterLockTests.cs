@@ -5041,7 +5041,7 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
         {
         }
 
-        protected override int DeadLockCheckTimeOutInMilliseconds => 50;
+        protected override TimeSpan DeadlockCheckTimeOut { get; } = new TimeSpan(days: 0, hours: 0, minutes: 0, seconds: 0, milliseconds: 50);
     }
 
     private class AsyncReaderWriterLockWithSpecialScheduler : AsyncReaderWriterLock
