@@ -2348,14 +2348,14 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
             {
                 return taskFactory.RunAsync(async delegate
                 {
-                    this.Logger.WriteLine("About to wait for upgradeable read lock.");
-                    using (await lockService.UpgradeableReadLockAsync())
+                    this.Logger.WriteLine("About to wait for first read lock.");
+                    using (await lockService.ReadLockAsync())
                     {
-                        this.Logger.WriteLine("upgradeable read lock now held, and waiting a task requiring related read lock.");
+                        this.Logger.WriteLine("first read lock now held, and waiting a task requiring related read lock.");
                         await firstLockHeld.SetAsync();
                         await computationTasks[computationTasks.Length - 1];
 
-                        this.Logger.WriteLine("Releasing upgradeable read lock.");
+                        this.Logger.WriteLine("Releasing first read lock.");
                     }
                 });
             }),
@@ -2370,9 +2370,8 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
                     using (writeAwaiter.GetResult())
                     {
                         this.Logger.WriteLine("Write lock issued.");
+                        Assert.False(unrelatedTask.IsCompleted, "Unrelated reader lock should not be issued.");
                     }
-
-                    Assert.False(unrelatedTask.IsCompleted, "Unrelated reader lock should not be issued.");
 
                     writeLockReleased.SetResult(null);
                 });
