@@ -2172,11 +2172,11 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
     }
 
     [Fact]
-    public async Task NoDeadLockByBlockingReaderLocks()
+    public async Task NoDeadlockByBlockingReaderLocks()
     {
         var taskContext = new JoinableTaskContext();
         var taskCollection = new JoinableTaskCollection(taskContext);
-        JoinableTaskFactory? taskFactory = taskContext.CreateFactory(taskCollection);
+        JoinableTaskFactory taskFactory = taskContext.CreateFactory(taskCollection);
 
         var lockService = new ReaderWriterLockWithFastDeadLockCheck(taskContext);
 
@@ -2193,7 +2193,7 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
             {
                 this.Logger.WriteLine("Second read lock now held.");
                 await Task.Yield();
-                this.Logger.WriteLine("Releasing first read lock.");
+                this.Logger.WriteLine("Releasing second read lock.");
             }
 
             this.Logger.WriteLine("Second read lock released.");
@@ -2237,6 +2237,177 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
             firstReadLockHeld.Task,
             writerWaitingForLock.Task,
             writeLockReleased.Task);
+    }
+
+    [Fact]
+    public async Task NoDeadlockByBlockingUpgradeableReaderLocks()
+    {
+        var taskContext = new JoinableTaskContext();
+        var taskCollection = new JoinableTaskCollection(taskContext);
+        JoinableTaskFactory taskFactory = taskContext.CreateFactory(taskCollection);
+
+        var lockService = new ReaderWriterLockWithFastDeadLockCheck(taskContext);
+
+        var firstReadLockHeld = new TaskCompletionSource<object?>();
+        var writerWaitingForLock = new TaskCompletionSource<object?>();
+        var writeLockReleased = new TaskCompletionSource<object?>();
+
+        JoinableTask computationTask = taskFactory.RunAsync(async delegate
+        {
+            await writerWaitingForLock.Task;
+
+            this.Logger.WriteLine("About to wait for second read lock.");
+            using (await lockService.ReadLockAsync())
+            {
+                this.Logger.WriteLine("Second read lock now held.");
+                await Task.Yield();
+                this.Logger.WriteLine("Releasing second read lock.");
+            }
+
+            this.Logger.WriteLine("Second read lock released.");
+        });
+
+        await Task.WhenAll(
+            Task.Run(delegate
+            {
+                return taskFactory.RunAsync(async delegate
+                {
+                    this.Logger.WriteLine("About to wait for first read lock.");
+                    using (await lockService.UpgradeableReadLockAsync())
+                    {
+                        this.Logger.WriteLine("First upgradable read lock now held, and waiting a task requiring second read lock.");
+                        await firstReadLockHeld.SetAsync();
+                        await computationTask;
+
+                        this.Logger.WriteLine("Releasing upgradable read lock.");
+                    }
+                });
+            }),
+            Task.Run(async delegate
+            {
+                await firstReadLockHeld.Task;
+                AsyncReaderWriterLock.Awaiter? writeAwaiter = lockService.WriteLockAsync().GetAwaiter();
+                Assert.False(writeAwaiter.IsCompleted, "The writer should not be issued a lock while a read lock is held.");
+                this.Logger.WriteLine("Write lock in queue.");
+                writeAwaiter.OnCompleted(delegate
+                {
+                    using (writeAwaiter.GetResult())
+                    {
+                        this.Logger.WriteLine("Write lock issued.");
+                    }
+
+                    writeLockReleased.SetResult(null);
+                });
+
+                await writerWaitingForLock.SetAsync();
+            }),
+            firstReadLockHeld.Task,
+            writerWaitingForLock.Task,
+            writeLockReleased.Task);
+
+        await computationTask.Task;
+    }
+
+    [Fact]
+    public async Task NoDeadlockByBlockingSequenceReaderLocks()
+    {
+        var taskContext = new JoinableTaskContext();
+        var taskCollection = new JoinableTaskCollection(taskContext);
+        JoinableTaskFactory? taskFactory = taskContext.CreateFactory(taskCollection);
+
+        var lockService = new ReaderWriterLockWithFastDeadLockCheck(taskContext);
+
+        var firstLockHeld = new TaskCompletionSource<object?>();
+        var writerWaitingForLock = new TaskCompletionSource<object?>();
+        var writeLockReleased = new TaskCompletionSource<object?>();
+
+        var computationTasks = new JoinableTask[4];
+
+        for (int i = 0; i < computationTasks.Length; i++)
+        {
+            computationTasks[i] = CreateReaderLockTask(taskFactory, lockService, writerWaitingForLock.Task, i, i > 0 ? computationTasks[i - 1] : null);
+        }
+
+        JoinableTask unrelatedTask = taskFactory.RunAsync(async delegate
+        {
+            await writerWaitingForLock.Task;
+
+            this.Logger.WriteLine("About to wait for unrelated read lock.");
+            using (await lockService.ReadLockAsync())
+            {
+                this.Logger.WriteLine("unrelated read lock now held.");
+                await Task.Yield();
+                this.Logger.WriteLine("Releasing unrelated read lock.");
+            }
+
+            this.Logger.WriteLine("unrelated read lock released.");
+        });
+
+        await Task.WhenAll(
+            Task.Run(delegate
+            {
+                return taskFactory.RunAsync(async delegate
+                {
+                    this.Logger.WriteLine("About to wait for upgradeable read lock.");
+                    using (await lockService.UpgradeableReadLockAsync())
+                    {
+                        this.Logger.WriteLine("upgradeable read lock now held, and waiting a task requiring related read lock.");
+                        await firstLockHeld.SetAsync();
+                        await computationTasks[computationTasks.Length - 1];
+
+                        this.Logger.WriteLine("Releasing upgradeable read lock.");
+                    }
+                });
+            }),
+            Task.Run(async delegate
+            {
+                await firstLockHeld.Task;
+                AsyncReaderWriterLock.Awaiter? writeAwaiter = lockService.WriteLockAsync().GetAwaiter();
+                Assert.False(writeAwaiter.IsCompleted, "The writer should not be issued a lock while a read lock is held.");
+                this.Logger.WriteLine("Write lock in queue.");
+                writeAwaiter.OnCompleted(delegate
+                {
+                    using (writeAwaiter.GetResult())
+                    {
+                        this.Logger.WriteLine("Write lock issued.");
+                    }
+
+                    Assert.False(unrelatedTask.IsCompleted, "Unrelated reader lock should not be issued.");
+
+                    writeLockReleased.SetResult(null);
+                });
+
+                await writerWaitingForLock.SetAsync();
+            }),
+            firstLockHeld.Task,
+            writerWaitingForLock.Task,
+            unrelatedTask.Task,
+            writeLockReleased.Task);
+
+        await Task.WhenAll(computationTasks.Select(t => t.Task));
+
+        JoinableTask CreateReaderLockTask(JoinableTaskFactory taskFactory, AsyncReaderWriterLock lockService, Task initTask, int sequence, JoinableTask? previousTask)
+        {
+            return taskFactory.RunAsync(async delegate
+            {
+                await initTask;
+
+                this.Logger.WriteLine($"About to wait for read lock {sequence}.");
+                using (await lockService.ReadLockAsync())
+                {
+                    this.Logger.WriteLine($"Related read lock {sequence} now held.");
+                    await Task.Yield();
+                    this.Logger.WriteLine($"Releasing related read lock {sequence}.");
+                }
+
+                if (previousTask != null)
+                {
+                    await previousTask;
+                }
+
+                this.Logger.WriteLine($"Read lock {sequence} released.");
+            });
+        }
     }
 
     /// <summary>Verifies proper behavior when multiple read locks are held, and both read and write locks are in the queue, and a read lock is released.</summary>
