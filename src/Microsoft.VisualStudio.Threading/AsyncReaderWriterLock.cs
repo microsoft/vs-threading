@@ -40,7 +40,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// A time delay to check whether pending writer lock and reader locks forms a deadlock.
         /// </summary>
-        private static readonly TimeSpan DefaultDeadlockCheckTimeOut = new TimeSpan(hours: 0, minutes: 0, seconds: 3);
+        private static readonly TimeSpan DefaultDeadlockCheckTimeOut = TimeSpan.FromSeconds(3);
 
         /// <summary>
         /// The default SynchronizationContext to schedule work after issuing a lock.
