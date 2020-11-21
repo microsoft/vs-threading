@@ -8,6 +8,7 @@ namespace Microsoft.VisualStudio.Threading
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
+    using System.Linq;
     using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
@@ -37,6 +38,11 @@ namespace Microsoft.VisualStudio.Threading
     public partial class AsyncReaderWriterLock : IDisposable
     {
         /// <summary>
+        /// A time delay to check whether pending writer lock and reader locks forms a deadlock.
+        /// </summary>
+        private static readonly TimeSpan DefaultDeadlockCheckTimeout = TimeSpan.FromSeconds(3);
+
+        /// <summary>
         /// The default SynchronizationContext to schedule work after issuing a lock.
         /// </summary>
         private static readonly SynchronizationContext DefaultSynchronizationContext = new SynchronizationContext();
@@ -45,6 +51,11 @@ namespace Microsoft.VisualStudio.Threading
         /// The object to acquire a Monitor-style lock on for all field access on this instance.
         /// </summary>
         private readonly object syncObject = new object();
+
+        /// <summary>
+        /// A JoinableTaskContext used to resolve dependencies between read locks to lead into deadlocks when there is a pending write lock.
+        /// </summary>
+        private readonly JoinableTaskContext? joinableTaskContext;
 
         /// <summary>
         /// A CallContext-local reference to the Awaiter that is on the top of the stack (most recently acquired).
@@ -139,10 +150,15 @@ namespace Microsoft.VisualStudio.Threading
         private EventsHelper etw;
 
         /// <summary>
+        /// A timer to recheck potential deadlock caused by pending writer locks.
+        /// </summary>
+        private Timer? pendingWriterLockDeadlockCheckTimer;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="AsyncReaderWriterLock"/> class.
         /// </summary>
         public AsyncReaderWriterLock()
-            : this(captureDiagnostics: false)
+            : this(joinableTaskContext: null, captureDiagnostics: false)
         {
         }
 
@@ -153,8 +169,24 @@ namespace Microsoft.VisualStudio.Threading
         /// <c>true</c> to spend additional resources capturing diagnostic details that can be used
         /// to analyze deadlocks or other issues.</param>
         public AsyncReaderWriterLock(bool captureDiagnostics)
+            : this(joinableTaskContext: null, captureDiagnostics)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AsyncReaderWriterLock"/> class.
+        /// </summary>
+        /// <param name="joinableTaskContext">
+        /// A JoinableTaskContext to help resolve deadlocks caused by interdependency between top read lock tasks when there is a pending write lock blocking one of them.
+        /// </param>
+        /// <param name="captureDiagnostics">
+        /// <c>true</c> to spend additional resources capturing diagnostic details that can be used
+        /// to analyze deadlocks or other issues.</param>
+        public AsyncReaderWriterLock(JoinableTaskContext? joinableTaskContext, bool captureDiagnostics = false)
         {
             this.etw = new EventsHelper(this);
+
+            this.joinableTaskContext = joinableTaskContext;
             this.captureDiagnostics = captureDiagnostics;
         }
 
@@ -340,6 +372,11 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Gets a time delay to check whether pending writer lock and reader locks forms a deadlock.
+        /// </summary>
+        protected virtual TimeSpan DeadlockCheckTimeout => DefaultDeadlockCheckTimeout;
+
+        /// <summary>
         /// Gets a value indicating whether the current thread is allowed to
         /// hold an active lock.
         /// </summary>
@@ -513,6 +550,18 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="disposing"><c>true</c> if <see cref="Dispose()"/> was called; <c>false</c> if the object is being finalized.</param>
         protected virtual void Dispose(bool disposing)
         {
+            if (disposing)
+            {
+                Timer? timerToDispose = null;
+
+                lock (this.syncObject)
+                {
+                    timerToDispose = this.pendingWriterLockDeadlockCheckTimer;
+                    this.pendingWriterLockDeadlockCheckTimer = null;
+                }
+
+                timerToDispose?.Dispose();
+            }
         }
 
         /// <summary>
@@ -723,6 +772,19 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             return false;
+        }
+
+        private static void PendingWriterLockDeadlockWatchingCallback(object? state)
+        {
+            var readerWriterLock = (AsyncReaderWriterLock?)state;
+            Assumes.NotNull(readerWriterLock);
+
+            readerWriterLock.TryInvokeAllDependentReadersIfAppropriate();
+
+            lock (readerWriterLock.syncObject)
+            {
+                readerWriterLock.pendingWriterLockDeadlockCheckTimer?.Change((int)readerWriterLock.DeadlockCheckTimeout.TotalMilliseconds, -1);
+            }
         }
 
         /// <summary>
@@ -1001,9 +1063,14 @@ namespace Microsoft.VisualStudio.Threading
         /// The value is used to determine whether to reject it if <see cref="Complete"/> has already been called and this
         /// is a new top-level request.
         /// </param>
+        /// <param name="skipPendingWriteLockCheck">
+        /// Normally, new reader locks are no longer issued when there is a pending writer lock to allow existing reader lock to complete.
+        /// However, that can lead deadlocks, when tasks with issued lock depending on tasks requiring new read locks to complete.
+        /// When it is true, new reader locks will be issued even when there is a pending writer lock.
+        /// </param>
         /// <returns>A value indicating whether the lock was issued.</returns>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
-        private bool TryIssueLock(Awaiter awaiter, bool previouslyQueued)
+        private bool TryIssueLock(Awaiter awaiter, bool previouslyQueued, bool skipPendingWriteLockCheck = false)
         {
             lock (this.syncObject)
             {
@@ -1030,7 +1097,7 @@ namespace Microsoft.VisualStudio.Threading
                         switch (awaiter.Kind)
                         {
                             case LockKind.Read:
-                                if (this.issuedWriteLocks.Count == 0 && this.waitingWriters.Count == 0)
+                                if (this.issuedWriteLocks.Count == 0 && (skipPendingWriteLockCheck || this.waitingWriters.Count == 0))
                                 {
                                     issued = true;
                                 }
@@ -1221,7 +1288,7 @@ namespace Microsoft.VisualStudio.Threading
         private void IssueAndExecute(Awaiter awaiter)
         {
             EventsHelper.WaitStop(awaiter);
-            Assumes.True(this.TryIssueLock(awaiter, previouslyQueued: true));
+            Assumes.True(this.TryIssueLock(awaiter, previouslyQueued: true, skipPendingWriteLockCheck: true));
             Assumes.True(this.ExecuteOrHandleCancellation(awaiter, stillInQueue: false));
         }
 
@@ -1600,6 +1667,37 @@ namespace Microsoft.VisualStudio.Threading
             return invoked;
         }
 
+        private void TryInvokeAllDependentReadersIfAppropriate()
+        {
+            lock (this.syncObject)
+            {
+                if (this.issuedWriteLocks.Count == 0 && this.waitingWriters.Count > 0 && this.waitingReaders.Count > 0 && (this.issuedReadLocks.Count > 0 || this.issuedUpgradeableReadLocks.Count > 0))
+                {
+                    HashSet<JoinableTask>? dependentTasks = JoinableTaskDependencyGraph.GetDependentTasksFromCandidates(
+                        this.issuedReadLocks.Concat(this.issuedUpgradeableReadLocks).Where(w => w.AmbientJoinableTask != null).Select(w => w.AmbientJoinableTask!),
+                        this.waitingReaders.Where(w => w.AmbientJoinableTask != null).Select(w => w.AmbientJoinableTask!));
+
+                    if (dependentTasks.Count > 0)
+                    {
+                        int pendingCount = this.waitingReaders.Count;
+                        while (pendingCount-- != 0)
+                        {
+                            Awaiter pendingReader = this.waitingReaders.Dequeue();
+                            JoinableTask? readerContext = pendingReader.AmbientJoinableTask;
+                            if (readerContext != null && dependentTasks.Contains(readerContext))
+                            {
+                                this.IssueAndExecute(pendingReader);
+                            }
+                            else
+                            {
+                                this.waitingReaders.Enqueue(pendingReader);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Issues a lock to the next queued upgradeable reader, if no upgradeable read or write locks are currently issued.
         /// </summary>
@@ -1641,6 +1739,11 @@ namespace Microsoft.VisualStudio.Threading
                 if (this.waitingWriters.Count > 0)
                 {
                     Awaiter? pendingWriter = this.waitingWriters.Dequeue();
+                    if (this.waitingWriters.Count == 0)
+                    {
+                        this.StopPendingWriterLockDeadlockWatching();
+                    }
+
                     Assumes.True(pendingWriter.Kind == LockKind.Write);
                     this.IssueAndExecute(pendingWriter);
                     return true;
@@ -1718,7 +1821,32 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     Queue<Awaiter>? queue = this.GetLockQueue(awaiter.Kind);
                     queue.Enqueue(awaiter);
+
+                    if (awaiter.Kind == LockKind.Write)
+                    {
+                        this.StartPendingWriterDeadlockTimerIfNecessary();
+                    }
                 }
+            }
+        }
+
+        private void StartPendingWriterDeadlockTimerIfNecessary()
+        {
+            if (this.joinableTaskContext != null &&
+                this.pendingWriterLockDeadlockCheckTimer == null &&
+                this.waitingWriters.Count > 0 &&
+                (this.issuedReadLocks.Count > 0 || this.issuedUpgradeableReadLocks.Count > 0))
+            {
+                this.pendingWriterLockDeadlockCheckTimer = new Timer(PendingWriterLockDeadlockWatchingCallback, this, (int)this.DeadlockCheckTimeout.TotalMilliseconds, -1);
+            }
+        }
+
+        private void StopPendingWriterLockDeadlockWatching()
+        {
+            if (this.pendingWriterLockDeadlockCheckTimer != null)
+            {
+                this.pendingWriterLockDeadlockCheckTimer.Dispose();
+                this.pendingWriterLockDeadlockCheckTimer = null;
             }
         }
 
@@ -2180,6 +2308,7 @@ namespace Microsoft.VisualStudio.Threading
                 this.cancellationToken = cancellationToken;
                 this.nestingLock = lck.GetFirstActiveSelfOrAncestor(lck.topAwaiter.Value);
                 this.requestingStackTrace = lck.captureDiagnostics ? new StackTrace(2, true) : null;
+                this.AmbientJoinableTask = (this.nestingLock == null && this.kind != LockKind.Write) ? this.lck.joinableTaskContext?.AmbientTask : null;
             }
 
             /// <summary>
@@ -2283,6 +2412,11 @@ namespace Microsoft.VisualStudio.Threading
                     return this.releaseAsyncTask is object && this.releaseAsyncTask.Status == TaskStatus.RanToCompletion;
                 }
             }
+
+            /// <summary>
+            /// Gets the ambient JoinableTask when the lock is requested. This is used to resolve deadlock caused by issued read lock depending on new read lock requests blocked by pending write locks.
+            /// </summary>
+            internal JoinableTask? AmbientJoinableTask { get; }
 
             /// <summary>
             /// Gets a value indicating whether the lock is active.

@@ -168,6 +168,58 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Get all tasks inside the candidate sets tasks, which are depended by one or more task in the source tasks list.
+        /// </summary>
+        /// <param name="sourceTasks">A collection of JoinableTasks represents source tasks.</param>
+        /// <param name="candidateTasks">A collection of JoinableTasks which represents candidates.</param>
+        /// <returns>A set of tasks matching the condition.</returns>
+        internal static HashSet<JoinableTask> GetDependentTasksFromCandidates(IEnumerable<JoinableTask> sourceTasks, IEnumerable<JoinableTask> candidateTasks)
+        {
+            Requires.NotNull(sourceTasks, nameof(sourceTasks));
+            Requires.NotNull(candidateTasks, nameof(candidateTasks));
+
+            var candidates = new HashSet<JoinableTask>(candidateTasks);
+            if (candidates.Count == 0)
+            {
+                return candidates;
+            }
+
+            var results = new HashSet<JoinableTask>();
+            var visited = new HashSet<IJoinableTaskDependent>();
+
+            var queue = new Queue<IJoinableTaskDependent>();
+            foreach (JoinableTask task in sourceTasks)
+            {
+                if (task != null && visited.Add(task))
+                {
+                    queue.Enqueue(task);
+                }
+            }
+
+            while (queue.Count > 0)
+            {
+                IJoinableTaskDependent startDepenentNode = queue.Dequeue();
+                if (candidates.Contains(startDepenentNode))
+                {
+                    results.Add((JoinableTask)startDepenentNode);
+                }
+
+                lock (startDepenentNode.JoinableTaskContext.SyncContextLock)
+                {
+                    foreach (IJoinableTaskDependent? dependentItem in JoinableTaskDependencyGraph.GetDirectDependentNodes(startDepenentNode))
+                    {
+                        if (visited.Add(dependentItem))
+                        {
+                            queue.Enqueue(dependentItem);
+                        }
+                    }
+                }
+            }
+
+            return results;
+        }
+
+        /// <summary>
         /// Preserve data for the JoinableTask dependency tree. It is holded inside either a <see cref="JoinableTask"/> or a <see cref="JoinableTaskCollection"/>.
         /// Do not call methods/properties directly anywhere out of <see cref="JoinableTaskDependencyGraph"/>.
         /// </summary>
