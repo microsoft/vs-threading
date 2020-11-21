@@ -40,7 +40,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// A time delay to check whether pending writer lock and reader locks forms a deadlock.
         /// </summary>
-        private static readonly TimeSpan DefaultDeadlockCheckTimeOut = TimeSpan.FromSeconds(3);
+        private static readonly TimeSpan DefaultDeadlockCheckTimeout = TimeSpan.FromSeconds(3);
 
         /// <summary>
         /// The default SynchronizationContext to schedule work after issuing a lock.
@@ -374,7 +374,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets a time delay to check whether pending writer lock and reader locks forms a deadlock.
         /// </summary>
-        protected virtual TimeSpan DeadlockCheckTimeOut => DefaultDeadlockCheckTimeOut;
+        protected virtual TimeSpan DeadlockCheckTimeout => DefaultDeadlockCheckTimeout;
 
         /// <summary>
         /// Gets a value indicating whether the current thread is allowed to
@@ -783,7 +783,7 @@ namespace Microsoft.VisualStudio.Threading
 
             lock (readerWriterLock.syncObject)
             {
-                readerWriterLock.pendingWriterLockDeadlockCheckTimer?.Change((int)readerWriterLock.DeadlockCheckTimeOut.TotalMilliseconds, -1);
+                readerWriterLock.pendingWriterLockDeadlockCheckTimer?.Change((int)readerWriterLock.DeadlockCheckTimeout.TotalMilliseconds, -1);
             }
         }
 
@@ -1837,7 +1837,7 @@ namespace Microsoft.VisualStudio.Threading
                 this.waitingWriters.Count > 0 &&
                 (this.issuedReadLocks.Count > 0 || this.issuedUpgradeableReadLocks.Count > 0))
             {
-                this.pendingWriterLockDeadlockCheckTimer = new Timer(PendingWriterLockDeadlockWatchingCallback, this, (int)this.DeadlockCheckTimeOut.TotalMilliseconds, -1);
+                this.pendingWriterLockDeadlockCheckTimer = new Timer(PendingWriterLockDeadlockWatchingCallback, this, (int)this.DeadlockCheckTimeout.TotalMilliseconds, -1);
             }
         }
 

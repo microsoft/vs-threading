@@ -2178,7 +2178,7 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
         var taskCollection = new JoinableTaskCollection(taskContext);
         JoinableTaskFactory taskFactory = taskContext.CreateFactory(taskCollection);
 
-        var lockService = new ReaderWriterLockWithFastDeadLockCheck(taskContext);
+        var lockService = new ReaderWriterLockWithFastDeadlockCheck(taskContext);
 
         var firstReadLockHeld = new TaskCompletionSource<object?>();
         var writerWaitingForLock = new TaskCompletionSource<object?>();
@@ -2246,7 +2246,7 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
         var taskCollection = new JoinableTaskCollection(taskContext);
         JoinableTaskFactory taskFactory = taskContext.CreateFactory(taskCollection);
 
-        var lockService = new ReaderWriterLockWithFastDeadLockCheck(taskContext);
+        var lockService = new ReaderWriterLockWithFastDeadlockCheck(taskContext);
 
         var firstReadLockHeld = new TaskCompletionSource<object?>();
         var writerWaitingForLock = new TaskCompletionSource<object?>();
@@ -2315,7 +2315,7 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
         var taskCollection = new JoinableTaskCollection(taskContext);
         JoinableTaskFactory? taskFactory = taskContext.CreateFactory(taskCollection);
 
-        var lockService = new ReaderWriterLockWithFastDeadLockCheck(taskContext);
+        var lockService = new ReaderWriterLockWithFastDeadlockCheck(taskContext);
 
         var firstLockHeld = new TaskCompletionSource<object?>();
         var writerWaitingForLock = new TaskCompletionSource<object?>();
@@ -5204,14 +5204,14 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
         }
     }
 
-    private class ReaderWriterLockWithFastDeadLockCheck : AsyncReaderWriterLock
+    private class ReaderWriterLockWithFastDeadlockCheck : AsyncReaderWriterLock
     {
-        public ReaderWriterLockWithFastDeadLockCheck(JoinableTaskContext joinableTaskContext)
+        public ReaderWriterLockWithFastDeadlockCheck(JoinableTaskContext joinableTaskContext)
             : base(joinableTaskContext)
         {
         }
 
-        protected override TimeSpan DeadlockCheckTimeOut { get; } = TimeSpan.FromMilliseconds(50);
+        protected override TimeSpan DeadlockCheckTimeout { get; } = TimeSpan.FromMilliseconds(50);
     }
 
     private class AsyncReaderWriterLockWithSpecialScheduler : AsyncReaderWriterLock
