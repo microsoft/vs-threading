@@ -27,7 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="2.0.161401" />
-    <PackageReference Include="Microsoft.Diagnostics.Runtime.Utilities" Version="2.0.0-rc.20303.3" />
+    <PackageReference Include="Microsoft.Diagnostics.Runtime.Utilities" Version="2.0.206203" />
     <PackageReference Include="DllExport" Version="1.5.2" />
     <PackageReference Include="MicroBuild.VisualStudio" Version="$(MicroBuildVersion)" PrivateAssets="all" />
   </ItemGroup>
