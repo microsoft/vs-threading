@@ -16,7 +16,7 @@
     <ProjectReference Include="..\..\src\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="coverlet.msbuild" Version="2.9.0">
+    <PackageReference Include="coverlet.msbuild" Version="3.0.2">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
@@ -27,7 +27,7 @@
     <PackageReference Include="Microsoft.CodeAnalysis" Version="3.1.0" />
     <PackageReference Include="Microsoft.VisualStudio.OLE.Interop" Version="16.8.30523.219" />
     <PackageReference Include="Microsoft.VisualStudio.Shell.14.0" Version="14.3.25407" IncludeAssets="runtime" />
-    <PackageReference Include="Microsoft.VisualStudio.Shell.Interop.11.0" Version="16.8.30523.219" IncludeAssets="runtime" />
+    <PackageReference Include="Microsoft.VisualStudio.Shell.Interop.11.0" Version="16.9.30925.14" IncludeAssets="runtime" />
     <PackageReference Include="Microsoft.VisualStudio.Shell.Interop.14.0.DesignTime" Version="16.8.30523.219" IncludeAssets="runtime" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
