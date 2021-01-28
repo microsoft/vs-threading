@@ -28,8 +28,8 @@ void Foo() {
 ```
 
 In the above example, we obtain a `JoinableTaskFactory` instance from the `ThreadHelper.JoinableTaskFactory` static property
-as it exists within Visual Studio itself. Other applications should create and expose their own `JoinableTaskContext` and/or `JoinableTaskFactory` for use in code that run in these applications. 
-See our doc on [consuming `JoinableTaskFactory` from a library](https://github.com/microsoft/vs-threading/blob/master/doc/library_with_jtf.md) for more information.
+as it exists within Visual Studio itself. Other applications should create and expose their own `JoinableTaskContext` and/or `JoinableTaskFactory` for use in code that run in these applications.
+See our doc on [consuming `JoinableTaskFactory` from a library](https://github.com/microsoft/vs-threading/blob/main/doc/library_with_jtf.md) for more information.
 
 ## Configuration
 

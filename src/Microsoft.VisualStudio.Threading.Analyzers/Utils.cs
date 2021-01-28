@@ -478,7 +478,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static string GetHelpLink(string analyzerId)
         {
-            return $"https://github.com/Microsoft/vs-threading/blob/master/doc/analyzers/{analyzerId}.md";
+            return $"https://github.com/Microsoft/vs-threading/blob/main/doc/analyzers/{analyzerId}.md";
         }
 
         /// <summary>

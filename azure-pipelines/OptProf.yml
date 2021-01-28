@@ -6,7 +6,7 @@ schedules:
     branches:
       include:
       - 'v1*'
-      - master
+      - main
     always: true # we must keep data fresh since optimizationdata drops are purged after 30 days
 
 # Avoid errant CI builds: https://developercommunity.visualstudio.com/content/problem/1154409/azure-pipeline-is-triggering-due-to-events-that-ne.html
