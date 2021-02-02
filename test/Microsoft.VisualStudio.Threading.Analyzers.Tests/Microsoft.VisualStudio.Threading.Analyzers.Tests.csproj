@@ -28,7 +28,7 @@
     <PackageReference Include="Microsoft.VisualStudio.OLE.Interop" Version="16.9.30929.151" />
     <PackageReference Include="Microsoft.VisualStudio.Shell.14.0" Version="14.3.25407" IncludeAssets="runtime" />
     <PackageReference Include="Microsoft.VisualStudio.Shell.Interop.11.0" Version="16.9.30927.25" IncludeAssets="runtime" />
-    <PackageReference Include="Microsoft.VisualStudio.Shell.Interop.14.0.DesignTime" Version="16.9.30927.25" IncludeAssets="runtime" />
+    <PackageReference Include="Microsoft.VisualStudio.Shell.Interop.14.0.DesignTime" Version="16.9.31001.184" IncludeAssets="runtime" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
       <PrivateAssets>all</PrivateAssets>
