@@ -3814,7 +3814,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
                 try
                 {
                     await joinableTaskStarted.WaitAsync();
-                    observedJoinableTask = this.joinableCollection.Single();
+                    observedJoinableTask = this.joinableCollection!.Single();
                     observedWrappedTask = observedJoinableTask.Task;
                 }
                 finally
@@ -3853,7 +3853,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
                 try
                 {
                     await joinableTaskStarted.WaitAsync();
-                    observedJoinableTask = (JoinableTask<int>)this.joinableCollection.Single();
+                    observedJoinableTask = (JoinableTask<int>)this.joinableCollection!.Single();
                     observedWrappedTask = observedJoinableTask.Task;
                 }
                 finally

@@ -14,6 +14,8 @@ using Microsoft.Win32;
 using Xunit;
 using Xunit.Abstractions;
 
+#pragma warning disable CA1416 // Validate platform compatibility
+
 public partial class AwaitExtensionsTests : TestBase
 {
     public AwaitExtensionsTests(ITestOutputHelper logger)
@@ -390,8 +392,8 @@ public partial class AwaitExtensionsTests : TestBase
             {
                 CreateNoWindow = true,
                 WindowStyle = ProcessWindowStyle.Hidden,
-            });
-        int exitCode = await p.WaitForExitAsync();
+            })!;
+        int exitCode = await AwaitExtensions.WaitForExitAsync(p);
         Assert.Equal(55, exitCode);
     }
 
@@ -404,9 +406,9 @@ public partial class AwaitExtensionsTests : TestBase
             {
                 CreateNoWindow = true,
                 WindowStyle = ProcessWindowStyle.Hidden,
-            });
+            })!;
         p.WaitForExit();
-        Task<int> t = p.WaitForExitAsync();
+        Task<int> t = AwaitExtensions.WaitForExitAsync(p);
         Assert.True(t.IsCompleted);
         Assert.Equal(55, t.Result);
     }
@@ -426,10 +428,10 @@ public partial class AwaitExtensionsTests : TestBase
     {
         string processName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "cmd.exe" : "/bin/bash";
         int expectedExitCode = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? -1 : 128 + 9; // https://stackoverflow.com/a/1041309
-        Process p = Process.Start(new ProcessStartInfo(processName) { CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden });
+        Process p = Process.Start(new ProcessStartInfo(processName) { CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden })!;
         try
         {
-            Task<int> t = p.WaitForExitAsync();
+            Task<int> t = AwaitExtensions.WaitForExitAsync(p);
             Assert.False(t.IsCompleted);
             p.Kill();
             int exitCode = await t;
@@ -453,11 +455,11 @@ public partial class AwaitExtensionsTests : TestBase
     public async Task WaitForExitAsync_Canceled()
     {
         string processName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "cmd.exe" : "/bin/bash";
-        Process p = Process.Start(new ProcessStartInfo(processName) { CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden });
+        Process p = Process.Start(new ProcessStartInfo(processName) { CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden })!;
         try
         {
             var cts = new CancellationTokenSource();
-            Task<int> t = p.WaitForExitAsync(cts.Token);
+            Task<int> t = AwaitExtensions.WaitForExitAsync(p, cts.Token);
             Assert.False(t.IsCompleted);
             cts.Cancel();
             await Assert.ThrowsAsync<TaskCanceledException>(() => t);
@@ -763,7 +765,7 @@ public partial class AwaitExtensionsTests : TestBase
             CreateNoWindow = true,
             WindowStyle = ProcessWindowStyle.Hidden,
         };
-        Process testExeProcess = Process.Start(psi);
+        Process testExeProcess = Process.Start(psi)!;
         try
         {
             // The assertion and timeout are interesting here:
@@ -773,7 +775,7 @@ public partial class AwaitExtensionsTests : TestBase
             // while other times it's really fast.
             // But when the dedicated thread is a background thread, it seems reliably fast.
             this.TimeoutTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(8));
-            int exitCode = await testExeProcess.WaitForExitAsync(this.TimeoutToken);
+            int exitCode = await AwaitExtensions.WaitForExitAsync(testExeProcess, this.TimeoutToken);
             Assert.Equal(0, exitCode);
         }
         finally

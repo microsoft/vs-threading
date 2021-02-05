@@ -122,7 +122,7 @@ namespace Microsoft.VisualStudio.Threading
         public bool ContainsKey(TKey key)
         {
 #pragma warning disable CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
-            bool contained = this.TryGetValue(key, out TValue value);
+            bool contained = this.TryGetValue(key, out TValue? value);
 #pragma warning restore CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
             return contained;
         }
