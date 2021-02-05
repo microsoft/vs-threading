@@ -6,7 +6,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis.Testing;
     using Xunit;
-    using static VSTHRD010MainThreadUsageAnalyzer;
+    using static Microsoft.VisualStudio.Threading.Analyzers.VSTHRD010MainThreadUsageAnalyzer;
     using Verify = CSharpCodeFixVerifier<VSTHRD010MainThreadUsageAnalyzer, VSTHRD010MainThreadUsageCodeFix>;
 
     public class VSTHRD010MainThreadUsageAnalyzerTests

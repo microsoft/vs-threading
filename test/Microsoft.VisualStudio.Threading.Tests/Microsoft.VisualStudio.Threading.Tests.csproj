@@ -23,7 +23,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="coverlet.msbuild" Version="3.0.2" />
-    <PackageReference Include="MicroBuild.Nonshipping" Version="$(MicroBuildVersion)" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.0" />
     <PackageReference Include="Nullable" Version="1.3.0">
       <PrivateAssets>all</PrivateAssets>
