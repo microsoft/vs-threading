@@ -24,14 +24,13 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="2.8.2" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.0.0" PrivateAssets="all" />
-    <PackageReference Include="MicroBuild.VisualStudio" Version="$(MicroBuildVersion)" />
     <PackageReference Include="Nullable" Version="1.2.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
-    <PackageReference Include="XliffTasks" Version="1.0.0-beta.19503.1" PrivateAssets="all" />
+    <PackageReference Include="XliffTasks" Version="1.0.0-beta.19505.1" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Properties\" />
