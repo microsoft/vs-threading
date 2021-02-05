@@ -2662,7 +2662,8 @@ public class JoinableTaskTests : JoinableTaskTestBase
                         },
                         null);
                     await delegateExecuted;
-                }).Wait(TestTimeout), "Timed out waiting for completion.");
+                }).Wait(TestTimeout),
+            "Timed out waiting for completion.");
     }
 
     [Fact]

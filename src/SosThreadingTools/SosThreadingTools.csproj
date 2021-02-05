@@ -29,7 +29,6 @@
     <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="2.0.206203" />
     <PackageReference Include="Microsoft.Diagnostics.Runtime.Utilities" Version="2.0.206203" />
     <PackageReference Include="DllExport" Version="1.5.2" />
-    <PackageReference Include="MicroBuild.VisualStudio" Version="$(MicroBuildVersion)" PrivateAssets="all" />
   </ItemGroup>
   <Import Project="$(PkgDllExport)\tools\net.r_eg.DllExport.targets" Condition="Exists('$(PkgDllExport)\tools\net.r_eg.DllExport.targets')" />
   <Import Project="SosThreadingTools.targets" />

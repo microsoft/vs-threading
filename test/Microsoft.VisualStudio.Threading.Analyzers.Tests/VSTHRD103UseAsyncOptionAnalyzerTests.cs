@@ -6,7 +6,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis.Testing;
     using Xunit;
-    using static VSTHRD103UseAsyncOptionAnalyzer;
+    using static Microsoft.VisualStudio.Threading.Analyzers.VSTHRD103UseAsyncOptionAnalyzer;
     using Verify = CSharpCodeFixVerifier<VSTHRD103UseAsyncOptionAnalyzer, VSTHRD103UseAsyncOptionCodeFix>;
 
     public class VSTHRD103UseAsyncOptionAnalyzerTests

@@ -92,7 +92,8 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
                     Assert.Equal(originalThreadId, Environment.CurrentManagedThreadId);
                     executed = true;
                     return Task.CompletedTask;
-                }, this.TimeoutToken);
+                },
+                this.TimeoutToken);
             Assert.True(executed);
         });
     }
@@ -115,7 +116,8 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
                     Assert.Equal(originalThreadId, Environment.CurrentManagedThreadId);
                     executed = true;
                     return Task.CompletedTask;
-                }, this.TimeoutToken);
+                },
+                this.TimeoutToken);
 
             releaseHolder.Set();
             await waiter.WithCancellation(this.TimeoutToken);
@@ -138,7 +140,8 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
                     Assert.Equal(originalThreadId, Environment.CurrentManagedThreadId);
                     executed = true;
                     return new ValueTask<int>(5);
-                }, this.TimeoutToken);
+                },
+                this.TimeoutToken);
             Assert.Equal(5, result);
             Assert.True(executed);
         });
@@ -162,7 +165,8 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
                     Assert.Equal(originalThreadId, Environment.CurrentManagedThreadId);
                     executed = true;
                     return new ValueTask<int>(5);
-                }, this.TimeoutToken);
+                },
+                this.TimeoutToken);
 
             releaseHolder.Set();
             int result = await waiter.AsTask().WithCancellation(this.TimeoutToken);
