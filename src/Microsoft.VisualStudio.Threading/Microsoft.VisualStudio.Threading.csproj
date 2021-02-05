@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;netcoreapp3.0;net472</TargetFrameworks>
+    <CheckEolTargetFramework>false</CheckEolTargetFramework>
 
     <Summary>Async synchronization primitives, async collections, TPL and dataflow extensions.</Summary>
     <Description>Async synchronization primitives, async collections, TPL and dataflow extensions. The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This package is applicable to any .NET application (not just Visual Studio).</Description>
