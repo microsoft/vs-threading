@@ -99,7 +99,7 @@ public class JoinableTaskContextNodeTests : JoinableTaskTestBase
             });
             Assert.True(this.derivedNode.HangDetected.IsSet);
             Assert.True(this.derivedNode.FalseHangReportDetected.IsSet);
-            Assert.Equal(this.derivedNode.HangReportCount, this.derivedNode.HangDetails.NotificationCount);
+            Assert.Equal(this.derivedNode.HangReportCount, this.derivedNode.HangDetails!.NotificationCount);
             Assert.Equal(1, this.derivedNode.FalseHangReportCount);
 
             // reset for the next verification
@@ -144,7 +144,7 @@ public class JoinableTaskContextNodeTests : JoinableTaskTestBase
 
         Assert.True(this.derivedNode.HangDetected.IsSet);
         Assert.True(this.derivedNode.FalseHangReportDetected.IsSet);
-        Assert.Equal(this.derivedNode.HangDetails.HangId, this.derivedNode.FalseHangReportId);
+        Assert.Equal(this.derivedNode.HangDetails!.HangId, this.derivedNode.FalseHangReportId);
         Assert.True(this.derivedNode.FalseHangReportTimeSpan >= this.derivedNode.HangDetails.HangDuration);
         Assert.True(this.derivedNode.HangReportCount >= 3);
         Assert.Equal(this.derivedNode.HangReportCount, this.derivedNode.HangDetails.NotificationCount);
@@ -166,7 +166,7 @@ public class JoinableTaskContextNodeTests : JoinableTaskTestBase
         });
         Assert.True(this.derivedNode.HangDetected.IsSet);
         Assert.NotNull(this.derivedNode.HangDetails);
-        Assert.NotNull(this.derivedNode.HangDetails.EntryMethod);
+        Assert.NotNull(this.derivedNode.HangDetails!.EntryMethod);
         Assert.Same(this.GetType(), this.derivedNode.HangDetails.EntryMethod!.DeclaringType);
         Assert.Contains(nameof(this.OnHangDetected_Run_OnMainThread), this.derivedNode.HangDetails.EntryMethod.Name, StringComparison.Ordinal);
 
@@ -203,7 +203,7 @@ public class JoinableTaskContextNodeTests : JoinableTaskTestBase
         Assert.True(this.derivedNode.HangDetected.IsSet);
         JoinableTaskContext.HangDetails? hangDetails = this.derivedNode.FirstHangDetails;
         Assert.NotNull(hangDetails);
-        Assert.NotNull(hangDetails.EntryMethod);
+        Assert.NotNull(hangDetails!.EntryMethod);
 
         // Verify that the original method that spawned the JoinableTask is the one identified as the entrypoint method.
         Assert.Same(this.GetType(), hangDetails.EntryMethod!.DeclaringType);
@@ -248,9 +248,9 @@ public class JoinableTaskContextNodeTests : JoinableTaskTestBase
 
         internal List<JoinableTaskContext.HangDetails> AllHangDetails { get; } = new List<JoinableTaskContext.HangDetails>();
 
-        internal JoinableTaskContext.HangDetails HangDetails => this.AllHangDetails.LastOrDefault();
+        internal JoinableTaskContext.HangDetails? HangDetails => this.AllHangDetails.LastOrDefault();
 
-        internal JoinableTaskContext.HangDetails FirstHangDetails => this.AllHangDetails.FirstOrDefault();
+        internal JoinableTaskContext.HangDetails? FirstHangDetails => this.AllHangDetails.FirstOrDefault();
 
         internal Guid FalseHangReportId { get; private set; }
 

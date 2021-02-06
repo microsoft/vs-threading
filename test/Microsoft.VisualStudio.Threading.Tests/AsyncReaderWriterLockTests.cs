@@ -14,6 +14,8 @@ using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
+#pragma warning disable CA1416 // Validate platform compatibility
+
 /// <summary>
 /// Tests functionality of the <see cref="AsyncReaderWriterLock"/> class.
 /// </summary>

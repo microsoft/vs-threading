@@ -393,7 +393,7 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
         Assert.NotNull(report.ContentName);
         this.Logger.WriteLine(report.Content);
         var dgml = XDocument.Parse(report.Content);
-        Assert.Equal("DirectedGraph", dgml.Root.Name.LocalName);
+        Assert.Equal("DirectedGraph", dgml.Root!.Name.LocalName);
         Assert.Equal("http://schemas.microsoft.com/vs/2009/dgml", dgml.Root.Name.Namespace);
     }
 
@@ -409,7 +409,7 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
             HangReportContribution? report = contributor.GetHangReport();
             this.Logger.WriteLine(report.Content);
             var dgml = XDocument.Parse(report.Content);
-            IEnumerable<string>? collectionLabels = from node in dgml.Root.Element(XName.Get("Nodes", DgmlNamespace)).Elements()
+            IEnumerable<string>? collectionLabels = from node in dgml.Root!.Element(XName.Get("Nodes", DgmlNamespace))!.Elements()
                                     where node.Attribute(XName.Get("Category"))?.Value == "Collection"
                                     select node.Attribute(XName.Get("Label"))?.Value;
             Assert.Contains(collectionLabels, label => label == jtcName);
@@ -432,7 +432,7 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
         HangReportContribution? report = contributor.GetHangReport();
         this.Logger.WriteLine(report.Content);
         var dgml = XDocument.Parse(report.Content);
-        IEnumerable<string>? collectionLabels = from node in dgml.Root.Element(XName.Get("Nodes", DgmlNamespace)).Elements()
+        IEnumerable<string>? collectionLabels = from node in dgml.Root!.Element(XName.Get("Nodes", DgmlNamespace))!.Elements()
                                 where node.Attribute(XName.Get("Category"))?.Value == "Task"
                                 select node.Attribute(XName.Get("Label"))?.Value;
         Assert.Contains(collectionLabels, label => label.Contains(nameof(this.GetHangReportProducesDgmlWithMethodNameRequestingMainThread)));
@@ -455,7 +455,7 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
             HangReportContribution? report = contributor.GetHangReport();
             this.Logger.WriteLine(report.Content);
             var dgml = XDocument.Parse(report.Content);
-            IEnumerable<string>? collectionLabels = from node in dgml.Root.Element(XName.Get("Nodes", DgmlNamespace)).Elements()
+            IEnumerable<string>? collectionLabels = from node in dgml.Root!.Element(XName.Get("Nodes", DgmlNamespace))!.Elements()
                                     where node.Attribute(XName.Get("Category"))?.Value == "Task"
                                     select node.Attribute(XName.Get("Label"))?.Value;
             Assert.Contains(collectionLabels, label => label.Contains(nameof(this.YieldingMethodAsync)));
