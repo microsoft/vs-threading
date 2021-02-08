@@ -56,7 +56,15 @@ namespace CpsDbg
                                             break;
                                         }
 
-                                        asyncBuilder = asyncBuilder.TryGetValueClassField("m_builder");
+                                        ClrValueType? nextAsyncBuilder = asyncBuilder.TryGetValueClassField("m_builder");
+                                        if (nextAsyncBuilder == null)
+                                        {
+                                            asyncBuilder = asyncBuilder.TryGetValueClassField("_methodBuilder");
+                                        }
+                                        else
+                                        {
+                                            asyncBuilder = nextAsyncBuilder;
+                                        }
                                     }
                                 }
                                 else
