@@ -56,7 +56,15 @@ namespace CpsDbg
                                             break;
                                         }
 
-                                        asyncBuilder = asyncBuilder.TryGetValueClassField("m_builder");
+                                        ClrValueType? nextAsyncBuilder = asyncBuilder.TryGetValueClassField("m_builder");
+                                        if (nextAsyncBuilder == null)
+                                        {
+                                            asyncBuilder = asyncBuilder.TryGetValueClassField("_methodBuilder");
+                                        }
+                                        else
+                                        {
+                                            asyncBuilder = nextAsyncBuilder;
+                                        }
                                     }
                                 }
                                 else
@@ -64,11 +72,62 @@ namespace CpsDbg
                                     // CLR debugger may not be able to access t__builder, when NGEN assemblies are being used, and the type of the field could be lost.
                                     // Our workaround is to pick up the first Task object referenced by the state machine, which seems to be correct.
                                     // That function works with the raw data structure (like how GC scans the object, so it doesn't depend on symbols.
+                                    //
+                                    // However, one problem of that is we can pick up tasks from other reference fields of the same structure. So, we go through fields which we have symbols
+                                    // and remember references encounted, and we skip them when we go through GC references.
+                                    // Note: we can do better by going through other value structures, and extract references from them here, which we can consider when we have a real scenario.
+                                    var previousReferences = new Dictionary<ulong, int>();
+                                    if (stateMachine.Type?.GetFieldByName("<>t__builder") != null)
+                                    {
+                                        foreach (ClrInstanceField field in stateMachine.Type.Fields)
+                                        {
+                                            if (string.Equals(field.Name, "<>t__builder", StringComparison.Ordinal))
+                                            {
+                                                break;
+                                            }
+
+                                            if (field.IsObjectReference)
+                                            {
+                                                ClrObject referencedValue = field.ReadObject(stateMachine.Address, interior: false);
+                                                if (!referencedValue.IsNull)
+                                                {
+                                                    if (previousReferences.TryGetValue(referencedValue.Address, out int refCount))
+                                                    {
+                                                        previousReferences[referencedValue.Address] = refCount + 1;
+                                                    }
+                                                    else
+                                                    {
+                                                        previousReferences[referencedValue.Address] = 1;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+
                                     foreach (ClrObject referencedObject in stateMachine.EnumerateReferences(true))
                                     {
-                                        if (!referencedObject.IsNull && referencedObject.Type is object)
+                                        if (!referencedObject.IsNull)
                                         {
-                                            if (string.Equals(referencedObject.Type.Name, "System.Threading.Tasks.Task", StringComparison.Ordinal) || string.Equals(referencedObject.Type.BaseType?.Name, "System.Threading.Tasks.Task", StringComparison.Ordinal))
+                                            if (previousReferences.TryGetValue(referencedObject.Address, out int refCount) && refCount > 0)
+                                            {
+                                                if (refCount == 1)
+                                                {
+                                                    previousReferences.Remove(referencedObject.Address);
+                                                }
+                                                else
+                                                {
+                                                    previousReferences[referencedObject.Address] = refCount - 1;
+                                                }
+
+                                                continue;
+                                            }
+                                            else if (previousReferences.Count > 0)
+                                            {
+                                                continue;
+                                            }
+
+                                            if (referencedObject.Type is object &&
+                                                (string.Equals(referencedObject.Type.Name, "System.Threading.Tasks.Task", StringComparison.Ordinal) || string.Equals(referencedObject.Type.BaseType?.Name, "System.Threading.Tasks.Task", StringComparison.Ordinal)))
                                             {
                                                 taskField = referencedObject;
                                                 break;
