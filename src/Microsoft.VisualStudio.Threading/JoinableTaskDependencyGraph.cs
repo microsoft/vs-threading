@@ -760,7 +760,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     if (reachableNodes.Add(taskOrCollection))
                     {
-                        if (remainNodes.Remove(taskOrCollection) && reachableNodes.Count == 0)
+                        if (remainNodes.Remove(taskOrCollection) && remainNodes.Count == 0)
                         {
                             // no remain task left, quit the loop earlier
                             return;
