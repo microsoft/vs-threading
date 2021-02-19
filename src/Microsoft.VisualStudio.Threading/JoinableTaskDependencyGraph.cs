@@ -772,6 +772,10 @@ namespace Microsoft.VisualStudio.Threading
                             foreach (KeyValuePair<IJoinableTaskDependent, int> item in dependencies)
                             {
                                 ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(item.Key, reachableNodes, remainNodes);
+                                if (remainNodes.Count == 0)
+                                {
+                                    return;
+                                }
                             }
                         }
                     }
