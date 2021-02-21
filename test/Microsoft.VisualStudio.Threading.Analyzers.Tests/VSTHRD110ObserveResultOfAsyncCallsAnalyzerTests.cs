@@ -214,6 +214,46 @@ class Test {
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
+        [Fact]
+        public async Task ConfigureAwait_ProducesDiagnostics()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    void Foo()
+    {
+        BarAsync().ConfigureAwait(false);
+    }
+
+    Task BarAsync() => Task.CompletedTask;
+}
+";
+
+            DiagnosticResult expected = this.CreateDiagnostic(7, 20, nameof(Task.ConfigureAwait).Length);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
+        public async Task ConfigureAwaitGenerics_ProducesDiagnostics()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    void Foo()
+    {
+        BarAsync().ConfigureAwait(false);
+    }
+
+    Task<int> BarAsync() => Task.FromResult(0);
+}
+";
+
+            DiagnosticResult expected = this.CreateDiagnostic(7, 20, nameof(Task.ConfigureAwait).Length);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
         private DiagnosticResult CreateDiagnostic(int line, int column, int length)
             => Verify.Diagnostic().WithSpan(line, column, line, column + length);
     }

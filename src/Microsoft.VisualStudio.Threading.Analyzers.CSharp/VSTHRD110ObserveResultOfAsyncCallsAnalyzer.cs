@@ -42,6 +42,25 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeInvocation), SyntaxKind.InvocationExpression);
         }
 
+        private static bool IsAwaitable(ITypeSymbol? returnedSymbol)
+        {
+            if (returnedSymbol is null)
+            {
+                return false;
+            }
+
+            return returnedSymbol.Name switch
+            {
+                Types.Task.TypeName
+                    when returnedSymbol.BelongsToNamespace(Types.Task.Namespace) => true,
+
+                Types.ConfiguredTaskAwaitable.TypeName
+                    when returnedSymbol.BelongsToNamespace(Types.ConfiguredTaskAwaitable.Namespace) => true,
+
+                _ => false,
+            };
+        }
+
         private void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
         {
             var invocation = (InvocationExpressionSyntax)context.Node;
@@ -52,7 +71,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             {
                 var methodSymbol = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
                 ITypeSymbol? returnedSymbol = methodSymbol?.ReturnType;
-                if (returnedSymbol?.Name == Types.Task.TypeName && returnedSymbol.BelongsToNamespace(Types.Task.Namespace))
+                if (IsAwaitable(returnedSymbol))
                 {
                     if (!CSharpUtils.GetContainingFunction(invocation).IsAsync)
                     {
