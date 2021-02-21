@@ -42,14 +42,20 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeInvocation), SyntaxKind.InvocationExpression);
         }
 
-        private static bool IsAwaitable(ITypeSymbol? returnedSymbol)
-        {
-            if (returnedSymbol is null)
-            {
-                return false;
-            }
+        private static bool IsOfType(ISymbol symbol, string typeName, IReadOnlyList<string> @namespace) =>
+            symbol.Name == typeName && symbol.BelongsToNamespace(@namespace);
 
-            return returnedSymbol.Name switch
+        private static bool IsPublicMethod(ISymbol symbol) =>
+            symbol.DeclaredAccessibility == Accessibility.Public && symbol.Kind == SymbolKind.Method;
+
+        private static bool IsPublicProperty(ISymbol symbol) =>
+            symbol.DeclaredAccessibility == Accessibility.Public && symbol.Kind == SymbolKind.Property;
+
+        private static bool IsParameterlessNonGenericMethod(IMethodSymbol methodSymbol) =>
+            methodSymbol.Parameters.Length == 0 && !methodSymbol.IsGenericMethod;
+
+        private static bool IsAwaitable(ITypeSymbol returnedSymbol) =>
+            returnedSymbol.Name switch
             {
                 Types.Task.TypeName
                     when returnedSymbol.BelongsToNamespace(Types.Task.Namespace) => true,
@@ -59,6 +65,56 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
                 _ => false,
             };
+
+        private static bool IsCustomAwaitable(ITypeSymbol returnedSymbol)
+        {
+            // has method: public T GetAwaiter()
+            IMethodSymbol? getAwaiterMethod = returnedSymbol.GetMembers("GetAwaiter")
+                .Where(IsPublicMethod)
+                .Cast<IMethodSymbol>()
+                .Where(m => !m.ReturnsVoid && IsParameterlessNonGenericMethod(m))
+                .SingleOrDefault();
+
+            if (getAwaiterMethod is null)
+            {
+                return false;
+            }
+
+            // examine custom awaiter type
+            ITypeSymbol returnType = getAwaiterMethod.ReturnType;
+
+            // implementing: System.Runtime.CompilerServices.INotifyCompletion
+            if (!returnType.AllInterfaces.Any(i =>
+                IsOfType(i, nameof(System.Runtime.CompilerServices.INotifyCompletion), Namespaces.SystemRuntimeCompilerServices)))
+            {
+                return false;
+            }
+
+            // has property: public bool IsCompleted { get; }
+            IPropertySymbol? isCompletedProperty = returnType.GetMembers("IsCompleted")
+                .Where(IsPublicProperty)
+                .Cast<IPropertySymbol>()
+                .Where(p => p.GetMethod != null && IsOfType(p.Type, nameof(Boolean), Namespaces.System))
+                .SingleOrDefault();
+
+            if (isCompletedProperty is null)
+            {
+                return false;
+            }
+
+            // has method: public void GetResult()
+            IMethodSymbol? getResultMethod = returnType.GetMembers("GetResult")
+                .Where(IsPublicMethod)
+                .Cast<IMethodSymbol>()
+                .Where(m => m.ReturnsVoid && IsParameterlessNonGenericMethod(m))
+                .SingleOrDefault();
+
+            if (getResultMethod is null)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         private void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
@@ -71,7 +127,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             {
                 var methodSymbol = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
                 ITypeSymbol? returnedSymbol = methodSymbol?.ReturnType;
-                if (IsAwaitable(returnedSymbol))
+                if (returnedSymbol != null && (IsAwaitable(returnedSymbol) || IsCustomAwaitable(returnedSymbol)))
                 {
                     if (!CSharpUtils.GetContainingFunction(invocation).IsAsync)
                     {
