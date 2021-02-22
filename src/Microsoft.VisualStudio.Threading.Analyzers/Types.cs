@@ -204,6 +204,15 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             internal static readonly IReadOnlyList<string> Namespace = Namespaces.SystemThreadingTasks;
         }
 
+        internal static class ConfiguredValueTaskAwaitable
+        {
+            internal const string TypeName = nameof(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable);
+
+            internal const string FullName = "System.Runtime.CompilerServices." + TypeName;
+
+            internal static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeCompilerServices;
+        }
+
         internal static class CoClassAttribute
         {
             internal const string TypeName = nameof(System.Runtime.InteropServices.CoClassAttribute);

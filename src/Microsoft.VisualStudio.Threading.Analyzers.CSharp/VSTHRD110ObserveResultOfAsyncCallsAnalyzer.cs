@@ -63,6 +63,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 Types.ConfiguredTaskAwaitable.TypeName
                     when returnedSymbol.BelongsToNamespace(Types.ConfiguredTaskAwaitable.Namespace) => true,
 
+                Types.ValueTask.TypeName
+                    when returnedSymbol.BelongsToNamespace(Types.ValueTask.Namespace) => true,
+
+                Types.ConfiguredValueTaskAwaitable.TypeName
+                    when returnedSymbol.BelongsToNamespace(Types.ConfiguredValueTaskAwaitable.Namespace) => true,
+
                 _ => false,
             };
 

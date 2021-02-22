@@ -323,6 +323,46 @@ class NotAwaitable
             await Verify.VerifyAnalyzerAsync(test);
         }
 
+        [Fact]
+        public async Task SyncMethodWithValueTask_ProducesDiagnostic()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    void Foo()
+    {
+        BarAsync();
+    }
+
+    ValueTask BarAsync() => default;
+}
+";
+
+            DiagnosticResult expected = this.CreateDiagnostic(7, 9, 8);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
+        public async Task ConfigureAwaitValueTask_ProducesDiagnostics()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    void Foo()
+    {
+        BarAsync().ConfigureAwait(false);
+    }
+
+    ValueTask BarAsync() => default;
+}
+";
+
+            DiagnosticResult expected = this.CreateDiagnostic(7, 20, nameof(Task.ConfigureAwait).Length);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
         private DiagnosticResult CreateDiagnostic(int line, int column, int length)
             => Verify.Diagnostic().WithSpan(line, column, line, column + length);
     }
