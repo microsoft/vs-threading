@@ -1014,7 +1014,7 @@ namespace Microsoft.VisualStudio.Threading
 
             if (this.pendingEventSource is null || taskHasPendingMessages == this)
             {
-                this.pendingEventSource = new WeakReference<JoinableTask>(taskHasPendingMessages);
+                this.pendingEventSource = taskHasPendingMessages.WeakSelf;
             }
 
             this.pendingEventCount += newPendingMessagesCount;
