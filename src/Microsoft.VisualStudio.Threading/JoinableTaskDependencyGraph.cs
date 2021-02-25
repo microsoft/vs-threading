@@ -6,6 +6,7 @@ namespace Microsoft.VisualStudio.Threading
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
 
@@ -47,7 +48,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 lock (taskItem.JoinableTaskContext.SyncContextLock)
                 {
-                    return taskItem.GetJoinableTaskDependentData().HasMainThreadSynchronousTaskWaiting();
+                    return taskItem.GetJoinableTaskDependentData().HasMainThreadSynchronousTaskWaiting(taskItem);
                 }
             }
         }
@@ -223,7 +224,8 @@ namespace Microsoft.VisualStudio.Threading
         /// Computes dependency graph to clean up all potential unreachable dependents items.
         /// </summary>
         /// <param name="syncTask">A thread blocking sychornizing task.</param>
-        internal static void CleanUpPotentialUnreachableDependentItems(JoinableTask syncTask)
+        /// <returns>True if it removes any unreachable items.</returns>
+        internal static bool CleanUpPotentialUnreachableDependentItems(JoinableTask syncTask, [MaybeNullWhen(false)] out HashSet<IJoinableTaskDependent>? allReachableNodes)
         {
             Requires.NotNull(syncTask, nameof(syncTask));
 
@@ -240,9 +242,23 @@ namespace Microsoft.VisualStudio.Threading
 
                 JoinableTaskDependentData.ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(syncTaskItem, reachableNodes, unreachableItems);
 
+                syncTask.PotentialUnreachableDependents = null;
+                allReachableNodes = reachableNodes;
+
                 // force to remove all invalid items
-                JoinableTaskDependentData.RemoveUnreachableDependentItems(syncTask, unreachableItems, reachableNodes);
+                if (unreachableItems.Count > 0)
+                {
+                    JoinableTaskDependentData.RemoveUnreachableDependentItems(syncTask, unreachableItems, reachableNodes);
+
+                    return true;
+                }
             }
+            else
+            {
+                allReachableNodes = null;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -564,10 +580,8 @@ namespace Microsoft.VisualStudio.Threading
             /// Gets a value indicating whether the main thread is waiting for the task's completion
             /// This method is expected to be used with the JTF lock.
             /// </summary>
-            internal bool HasMainThreadSynchronousTaskWaiting()
+            internal bool HasMainThreadSynchronousTaskWaiting(IJoinableTaskDependent taskItem)
             {
-                var hasDoneCleanUp = false;
-
                 DependentSynchronousTask? existingTaskTracking = this.dependingSynchronousTaskTracking;
                 while (existingTaskTracking is object)
                 {
@@ -577,10 +591,12 @@ namespace Microsoft.VisualStudio.Threading
                         if (existingTaskTracking.SynchronousTask.PotentialUnreachableDependents != null)
                         {
                             // This might remove the current tracking item from the linked list, so we capture next node first.
-                            CleanUpPotentialUnreachableDependentItems(existingTaskTracking.SynchronousTask);
-
-                            // We need check it again after the cleanup work has finished.
-                            hasDoneCleanUp = true;
+                            if (!CleanUpPotentialUnreachableDependentItems(existingTaskTracking.SynchronousTask, out HashSet<IJoinableTaskDependent>? allReachableNodes) ||
+                                allReachableNodes!.Contains(taskItem))
+                            {
+                                // this task is still a dependenting task
+                                return true;
+                            }
                         }
                         else
                         {
@@ -589,20 +605,6 @@ namespace Microsoft.VisualStudio.Threading
                     }
 
                     existingTaskTracking = nextTrackingTask;
-                }
-
-                if (hasDoneCleanUp)
-                {
-                    existingTaskTracking = this.dependingSynchronousTaskTracking;
-                    while (existingTaskTracking is object)
-                    {
-                        if ((existingTaskTracking.SynchronousTask.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)
-                        {
-                            return true;
-                        }
-
-                        existingTaskTracking = existingTaskTracking.Next;
-                    }
                 }
 
                 return false;

@@ -711,6 +711,18 @@ namespace Microsoft.VisualStudio.Threading
                                 eventsNeedNotify = new List<AsyncManualResetEvent>(tasksNeedNotify.Count);
                                 foreach (JoinableTask? taskToNotify in tasksNeedNotify)
                                 {
+                                    if (mainThreadQueueUpdated && taskToNotify != this && taskToNotify.pendingEventCount == 0 && taskToNotify.PotentialUnreachableDependents != null)
+                                    {
+                                        // It is not essential to clean up potential unreachable dependent items before triggering the UI thread,
+                                        // because dependencies may change, and invalidate this work. However, we try to do this work in the background thread to make it less likely
+                                        // doing the expensive work on the UI thread.
+                                        if (JoinableTaskDependencyGraph.CleanUpPotentialUnreachableDependentItems(taskToNotify, out HashSet<IJoinableTaskDependent>? reachableNodes) &&
+                                            !reachableNodes!.Contains(this))
+                                        {
+                                            continue;
+                                        }
+                                    }
+
                                     if (taskToNotify.pendingEventSource is null || taskToNotify == this)
                                     {
                                         taskToNotify.pendingEventSource = this.WeakSelf;
