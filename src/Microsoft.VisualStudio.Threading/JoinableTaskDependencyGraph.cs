@@ -165,7 +165,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             Requires.NotNull(taskItem, nameof(taskItem));
             Assumes.True(Monitor.IsEntered(taskItem.JoinableTaskContext.SyncContextLock));
-            taskItem.GetJoinableTaskDependentData().OnTaskCompleted();
+            taskItem.GetJoinableTaskDependentData().OnTaskCompleted(taskItem);
         }
 
         /// <summary>
@@ -224,6 +224,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Computes dependency graph to clean up all potential unreachable dependents items.
         /// </summary>
         /// <param name="syncTask">A thread blocking sychornizing task.</param>
+        /// <param name="allReachableNodes">Returns all reachable nodes in the connected dependency graph, if unreachable dependency is found.</param>
         /// <returns>True if it removes any unreachable items.</returns>
         internal static bool CleanUpPotentialUnreachableDependentItems(JoinableTask syncTask, [MaybeNullWhen(false)] out HashSet<IJoinableTaskDependent>? allReachableNodes)
         {
@@ -234,21 +235,21 @@ namespace Microsoft.VisualStudio.Threading
             // To get rid of those loops, if a task still tracks the synchronous task after reducing
             // the reference count, we will calculate the entire reachable tree from the root.  That will
             // tell us the exactly tasks which need track the synchronous task, and we will clean up the rest.
-            HashSet<IJoinableTaskDependent>? unreachableItems = syncTask.PotentialUnreachableDependents;
-            if (unreachableItems is object)
+            HashSet<IJoinableTaskDependent>? possibleUnreachableItems = syncTask.PotentialUnreachableDependents;
+            if (possibleUnreachableItems is object)
             {
                 var reachableNodes = new HashSet<IJoinableTaskDependent>();
                 var syncTaskItem = (IJoinableTaskDependent)syncTask;
 
-                JoinableTaskDependentData.ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(syncTaskItem, reachableNodes, unreachableItems);
+                JoinableTaskDependentData.ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(syncTaskItem, reachableNodes, possibleUnreachableItems);
 
                 syncTask.PotentialUnreachableDependents = null;
                 allReachableNodes = reachableNodes;
 
                 // force to remove all invalid items
-                if (unreachableItems.Count > 0)
+                if (possibleUnreachableItems.Count > 0)
                 {
-                    JoinableTaskDependentData.RemoveUnreachableDependentItems(syncTask, unreachableItems, reachableNodes);
+                    JoinableTaskDependentData.RemoveUnreachableDependentItems(syncTask, possibleUnreachableItems, reachableNodes);
 
                     return true;
                 }
@@ -419,6 +420,18 @@ namespace Microsoft.VisualStudio.Threading
                                 data.childDependentNodes.Remove(joinChild);
                                 data.RemoveDependingSynchronousTaskFromChild(joinChild);
                                 parentTaskOrCollection.OnDependencyRemoved(joinChild);
+
+                                // A node with no out-going dependency chain cannot be a part of a circular dependency loop.
+                                // JoinableTaskCollection doesn't have a completion event, this logic makes sure it will be removed from a long runnning JTF.Run.
+                                if (data.HasNoChildDependentNode)
+                                {
+                                    DependentSynchronousTask? existingTaskTracking = data.dependingSynchronousTaskTracking;
+                                    while (existingTaskTracking is object)
+                                    {
+                                        existingTaskTracking.SynchronousTask.PotentialUnreachableDependents?.Remove(parentTaskOrCollection);
+                                        existingTaskTracking = existingTaskTracking.Next;
+                                    }
+                                }
                             }
                             else
                             {
@@ -541,6 +554,8 @@ namespace Microsoft.VisualStudio.Threading
             /// <param name="reachableItems">All reachable items.</param>
             internal static void RemoveUnreachableDependentItems(JoinableTask syncTask, HashSet<IJoinableTaskDependent> unreachableItems, HashSet<IJoinableTaskDependent> reachableItems)
             {
+                ThreadingEventSource.Instance.CircularJoinableTaskDependencyDetected(unreachableItems.Count, reachableItems.Count);
+
                 HashSet<IJoinableTaskDependent>? remainPlaceHold = null;
                 foreach (IJoinableTaskDependent? unreachableItem in unreachableItems)
                 {
@@ -615,7 +630,7 @@ namespace Microsoft.VisualStudio.Threading
             /// This is called when this task is completed.
             /// This method is expected to be used with the JTF lock.
             /// </summary>
-            internal void OnTaskCompleted()
+            internal void OnTaskCompleted(IJoinableTaskDependent thisDependentNode)
             {
                 if (this.dependingSynchronousTaskTracking is object)
                 {
@@ -628,6 +643,16 @@ namespace Microsoft.VisualStudio.Threading
                         while (existingTaskTracking is object)
                         {
                             RemoveDependingSynchronousTaskFrom(childrenTasks, existingTaskTracking.SynchronousTask, false);
+
+                            HashSet<IJoinableTaskDependent>? potentialUnreachableDependents = existingTaskTracking.SynchronousTask.PotentialUnreachableDependents;
+                            if (potentialUnreachableDependents != null)
+                            {
+                                if (potentialUnreachableDependents.Remove(thisDependentNode) && potentialUnreachableDependents.Count == 0)
+                                {
+                                    existingTaskTracking.SynchronousTask.PotentialUnreachableDependents = null;
+                                }
+                            }
+
                             existingTaskTracking = existingTaskTracking.Next;
                         }
                     }
@@ -921,7 +946,8 @@ namespace Microsoft.VisualStudio.Threading
 
                         if (reachableNodes is null)
                         {
-                            if (removed)
+                            // if a node doesn't have dependencies, it cannot be a part of a dependency circle.
+                            if (removed || taskOrCollection.GetJoinableTaskDependentData().HasNoChildDependentNode)
                             {
                                 if (remainingDependentNodes is object)
                                 {

@@ -1143,6 +1143,7 @@ namespace Microsoft.VisualStudio.Threading
                             if (!foundWork && this.PotentialUnreachableDependents != null)
                             {
                                 JoinableTaskDependencyGraph.RemoveUnreachableDependentItems(this, this.PotentialUnreachableDependents, visitedNodes);
+                                this.PotentialUnreachableDependents = null;
                             }
                         }
 
