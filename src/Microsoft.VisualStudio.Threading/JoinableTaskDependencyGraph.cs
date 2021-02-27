@@ -226,7 +226,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="syncTask">A thread blocking sychornizing task.</param>
         /// <param name="allReachableNodes">Returns all reachable nodes in the connected dependency graph, if unreachable dependency is found.</param>
         /// <returns>True if it removes any unreachable items.</returns>
-        internal static bool CleanUpPotentialUnreachableDependentItems(JoinableTask syncTask, [MaybeNullWhen(false)] out HashSet<IJoinableTaskDependent>? allReachableNodes)
+        internal static bool CleanUpPotentialUnreachableDependentItems(JoinableTask syncTask, [NotNullWhen(true)] out HashSet<IJoinableTaskDependent>? allReachableNodes)
         {
             Requires.NotNull(syncTask, nameof(syncTask));
 
@@ -254,11 +254,8 @@ namespace Microsoft.VisualStudio.Threading
                     return true;
                 }
             }
-            else
-            {
-                allReachableNodes = null;
-            }
 
+            allReachableNodes = null;
             return false;
         }
 
@@ -607,7 +604,7 @@ namespace Microsoft.VisualStudio.Threading
                         {
                             // This might remove the current tracking item from the linked list, so we capture next node first.
                             if (!CleanUpPotentialUnreachableDependentItems(existingTaskTracking.SynchronousTask, out HashSet<IJoinableTaskDependent>? allReachableNodes) ||
-                                allReachableNodes!.Contains(taskItem))
+                                allReachableNodes.Contains(taskItem))
                             {
                                 // this task is still a dependenting task
                                 return true;
@@ -877,7 +874,9 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     if (force)
                     {
-                        Assumes.True(reachableNodes!.Count == 0);
+                        Assumes.NotNull(reachableNodes);
+                        Assumes.True(reachableNodes.Count == 0);
+
                         RemoveUnreachableDependentItems(syncTask, remainNodes, reachableNodes);
 
                         syncTask.PotentialUnreachableDependents = null;

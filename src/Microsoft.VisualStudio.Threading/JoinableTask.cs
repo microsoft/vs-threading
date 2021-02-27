@@ -381,8 +381,8 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Gets or sets potential unreacable dependent nodes.
-        /// This is a special collection only used in sychronized task when there are other tasks which are marked to block it through ref-count code.
+        /// Gets or sets potential unreachable dependent nodes.
+        /// This is a special collection only used in synchronized task when there are other tasks which are marked to block it through ref-count code.
         /// However, it is possible the reference count is retained by loop-dependencies. This collection tracking those items,
         /// so the clean-up logic can run when it becomes necessary.
         /// </summary>
@@ -717,7 +717,7 @@ namespace Microsoft.VisualStudio.Threading
                                         // because dependencies may change, and invalidate this work. However, we try to do this work in the background thread to make it less likely
                                         // doing the expensive work on the UI thread.
                                         if (JoinableTaskDependencyGraph.CleanUpPotentialUnreachableDependentItems(taskToNotify, out HashSet<IJoinableTaskDependent>? reachableNodes) &&
-                                            !reachableNodes!.Contains(this))
+                                            !reachableNodes.Contains(this))
                                         {
                                             continue;
                                         }
@@ -1128,7 +1128,7 @@ namespace Microsoft.VisualStudio.Threading
                             visited.Clear();
                         }
 
-                        var foundWork = TryDequeueSelfOrDependencies(this, onMainThread, visited, out work);
+                        bool foundWork = TryDequeueSelfOrDependencies(this, onMainThread, visited, out work);
 
                         HashSet<IJoinableTaskDependent>? visitedNodes = visited;
                         if (visitedNodes != null && this.PotentialUnreachableDependents != null)
