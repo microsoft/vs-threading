@@ -6,6 +6,7 @@ namespace Microsoft.VisualStudio.Threading
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
 
@@ -47,7 +48,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 lock (taskItem.JoinableTaskContext.SyncContextLock)
                 {
-                    return taskItem.GetJoinableTaskDependentData().HasMainThreadSynchronousTaskWaiting();
+                    return taskItem.GetJoinableTaskDependentData().HasMainThreadSynchronousTaskWaiting(taskItem);
                 }
             }
         }
@@ -164,7 +165,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             Requires.NotNull(taskItem, nameof(taskItem));
             Assumes.True(Monitor.IsEntered(taskItem.JoinableTaskContext.SyncContextLock));
-            taskItem.GetJoinableTaskDependentData().OnTaskCompleted();
+            taskItem.GetJoinableTaskDependentData().OnTaskCompleted(taskItem);
         }
 
         /// <summary>
@@ -217,6 +218,60 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             return results;
+        }
+
+        /// <summary>
+        /// Computes dependency graph to clean up all potential unreachable dependents items.
+        /// </summary>
+        /// <param name="syncTask">A thread blocking sychornizing task.</param>
+        /// <param name="allReachableNodes">Returns all reachable nodes in the connected dependency graph, if unreachable dependency is found.</param>
+        /// <returns>True if it removes any unreachable items.</returns>
+        internal static bool CleanUpPotentialUnreachableDependentItems(JoinableTask syncTask, [NotNullWhen(true)] out HashSet<IJoinableTaskDependent>? allReachableNodes)
+        {
+            Requires.NotNull(syncTask, nameof(syncTask));
+
+            // a set of tasks may form a dependent loop, so it will make the reference count system
+            // not to work correctly when we try to remove the synchronous task.
+            // To get rid of those loops, if a task still tracks the synchronous task after reducing
+            // the reference count, we will calculate the entire reachable tree from the root.  That will
+            // tell us the exactly tasks which need track the synchronous task, and we will clean up the rest.
+            HashSet<IJoinableTaskDependent>? possibleUnreachableItems = syncTask.PotentialUnreachableDependents;
+            if (possibleUnreachableItems is object && possibleUnreachableItems.Count > 0)
+            {
+                var reachableNodes = new HashSet<IJoinableTaskDependent>();
+                var syncTaskItem = (IJoinableTaskDependent)syncTask;
+
+                JoinableTaskDependentData.ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(syncTaskItem, reachableNodes, possibleUnreachableItems);
+
+                allReachableNodes = reachableNodes;
+
+                // force to remove all invalid items
+                if (possibleUnreachableItems.Count > 0)
+                {
+                    JoinableTaskDependentData.RemoveUnreachableDependentItems(syncTask, possibleUnreachableItems, reachableNodes);
+                    possibleUnreachableItems.Clear();
+
+                    return true;
+                }
+            }
+
+            allReachableNodes = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Force to clean up all unreachable dependent item, so they are not marked to block the syncTask.
+        /// </summary>
+        /// <param name="syncTask">The thread blocking task.</param>
+        /// <param name="unreachableItems">Unreachable dependent items.</param>
+        /// <param name="reachableItems">All reachable items.</param>
+        internal static void RemoveUnreachableDependentItems(JoinableTask syncTask, HashSet<IJoinableTaskDependent> unreachableItems, HashSet<IJoinableTaskDependent> reachableItems)
+        {
+            Requires.NotNull(syncTask, nameof(syncTask));
+            Requires.NotNull(unreachableItems, nameof(unreachableItems));
+            Requires.NotNull(reachableItems, nameof(reachableItems));
+
+            JoinableTaskDependentData.RemoveUnreachableDependentItems(syncTask, unreachableItems, reachableItems);
         }
 
         /// <summary>
@@ -362,6 +417,18 @@ namespace Microsoft.VisualStudio.Threading
                                 data.childDependentNodes.Remove(joinChild);
                                 data.RemoveDependingSynchronousTaskFromChild(joinChild);
                                 parentTaskOrCollection.OnDependencyRemoved(joinChild);
+
+                                // A node with no out-going dependency chain cannot be a part of a circular dependency loop.
+                                // JoinableTaskCollection doesn't have a completion event, this logic makes sure it will be removed from a long runnning JTF.Run.
+                                if (data.HasNoChildDependentNode)
+                                {
+                                    DependentSynchronousTask? existingTaskTracking = data.dependingSynchronousTaskTracking;
+                                    while (existingTaskTracking is object)
+                                    {
+                                        existingTaskTracking.SynchronousTask.PotentialUnreachableDependents?.Remove(parentTaskOrCollection);
+                                        existingTaskTracking = existingTaskTracking.Next;
+                                    }
+                                }
                             }
                             else
                             {
@@ -439,6 +506,61 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
+            /// Compute all reachable nodes from a synchronous task. Because we use the result to clean up invalid
+            /// items from the remain task, we will remove valid task from the collection, and stop immediately if nothing is left.
+            /// </summary>
+            /// <param name="taskOrCollection">The current joinableTask or collection owns the data.</param>
+            /// <param name="reachableNodes">All reachable dependency nodes. This is not a completed list, if there is no remain node.</param>
+            /// <param name="remainNodes">Remain dependency nodes we want to check. After the execution, it will retain non-reachable nodes.</param>
+            internal static void ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(IJoinableTaskDependent taskOrCollection, HashSet<IJoinableTaskDependent> reachableNodes, HashSet<IJoinableTaskDependent> remainNodes)
+            {
+                Requires.NotNull(taskOrCollection, nameof(taskOrCollection));
+                Requires.NotNull(remainNodes, nameof(remainNodes));
+                Requires.NotNull(reachableNodes, nameof(reachableNodes));
+                if ((taskOrCollection as JoinableTask)?.IsFullyCompleted != true)
+                {
+                    if (reachableNodes.Add(taskOrCollection))
+                    {
+                        if (remainNodes.Remove(taskOrCollection) && remainNodes.Count == 0)
+                        {
+                            // no remain task left, quit the loop earlier
+                            return;
+                        }
+
+                        WeakKeyDictionary<IJoinableTaskDependent, int>? dependencies = taskOrCollection.GetJoinableTaskDependentData().childDependentNodes;
+                        if (dependencies is object)
+                        {
+                            foreach (KeyValuePair<IJoinableTaskDependent, int> item in dependencies)
+                            {
+                                ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(item.Key, reachableNodes, remainNodes);
+                                if (remainNodes.Count == 0)
+                                {
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Force to clean up all unreachable dependent item, so they are not marked to block the syncTask.
+            /// </summary>
+            /// <param name="syncTask">The thread blocking task.</param>
+            /// <param name="unreachableItems">Unreachable dependent items.</param>
+            /// <param name="reachableItems">All reachable items.</param>
+            internal static void RemoveUnreachableDependentItems(JoinableTask syncTask, HashSet<IJoinableTaskDependent> unreachableItems, HashSet<IJoinableTaskDependent> reachableItems)
+            {
+                ThreadingEventSource.Instance.CircularJoinableTaskDependencyDetected(unreachableItems.Count, reachableItems.Count);
+
+                HashSet<IJoinableTaskDependent>? remainPlaceHold = null;
+                foreach (IJoinableTaskDependent? unreachableItem in unreachableItems)
+                {
+                    JoinableTaskDependentData.RemoveDependingSynchronousTask(unreachableItem, syncTask, reachableItems, ref remainPlaceHold);
+                }
+            }
+
+            /// <summary>
             /// Gets all dependent nodes registered in the <see cref="childDependentNodes"/>
             /// This method is expected to be used with the JTF lock.
             /// </summary>
@@ -470,17 +592,31 @@ namespace Microsoft.VisualStudio.Threading
             /// Gets a value indicating whether the main thread is waiting for the task's completion
             /// This method is expected to be used with the JTF lock.
             /// </summary>
-            internal bool HasMainThreadSynchronousTaskWaiting()
+            internal bool HasMainThreadSynchronousTaskWaiting(IJoinableTaskDependent taskItem)
             {
                 DependentSynchronousTask? existingTaskTracking = this.dependingSynchronousTaskTracking;
                 while (existingTaskTracking is object)
                 {
+                    DependentSynchronousTask? nextTrackingTask = existingTaskTracking.Next;
                     if ((existingTaskTracking.SynchronousTask.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)
                     {
-                        return true;
+                        if (existingTaskTracking.SynchronousTask.HasPotentialUnreachableDependents)
+                        {
+                            // This might remove the current tracking item from the linked list, so we capture next node first.
+                            if (!CleanUpPotentialUnreachableDependentItems(existingTaskTracking.SynchronousTask, out HashSet<IJoinableTaskDependent>? allReachableNodes) ||
+                                allReachableNodes.Contains(taskItem))
+                            {
+                                // this task is still a dependenting task
+                                return true;
+                            }
+                        }
+                        else
+                        {
+                            return true;
+                        }
                     }
 
-                    existingTaskTracking = existingTaskTracking.Next;
+                    existingTaskTracking = nextTrackingTask;
                 }
 
                 return false;
@@ -491,7 +627,7 @@ namespace Microsoft.VisualStudio.Threading
             /// This is called when this task is completed.
             /// This method is expected to be used with the JTF lock.
             /// </summary>
-            internal void OnTaskCompleted()
+            internal void OnTaskCompleted(IJoinableTaskDependent thisDependentNode)
             {
                 if (this.dependingSynchronousTaskTracking is object)
                 {
@@ -504,6 +640,13 @@ namespace Microsoft.VisualStudio.Threading
                         while (existingTaskTracking is object)
                         {
                             RemoveDependingSynchronousTaskFrom(childrenTasks, existingTaskTracking.SynchronousTask, false);
+
+                            HashSet<IJoinableTaskDependent>? potentialUnreachableDependents = existingTaskTracking.SynchronousTask.PotentialUnreachableDependents;
+                            if (potentialUnreachableDependents is object && potentialUnreachableDependents.Count > 0)
+                            {
+                                potentialUnreachableDependents.Remove(thisDependentNode);
+                            }
+
                             existingTaskTracking = existingTaskTracking.Next;
                         }
                     }
@@ -712,7 +855,7 @@ namespace Microsoft.VisualStudio.Threading
                 Requires.NotNull(syncTask, nameof(syncTask));
 
                 HashSet<IJoinableTaskDependent>? reachableNodes = null;
-                HashSet<IJoinableTaskDependent>? remainNodes = null;
+                HashSet<IJoinableTaskDependent>? remainNodes = syncTask.PotentialUnreachableDependents;
 
                 if (force)
                 {
@@ -724,60 +867,24 @@ namespace Microsoft.VisualStudio.Threading
                     RemoveDependingSynchronousTask(task, syncTask, reachableNodes, ref remainNodes);
                 }
 
-                if (!force && remainNodes is object && remainNodes.Count > 0)
+                if (remainNodes is object && remainNodes.Count > 0)
                 {
-                    // a set of tasks may form a dependent loop, so it will make the reference count system
-                    // not to work correctly when we try to remove the synchronous task.
-                    // To get rid of those loops, if a task still tracks the synchronous task after reducing
-                    // the reference count, we will calculate the entire reachable tree from the root.  That will
-                    // tell us the exactly tasks which need track the synchronous task, and we will clean up the rest.
-                    reachableNodes = new HashSet<IJoinableTaskDependent>();
-                    var syncTaskItem = (IJoinableTaskDependent)syncTask;
-                    ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(syncTaskItem, reachableNodes, remainNodes);
-
-                    // force to remove all invalid items
-                    HashSet<IJoinableTaskDependent>? remainPlaceHold = null;
-                    foreach (IJoinableTaskDependent? remainTask in remainNodes)
+                    if (force)
                     {
-                        RemoveDependingSynchronousTask(remainTask, syncTask, reachableNodes, ref remainPlaceHold);
+                        Assumes.NotNull(reachableNodes);
+                        Assumes.True(reachableNodes.Count == 0);
+
+                        RemoveUnreachableDependentItems(syncTask, remainNodes, reachableNodes);
+
+                        syncTask.PotentialUnreachableDependents?.Clear();
                     }
-                }
-            }
-
-            /// <summary>
-            /// Compute all reachable nodes from a synchronous task. Because we use the result to clean up invalid
-            /// items from the remain task, we will remove valid task from the collection, and stop immediately if nothing is left.
-            /// </summary>
-            /// <param name="taskOrCollection">The current joinableTask or collection owns the data.</param>
-            /// <param name="reachableNodes">All reachable dependency nodes. This is not a completed list, if there is no remain node.</param>
-            /// <param name="remainNodes">Remain dependency nodes we want to check. After the execution, it will retain non-reachable nodes.</param>
-            private static void ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(IJoinableTaskDependent taskOrCollection, HashSet<IJoinableTaskDependent> reachableNodes, HashSet<IJoinableTaskDependent> remainNodes)
-            {
-                Requires.NotNull(taskOrCollection, nameof(taskOrCollection));
-                Requires.NotNull(remainNodes, nameof(remainNodes));
-                Requires.NotNull(reachableNodes, nameof(reachableNodes));
-                if ((taskOrCollection as JoinableTask)?.IsFullyCompleted != true)
-                {
-                    if (reachableNodes.Add(taskOrCollection))
+                    else if (syncTask.PotentialUnreachableDependents != remainNodes)
                     {
-                        if (remainNodes.Remove(taskOrCollection) && remainNodes.Count == 0)
-                        {
-                            // no remain task left, quit the loop earlier
-                            return;
-                        }
-
-                        WeakKeyDictionary<IJoinableTaskDependent, int>? dependencies = taskOrCollection.GetJoinableTaskDependentData().childDependentNodes;
-                        if (dependencies is object)
-                        {
-                            foreach (KeyValuePair<IJoinableTaskDependent, int> item in dependencies)
-                            {
-                                ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(item.Key, reachableNodes, remainNodes);
-                                if (remainNodes.Count == 0)
-                                {
-                                    return;
-                                }
-                            }
-                        }
+                        // a set of tasks may form a dependent loop, so it will make the reference count system
+                        // not to work correctly when we try to remove the synchronous task.
+                        // It will require full dependency scanning to clean them up, which is quite expensive,
+                        // so we keep tracking them, and clean them up when it becomes essential.
+                        syncTask.PotentialUnreachableDependents = remainNodes;
                     }
                 }
             }
@@ -831,7 +938,8 @@ namespace Microsoft.VisualStudio.Threading
 
                         if (reachableNodes is null)
                         {
-                            if (removed)
+                            // if a node doesn't have dependencies, it cannot be a part of a dependency circle.
+                            if (removed || taskOrCollection.GetJoinableTaskDependentData().HasNoChildDependentNode)
                             {
                                 if (remainingDependentNodes is object)
                                 {

@@ -381,6 +381,21 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Gets or sets potential unreachable dependent nodes.
+        /// This is a special collection only used in synchronized task when there are other tasks which are marked to block it through ref-count code.
+        /// However, it is possible the reference count is retained by loop-dependencies. This collection tracking those items,
+        /// so the clean-up logic can run when it becomes necessary.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        internal HashSet<IJoinableTaskDependent>? PotentialUnreachableDependents { get; set; }
+
+        /// <summary>
+        /// Gets a value indicating whether PotentialUnreachableDependents is empty.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        internal bool HasPotentialUnreachableDependents => this.PotentialUnreachableDependents is object && this.PotentialUnreachableDependents.Count != 0;
+
+        /// <summary>
         /// Gets the flags set on this task.
         /// </summary>
         internal JoinableTaskFlags State
@@ -702,6 +717,18 @@ namespace Microsoft.VisualStudio.Threading
                                 eventsNeedNotify = new List<AsyncManualResetEvent>(tasksNeedNotify.Count);
                                 foreach (JoinableTask? taskToNotify in tasksNeedNotify)
                                 {
+                                    if (mainThreadQueueUpdated && taskToNotify != this && taskToNotify.pendingEventCount == 0 && taskToNotify.HasPotentialUnreachableDependents)
+                                    {
+                                        // It is not essential to clean up potential unreachable dependent items before triggering the UI thread,
+                                        // because dependencies may change, and invalidate this work. However, we try to do this work in the background thread to make it less likely
+                                        // doing the expensive work on the UI thread.
+                                        if (JoinableTaskDependencyGraph.CleanUpPotentialUnreachableDependentItems(taskToNotify, out HashSet<IJoinableTaskDependent>? reachableNodes) &&
+                                            !reachableNodes.Contains(this))
+                                        {
+                                            continue;
+                                        }
+                                    }
+
                                     if (taskToNotify.pendingEventSource is null || taskToNotify == this)
                                     {
                                         taskToNotify.pendingEventSource = this.WeakSelf;
@@ -1078,7 +1105,9 @@ namespace Microsoft.VisualStudio.Threading
 
                         if (this.pendingEventSource is object)
                         {
-                            if (this.pendingEventSource.TryGetTarget(out JoinableTask? pendingSource) && JoinableTaskDependencyGraph.IsDependingSynchronousTask(pendingSource, this))
+                            if (this.pendingEventSource.TryGetTarget(out JoinableTask? pendingSource) &&
+                                (pendingSource == this ||
+                                 (!this.HasPotentialUnreachableDependents && JoinableTaskDependencyGraph.IsDependingSynchronousTask(pendingSource, this))))
                             {
                                 ExecutionQueue? queue = onMainThread ? pendingSource.mainThreadQueue : pendingSource.threadPoolQueue;
                                 if (queue is object && !queue.IsCompleted && queue.TryDequeue(out work))
@@ -1105,8 +1134,25 @@ namespace Microsoft.VisualStudio.Threading
                             visited.Clear();
                         }
 
-                        if (TryDequeueSelfOrDependencies(this, onMainThread, visited, out work))
+                        bool foundWork = TryDequeueSelfOrDependencies(this, onMainThread, visited, out work);
+
+                        HashSet<IJoinableTaskDependent>? visitedNodes = visited;
+                        if (visitedNodes != null && this.HasPotentialUnreachableDependents)
                         {
+                            // We walked the dependencies tree and use this information to update the PotentialUnreachableDependents list.
+                            this.PotentialUnreachableDependents!.RemoveWhere(n => visitedNodes.Contains(n));
+
+                            if (!foundWork && this.PotentialUnreachableDependents.Count > 0)
+                            {
+                                JoinableTaskDependencyGraph.RemoveUnreachableDependentItems(this, this.PotentialUnreachableDependents, visitedNodes);
+                                this.PotentialUnreachableDependents.Clear();
+                            }
+                        }
+
+                        if (foundWork)
+                        {
+                            Assumes.NotNull(work);
+
                             tryAgainAfter = null;
                             return true;
                         }
