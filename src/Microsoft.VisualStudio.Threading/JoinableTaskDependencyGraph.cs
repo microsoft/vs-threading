@@ -236,20 +236,20 @@ namespace Microsoft.VisualStudio.Threading
             // the reference count, we will calculate the entire reachable tree from the root.  That will
             // tell us the exactly tasks which need track the synchronous task, and we will clean up the rest.
             HashSet<IJoinableTaskDependent>? possibleUnreachableItems = syncTask.PotentialUnreachableDependents;
-            if (possibleUnreachableItems is object)
+            if (possibleUnreachableItems is object && possibleUnreachableItems.Count > 0)
             {
                 var reachableNodes = new HashSet<IJoinableTaskDependent>();
                 var syncTaskItem = (IJoinableTaskDependent)syncTask;
 
                 JoinableTaskDependentData.ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(syncTaskItem, reachableNodes, possibleUnreachableItems);
 
-                syncTask.PotentialUnreachableDependents = null;
                 allReachableNodes = reachableNodes;
 
                 // force to remove all invalid items
                 if (possibleUnreachableItems.Count > 0)
                 {
                     JoinableTaskDependentData.RemoveUnreachableDependentItems(syncTask, possibleUnreachableItems, reachableNodes);
+                    possibleUnreachableItems.Clear();
 
                     return true;
                 }
@@ -600,7 +600,7 @@ namespace Microsoft.VisualStudio.Threading
                     DependentSynchronousTask? nextTrackingTask = existingTaskTracking.Next;
                     if ((existingTaskTracking.SynchronousTask.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)
                     {
-                        if (existingTaskTracking.SynchronousTask.PotentialUnreachableDependents != null)
+                        if (existingTaskTracking.SynchronousTask.HasPotentialUnreachableDependents)
                         {
                             // This might remove the current tracking item from the linked list, so we capture next node first.
                             if (!CleanUpPotentialUnreachableDependentItems(existingTaskTracking.SynchronousTask, out HashSet<IJoinableTaskDependent>? allReachableNodes) ||
@@ -642,12 +642,9 @@ namespace Microsoft.VisualStudio.Threading
                             RemoveDependingSynchronousTaskFrom(childrenTasks, existingTaskTracking.SynchronousTask, false);
 
                             HashSet<IJoinableTaskDependent>? potentialUnreachableDependents = existingTaskTracking.SynchronousTask.PotentialUnreachableDependents;
-                            if (potentialUnreachableDependents != null)
+                            if (potentialUnreachableDependents is object && potentialUnreachableDependents.Count > 0)
                             {
-                                if (potentialUnreachableDependents.Remove(thisDependentNode) && potentialUnreachableDependents.Count == 0)
-                                {
-                                    existingTaskTracking.SynchronousTask.PotentialUnreachableDependents = null;
-                                }
+                                potentialUnreachableDependents.Remove(thisDependentNode);
                             }
 
                             existingTaskTracking = existingTaskTracking.Next;
@@ -879,7 +876,7 @@ namespace Microsoft.VisualStudio.Threading
 
                         RemoveUnreachableDependentItems(syncTask, remainNodes, reachableNodes);
 
-                        syncTask.PotentialUnreachableDependents = null;
+                        syncTask.PotentialUnreachableDependents?.Clear();
                     }
                     else if (syncTask.PotentialUnreachableDependents != remainNodes)
                     {
@@ -889,10 +886,6 @@ namespace Microsoft.VisualStudio.Threading
                         // so we keep tracking them, and clean them up when it becomes essential.
                         syncTask.PotentialUnreachableDependents = remainNodes;
                     }
-                }
-                else
-                {
-                    syncTask.PotentialUnreachableDependents = null;
                 }
             }
 

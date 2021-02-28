@@ -390,6 +390,12 @@ namespace Microsoft.VisualStudio.Threading
         internal HashSet<IJoinableTaskDependent>? PotentialUnreachableDependents { get; set; }
 
         /// <summary>
+        /// Gets a value indicating whether PotentialUnreachableDependents is empty.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        internal bool HasPotentialUnreachableDependents => this.PotentialUnreachableDependents is object && this.PotentialUnreachableDependents.Count != 0;
+
+        /// <summary>
         /// Gets the flags set on this task.
         /// </summary>
         internal JoinableTaskFlags State
@@ -711,7 +717,7 @@ namespace Microsoft.VisualStudio.Threading
                                 eventsNeedNotify = new List<AsyncManualResetEvent>(tasksNeedNotify.Count);
                                 foreach (JoinableTask? taskToNotify in tasksNeedNotify)
                                 {
-                                    if (mainThreadQueueUpdated && taskToNotify != this && taskToNotify.pendingEventCount == 0 && taskToNotify.PotentialUnreachableDependents != null)
+                                    if (mainThreadQueueUpdated && taskToNotify != this && taskToNotify.pendingEventCount == 0 && taskToNotify.HasPotentialUnreachableDependents)
                                     {
                                         // It is not essential to clean up potential unreachable dependent items before triggering the UI thread,
                                         // because dependencies may change, and invalidate this work. However, we try to do this work in the background thread to make it less likely
@@ -1101,7 +1107,7 @@ namespace Microsoft.VisualStudio.Threading
                         {
                             if (this.pendingEventSource.TryGetTarget(out JoinableTask? pendingSource) &&
                                 (pendingSource == this ||
-                                 (this.PotentialUnreachableDependents == null && JoinableTaskDependencyGraph.IsDependingSynchronousTask(pendingSource, this))))
+                                 (!this.HasPotentialUnreachableDependents && JoinableTaskDependencyGraph.IsDependingSynchronousTask(pendingSource, this))))
                             {
                                 ExecutionQueue? queue = onMainThread ? pendingSource.mainThreadQueue : pendingSource.threadPoolQueue;
                                 if (queue is object && !queue.IsCompleted && queue.TryDequeue(out work))
@@ -1131,19 +1137,15 @@ namespace Microsoft.VisualStudio.Threading
                         bool foundWork = TryDequeueSelfOrDependencies(this, onMainThread, visited, out work);
 
                         HashSet<IJoinableTaskDependent>? visitedNodes = visited;
-                        if (visitedNodes != null && this.PotentialUnreachableDependents != null)
+                        if (visitedNodes != null && this.HasPotentialUnreachableDependents)
                         {
                             // We walked the dependencies tree and use this information to update the PotentialUnreachableDependents list.
-                            this.PotentialUnreachableDependents.RemoveWhere(n => visitedNodes.Contains(n));
-                            if (this.PotentialUnreachableDependents.Count == 0)
-                            {
-                                this.PotentialUnreachableDependents = null;
-                            }
+                            this.PotentialUnreachableDependents!.RemoveWhere(n => visitedNodes.Contains(n));
 
-                            if (!foundWork && this.PotentialUnreachableDependents != null)
+                            if (!foundWork && this.PotentialUnreachableDependents.Count > 0)
                             {
                                 JoinableTaskDependencyGraph.RemoveUnreachableDependentItems(this, this.PotentialUnreachableDependents, visitedNodes);
-                                this.PotentialUnreachableDependents = null;
+                                this.PotentialUnreachableDependents.Clear();
                             }
                         }
 
