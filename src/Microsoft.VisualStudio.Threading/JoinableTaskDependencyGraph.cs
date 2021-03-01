@@ -16,6 +16,8 @@ namespace Microsoft.VisualStudio.Threading
     /// </summary>
     internal static class JoinableTaskDependencyGraph
     {
+        private static readonly HashSet<IJoinableTaskDependent> EmptySet = new HashSet<IJoinableTaskDependent>();
+
         /// <summary>
         /// Gets a value indicating whether there is no child depenent item.
         /// This method is expected to be used with the JTF lock.
@@ -500,7 +502,13 @@ namespace Microsoft.VisualStudio.Threading
                     lock (syncTask.Factory.Context.SyncContextLock)
                     {
                         // Remove itself from the tracking list, after the task is completed.
-                        RemoveDependingSynchronousTask(syncTask, syncTask, true);
+                        RemoveDependingSynchronousTask(syncTask, syncTask, force: true);
+
+                        if (syncTask.PotentialUnreachableDependents is object && syncTask.PotentialUnreachableDependents.Count > 0)
+                        {
+                            RemoveUnreachableDependentItems(syncTask, syncTask.PotentialUnreachableDependents, EmptySet);
+                            syncTask.PotentialUnreachableDependents = null;
+                        }
                     }
                 }
             }
