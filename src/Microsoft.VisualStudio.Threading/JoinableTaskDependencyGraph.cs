@@ -71,10 +71,11 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="taskItem">The current joinableTask or collection.</param>
         /// <param name="child">The <see cref="IJoinableTaskDependent"/> to join as a child.</param>
-        internal static void RemoveDependency(IJoinableTaskDependent taskItem, IJoinableTaskDependent child)
+        /// <param name="forceCleanup">Ignore refCount, it is being used when the child task is completed.</param>
+        internal static void RemoveDependency(IJoinableTaskDependent taskItem, IJoinableTaskDependent child, bool forceCleanup = false)
         {
             Requires.NotNull(taskItem, nameof(taskItem));
-            JoinableTaskDependentData.RemoveDependency(taskItem, child);
+            JoinableTaskDependentData.RemoveDependency(taskItem, child, forceCleanup);
         }
 
         /// <summary>
@@ -400,7 +401,8 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             /// <param name="parentTaskOrCollection">The current joinableTask or collection contains to remove a dependency.</param>
             /// <param name="joinChild">The <see cref="IJoinableTaskDependent"/> to join as a child.</param>
-            internal static void RemoveDependency(IJoinableTaskDependent parentTaskOrCollection, IJoinableTaskDependent joinChild)
+            /// <param name="forceCleanup">Ignore refCount, it is being used when the child task is completed.</param>
+            internal static void RemoveDependency(IJoinableTaskDependent parentTaskOrCollection, IJoinableTaskDependent joinChild, bool forceCleanup)
             {
                 Requires.NotNull(parentTaskOrCollection, nameof(parentTaskOrCollection));
                 Requires.NotNull(joinChild, nameof(joinChild));
@@ -412,7 +414,7 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         if (data.childDependentNodes is object && data.childDependentNodes.TryGetValue(joinChild, out int refCount))
                         {
-                            if (refCount == 1)
+                            if (refCount == 1 || forceCleanup)
                             {
                                 joinChild.OnRemovedFromDependency(parentTaskOrCollection);
 
