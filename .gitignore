@@ -63,6 +63,9 @@ ipch/
 *.vsp
 *.vspx
 
+# Visual Studio Logging
+*.svclog
+
 # Guidance Automation Toolkit
 *.gpState
 
