@@ -4179,6 +4179,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
 
         using (this.context.SuppressRelevance())
         {
+            // this task creates a circular loop.
             task2 = joinableTaskFactory.RunAsync(async () =>
             {
                 joinableTaskCollection.Join();
@@ -4221,12 +4222,18 @@ public class JoinableTaskTests : JoinableTaskTestBase
 
         await this.context.Factory.SwitchToMainThreadAsync();
 
+        // Due to circular reference, this add/remove reference to lead incompleted state
+        // the joinableTaskCollection will retain refcount to the JTF.Run task.
         using (joinableTaskCollection.Join())
         {
         }
 
         using (mainThreadJoinedCollection.Join())
         {
+            // This IsMainThreadBlocked triggers the incompleted state to be cleaned up.
+            // JTF.Run joins the completed task through the middle collection to expose the
+            // inconsistent between two logic, so the recomputation won't clean up the circular
+            // dependency loop correctly.
             await this.context.Factory.RunAsync(() =>
             {
                 return Task.FromResult(this.context.IsMainThreadBlocked());
