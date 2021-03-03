@@ -4239,48 +4239,6 @@ public class JoinableTaskTests : JoinableTaskTestBase
         return task2;
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)] // We need locals to surely be popped off the stack for a reliable test
-    private async Task<(Task SpinOffTask, WeakReference WeakJoinableTask)> SpinOffMainThreadTaskForJoinableTaskDependenciesHandledAfterTaskCompletionInnerTask(
-        JoinableTaskFactory joinableTaskFactory,
-        JoinableTaskCollection joinableTaskCollection)
-    {
-        var unblockTask1 = new AsyncManualResetEvent();
-        var spinOffIsReady = new AsyncManualResetEvent();
-        var spinOffIsDone = new AsyncManualResetEvent();
-        Task? spinOffTask = null;
-
-        JoinableTask joinableTask = joinableTaskFactory.RunAsync(async () =>
-        {
-            spinOffTask = Task.Run(async () =>
-            {
-                JoinableTaskFactory.MainThreadAwaiter awaiter = this.context.Factory.SwitchToMainThreadAsync().GetAwaiter();
-                awaiter.OnCompleted(() =>
-                {
-                    spinOffIsDone.Set();
-                });
-
-                spinOffIsReady.Set();
-
-                await spinOffIsDone.WaitAsync();
-
-                // Add loop dependency
-                joinableTaskCollection.Join();
-            });
-
-            await spinOffIsReady.WaitAsync();
-            await unblockTask1.WaitAsync();
-        });
-
-        // Increase refcount
-        joinableTaskCollection.Add(joinableTask);
-
-        unblockTask1.Set();
-
-        await joinableTask.Task;
-
-        return (spinOffTask!, new WeakReference(joinableTask.Task));
-    }
-
     private async Task SomeOperationThatMayBeOnMainThreadAsync()
     {
         await Task.Yield();
