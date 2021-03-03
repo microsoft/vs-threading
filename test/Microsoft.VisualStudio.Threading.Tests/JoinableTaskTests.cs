@@ -4116,6 +4116,44 @@ public class JoinableTaskTests : JoinableTaskTestBase
         lockHolder.Wait();
     }
 
+    [Fact]
+    public void JoinableTaskCleanUpDependenciesForLoopDependencies()
+    {
+        this.SimulateUIThread(async delegate
+        {
+            var joinableTaskCollection = new JoinableTaskCollection(this.context, refCountAddedJobs: true);
+            JoinableTaskFactory taskFactory = this.context.CreateFactory(joinableTaskCollection);
+            ((DerivedJoinableTaskFactory)taskFactory).AssumeConcurrentUse = true;
+
+            bool isMainThreadBlockedResult = true;
+            var unblockTask2 = new AsyncManualResetEvent();
+            JoinableTask? childTask = null;
+
+            this.context.Factory.Run(async () =>
+            {
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
+
+                childTask = await this.SpinOffMainThreadTaskForJoinableTaskDependenciesHandledAfterTaskCompletion(taskFactory, joinableTaskCollection, unblockTask2);
+            });
+
+            using (this.context.SuppressRelevance())
+            {
+                isMainThreadBlockedResult = await taskFactory.RunAsync(() =>
+                {
+                    return Task.FromResult(this.context.IsMainThreadBlocked());
+                });
+            }
+
+            using (this.context.SuppressRelevance())
+            {
+                unblockTask2.Set();
+                childTask!.Task.Wait();
+            }
+
+            Assert.False(isMainThreadBlockedResult);
+        });
+    }
+
     protected override JoinableTaskContext CreateJoinableTaskContext()
     {
         return new DerivedJoinableTaskContext();
@@ -4124,6 +4162,123 @@ public class JoinableTaskTests : JoinableTaskTestBase
     private static async void SomeFireAndForgetMethod()
     {
         await Task.Yield();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)] // We need locals to surely be popped off the stack for a reliable test
+    private async Task<JoinableTask> SpinOffMainThreadTaskForJoinableTaskDependenciesHandledAfterTaskCompletion(
+        JoinableTaskFactory joinableTaskFactory,
+        JoinableTaskCollection joinableTaskCollection,
+        AsyncManualResetEvent unblockTask2)
+    {
+        JoinableTask? task2 = null;
+        Task? spinOffTask = null;
+
+        JoinableTask? joinableTask = null;
+
+        var mainThreadJoinedCollection = new JoinableTaskCollection(this.context);
+        await TaskScheduler.Default.SwitchTo(alwaysYield: true);
+
+        using (this.context.SuppressRelevance())
+        {
+            task2 = joinableTaskFactory.RunAsync(async () =>
+            {
+                joinableTaskCollection.Join();
+                await unblockTask2.WaitAsync();
+            });
+
+            var unblockTask1 = new AsyncManualResetEvent();
+            var spinOffIsReady = new AsyncManualResetEvent();
+            var spinOffIsDone = new AsyncManualResetEvent();
+
+            joinableTask = joinableTaskFactory.RunAsync(async () =>
+            {
+                joinableTaskCollection.Join();
+
+                spinOffTask = Task.Run(async () =>
+                {
+                    JoinableTaskFactory.MainThreadAwaiter awaiter = this.context.Factory.SwitchToMainThreadAsync().GetAwaiter();
+                    awaiter.OnCompleted(() =>
+                    {
+                        spinOffIsDone.Set();
+                    });
+
+                    spinOffIsReady.Set();
+
+                    await spinOffIsDone.WaitAsync();
+                });
+
+                await spinOffIsReady.WaitAsync();
+                await unblockTask1.WaitAsync();
+            });
+
+            // Increase refcount
+            mainThreadJoinedCollection.Add(joinableTask);
+            joinableTaskCollection.Add(joinableTask);
+
+            unblockTask1.Set();
+
+            await joinableTask.Task;
+        }
+
+        await this.context.Factory.SwitchToMainThreadAsync();
+
+        using (joinableTaskCollection.Join())
+        {
+        }
+
+        using (mainThreadJoinedCollection.Join())
+        {
+            await this.context.Factory.RunAsync(() =>
+            {
+                return Task.FromResult(this.context.IsMainThreadBlocked());
+            });
+
+            await spinOffTask!;
+        }
+
+        return task2;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)] // We need locals to surely be popped off the stack for a reliable test
+    private async Task<(Task SpinOffTask, WeakReference WeakJoinableTask)> SpinOffMainThreadTaskForJoinableTaskDependenciesHandledAfterTaskCompletionInnerTask(
+        JoinableTaskFactory joinableTaskFactory,
+        JoinableTaskCollection joinableTaskCollection)
+    {
+        var unblockTask1 = new AsyncManualResetEvent();
+        var spinOffIsReady = new AsyncManualResetEvent();
+        var spinOffIsDone = new AsyncManualResetEvent();
+        Task? spinOffTask = null;
+
+        JoinableTask joinableTask = joinableTaskFactory.RunAsync(async () =>
+        {
+            spinOffTask = Task.Run(async () =>
+            {
+                JoinableTaskFactory.MainThreadAwaiter awaiter = this.context.Factory.SwitchToMainThreadAsync().GetAwaiter();
+                awaiter.OnCompleted(() =>
+                {
+                    spinOffIsDone.Set();
+                });
+
+                spinOffIsReady.Set();
+
+                await spinOffIsDone.WaitAsync();
+
+                // Add loop dependency
+                joinableTaskCollection.Join();
+            });
+
+            await spinOffIsReady.WaitAsync();
+            await unblockTask1.WaitAsync();
+        });
+
+        // Increase refcount
+        joinableTaskCollection.Add(joinableTask);
+
+        unblockTask1.Set();
+
+        await joinableTask.Task;
+
+        return (spinOffTask!, new WeakReference(joinableTask.Task));
     }
 
     private async Task SomeOperationThatMayBeOnMainThreadAsync()
