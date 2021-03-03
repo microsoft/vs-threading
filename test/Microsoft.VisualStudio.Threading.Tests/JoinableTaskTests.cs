@@ -4164,7 +4164,6 @@ public class JoinableTaskTests : JoinableTaskTestBase
         await Task.Yield();
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)] // We need locals to surely be popped off the stack for a reliable test
     private async Task<JoinableTask> SpinOffMainThreadTaskForJoinableTaskDependenciesHandledAfterTaskCompletion(
         JoinableTaskFactory joinableTaskFactory,
         JoinableTaskCollection joinableTaskCollection,
