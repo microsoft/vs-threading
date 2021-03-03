@@ -502,7 +502,11 @@ namespace Microsoft.VisualStudio.Threading
                     lock (syncTask.Factory.Context.SyncContextLock)
                     {
                         // Remove itself from the tracking list, after the task is completed.
-                        RemoveDependingSynchronousTask(syncTask, syncTask, force: true);
+                        var syncTaskItem = (IJoinableTaskDependent)syncTask;
+                        if (syncTaskItem.GetJoinableTaskDependentData().dependingSynchronousTaskTracking is object)
+                        {
+                            RemoveDependingSynchronousTask(syncTask, syncTask, force: true);
+                        }
 
                         if (syncTask.PotentialUnreachableDependents is object && syncTask.PotentialUnreachableDependents.Count > 0)
                         {
@@ -849,11 +853,7 @@ namespace Microsoft.VisualStudio.Threading
                 Requires.NotNull(syncTask, nameof(syncTask));
                 Assumes.True(Monitor.IsEntered(taskOrCollection.JoinableTaskContext.SyncContextLock));
 
-                var syncTaskItem = (IJoinableTaskDependent)syncTask;
-                if (syncTaskItem.GetJoinableTaskDependentData().dependingSynchronousTaskTracking is object)
-                {
-                    RemoveDependingSynchronousTaskFrom(new IJoinableTaskDependent[] { taskOrCollection }, syncTask, force);
-                }
+                RemoveDependingSynchronousTaskFrom(new IJoinableTaskDependent[] { taskOrCollection }, syncTask, force);
             }
 
             /// <summary>
