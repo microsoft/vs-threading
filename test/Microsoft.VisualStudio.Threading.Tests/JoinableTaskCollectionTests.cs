@@ -201,7 +201,7 @@ public class JoinableTaskCollectionTests : JoinableTaskTestBase
     public void JoinTillEmptyWorksWithRefCounting()
     {
         var finishTaskEvent = new AsyncManualResetEvent();
-        JoinableTask? task = this.JoinableFactory.RunAsync(async delegate { await finishTaskEvent.WaitAsync().ConfigureAwait(false); });
+        JoinableTask task = this.JoinableFactory.RunAsync(async delegate { await finishTaskEvent.WaitAsync().ConfigureAwait(false); });
 
         var collection = new JoinableTaskCollection(this.context, refCountAddedJobs: true);
 
@@ -210,7 +210,7 @@ public class JoinableTaskCollectionTests : JoinableTaskTestBase
 
         finishTaskEvent.Set();
 
-        Task? waiter = collection!.JoinTillEmptyAsync();
+        Task waiter = collection.JoinTillEmptyAsync();
         Assert.True(waiter.Wait(UnexpectedTimeout));
     }
 }
