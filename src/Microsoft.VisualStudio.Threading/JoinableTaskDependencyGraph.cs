@@ -453,7 +453,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 if (taskOrCollection is JoinableTask thisJoinableTask)
                 {
-                    if (thisJoinableTask.IsFullyCompleted || !joinables.Add(thisJoinableTask))
+                    if (thisJoinableTask.IsFullyCompleted || !joinables.Add(thisJoinableTask) || thisJoinableTask.IsCompleteRequested)
                     {
                         return;
                     }
@@ -532,6 +532,11 @@ namespace Microsoft.VisualStudio.Threading
                         if (remainNodes.Remove(taskOrCollection) && remainNodes.Count == 0)
                         {
                             // no remain task left, quit the loop earlier
+                            return;
+                        }
+
+                        if ((taskOrCollection as JoinableTask)?.IsCompleteRequested == true)
+                        {
                             return;
                         }
 

@@ -940,6 +940,9 @@ namespace Microsoft.VisualStudio.Threading
                             }
                             else if (tryAgainAfter is object)
                             {
+                                // prevent referencing tasks which may be GCed during the waiting cycle.
+                                visited?.Clear();
+
                                 ThreadingEventSource.Instance.WaitSynchronouslyStart();
                                 this.owner.WaitSynchronously(tryAgainAfter);
                                 ThreadingEventSource.Instance.WaitSynchronouslyStop();
@@ -1070,7 +1073,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 if (work is null)
                 {
-                    if (joinableTask?.IsFullyCompleted != true)
+                    if (joinableTask?.IsCompleteRequested != true)
                     {
                         foreach (IJoinableTaskDependent? item in JoinableTaskDependencyGraph.GetDirectDependentNodes(currentNode))
                         {
