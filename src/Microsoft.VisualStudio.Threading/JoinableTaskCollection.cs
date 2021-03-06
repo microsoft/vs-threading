@@ -165,9 +165,10 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     lock (this.Context.SyncContextLock)
                     {
-                        // We use interlocked here to mitigate race conditions in lazily initializing this field.
-                        // We *could* take a write lock above, but that would needlessly increase lock contention.
-                        AsyncManualResetEvent? nowait = Interlocked.CompareExchange(ref this.emptyEvent, new AsyncManualResetEvent(JoinableTaskDependencyGraph.HasNoChildDependentNode(this)), null);
+                        if (this.emptyEvent is null)
+                        {
+                            this.emptyEvent = new AsyncManualResetEvent(JoinableTaskDependencyGraph.HasNoChildDependentNode(this));
+                        }
                     }
                 }
             }
