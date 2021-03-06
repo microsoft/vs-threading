@@ -998,7 +998,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 foreach (IJoinableTaskDependent? collection in this.dependencyParents)
                 {
-                    JoinableTaskDependencyGraph.RemoveDependency(collection, this);
+                    JoinableTaskDependencyGraph.RemoveDependency(collection, this, forceCleanup: true);
                 }
 
                 if (this.mainThreadJobSyncContext is object)
