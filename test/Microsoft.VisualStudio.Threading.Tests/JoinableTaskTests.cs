@@ -4116,6 +4116,44 @@ public class JoinableTaskTests : JoinableTaskTestBase
         lockHolder.Wait();
     }
 
+    [Fact]
+    public void JoinableTaskCleanUpDependenciesForLoopDependencies()
+    {
+        this.SimulateUIThread(async delegate
+        {
+            var joinableTaskCollection = new JoinableTaskCollection(this.context, refCountAddedJobs: true);
+            JoinableTaskFactory taskFactory = this.context.CreateFactory(joinableTaskCollection);
+            ((DerivedJoinableTaskFactory)taskFactory).AssumeConcurrentUse = true;
+
+            bool isMainThreadBlockedResult = true;
+            var unblockTask2 = new AsyncManualResetEvent();
+            JoinableTask? childTask = null;
+
+            this.context.Factory.Run(async () =>
+            {
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
+
+                childTask = await this.SpinOffMainThreadTaskForJoinableTaskDependenciesHandledAfterTaskCompletion(taskFactory, joinableTaskCollection, unblockTask2);
+            });
+
+            using (this.context.SuppressRelevance())
+            {
+                isMainThreadBlockedResult = await taskFactory.RunAsync(() =>
+                {
+                    return Task.FromResult(this.context.IsMainThreadBlocked());
+                });
+            }
+
+            using (this.context.SuppressRelevance())
+            {
+                unblockTask2.Set();
+                childTask!.Task.Wait();
+            }
+
+            Assert.False(isMainThreadBlockedResult);
+        });
+    }
+
     protected override JoinableTaskContext CreateJoinableTaskContext()
     {
         return new DerivedJoinableTaskContext();
@@ -4124,6 +4162,87 @@ public class JoinableTaskTests : JoinableTaskTestBase
     private static async void SomeFireAndForgetMethod()
     {
         await Task.Yield();
+    }
+
+    private async Task<JoinableTask> SpinOffMainThreadTaskForJoinableTaskDependenciesHandledAfterTaskCompletion(
+        JoinableTaskFactory joinableTaskFactory,
+        JoinableTaskCollection joinableTaskCollection,
+        AsyncManualResetEvent unblockTask2)
+    {
+        JoinableTask? task2 = null;
+        Task? spinOffTask = null;
+
+        JoinableTask? joinableTask = null;
+
+        var mainThreadJoinedCollection = new JoinableTaskCollection(this.context);
+        await TaskScheduler.Default.SwitchTo(alwaysYield: true);
+
+        using (this.context.SuppressRelevance())
+        {
+            // this task creates a circular loop.
+            task2 = joinableTaskFactory.RunAsync(async () =>
+            {
+                joinableTaskCollection.Join();
+                await unblockTask2.WaitAsync();
+            });
+
+            var unblockTask1 = new AsyncManualResetEvent();
+            var spinOffIsReady = new AsyncManualResetEvent();
+            var spinOffIsDone = new AsyncManualResetEvent();
+
+            joinableTask = joinableTaskFactory.RunAsync(async () =>
+            {
+                joinableTaskCollection.Join();
+
+                spinOffTask = Task.Run(async () =>
+                {
+                    JoinableTaskFactory.MainThreadAwaiter awaiter = this.context.Factory.SwitchToMainThreadAsync().GetAwaiter();
+                    awaiter.OnCompleted(() =>
+                    {
+                        spinOffIsDone.Set();
+                    });
+
+                    spinOffIsReady.Set();
+
+                    await spinOffIsDone.WaitAsync();
+                });
+
+                await spinOffIsReady.WaitAsync();
+                await unblockTask1.WaitAsync();
+            });
+
+            // Increase refcount
+            mainThreadJoinedCollection.Add(joinableTask);
+            joinableTaskCollection.Add(joinableTask);
+
+            unblockTask1.Set();
+
+            await joinableTask.Task;
+        }
+
+        await this.context.Factory.SwitchToMainThreadAsync();
+
+        // Due to circular reference, this add/remove reference to lead incompleted state
+        // the joinableTaskCollection will retain refcount to the JTF.Run task.
+        using (joinableTaskCollection.Join())
+        {
+        }
+
+        using (mainThreadJoinedCollection.Join())
+        {
+            // This IsMainThreadBlocked triggers the incompleted state to be cleaned up.
+            // JTF.Run joins the completed task through the middle collection to expose the
+            // inconsistent between two logic, so the recomputation won't clean up the circular
+            // dependency loop correctly.
+            await this.context.Factory.RunAsync(() =>
+            {
+                return Task.FromResult(this.context.IsMainThreadBlocked());
+            });
+
+            await spinOffTask!;
+        }
+
+        return task2;
     }
 
     private async Task SomeOperationThatMayBeOnMainThreadAsync()

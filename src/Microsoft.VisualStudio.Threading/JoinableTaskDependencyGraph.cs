@@ -242,7 +242,7 @@ namespace Microsoft.VisualStudio.Threading
             if (possibleUnreachableItems is object && possibleUnreachableItems.Count > 0)
             {
                 var reachableNodes = new HashSet<IJoinableTaskDependent>();
-                var syncTaskItem = (IJoinableTaskDependent)syncTask;
+                IJoinableTaskDependent syncTaskItem = syncTask;
 
                 JoinableTaskDependentData.ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(syncTaskItem, reachableNodes, possibleUnreachableItems);
 
@@ -455,7 +455,17 @@ namespace Microsoft.VisualStudio.Threading
 
                 if (taskOrCollection is JoinableTask thisJoinableTask)
                 {
-                    if (thisJoinableTask.IsFullyCompleted || !joinables.Add(thisJoinableTask))
+                    if (thisJoinableTask.IsCompleteRequested)
+                    {
+                        if (!thisJoinableTask.IsFullyCompleted)
+                        {
+                            joinables.Add(thisJoinableTask);
+                        }
+
+                        return;
+                    }
+
+                    if (!joinables.Add(thisJoinableTask))
                     {
                         return;
                     }
@@ -485,7 +495,6 @@ namespace Microsoft.VisualStudio.Threading
                 Requires.NotNull(syncTask, nameof(syncTask));
 
                 pendingRequestsCount = 0;
-                taskHasPendingRequests = null;
 
                 taskHasPendingRequests = AddDependingSynchronousTask(syncTask, syncTask, ref pendingRequestsCount);
             }
@@ -504,7 +513,11 @@ namespace Microsoft.VisualStudio.Threading
                     lock (syncTask.Factory.Context.SyncContextLock)
                     {
                         // Remove itself from the tracking list, after the task is completed.
-                        RemoveDependingSynchronousTask(syncTask, syncTask, force: true);
+                        IJoinableTaskDependent syncTaskItem = syncTask;
+                        if (syncTaskItem.GetJoinableTaskDependentData().dependingSynchronousTaskTracking is object)
+                        {
+                            RemoveDependingSynchronousTask(syncTask, syncTask, force: true);
+                        }
 
                         if (syncTask.PotentialUnreachableDependents is object && syncTask.PotentialUnreachableDependents.Count > 0)
                         {
@@ -534,6 +547,11 @@ namespace Microsoft.VisualStudio.Threading
                         if (remainNodes.Remove(taskOrCollection) && remainNodes.Count == 0)
                         {
                             // no remain task left, quit the loop earlier
+                            return;
+                        }
+
+                        if ((taskOrCollection as JoinableTask)?.IsCompleteRequested == true)
+                        {
                             return;
                         }
 
@@ -846,11 +864,7 @@ namespace Microsoft.VisualStudio.Threading
                 Requires.NotNull(syncTask, nameof(syncTask));
                 Assumes.True(Monitor.IsEntered(taskOrCollection.JoinableTaskContext.SyncContextLock));
 
-                var syncTaskItem = (IJoinableTaskDependent)syncTask;
-                if (syncTaskItem.GetJoinableTaskDependentData().dependingSynchronousTaskTracking is object)
-                {
-                    RemoveDependingSynchronousTaskFrom(new IJoinableTaskDependent[] { taskOrCollection }, syncTask, force);
-                }
+                RemoveDependingSynchronousTaskFrom(new IJoinableTaskDependent[] { taskOrCollection }, syncTask, force);
             }
 
             /// <summary>
