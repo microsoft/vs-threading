@@ -990,6 +990,11 @@ namespace Microsoft.VisualStudio.Threading
 
         internal void OnQueueCompleted()
         {
+            if ((this.state & JoinableTaskFlags.CompleteFinalized) == JoinableTaskFlags.CompleteFinalized)
+            {
+                return;
+            }
+
             if (this.IsFullyCompleted)
             {
                 // Note this code may execute more than once, as multiple queue completion
