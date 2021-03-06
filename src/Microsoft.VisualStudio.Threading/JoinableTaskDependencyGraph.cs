@@ -665,7 +665,7 @@ namespace Microsoft.VisualStudio.Threading
                         var childrenTasks = new List<IJoinableTaskDependent>(this.childDependentNodes.Keys);
                         while (existingTaskTracking is object)
                         {
-                            RemoveDependingSynchronousTaskFrom(childrenTasks, existingTaskTracking.SynchronousTask, false);
+                            RemoveDependingSynchronousTaskFrom(childrenTasks, existingTaskTracking.SynchronousTask, force: existingTaskTracking.SynchronousTask == thisDependentNode);
 
                             HashSet<IJoinableTaskDependent>? potentialUnreachableDependents = existingTaskTracking.SynchronousTask.PotentialUnreachableDependents;
                             if (potentialUnreachableDependents is object && potentialUnreachableDependents.Count > 0)
@@ -881,7 +881,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 if (force)
                 {
-                    reachableNodes = new HashSet<IJoinableTaskDependent>();
+                    reachableNodes = EmptySet;
                 }
 
                 foreach (IJoinableTaskDependent? task in tasks)
@@ -898,7 +898,7 @@ namespace Microsoft.VisualStudio.Threading
 
                         RemoveUnreachableDependentItems(syncTask, remainNodes, reachableNodes);
 
-                        syncTask.PotentialUnreachableDependents?.Clear();
+                        syncTask.PotentialUnreachableDependents = null;
                     }
                     else if (syncTask.PotentialUnreachableDependents != remainNodes)
                     {
