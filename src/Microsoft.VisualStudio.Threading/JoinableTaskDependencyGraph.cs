@@ -786,19 +786,17 @@ namespace Microsoft.VisualStudio.Threading
                 JoinableTask? thisJoinableTask = taskOrCollection as JoinableTask;
                 if (thisJoinableTask is object)
                 {
-                    if (thisJoinableTask.IsFullyCompleted)
-                    {
-                        return null;
-                    }
-
                     if (thisJoinableTask.IsCompleteRequested)
                     {
-                        // A completed task might still have pending items in the queue.
-                        int pendingCount = thisJoinableTask.GetPendingEventCountForSynchronousTask(synchronousTask);
-                        if (pendingCount > 0)
+                        if (!thisJoinableTask.IsFullyCompleted)
                         {
-                            totalEventsPending += pendingCount;
-                            return thisJoinableTask;
+                            // A completed task might still have pending items in the queue.
+                            int pendingCount = thisJoinableTask.GetPendingEventCountForSynchronousTask(synchronousTask);
+                            if (pendingCount > 0)
+                            {
+                                totalEventsPending += pendingCount;
+                                return thisJoinableTask;
+                            }
                         }
 
                         return null;
