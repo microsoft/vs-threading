@@ -241,7 +241,7 @@ namespace Microsoft.VisualStudio.Threading
             if (possibleUnreachableItems is object && possibleUnreachableItems.Count > 0)
             {
                 var reachableNodes = new HashSet<IJoinableTaskDependent>();
-                var syncTaskItem = (IJoinableTaskDependent)syncTask;
+                IJoinableTaskDependent syncTaskItem = syncTask;
 
                 JoinableTaskDependentData.ComputeSelfAndDescendentOrJoinedJobsAndRemainTasks(syncTaskItem, reachableNodes, possibleUnreachableItems);
 
@@ -453,7 +453,17 @@ namespace Microsoft.VisualStudio.Threading
 
                 if (taskOrCollection is JoinableTask thisJoinableTask)
                 {
-                    if (thisJoinableTask.IsFullyCompleted || !joinables.Add(thisJoinableTask) || thisJoinableTask.IsCompleteRequested)
+                    if (thisJoinableTask.IsCompleteRequested)
+                    {
+                        if (!thisJoinableTask.IsFullyCompleted)
+                        {
+                            joinables.Add(thisJoinableTask);
+                        }
+
+                        return;
+                    }
+
+                    if (!joinables.Add(thisJoinableTask))
                     {
                         return;
                     }
@@ -483,7 +493,6 @@ namespace Microsoft.VisualStudio.Threading
                 Requires.NotNull(syncTask, nameof(syncTask));
 
                 pendingRequestsCount = 0;
-                taskHasPendingRequests = null;
 
                 taskHasPendingRequests = AddDependingSynchronousTask(syncTask, syncTask, ref pendingRequestsCount);
             }
@@ -502,7 +511,7 @@ namespace Microsoft.VisualStudio.Threading
                     lock (syncTask.Factory.Context.SyncContextLock)
                     {
                         // Remove itself from the tracking list, after the task is completed.
-                        var syncTaskItem = (IJoinableTaskDependent)syncTask;
+                        IJoinableTaskDependent syncTaskItem = syncTask;
                         if (syncTaskItem.GetJoinableTaskDependentData().dependingSynchronousTaskTracking is object)
                         {
                             RemoveDependingSynchronousTask(syncTask, syncTask, force: true);
