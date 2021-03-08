@@ -203,6 +203,10 @@ class MyResponsibleType : IDisposable
         // ignore AggregateException containing only OperationCanceledException
         ex.Handle(inner => (inner is OperationCanceledException));
       }
+      finally
+      {
+        this.disposeCancellationTokenSource.Dispose();
+      }
     }
   }
 }
