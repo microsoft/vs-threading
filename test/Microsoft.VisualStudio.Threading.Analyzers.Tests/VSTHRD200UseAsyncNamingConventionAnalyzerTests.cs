@@ -197,6 +197,39 @@ class Test {
         }
 
         [Fact]
+        public async Task HomemadeIAsyncEnumerableOfTReturningMethodWithoutSuffix_GeneratesWarning()
+        {
+            var test = @"
+using System.Collections.Generic;
+using System.Threading;
+
+class MyAsyncEnumerable<T> : IAsyncEnumerable<T> {
+    public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken) => default;
+}
+
+class Test {
+    MyAsyncEnumerable<int> Foo() => default;
+}
+";
+
+            var withFix = @"
+using System.Collections.Generic;
+using System.Threading;
+
+class MyAsyncEnumerable<T> : IAsyncEnumerable<T> {
+    public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken) => default;
+}
+
+class Test {
+    MyAsyncEnumerable<int> FooAsync() => default;
+}
+";
+
+            DiagnosticResult expected = Verify.Diagnostic(AddSuffixDescriptor).WithSpan(5, 27, 5, 30);
+            await Verify.VerifyCodeFixAsync(test, expected, withFix);
+        }
+
+        [Fact]
         public async Task TaskReturningMainMethodWithoutSuffix_GeneratesNoWarning()
         {
             var test = @"
@@ -351,6 +384,24 @@ using System.Collections.Generic;
 
 class Test {
     IAsyncEnumerable<int> FooAsync() => null;
+}
+";
+            await Verify.VerifyAnalyzerAsync(test);
+        }
+
+        [Fact]
+        public async Task HomemadeIAsyncEnumerableOfTReturningMethodWithSuffix_GeneratesNoWarning()
+        {
+            var test = @"
+using System.Collections.Generic;
+using System.Threading;
+
+class MyAsyncEnumerable<T> : IAsyncEnumerable<T> {
+    public IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken) => default;
+}
+
+class Test {
+    MyAsyncEnumerable<int> FooAsync() => default;
 }
 ";
             await Verify.VerifyAnalyzerAsync(test);
