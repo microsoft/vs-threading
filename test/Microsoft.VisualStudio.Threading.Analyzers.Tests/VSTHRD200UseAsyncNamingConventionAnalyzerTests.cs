@@ -225,7 +225,7 @@ class Test {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(AddSuffixDescriptor).WithSpan(5, 27, 5, 30);
+            DiagnosticResult expected = Verify.Diagnostic(AddSuffixDescriptor).WithSpan(10, 28, 10, 31);
             await Verify.VerifyCodeFixAsync(test, expected, withFix);
         }
 
