@@ -212,8 +212,11 @@ class Test {
 
             await new Verify.Test
             {
-                TestCode = test,
-                HasEntryPoint = true,
+                TestState =
+                {
+                    Sources = { test },
+                    OutputKind = OutputKind.ConsoleApplication,
+                },
             }.RunAsync();
         }
 
@@ -233,8 +236,11 @@ class Test {
 
             await new Verify.Test
             {
-                TestCode = test,
-                HasEntryPoint = true,
+                TestState =
+                {
+                    Sources = { test },
+                    OutputKind = OutputKind.ConsoleApplication,
+                },
             }.RunAsync();
         }
 
@@ -255,8 +261,11 @@ class Test {
 
             await new Verify.Test
             {
-                TestCode = test,
-                HasEntryPoint = true,
+                TestState =
+                {
+                    Sources = { test },
+                    OutputKind = OutputKind.ConsoleApplication,
+                },
             }.RunAsync();
         }
 
