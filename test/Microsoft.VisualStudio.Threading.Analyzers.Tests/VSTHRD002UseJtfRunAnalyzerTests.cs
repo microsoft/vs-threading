@@ -4,6 +4,7 @@
 namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
     using System.Threading.Tasks;
+    using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.Testing;
     using Xunit;
     using Verify = CSharpCodeFixVerifier<VSTHRD002UseJtfRunAnalyzer, VSTHRD002UseJtfRunCodeFixWithAwait>;
@@ -367,11 +368,14 @@ class TestClient {
 
             var verifyTest = new Verify.Test
             {
+                TestState =
+                {
+                    OutputKind = OutputKind.ConsoleApplication,
+                },
                 ExpectedDiagnostics =
                 {
                     Verify.Diagnostic().WithSpan("Test0.cs", 8, 21, 8, 27),
                 },
-                HasEntryPoint = true,
             };
 
             verifyTest.TestState.Sources.AddRange(test);

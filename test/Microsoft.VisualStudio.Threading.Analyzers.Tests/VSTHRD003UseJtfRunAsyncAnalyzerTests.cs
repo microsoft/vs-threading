@@ -1204,18 +1204,19 @@ public static class Boom {
 }
 ",
                     },
-                },
-                SolutionTransforms =
-                {
-                    (solution, projectId) =>
+                    AdditionalProjects =
                     {
-                        Project? projectA = solution.AddProject("ProjectA", "ProjectA", LanguageNames.CSharp)
-                            .WithCompilationOptions(new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
-                            .WithMetadataReferences(solution.GetProject(projectId)!.MetadataReferences.Concat(test!.TestState.AdditionalReferences))
-                            .AddDocument("SpecialTasks.cs", specialTasksCs).Project;
-                        solution = projectA.Solution;
-                        solution = solution.AddProjectReference(projectId, new ProjectReference(projectA.Id));
-                        return solution;
+                        ["ProjectA"] =
+                        {
+                            Sources =
+                            {
+                                ("SpecialTasks.cs", specialTasksCs),
+                            },
+                        },
+                    },
+                    AdditionalProjectReferences =
+                    {
+                        "ProjectA",
                     },
                 },
             };
