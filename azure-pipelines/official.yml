@@ -105,4 +105,5 @@ stages:
               packagesToPush: $(Pipeline.Workspace)/deployables-Windows/NuGet/*.nupkg
               nuGetFeedType: external
               publishFeedCredentials: azure-public/vssdk
+              allowPackageConflicts: true
             continueOnError: true # until "skip on conflict" is offered as a task input.
