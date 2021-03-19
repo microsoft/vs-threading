@@ -2012,6 +2012,7 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
         var readerHasLock = new TaskCompletionSource<object?>();
         var upgradeableReaderWaitingForUpgrade = new TaskCompletionSource<object?>();
         var upgradeableReaderHasUpgraded = new TaskCompletionSource<object?>();
+        var writeLockHasReleased = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
         await Task.WhenAll(
             Task.Run(async delegate
             {
@@ -2026,9 +2027,13 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
                         {
                             upgradeableReaderHasUpgraded.SetAsync();
                         }
+
+                        writeLockHasReleased.SetResult(null);
                     });
+
                     Assert.False(upgradeableReaderHasUpgraded.Task.IsCompleted);
                     await upgradeableReaderWaitingForUpgrade.SetAsync();
+                    await writeLockHasReleased.Task;
                 }
             }),
             Task.Run(async delegate
