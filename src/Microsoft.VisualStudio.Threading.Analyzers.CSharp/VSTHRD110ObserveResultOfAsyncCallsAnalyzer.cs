@@ -6,8 +6,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
-    using System.Linq;
-    using System.Threading;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -42,18 +40,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeInvocation), SyntaxKind.InvocationExpression);
         }
 
-        private static bool IsOfType(ISymbol symbol, string typeName, IReadOnlyList<string> @namespace) =>
-            symbol.Name == typeName && symbol.BelongsToNamespace(@namespace);
-
-        private static bool IsPublicMethod(ISymbol symbol) =>
-            symbol.DeclaredAccessibility == Accessibility.Public && symbol.Kind == SymbolKind.Method;
-
-        private static bool IsPublicProperty(ISymbol symbol) =>
-            symbol.DeclaredAccessibility == Accessibility.Public && symbol.Kind == SymbolKind.Property;
-
-        private static bool IsParameterlessNonGenericMethod(IMethodSymbol methodSymbol) =>
-            methodSymbol.Parameters.Length == 0 && !methodSymbol.IsGenericMethod;
-
         private static bool IsAwaitable(ITypeSymbol returnedSymbol) =>
             returnedSymbol.Name switch
             {
@@ -72,50 +58,84 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 _ => false,
             };
 
+        private static bool IsOfType(ISymbol symbol, string typeName, IReadOnlyList<string> @namespace) =>
+            symbol.Name == typeName && symbol.BelongsToNamespace(@namespace);
+
+        private static IMethodSymbol? FindPublicParameterlessNonGenericMethod(ImmutableArray<ISymbol> members)
+        {
+            for (var i = 0; i < members.Length; ++i)
+            {
+                ISymbol? member = members[i];
+
+                // since we are looking for public parameterless non-generic method,
+                // we don't need to check method result type here - override with different return type is not allowed
+                if (member.DeclaredAccessibility == Accessibility.Public
+                    && member is IMethodSymbol methodSymbol
+                    && methodSymbol.Parameters.Length == 0
+                    && !methodSymbol.IsGenericMethod)
+                {
+                    return methodSymbol;
+                }
+            }
+
+            return null;
+        }
+
+        private static IPropertySymbol? FindPublicPropertyWithGetter(ImmutableArray<ISymbol> members)
+        {
+            for (var i = 0; i < members.Length; ++i)
+            {
+                ISymbol? member = members[i];
+                if (member.DeclaredAccessibility == Accessibility.Public
+                    && member is IPropertySymbol propertySymbol
+                    && propertySymbol.GetMethod is not null)
+                {
+                    return propertySymbol;
+                }
+            }
+
+            return null;
+        }
+
         private static bool IsCustomAwaitable(ITypeSymbol returnedSymbol)
         {
-            // has method: public T GetAwaiter()
-            IMethodSymbol? getAwaiterMethod = returnedSymbol.GetMembers("GetAwaiter")
-                .Where(IsPublicMethod)
-                .Cast<IMethodSymbol>()
-                .Where(m => !m.ReturnsVoid && IsParameterlessNonGenericMethod(m))
-                .SingleOrDefault();
-
-            if (getAwaiterMethod is null)
+            // type has method: public T GetAwaiter()
+            IMethodSymbol? getAwaiterMethod = FindPublicParameterlessNonGenericMethod(returnedSymbol.GetMembers("GetAwaiter"));
+            if (getAwaiterMethod is null || getAwaiterMethod.ReturnsVoid)
             {
                 return false;
             }
 
-            // examine custom awaiter type
             ITypeSymbol returnType = getAwaiterMethod.ReturnType;
 
-            // implementing: System.Runtime.CompilerServices.INotifyCompletion
-            if (!returnType.AllInterfaces.Any(i =>
-                IsOfType(i, nameof(System.Runtime.CompilerServices.INotifyCompletion), Namespaces.SystemRuntimeCompilerServices)))
+            // return type is implementing: System.Runtime.CompilerServices.INotifyCompletion
+            var implementsINotifyCompletion = false;
+
+            ImmutableArray<INamedTypeSymbol> implementedInterfaces = returnType.AllInterfaces;
+            for (var i = 0; i < implementedInterfaces.Length; ++i)
+            {
+                if (IsOfType(implementedInterfaces[i], nameof(System.Runtime.CompilerServices.INotifyCompletion), Namespaces.SystemRuntimeCompilerServices))
+                {
+                    implementsINotifyCompletion = true;
+                    break;
+                }
+            }
+
+            if (!implementsINotifyCompletion)
             {
                 return false;
             }
 
-            // has property: public bool IsCompleted { get; }
-            IPropertySymbol? isCompletedProperty = returnType.GetMembers("IsCompleted")
-                .Where(IsPublicProperty)
-                .Cast<IPropertySymbol>()
-                .Where(p => p.GetMethod != null && IsOfType(p.Type, nameof(Boolean), Namespaces.System))
-                .SingleOrDefault();
-
-            if (isCompletedProperty is null)
+            // return type has property: public bool IsCompleted { get; }
+            IPropertySymbol? isCompletedProperty = FindPublicPropertyWithGetter(returnType.GetMembers("IsCompleted"));
+            if (isCompletedProperty is null || !IsOfType(isCompletedProperty.Type, nameof(Boolean), Namespaces.System))
             {
                 return false;
             }
 
-            // has method: public void GetResult()
-            IMethodSymbol? getResultMethod = returnType.GetMembers("GetResult")
-                .Where(IsPublicMethod)
-                .Cast<IMethodSymbol>()
-                .Where(m => m.ReturnsVoid && IsParameterlessNonGenericMethod(m))
-                .SingleOrDefault();
-
-            if (getResultMethod is null)
+            // return type has method: public void GetResult()
+            IMethodSymbol? getResultMethod = FindPublicParameterlessNonGenericMethod(returnType.GetMembers("GetResult"));
+            if (getResultMethod is null || !getResultMethod.ReturnsVoid)
             {
                 return false;
             }
