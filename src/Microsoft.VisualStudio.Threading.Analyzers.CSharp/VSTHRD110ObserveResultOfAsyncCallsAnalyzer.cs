@@ -58,8 +58,61 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 _ => false,
             };
 
+        private static bool IsCustomAwaitable(ITypeSymbol returnedSymbol)
+        {
+            // type has method: public T GetAwaiter()
+            IMethodSymbol? getAwaiterMethod = FindPublicParameterlessNonGenericMethod(returnedSymbol.GetMembers("GetAwaiter"));
+
+            if (getAwaiterMethod is not null && !getAwaiterMethod.ReturnsVoid)
+            {
+                ITypeSymbol returnType = getAwaiterMethod.ReturnType;
+
+                return ImplementsINotifyCompletion(returnType)
+                    && HasIsCompletedProperty(returnType)
+                    && HasGetResultMethod(returnType);
+            }
+
+            return false;
+        }
+
         private static bool IsOfType(ISymbol symbol, string typeName, IReadOnlyList<string> @namespace) =>
             symbol.Name == typeName && symbol.BelongsToNamespace(@namespace);
+
+        private static bool ImplementsINotifyCompletion(ITypeSymbol returnType)
+        {
+            var implementsINotifyCompletion = false;
+
+            ImmutableArray<INamedTypeSymbol> implementedInterfaces = returnType.AllInterfaces;
+            for (var i = 0; i < implementedInterfaces.Length; ++i)
+            {
+                if (IsOfType(implementedInterfaces[i], nameof(System.Runtime.CompilerServices.INotifyCompletion), Namespaces.SystemRuntimeCompilerServices))
+                {
+                    implementsINotifyCompletion = true;
+                    break;
+                }
+            }
+
+            // type is implementing: System.Runtime.CompilerServices.INotifyCompletion
+            return implementsINotifyCompletion;
+        }
+
+        private static bool HasIsCompletedProperty(ITypeSymbol returnType)
+        {
+            IPropertySymbol? isCompletedProperty = FindPublicPropertyWithGetter(returnType.GetMembers("IsCompleted"));
+
+            // type has property: public bool IsCompleted { get; }
+            return isCompletedProperty is not null
+                && IsOfType(isCompletedProperty.Type, nameof(Boolean), Namespaces.System);
+        }
+
+        private static bool HasGetResultMethod(ITypeSymbol returnType)
+        {
+            IMethodSymbol? getResultMethod = FindPublicParameterlessNonGenericMethod(returnType.GetMembers("GetResult"));
+
+            // type has method: public void GetResult()
+            return getResultMethod is not null
+                && getResultMethod.ReturnsVoid;
+        }
 
         private static IMethodSymbol? FindPublicParameterlessNonGenericMethod(ImmutableArray<ISymbol> members)
         {
@@ -95,52 +148,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
 
             return null;
-        }
-
-        private static bool IsCustomAwaitable(ITypeSymbol returnedSymbol)
-        {
-            // type has method: public T GetAwaiter()
-            IMethodSymbol? getAwaiterMethod = FindPublicParameterlessNonGenericMethod(returnedSymbol.GetMembers("GetAwaiter"));
-            if (getAwaiterMethod is null || getAwaiterMethod.ReturnsVoid)
-            {
-                return false;
-            }
-
-            ITypeSymbol returnType = getAwaiterMethod.ReturnType;
-
-            // return type is implementing: System.Runtime.CompilerServices.INotifyCompletion
-            var implementsINotifyCompletion = false;
-
-            ImmutableArray<INamedTypeSymbol> implementedInterfaces = returnType.AllInterfaces;
-            for (var i = 0; i < implementedInterfaces.Length; ++i)
-            {
-                if (IsOfType(implementedInterfaces[i], nameof(System.Runtime.CompilerServices.INotifyCompletion), Namespaces.SystemRuntimeCompilerServices))
-                {
-                    implementsINotifyCompletion = true;
-                    break;
-                }
-            }
-
-            if (!implementsINotifyCompletion)
-            {
-                return false;
-            }
-
-            // return type has property: public bool IsCompleted { get; }
-            IPropertySymbol? isCompletedProperty = FindPublicPropertyWithGetter(returnType.GetMembers("IsCompleted"));
-            if (isCompletedProperty is null || !IsOfType(isCompletedProperty.Type, nameof(Boolean), Namespaces.System))
-            {
-                return false;
-            }
-
-            // return type has method: public void GetResult()
-            IMethodSymbol? getResultMethod = FindPublicParameterlessNonGenericMethod(returnType.GetMembers("GetResult"));
-            if (getResultMethod is null || !getResultMethod.ReturnsVoid)
-            {
-                return false;
-            }
-
-            return true;
         }
 
         private void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
