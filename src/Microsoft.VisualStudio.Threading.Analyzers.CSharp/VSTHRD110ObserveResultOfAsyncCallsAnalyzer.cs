@@ -61,9 +61,23 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         private static bool IsCustomAwaitable(ITypeSymbol returnedSymbol)
         {
             // type has method: public T GetAwaiter()
-            IMethodSymbol? getAwaiterMethod = FindPublicParameterlessNonGenericMethod(returnedSymbol.GetMembers("GetAwaiter"));
+            IMethodSymbol? getAwaiterMethod = null;
+            ImmutableArray<ISymbol> members = returnedSymbol.GetMembers("GetAwaiter");
+            for (var i = 0; i < members.Length; ++i)
+            {
+                ISymbol member = members[i];
+                if (member.DeclaredAccessibility == Accessibility.Public
+                    && member is IMethodSymbol methodSymbol
+                    && !methodSymbol.ReturnsVoid
+                    && !methodSymbol.IsGenericMethod
+                    && methodSymbol.Parameters.Length == 0)
+                {
+                    getAwaiterMethod = methodSymbol;
+                }
+            }
 
-            if (getAwaiterMethod is not null && !getAwaiterMethod.ReturnsVoid)
+            // examine custom awaiter type
+            if (getAwaiterMethod is not null)
             {
                 ITypeSymbol returnType = getAwaiterMethod.ReturnType;
 
@@ -75,80 +89,62 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return false;
         }
 
-        private static bool IsOfType(ISymbol symbol, string typeName, IReadOnlyList<string> @namespace) =>
-            symbol.Name == typeName && symbol.BelongsToNamespace(@namespace);
-
-        private static bool ImplementsINotifyCompletion(ITypeSymbol returnType)
+        private static bool ImplementsINotifyCompletion(ITypeSymbol awaiterType)
         {
-            var implementsINotifyCompletion = false;
-
-            ImmutableArray<INamedTypeSymbol> implementedInterfaces = returnType.AllInterfaces;
+            // is implementing: System.Runtime.CompilerServices.INotifyCompletion
+            ImmutableArray<INamedTypeSymbol> implementedInterfaces = awaiterType.AllInterfaces;
             for (var i = 0; i < implementedInterfaces.Length; ++i)
             {
                 if (IsOfType(implementedInterfaces[i], nameof(System.Runtime.CompilerServices.INotifyCompletion), Namespaces.SystemRuntimeCompilerServices))
                 {
-                    implementsINotifyCompletion = true;
-                    break;
+                    return true;
                 }
             }
 
-            // type is implementing: System.Runtime.CompilerServices.INotifyCompletion
-            return implementsINotifyCompletion;
+            return false;
         }
 
-        private static bool HasIsCompletedProperty(ITypeSymbol returnType)
+        private static bool HasIsCompletedProperty(ITypeSymbol awaiterType)
         {
-            IPropertySymbol? isCompletedProperty = FindPublicPropertyWithGetter(returnType.GetMembers("IsCompleted"));
-
-            // type has property: public bool IsCompleted { get; }
-            return isCompletedProperty is not null
-                && IsOfType(isCompletedProperty.Type, nameof(Boolean), Namespaces.System);
-        }
-
-        private static bool HasGetResultMethod(ITypeSymbol returnType)
-        {
-            IMethodSymbol? getResultMethod = FindPublicParameterlessNonGenericMethod(returnType.GetMembers("GetResult"));
-
-            // type has method: public void GetResult()
-            return getResultMethod is not null
-                && getResultMethod.ReturnsVoid;
-        }
-
-        private static IMethodSymbol? FindPublicParameterlessNonGenericMethod(ImmutableArray<ISymbol> members)
-        {
+            // has property: public bool IsCompleted { get; }
+            ImmutableArray<ISymbol> members = awaiterType.GetMembers("IsCompleted");
             for (var i = 0; i < members.Length; ++i)
             {
-                ISymbol? member = members[i];
-
-                // since we are looking for public parameterless non-generic method,
-                // we don't need to check method result type here - override with different return type is not allowed
-                if (member.DeclaredAccessibility == Accessibility.Public
-                    && member is IMethodSymbol methodSymbol
-                    && methodSymbol.Parameters.Length == 0
-                    && !methodSymbol.IsGenericMethod)
-                {
-                    return methodSymbol;
-                }
-            }
-
-            return null;
-        }
-
-        private static IPropertySymbol? FindPublicPropertyWithGetter(ImmutableArray<ISymbol> members)
-        {
-            for (var i = 0; i < members.Length; ++i)
-            {
-                ISymbol? member = members[i];
+                ISymbol member = members[i];
                 if (member.DeclaredAccessibility == Accessibility.Public
                     && member is IPropertySymbol propertySymbol
-                    && propertySymbol.GetMethod is not null)
+                    && propertySymbol.GetMethod is not null
+                    && IsOfType(propertySymbol.Type, nameof(Boolean), Namespaces.System))
                 {
-                    return propertySymbol;
+                    return true;
                 }
             }
 
-            return null;
+            return false;
         }
+
+        private static bool HasGetResultMethod(ITypeSymbol awaiterType)
+        {
+            // has method: public void GetResult()
+            ImmutableArray<ISymbol> members = awaiterType.GetMembers("GetResult");
+            for (var i = 0; i < members.Length; ++i)
+            {
+                ISymbol member = members[i];
+                if (member.DeclaredAccessibility == Accessibility.Public
+                    && member is IMethodSymbol methodSymbol
+                    && methodSymbol.ReturnsVoid
+                    && !methodSymbol.IsGenericMethod
+                    && methodSymbol.Parameters.Length == 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsOfType(ISymbol symbol, string typeName, IReadOnlyList<string> @namespace) =>
+            symbol.Name == typeName && symbol.BelongsToNamespace(@namespace);
 
         private void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
         {
