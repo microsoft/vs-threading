@@ -340,6 +340,27 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Gets a proximate value whether the main thread is blocked for the caller's completion.
+        /// It is less accurate when the UI thread blocking task just starts and hasn't been blocked yet, or the dependency chain is just removed.
+        /// However, unlike <see cref="IsMainThreadBlocked"/>, this implementation is lock free, and faster in high contention scenarios.
+        /// </summary>
+        public bool IsMainThreadBlockedProximately()
+        {
+            JoinableTask? ambientTask = this.AmbientTask;
+            if (ambientTask is object)
+            {
+                if ((ambientTask.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)
+                {
+                    return true;
+                }
+
+                return JoinableTaskDependencyGraph.HasMainThreadSynchronousTaskWaitingProximately(ambientTask);
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Creates a joinable task factory that automatically adds all created tasks
         /// to a collection that can be jointly joined.
         /// </summary>
