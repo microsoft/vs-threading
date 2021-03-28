@@ -56,11 +56,11 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Gets a proximate value whether the main thread is blocked for the caller's completion.
+        /// Gets a likely value whether the main thread is blocked for the caller's completion.
         /// </summary>
-        internal static bool HasMainThreadSynchronousTaskWaitingProximately(IJoinableTaskDependent taskItem)
+        internal static bool MaybeHasMainThreadSynchronousTaskWaiting(IJoinableTaskDependent taskItem)
         {
-            return taskItem.GetJoinableTaskDependentData().HasMainThreadSynchronousTaskWaitingProximately();
+            return taskItem.GetJoinableTaskDependentData().MaybeHasMainThreadSynchronousTaskWaiting();
         }
 
         /// <summary>
@@ -659,9 +659,9 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
-            /// Gets a proximate value whether the main thread is blocked for the caller's completion.
+            /// Gets a likely value whether the main thread is blocked for the caller's completion.
             /// </summary>
-            internal bool HasMainThreadSynchronousTaskWaitingProximately()
+            internal bool MaybeHasMainThreadSynchronousTaskWaiting()
             {
                 DependentSynchronousTask? existingTaskTracking = this.dependingSynchronousTaskTracking;
                 while (existingTaskTracking is object)

@@ -63,8 +63,8 @@ public class JoinableTaskContextNodeTests : JoinableTaskTestBase
     {
         Assert.False(this.defaultNode.IsMainThreadBlocked());
         Assert.False(this.derivedNode.IsMainThreadBlocked());
-        Assert.False(this.defaultNode.Context.IsMainThreadBlockedProximately());
-        Assert.False(this.derivedNode.Context.IsMainThreadBlockedProximately());
+        Assert.False(this.defaultNode.Context.IsMainThreadMaybeBlocked());
+        Assert.False(this.derivedNode.Context.IsMainThreadMaybeBlocked());
     }
 
     [Fact]

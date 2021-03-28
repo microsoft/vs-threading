@@ -498,7 +498,7 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
     public void IsMainThreadBlockedFalseWithNoTask()
     {
         Assert.False(this.Context.IsMainThreadBlocked());
-        Assert.False(this.Context.IsMainThreadBlockedProximately());
+        Assert.False(this.Context.IsMainThreadMaybeBlocked());
     }
 
     [Fact]
@@ -507,10 +507,10 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
         JoinableTask? joinable = this.Factory.RunAsync(async delegate
         {
             Assert.False(this.Context.IsMainThreadBlocked());
-            Assert.False(this.Context.IsMainThreadBlockedProximately());
+            Assert.False(this.Context.IsMainThreadMaybeBlocked());
             await Task.Yield();
             Assert.False(this.Context.IsMainThreadBlocked());
-            Assert.False(this.Context.IsMainThreadBlockedProximately());
+            Assert.False(this.Context.IsMainThreadMaybeBlocked());
             this.testFrame.Continue = false;
         });
 
@@ -523,28 +523,28 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
     {
         JoinableTask? joinable = this.Factory.RunAsync(async delegate
         {
-            Assert.False(this.Context.IsMainThreadBlockedProximately());
+            Assert.False(this.Context.IsMainThreadMaybeBlocked());
             Assert.False(this.Context.IsMainThreadBlocked());
 
             await Task.Yield();
-            Assert.True(this.Context.IsMainThreadBlockedProximately());
+            Assert.True(this.Context.IsMainThreadMaybeBlocked());
             Assert.True(this.Context.IsMainThreadBlocked()); // we're now running on top of Join()
 
             await TaskScheduler.Default.SwitchTo(alwaysYield: true);
-            Assert.True(this.Context.IsMainThreadBlockedProximately());
+            Assert.True(this.Context.IsMainThreadMaybeBlocked());
             Assert.True(this.Context.IsMainThreadBlocked()); // although we're on background thread, we're blocking main thread.
 
             await this.Factory.RunAsync(async delegate
             {
-                Assert.True(this.Context.IsMainThreadBlockedProximately());
+                Assert.True(this.Context.IsMainThreadMaybeBlocked());
                 Assert.True(this.Context.IsMainThreadBlocked());
                 await Task.Yield();
 
-                Assert.True(this.Context.IsMainThreadBlockedProximately());
+                Assert.True(this.Context.IsMainThreadMaybeBlocked());
                 Assert.True(this.Context.IsMainThreadBlocked());
 
                 await this.Factory.SwitchToMainThreadAsync();
-                Assert.True(this.Context.IsMainThreadBlockedProximately());
+                Assert.True(this.Context.IsMainThreadMaybeBlocked());
                 Assert.True(this.Context.IsMainThreadBlocked());
             });
         });
@@ -557,20 +557,20 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
     {
         JoinableTask? joinable = this.Factory.RunAsync(async delegate
         {
-            Assert.False(this.Context.IsMainThreadBlockedProximately());
+            Assert.False(this.Context.IsMainThreadMaybeBlocked());
             Assert.False(this.Context.IsMainThreadBlocked());
             await Task.Yield();
 
-            Assert.False(this.Context.IsMainThreadBlockedProximately());
+            Assert.False(this.Context.IsMainThreadMaybeBlocked());
             Assert.False(this.Context.IsMainThreadBlocked());
 
             await TaskScheduler.Default.SwitchTo(alwaysYield: true);
-            Assert.False(this.Context.IsMainThreadBlockedProximately());
+            Assert.False(this.Context.IsMainThreadMaybeBlocked());
             Assert.False(this.Context.IsMainThreadBlocked());
 
             await this.Factory.RunAsync(async delegate
             {
-                Assert.False(this.Context.IsMainThreadBlockedProximately());
+                Assert.False(this.Context.IsMainThreadMaybeBlocked());
                 Assert.False(this.Context.IsMainThreadBlocked());
 
                 // Now release the message pump so we hit the Join() call
@@ -579,11 +579,11 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
                 await Task.Yield();
 
                 // From now on, we're blocking.
-                Assert.True(this.Context.IsMainThreadBlockedProximately());
+                Assert.True(this.Context.IsMainThreadMaybeBlocked());
                 Assert.True(this.Context.IsMainThreadBlocked());
 
                 await TaskScheduler.Default.SwitchTo(alwaysYield: true);
-                Assert.True(this.Context.IsMainThreadBlockedProximately());
+                Assert.True(this.Context.IsMainThreadMaybeBlocked());
                 Assert.True(this.Context.IsMainThreadBlocked());
             });
         });
@@ -597,28 +597,28 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
     {
         this.Factory.Run(async delegate
         {
-            Assert.True(this.Context.IsMainThreadBlockedProximately());
+            Assert.True(this.Context.IsMainThreadMaybeBlocked());
             Assert.True(this.Context.IsMainThreadBlocked());
             await Task.Yield();
 
-            Assert.True(this.Context.IsMainThreadBlockedProximately());
+            Assert.True(this.Context.IsMainThreadMaybeBlocked());
             Assert.True(this.Context.IsMainThreadBlocked());
 
             await TaskScheduler.Default.SwitchTo(alwaysYield: true);
-            Assert.True(this.Context.IsMainThreadBlockedProximately());
+            Assert.True(this.Context.IsMainThreadMaybeBlocked());
             Assert.True(this.Context.IsMainThreadBlocked());
 
             await this.Factory.RunAsync(async delegate
             {
-                Assert.True(this.Context.IsMainThreadBlockedProximately());
+                Assert.True(this.Context.IsMainThreadMaybeBlocked());
                 Assert.True(this.Context.IsMainThreadBlocked());
 
                 await Task.Yield();
-                Assert.True(this.Context.IsMainThreadBlockedProximately());
+                Assert.True(this.Context.IsMainThreadMaybeBlocked());
                 Assert.True(this.Context.IsMainThreadBlocked());
 
                 await this.Factory.SwitchToMainThreadAsync();
-                Assert.True(this.Context.IsMainThreadBlockedProximately());
+                Assert.True(this.Context.IsMainThreadMaybeBlocked());
                 Assert.True(this.Context.IsMainThreadBlocked());
             });
         });
@@ -631,11 +631,11 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
         {
             this.Factory.Run(async delegate
             {
-                Assert.False(this.Context.IsMainThreadBlockedProximately());
+                Assert.False(this.Context.IsMainThreadMaybeBlocked());
                 Assert.False(this.Context.IsMainThreadBlocked());
 
                 await Task.Yield();
-                Assert.False(this.Context.IsMainThreadBlockedProximately());
+                Assert.False(this.Context.IsMainThreadMaybeBlocked());
                 Assert.False(this.Context.IsMainThreadBlocked());
             });
         }).WaitWithoutInlining(throwOriginalException: true);
@@ -651,14 +651,14 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
         {
             joinableTask = this.Factory.RunAsync(async delegate
             {
-                Assert.False(this.Context.IsMainThreadBlockedProximately());
+                Assert.False(this.Context.IsMainThreadMaybeBlocked());
                 Assert.False(this.Context.IsMainThreadBlocked());
 
                 nonBlockingStateObserved.Set();
                 await Task.Yield();
                 await nowBlocking;
 
-                Assert.True(this.Context.IsMainThreadBlockedProximately());
+                Assert.True(this.Context.IsMainThreadMaybeBlocked());
                 Assert.True(this.Context.IsMainThreadBlocked());
             });
         }).Wait();
