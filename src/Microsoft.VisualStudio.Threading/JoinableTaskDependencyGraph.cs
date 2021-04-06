@@ -56,6 +56,14 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Gets a likely value whether the main thread is blocked for the caller's completion.
+        /// </summary>
+        internal static bool MaybeHasMainThreadSynchronousTaskWaiting(IJoinableTaskDependent taskItem)
+        {
+            return taskItem.GetJoinableTaskDependentData().MaybeHasMainThreadSynchronousTaskWaiting();
+        }
+
+        /// <summary>
         /// Adds a <see cref="JoinableTaskDependentData"/> instance as one that is relevant to the async operation.
         /// </summary>
         /// <param name="taskItem">The current joinableTask or collection.</param>
@@ -651,6 +659,25 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
+            /// Gets a likely value whether the main thread is blocked for the caller's completion.
+            /// </summary>
+            internal bool MaybeHasMainThreadSynchronousTaskWaiting()
+            {
+                DependentSynchronousTask? existingTaskTracking = this.dependingSynchronousTaskTracking;
+                while (existingTaskTracking is object)
+                {
+                    if ((existingTaskTracking.SynchronousTask.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)
+                    {
+                        return true;
+                    }
+
+                    existingTaskTracking = existingTaskTracking.Next;
+                }
+
+                return false;
+            }
+
+            /// <summary>
             /// Remove all synchronous tasks tracked by the this task.
             /// This is called when this task is completed.
             /// This method is expected to be used with the JTF lock.
@@ -829,10 +856,13 @@ namespace Microsoft.VisualStudio.Threading
                 }
 
                 // For a new synchronous task, we need apply it to our child tasks.
-                DependentSynchronousTask newTaskTracking = new DependentSynchronousTask(synchronousTask)
+                var newTaskTracking = new DependentSynchronousTask(synchronousTask)
                 {
                     Next = data.dependingSynchronousTaskTracking,
                 };
+
+                Thread.MemoryBarrier();
+
                 data.dependingSynchronousTaskTracking = newTaskTracking;
 
                 if (data.childDependentNodes is object)
