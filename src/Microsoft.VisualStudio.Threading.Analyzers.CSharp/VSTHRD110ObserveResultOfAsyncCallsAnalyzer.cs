@@ -40,29 +40,29 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeInvocation), SyntaxKind.InvocationExpression);
         }
 
-        private static bool IsAwaitable(ITypeSymbol returnedSymbol) =>
-            returnedSymbol.Name switch
+        private static bool IsStockAwaitable(ITypeSymbol symbol) =>
+            symbol.Name switch
             {
                 Types.Task.TypeName
-                    when returnedSymbol.BelongsToNamespace(Types.Task.Namespace) => true,
+                    when symbol.BelongsToNamespace(Types.Task.Namespace) => true,
 
                 Types.ConfiguredTaskAwaitable.TypeName
-                    when returnedSymbol.BelongsToNamespace(Types.ConfiguredTaskAwaitable.Namespace) => true,
+                    when symbol.BelongsToNamespace(Types.ConfiguredTaskAwaitable.Namespace) => true,
 
                 Types.ValueTask.TypeName
-                    when returnedSymbol.BelongsToNamespace(Types.ValueTask.Namespace) => true,
+                    when symbol.BelongsToNamespace(Types.ValueTask.Namespace) => true,
 
                 Types.ConfiguredValueTaskAwaitable.TypeName
-                    when returnedSymbol.BelongsToNamespace(Types.ConfiguredValueTaskAwaitable.Namespace) => true,
+                    when symbol.BelongsToNamespace(Types.ConfiguredValueTaskAwaitable.Namespace) => true,
 
                 _ => false,
             };
 
-        private static bool IsCustomAwaitable(ITypeSymbol returnedSymbol)
+        private static bool IsCustomAwaitable(ITypeSymbol symbol)
         {
             // type has method: public T GetAwaiter()
             IMethodSymbol? getAwaiterMethod = null;
-            ImmutableArray<ISymbol> members = returnedSymbol.GetMembers("GetAwaiter");
+            ImmutableArray<ISymbol> members = symbol.GetMembers("GetAwaiter");
             for (var i = 0; i < members.Length; ++i)
             {
                 ISymbol member = members[i];
@@ -156,7 +156,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             {
                 var methodSymbol = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
                 ITypeSymbol? returnedSymbol = methodSymbol?.ReturnType;
-                if (returnedSymbol != null && (IsAwaitable(returnedSymbol) || IsCustomAwaitable(returnedSymbol)))
+                if (returnedSymbol != null && (IsStockAwaitable(returnedSymbol) || IsCustomAwaitable(returnedSymbol)))
                 {
                     if (!CSharpUtils.GetContainingFunction(invocation).IsAsync)
                     {
