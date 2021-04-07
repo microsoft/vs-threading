@@ -3,8 +3,6 @@
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
-    using System;
-    using System.Collections.Generic;
     using System.Collections.Immutable;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
@@ -37,134 +35,49 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
 
-            context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeInvocation), SyntaxKind.InvocationExpression);
+            context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(new PerCompilation().AnalyzeInvocation), SyntaxKind.InvocationExpression);
         }
 
-        private static bool IsStockAwaitable(ITypeSymbol symbol) =>
-            symbol.Name switch
-            {
-                Types.Task.TypeName
-                    when symbol.BelongsToNamespace(Types.Task.Namespace) => true,
-
-                Types.ConfiguredTaskAwaitable.TypeName
-                    when symbol.BelongsToNamespace(Types.ConfiguredTaskAwaitable.Namespace) => true,
-
-                Types.ValueTask.TypeName
-                    when symbol.BelongsToNamespace(Types.ValueTask.Namespace) => true,
-
-                Types.ConfiguredValueTaskAwaitable.TypeName
-                    when symbol.BelongsToNamespace(Types.ConfiguredValueTaskAwaitable.Namespace) => true,
-
-                _ => false,
-            };
-
-        private static bool IsCustomAwaitable(ITypeSymbol symbol)
+        private class PerCompilation : DiagnosticAnalyzerState
         {
-            // type has method: public T GetAwaiter()
-            IMethodSymbol? getAwaiterMethod = null;
-            ImmutableArray<ISymbol> members = symbol.GetMembers("GetAwaiter");
-            for (var i = 0; i < members.Length; ++i)
+            internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
             {
-                ISymbol member = members[i];
-                if (member.DeclaredAccessibility == Accessibility.Public
-                    && member is IMethodSymbol methodSymbol
-                    && !methodSymbol.ReturnsVoid
-                    && !methodSymbol.IsGenericMethod
-                    && methodSymbol.Parameters.Length == 0)
+                var invocation = (InvocationExpressionSyntax)context.Node;
+
+                // Only consider invocations that are direct statements. Otherwise, we assume their
+                // result is awaited, assigned, or otherwise consumed.
+                if (invocation.Parent?.GetType().Equals(typeof(ExpressionStatementSyntax)) ?? false)
                 {
-                    getAwaiterMethod = methodSymbol;
-                }
-            }
-
-            // examine custom awaiter type
-            if (getAwaiterMethod is not null)
-            {
-                ITypeSymbol returnType = getAwaiterMethod.ReturnType;
-
-                return ImplementsINotifyCompletion(returnType)
-                    && HasIsCompletedProperty(returnType)
-                    && HasGetResultMethod(returnType);
-            }
-
-            return false;
-        }
-
-        private static bool ImplementsINotifyCompletion(ITypeSymbol awaiterType)
-        {
-            // is implementing: System.Runtime.CompilerServices.INotifyCompletion
-            ImmutableArray<INamedTypeSymbol> implementedInterfaces = awaiterType.AllInterfaces;
-            for (var i = 0; i < implementedInterfaces.Length; ++i)
-            {
-                if (IsOfType(implementedInterfaces[i], nameof(System.Runtime.CompilerServices.INotifyCompletion), Namespaces.SystemRuntimeCompilerServices))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static bool HasIsCompletedProperty(ITypeSymbol awaiterType)
-        {
-            // has property: public bool IsCompleted { get; }
-            ImmutableArray<ISymbol> members = awaiterType.GetMembers("IsCompleted");
-            for (var i = 0; i < members.Length; ++i)
-            {
-                ISymbol member = members[i];
-                if (member.DeclaredAccessibility == Accessibility.Public
-                    && member is IPropertySymbol propertySymbol
-                    && propertySymbol.GetMethod is not null
-                    && IsOfType(propertySymbol.Type, nameof(Boolean), Namespaces.System))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static bool HasGetResultMethod(ITypeSymbol awaiterType)
-        {
-            // has method: public void GetResult()
-            ImmutableArray<ISymbol> members = awaiterType.GetMembers("GetResult");
-            for (var i = 0; i < members.Length; ++i)
-            {
-                ISymbol member = members[i];
-                if (member.DeclaredAccessibility == Accessibility.Public
-                    && member is IMethodSymbol methodSymbol
-                    && methodSymbol.ReturnsVoid
-                    && !methodSymbol.IsGenericMethod
-                    && methodSymbol.Parameters.Length == 0)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static bool IsOfType(ISymbol symbol, string typeName, IReadOnlyList<string> @namespace) =>
-            symbol.Name == typeName && symbol.BelongsToNamespace(@namespace);
-
-        private void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
-        {
-            var invocation = (InvocationExpressionSyntax)context.Node;
-
-            // Only consider invocations that are direct statements. Otherwise, we assume their
-            // result is awaited, assigned, or otherwise consumed.
-            if (invocation.Parent?.GetType().Equals(typeof(ExpressionStatementSyntax)) ?? false)
-            {
-                var methodSymbol = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
-                ITypeSymbol? returnedSymbol = methodSymbol?.ReturnType;
-                if (returnedSymbol != null && (IsStockAwaitable(returnedSymbol) || IsCustomAwaitable(returnedSymbol)))
-                {
-                    if (!CSharpUtils.GetContainingFunction(invocation).IsAsync)
+                    var methodSymbol = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
+                    ITypeSymbol? returnedSymbol = methodSymbol?.ReturnType;
+                    if (returnedSymbol != null && (IsStockAwaitable(returnedSymbol) || this.IsAwaitableType(returnedSymbol, context.Compilation, context.CancellationToken)))
                     {
-                        Location? location = (CSharpUtils.IsolateMethodName(invocation) ?? invocation.Expression).GetLocation();
-                        context.ReportDiagnostic(Diagnostic.Create(Descriptor, location));
+                        if (!CSharpUtils.GetContainingFunction(invocation).IsAsync)
+                        {
+                            Location? location = (CSharpUtils.IsolateMethodName(invocation) ?? invocation.Expression).GetLocation();
+                            context.ReportDiagnostic(Diagnostic.Create(Descriptor, location));
+                        }
                     }
                 }
             }
+
+            private static bool IsStockAwaitable(ITypeSymbol symbol) =>
+                symbol.Name switch
+                {
+                    Types.Task.TypeName
+                        when symbol.BelongsToNamespace(Types.Task.Namespace) => true,
+
+                    Types.ConfiguredTaskAwaitable.TypeName
+                        when symbol.BelongsToNamespace(Types.ConfiguredTaskAwaitable.Namespace) => true,
+
+                    Types.ValueTask.TypeName
+                        when symbol.BelongsToNamespace(Types.ValueTask.Namespace) => true,
+
+                    Types.ConfiguredValueTaskAwaitable.TypeName
+                        when symbol.BelongsToNamespace(Types.ConfiguredValueTaskAwaitable.Namespace) => true,
+
+                    _ => false,
+                };
         }
     }
 }
