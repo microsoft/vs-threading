@@ -3,11 +3,7 @@
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
-    using System;
-    using System.Collections.Generic;
     using System.Collections.Immutable;
-    using System.Linq;
-    using System.Threading;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -39,25 +35,27 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
 
-            context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeInvocation), SyntaxKind.InvocationExpression);
+            context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(new PerCompilation().AnalyzeInvocation), SyntaxKind.InvocationExpression);
         }
 
-        private void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
+        private class PerCompilation : DiagnosticAnalyzerState
         {
-            var invocation = (InvocationExpressionSyntax)context.Node;
-
-            // Only consider invocations that are direct statements. Otherwise, we assume their
-            // result is awaited, assigned, or otherwise consumed.
-            if (invocation.Parent?.GetType().Equals(typeof(ExpressionStatementSyntax)) ?? false)
+            internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
             {
-                var methodSymbol = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
-                ITypeSymbol? returnedSymbol = methodSymbol?.ReturnType;
-                if (returnedSymbol?.Name == Types.Task.TypeName && returnedSymbol.BelongsToNamespace(Types.Task.Namespace))
+                var invocation = (InvocationExpressionSyntax)context.Node;
+
+                // Only consider invocations that are direct statements. Otherwise, we assume their
+                // result is awaited, assigned, or otherwise consumed.
+                if (invocation.Parent?.GetType().Equals(typeof(ExpressionStatementSyntax)) ?? false)
                 {
-                    if (!CSharpUtils.GetContainingFunction(invocation).IsAsync)
+                    var methodSymbol = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
+                    if (this.IsAwaitableType(methodSymbol?.ReturnType, context.Compilation, context.CancellationToken))
                     {
-                        Location? location = (CSharpUtils.IsolateMethodName(invocation) ?? invocation.Expression).GetLocation();
-                        context.ReportDiagnostic(Diagnostic.Create(Descriptor, location));
+                        if (!CSharpUtils.GetContainingFunction(invocation).IsAsync)
+                        {
+                            Location? location = (CSharpUtils.IsolateMethodName(invocation) ?? invocation.Expression).GetLocation();
+                            context.ReportDiagnostic(Diagnostic.Create(Descriptor, location));
+                        }
                     }
                 }
             }

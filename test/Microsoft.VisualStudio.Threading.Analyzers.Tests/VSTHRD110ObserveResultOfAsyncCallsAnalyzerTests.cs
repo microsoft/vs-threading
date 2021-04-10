@@ -214,6 +214,155 @@ class Test {
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
+        [Fact]
+        public async Task ConfigureAwait_ProducesDiagnostics()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    void Foo()
+    {
+        BarAsync().ConfigureAwait(false);
+    }
+
+    Task BarAsync() => Task.CompletedTask;
+}
+";
+
+            DiagnosticResult expected = this.CreateDiagnostic(7, 20, nameof(Task.ConfigureAwait).Length);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
+        public async Task ConfigureAwaitGenerics_ProducesDiagnostics()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    void Foo()
+    {
+        BarAsync().ConfigureAwait(false);
+    }
+
+    Task<int> BarAsync() => Task.FromResult(0);
+}
+";
+
+            DiagnosticResult expected = this.CreateDiagnostic(7, 20, nameof(Task.ConfigureAwait).Length);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
+        public async Task CustomAwaitable_ProducesDiagnostics()
+        {
+            var test = @"
+using System;
+using System.Runtime.CompilerServices;
+
+class Test {
+    void Foo()
+    {
+        BarAsync();
+    }
+
+    CustomTask BarAsync() => new CustomTask();
+}
+
+class CustomTask
+{
+	public CustomAwaitable GetAwaiter() => new CustomAwaitable();
+}
+
+class CustomAwaitable : INotifyCompletion
+{
+	public bool IsCompleted { get; } = true;
+
+	public void OnCompleted(Action continuation)
+	{
+	}
+
+	public void GetResult()
+	{
+	}
+}
+";
+            DiagnosticResult expected = this.CreateDiagnostic(8, 9, 8);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
+        public async Task CustomAwaitableLikeType_ProducesNoDiagnostic()
+        {
+            var test = @"
+using System;
+
+class Test {
+    void Foo()
+    {
+        BarAsync();
+    }
+
+    NotTask BarAsync() => new NotTask();
+}
+
+class NotTask
+{
+	public NotAwaitable GetAwaiter() => new NotAwaitable();
+}
+
+class NotAwaitable
+{
+	public bool IsCompleted { get; } = false;
+
+	public int GetResult() => 0;
+}
+";
+
+            await Verify.VerifyAnalyzerAsync(test);
+        }
+
+        [Fact]
+        public async Task SyncMethodWithValueTask_ProducesDiagnostic()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    void Foo()
+    {
+        BarAsync();
+    }
+
+    ValueTask BarAsync() => default;
+}
+";
+
+            DiagnosticResult expected = this.CreateDiagnostic(7, 9, 8);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
+        public async Task ConfigureAwaitValueTask_ProducesDiagnostics()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    void Foo()
+    {
+        BarAsync().ConfigureAwait(false);
+    }
+
+    ValueTask BarAsync() => default;
+}
+";
+
+            DiagnosticResult expected = this.CreateDiagnostic(7, 20, nameof(Task.ConfigureAwait).Length);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
         private DiagnosticResult CreateDiagnostic(int line, int column, int length)
             => Verify.Diagnostic().WithSpan(line, column, line, column + length);
     }

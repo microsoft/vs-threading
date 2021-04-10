@@ -23,7 +23,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         private readonly ConcurrentDictionary<ITypeSymbol, bool> customAwaitableTypes = new ConcurrentDictionary<ITypeSymbol, bool>();
 
-        internal bool IsAwaitableType(ITypeSymbol typeSymbol, Compilation compilation, CancellationToken cancellationToken)
+        internal bool IsAwaitableType(ITypeSymbol? typeSymbol, Compilation compilation, CancellationToken cancellationToken)
         {
             if (typeSymbol is null)
             {
