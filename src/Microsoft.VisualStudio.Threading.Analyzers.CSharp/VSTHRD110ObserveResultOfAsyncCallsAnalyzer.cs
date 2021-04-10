@@ -49,8 +49,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 if (invocation.Parent?.GetType().Equals(typeof(ExpressionStatementSyntax)) ?? false)
                 {
                     var methodSymbol = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
-                    ITypeSymbol? returnedSymbol = methodSymbol?.ReturnType;
-                    if (returnedSymbol != null && (IsStockAwaitable(returnedSymbol) || this.IsAwaitableType(returnedSymbol, context.Compilation, context.CancellationToken)))
+                    if (this.IsAwaitableType(methodSymbol?.ReturnType, context.Compilation, context.CancellationToken))
                     {
                         if (!CSharpUtils.GetContainingFunction(invocation).IsAsync)
                         {
@@ -60,24 +59,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     }
                 }
             }
-
-            private static bool IsStockAwaitable(ITypeSymbol symbol) =>
-                symbol.Name switch
-                {
-                    Types.Task.TypeName
-                        when symbol.BelongsToNamespace(Types.Task.Namespace) => true,
-
-                    Types.ConfiguredTaskAwaitable.TypeName
-                        when symbol.BelongsToNamespace(Types.ConfiguredTaskAwaitable.Namespace) => true,
-
-                    Types.ValueTask.TypeName
-                        when symbol.BelongsToNamespace(Types.ValueTask.Namespace) => true,
-
-                    Types.ConfiguredValueTaskAwaitable.TypeName
-                        when symbol.BelongsToNamespace(Types.ConfiguredValueTaskAwaitable.Namespace) => true,
-
-                    _ => false,
-                };
         }
     }
 }
