@@ -331,29 +331,29 @@ namespace Microsoft.VisualStudio.Threading
                 // JTF.RunAsync. This requires us to not ConfigureAwait(true) on the semaphore. However, that prevents us from
                 // resuming on the correct sync context. To partially fix this, we will at least resume you on the main thread or
                 // thread pool.
-                AsyncSemaphore.Releaser releaser;
-                bool resumeOnMainThread = this.IsJoinableTaskAware(out _, out JoinableTaskCollection? joinableTaskCollection)
-                    ? joinableTaskCollection.Context.IsOnMainThread
-                    : false;
-                bool mustYield = false;
-                using (this.joinableTaskCollection?.Join())
-                {
-                    if (this.IsJoinableTaskAware(out _, out _))
-                    {
-                        // Use ConfiguredAwaitRunInline() as ConfigureAwait(true) will
-                        // deadlock due to not being inside a JTF.RunAsync().
-                        Task<AsyncSemaphore.Releaser>? releaserTask = this.semaphore.EnterAsync(cancellationToken);
-                        mustYield = !releaserTask.IsCompleted;
-                        releaser = await releaserTask.ConfigureAwaitRunInline();
-                    }
-                    else
-                    {
-                        releaser = await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true);
-                    }
-                }
-
+                AsyncSemaphore.Releaser releaser = default;
                 try
                 {
+                    bool resumeOnMainThread = this.IsJoinableTaskAware(out _, out JoinableTaskCollection? joinableTaskCollection)
+                          ? joinableTaskCollection.Context.IsOnMainThread
+                          : false;
+                    bool mustYield = false;
+                    using (this.joinableTaskCollection?.Join())
+                    {
+                        if (this.IsJoinableTaskAware(out _, out _))
+                        {
+                            // Use ConfiguredAwaitRunInline() as ConfigureAwait(true) will
+                            // deadlock due to not being inside a JTF.RunAsync().
+                            Task<AsyncSemaphore.Releaser>? releaserTask = this.semaphore.EnterAsync(cancellationToken);
+                            mustYield = !releaserTask.IsCompleted;
+                            releaser = await releaserTask.ConfigureAwaitRunInline();
+                        }
+                        else
+                        {
+                            releaser = await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true);
+                        }
+                    }
+
                     await this.ExecuteCoreAsync(async delegate
                     {
                         if (this.IsJoinableTaskAware(out JoinableTaskFactory? joinableTaskFactory, out _))
@@ -395,29 +395,29 @@ namespace Microsoft.VisualStudio.Threading
                 // JTF.RunAsync. This requires us to not ConfigureAwait(true) on the semaphore. However, that prevents us from
                 // resuming on the correct sync context. To partially fix this, we will at least resume you on the main thread or
                 // thread pool.
-                AsyncSemaphore.Releaser releaser;
-                bool resumeOnMainThread = this.IsJoinableTaskAware(out _, out JoinableTaskCollection? joinableTaskCollection)
-                    ? joinableTaskCollection.Context.IsOnMainThread
-                    : false;
-                bool mustYield = false;
-                using (this.joinableTaskCollection?.Join())
-                {
-                    if (this.IsJoinableTaskAware(out _, out _))
-                    {
-                        // Use ConfiguredAwaitRunInline() as ConfigureAwait(true) will
-                        // deadlock due to not being inside a JTF.RunAsync().
-                        Task<AsyncSemaphore.Releaser>? releaserTask = this.semaphore.EnterAsync(cancellationToken);
-                        mustYield = !releaserTask.IsCompleted;
-                        releaser = await releaserTask.ConfigureAwaitRunInline();
-                    }
-                    else
-                    {
-                        releaser = await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true);
-                    }
-                }
-
+                AsyncSemaphore.Releaser releaser = default;
                 try
                 {
+                    bool resumeOnMainThread = this.IsJoinableTaskAware(out _, out JoinableTaskCollection? joinableTaskCollection)
+                        ? joinableTaskCollection.Context.IsOnMainThread
+                        : false;
+                    bool mustYield = false;
+                    using (this.joinableTaskCollection?.Join())
+                    {
+                        if (this.IsJoinableTaskAware(out _, out _))
+                        {
+                            // Use ConfiguredAwaitRunInline() as ConfigureAwait(true) will
+                            // deadlock due to not being inside a JTF.RunAsync().
+                            Task<AsyncSemaphore.Releaser>? releaserTask = this.semaphore.EnterAsync(cancellationToken);
+                            mustYield = !releaserTask.IsCompleted;
+                            releaser = await releaserTask.ConfigureAwaitRunInline();
+                        }
+                        else
+                        {
+                            releaser = await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true);
+                        }
+                    }
+
                     return await this.ExecuteCoreAsync(async delegate
                     {
                         if (this.IsJoinableTaskAware(out JoinableTaskFactory? joinableTaskFactory, out _))
@@ -494,29 +494,29 @@ namespace Microsoft.VisualStudio.Threading
                 // JTF.RunAsync. This requires us to not ConfigureAwait(true) on the semaphore. However, that prevents us from
                 // resuming on the correct sync context. To partially fix this, we will at least resume you on the main thread or
                 // thread pool.
-                AsyncSemaphore.Releaser releaser;
-                bool resumeOnMainThread = this.IsJoinableTaskAware(out _, out JoinableTaskCollection? joinableTaskCollection)
-                    ? joinableTaskCollection.Context.IsOnMainThread
-                    : false;
-                bool mustYield = false;
-                using (this.joinableTaskCollection?.Join())
-                {
-                    if (this.IsJoinableTaskAware(out _, out _))
-                    {
-                        // Use ConfiguredAwaitRunInline() as ConfigureAwait(true) will
-                        // deadlock due to not being inside a JTF.RunAsync().
-                        Task<AsyncSemaphore.Releaser>? releaserTask = this.semaphore.EnterAsync(cancellationToken);
-                        mustYield = !releaserTask.IsCompleted;
-                        releaser = await releaserTask.ConfigureAwaitRunInline();
-                    }
-                    else
-                    {
-                        releaser = await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true);
-                    }
-                }
-
+                AsyncSemaphore.Releaser releaser = default;
                 try
                 {
+                    bool resumeOnMainThread = this.IsJoinableTaskAware(out _, out JoinableTaskCollection? joinableTaskCollection)
+                          ? joinableTaskCollection.Context.IsOnMainThread
+                          : false;
+                    bool mustYield = false;
+                    using (this.joinableTaskCollection?.Join())
+                    {
+                        if (this.IsJoinableTaskAware(out _, out _))
+                        {
+                            // Use ConfiguredAwaitRunInline() as ConfigureAwait(true) will
+                            // deadlock due to not being inside a JTF.RunAsync().
+                            Task<AsyncSemaphore.Releaser>? releaserTask = this.semaphore.EnterAsync(cancellationToken);
+                            mustYield = !releaserTask.IsCompleted;
+                            releaser = await releaserTask.ConfigureAwaitRunInline();
+                        }
+                        else
+                        {
+                            releaser = await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true);
+                        }
+                    }
+
                     await this.ExecuteCoreAsync(async delegate
                     {
                         if (this.IsJoinableTaskAware(out JoinableTaskFactory? joinableTaskFactory, out _))
@@ -573,29 +573,29 @@ namespace Microsoft.VisualStudio.Threading
                 // JTF.RunAsync. This requires us to not ConfigureAwait(true) on the semaphore. However, that prevents us from
                 // resuming on the correct sync context. To partially fix this, we will at least resume you on the main thread or
                 // thread pool.
-                AsyncSemaphore.Releaser releaser;
-                bool resumeOnMainThread = this.IsJoinableTaskAware(out _, out JoinableTaskCollection? joinableTaskCollection)
-                    ? joinableTaskCollection.Context.IsOnMainThread
-                    : false;
-                bool mustYield = false;
-                using (this.joinableTaskCollection?.Join())
-                {
-                    if (this.IsJoinableTaskAware(out _, out _))
-                    {
-                        // Use ConfiguredAwaitRunInline() as ConfigureAwait(true) will
-                        // deadlock due to not being inside a JTF.RunAsync().
-                        Task<AsyncSemaphore.Releaser>? releaserTask = this.semaphore.EnterAsync(cancellationToken);
-                        mustYield = !releaserTask.IsCompleted;
-                        releaser = await releaserTask.ConfigureAwaitRunInline();
-                    }
-                    else
-                    {
-                        releaser = await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true);
-                    }
-                }
-
+                AsyncSemaphore.Releaser releaser = default;
                 try
                 {
+                    bool resumeOnMainThread = this.IsJoinableTaskAware(out _, out JoinableTaskCollection? joinableTaskCollection)
+                        ? joinableTaskCollection.Context.IsOnMainThread
+                        : false;
+                    bool mustYield = false;
+                    using (this.joinableTaskCollection?.Join())
+                    {
+                        if (this.IsJoinableTaskAware(out _, out _))
+                        {
+                            // Use ConfiguredAwaitRunInline() as ConfigureAwait(true) will
+                            // deadlock due to not being inside a JTF.RunAsync().
+                            Task<AsyncSemaphore.Releaser>? releaserTask = this.semaphore.EnterAsync(cancellationToken);
+                            mustYield = !releaserTask.IsCompleted;
+                            releaser = await releaserTask.ConfigureAwaitRunInline();
+                        }
+                        else
+                        {
+                            releaser = await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true);
+                        }
+                    }
+
                     return await this.ExecuteCoreAsync(async delegate
                     {
                         if (this.IsJoinableTaskAware(out JoinableTaskFactory? joinableTaskFactory, out _))
@@ -697,38 +697,39 @@ namespace Microsoft.VisualStudio.Threading
                 // JTF.RunAsync. This requires us to not ConfigureAwait(true) on the semaphore. However, that prevents us from
                 // resuming on the correct sync context. To partially fix this, we will at least resume you on the main thread or
                 // thread pool.
-                AsyncSemaphore.Releaser releaser;
-                bool resumeOnMainThread = this.IsJoinableTaskAware(out _, out JoinableTaskCollection? joinableTaskCollection)
-                    ? joinableTaskCollection.Context.IsOnMainThread
-                    : false;
-                bool mustYield = false;
-                if (reentrantStack.Count == 0)
-                {
-                    using (this.joinableTaskCollection?.Join())
-                    {
-                        if (this.IsJoinableTaskAware(out _, out _))
-                        {
-                            // Use ConfiguredAwaitRunInline() as ConfigureAwait(true) will
-                            // deadlock due to not being inside a JTF.RunAsync().
-                            Task<AsyncSemaphore.Releaser>? releaserTask = this.semaphore.EnterAsync(cancellationToken);
-                            mustYield = !releaserTask.IsCompleted;
-                            releaser = await releaserTask.ConfigureAwaitRunInline();
-                        }
-                        else
-                        {
-                            releaser = await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true);
-                        }
-                    }
-                }
-                else
-                {
-                    releaser = default;
-                }
-
+                AsyncSemaphore.Releaser releaser = default;
                 bool pushed = false;
-                var pushedReleaser = new StrongBox<AsyncSemaphore.Releaser>(releaser);
+                StrongBox<AsyncSemaphore.Releaser>? pushedReleaser = null;
                 try
                 {
+                    bool resumeOnMainThread = this.IsJoinableTaskAware(out _, out JoinableTaskCollection? joinableTaskCollection)
+                    ? joinableTaskCollection.Context.IsOnMainThread
+                    : false;
+                    bool mustYield = false;
+                    if (reentrantStack.Count == 0)
+                    {
+                        using (this.joinableTaskCollection?.Join())
+                        {
+                            if (this.IsJoinableTaskAware(out _, out _))
+                            {
+                                // Use ConfiguredAwaitRunInline() as ConfigureAwait(true) will
+                                // deadlock due to not being inside a JTF.RunAsync().
+                                Task<AsyncSemaphore.Releaser>? releaserTask = this.semaphore.EnterAsync(cancellationToken);
+                                mustYield = !releaserTask.IsCompleted;
+                                releaser = await releaserTask.ConfigureAwaitRunInline();
+                            }
+                            else
+                            {
+                                releaser = await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        releaser = default;
+                    }
+
+                    pushedReleaser = new StrongBox<AsyncSemaphore.Releaser>(releaser);
                     await this.ExecuteCoreAsync(async delegate
                     {
                         if (this.IsJoinableTaskAware(out JoinableTaskFactory? joinableTaskFactory, out _))
@@ -813,38 +814,39 @@ namespace Microsoft.VisualStudio.Threading
                 // JTF.RunAsync. This requires us to not ConfigureAwait(true) on the semaphore. However, that prevents us from
                 // resuming on the correct sync context. To partially fix this, we will at least resume you on the main thread or
                 // thread pool.
-                AsyncSemaphore.Releaser releaser;
-                bool resumeOnMainThread = this.IsJoinableTaskAware(out _, out JoinableTaskCollection? joinableTaskCollection)
-                    ? joinableTaskCollection.Context.IsOnMainThread
-                    : false;
-                bool mustYield = false;
-                if (reentrantStack.Count == 0)
-                {
-                    using (this.joinableTaskCollection?.Join())
-                    {
-                        if (this.IsJoinableTaskAware(out _, out _))
-                        {
-                            // Use ConfiguredAwaitRunInline() as ConfigureAwait(true) will
-                            // deadlock due to not being inside a JTF.RunAsync().
-                            Task<AsyncSemaphore.Releaser>? releaserTask = this.semaphore.EnterAsync(cancellationToken);
-                            mustYield = !releaserTask.IsCompleted;
-                            releaser = await releaserTask.ConfigureAwaitRunInline();
-                        }
-                        else
-                        {
-                            releaser = await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true);
-                        }
-                    }
-                }
-                else
-                {
-                    releaser = default;
-                }
-
+                AsyncSemaphore.Releaser releaser = default;
                 bool pushed = false;
-                var pushedReleaser = new StrongBox<AsyncSemaphore.Releaser>(releaser);
+                StrongBox<AsyncSemaphore.Releaser>? pushedReleaser = null;
                 try
                 {
+                    bool resumeOnMainThread = this.IsJoinableTaskAware(out _, out JoinableTaskCollection? joinableTaskCollection)
+                        ? joinableTaskCollection.Context.IsOnMainThread
+                        : false;
+                    bool mustYield = false;
+                    if (reentrantStack.Count == 0)
+                    {
+                        using (this.joinableTaskCollection?.Join())
+                        {
+                            if (this.IsJoinableTaskAware(out _, out _))
+                            {
+                                // Use ConfiguredAwaitRunInline() as ConfigureAwait(true) will
+                                // deadlock due to not being inside a JTF.RunAsync().
+                                Task<AsyncSemaphore.Releaser>? releaserTask = this.semaphore.EnterAsync(cancellationToken);
+                                mustYield = !releaserTask.IsCompleted;
+                                releaser = await releaserTask.ConfigureAwaitRunInline();
+                            }
+                            else
+                            {
+                                releaser = await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        releaser = default;
+                    }
+
+                    pushedReleaser = new StrongBox<AsyncSemaphore.Releaser>(releaser);
                     return await this.ExecuteCoreAsync(async delegate
                     {
                         if (this.IsJoinableTaskAware(out JoinableTaskFactory? joinableTaskFactory, out _))
@@ -962,37 +964,37 @@ namespace Microsoft.VisualStudio.Threading
                 // JTF.RunAsync. This requires us to not ConfigureAwait(true) on the semaphore. However, that prevents us from
                 // resuming on the correct sync context. To partially fix this, we will at least resume you on the main thread or
                 // thread pool.
-                AsyncSemaphore.Releaser releaser;
-                bool resumeOnMainThread = this.IsJoinableTaskAware(out _, out JoinableTaskCollection? joinableTaskCollection)
-                    ? joinableTaskCollection.Context.IsOnMainThread
-                    : false;
-                bool mustYield = false;
-                if (reentrantStack.Count == 0)
-                {
-                    using (this.joinableTaskCollection?.Join())
-                    {
-                        if (this.IsJoinableTaskAware(out _, out _))
-                        {
-                            // Use ConfiguredAwaitRunInline() as ConfigureAwait(true) will
-                            // deadlock due to not being inside a JTF.RunAsync().
-                            Task<AsyncSemaphore.Releaser>? releaserTask = this.semaphore.EnterAsync(cancellationToken);
-                            mustYield = !releaserTask.IsCompleted;
-                            releaser = await releaserTask.ConfigureAwaitRunInline();
-                        }
-                        else
-                        {
-                            releaser = await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true);
-                        }
-                    }
-                }
-                else
-                {
-                    releaser = default;
-                }
-
+                AsyncSemaphore.Releaser releaser = default;
                 bool pushed = false;
                 try
                 {
+                    bool resumeOnMainThread = this.IsJoinableTaskAware(out _, out JoinableTaskCollection? joinableTaskCollection)
+                    ? joinableTaskCollection.Context.IsOnMainThread
+                    : false;
+                    bool mustYield = false;
+                    if (reentrantStack.Count == 0)
+                    {
+                        using (this.joinableTaskCollection?.Join())
+                        {
+                            if (this.IsJoinableTaskAware(out _, out _))
+                            {
+                                // Use ConfiguredAwaitRunInline() as ConfigureAwait(true) will
+                                // deadlock due to not being inside a JTF.RunAsync().
+                                Task<AsyncSemaphore.Releaser>? releaserTask = this.semaphore.EnterAsync(cancellationToken);
+                                mustYield = !releaserTask.IsCompleted;
+                                releaser = await releaserTask.ConfigureAwaitRunInline();
+                            }
+                            else
+                            {
+                                releaser = await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        releaser = default;
+                    }
+
                     await this.ExecuteCoreAsync(async delegate
                     {
                         if (this.IsJoinableTaskAware(out JoinableTaskFactory? joinableTaskFactory, out _))
@@ -1058,37 +1060,37 @@ namespace Microsoft.VisualStudio.Threading
                 // JTF.RunAsync. This requires us to not ConfigureAwait(true) on the semaphore. However, that prevents us from
                 // resuming on the correct sync context. To partially fix this, we will at least resume you on the main thread or
                 // thread pool.
-                AsyncSemaphore.Releaser releaser;
-                bool resumeOnMainThread = this.IsJoinableTaskAware(out _, out JoinableTaskCollection? joinableTaskCollection)
-                    ? joinableTaskCollection.Context.IsOnMainThread
-                    : false;
-                bool mustYield = false;
-                if (reentrantStack.Count == 0)
-                {
-                    using (this.joinableTaskCollection?.Join())
-                    {
-                        if (this.IsJoinableTaskAware(out _, out _))
-                        {
-                            // Use ConfiguredAwaitRunInline() as ConfigureAwait(true) will
-                            // deadlock due to not being inside a JTF.RunAsync().
-                            Task<AsyncSemaphore.Releaser>? releaserTask = this.semaphore.EnterAsync(cancellationToken);
-                            mustYield = !releaserTask.IsCompleted;
-                            releaser = await releaserTask.ConfigureAwaitRunInline();
-                        }
-                        else
-                        {
-                            releaser = await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true);
-                        }
-                    }
-                }
-                else
-                {
-                    releaser = default;
-                }
-
+                AsyncSemaphore.Releaser releaser = default;
                 bool pushed = false;
                 try
                 {
+                    bool resumeOnMainThread = this.IsJoinableTaskAware(out _, out JoinableTaskCollection? joinableTaskCollection)
+                    ? joinableTaskCollection.Context.IsOnMainThread
+                    : false;
+                    bool mustYield = false;
+                    if (reentrantStack.Count == 0)
+                    {
+                        using (this.joinableTaskCollection?.Join())
+                        {
+                            if (this.IsJoinableTaskAware(out _, out _))
+                            {
+                                // Use ConfiguredAwaitRunInline() as ConfigureAwait(true) will
+                                // deadlock due to not being inside a JTF.RunAsync().
+                                Task<AsyncSemaphore.Releaser>? releaserTask = this.semaphore.EnterAsync(cancellationToken);
+                                mustYield = !releaserTask.IsCompleted;
+                                releaser = await releaserTask.ConfigureAwaitRunInline();
+                            }
+                            else
+                            {
+                                releaser = await this.semaphore.EnterAsync(cancellationToken).ConfigureAwait(true);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        releaser = default;
+                    }
+
                     return await this.ExecuteCoreAsync(async delegate
                     {
                         if (this.IsJoinableTaskAware(out JoinableTaskFactory? joinableTaskFactory, out _))
