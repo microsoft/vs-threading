@@ -352,9 +352,9 @@ namespace Microsoft.VisualStudio.Threading
                     }
                 }
 
-                await this.ExecuteCoreAsync(async delegate
+                try
                 {
-                    try
+                    await this.ExecuteCoreAsync(async delegate
                     {
                         if (this.IsJoinableTaskAware(out JoinableTaskFactory? joinableTaskFactory, out _))
                         {
@@ -376,12 +376,12 @@ namespace Microsoft.VisualStudio.Threading
                         }
 
                         await operation().ConfigureAwaitRunInline();
-                    }
-                    finally
-                    {
-                        DisposeReleaserNoThrow(releaser);
-                    }
-                });
+                    });
+                }
+                finally
+                {
+                    DisposeReleaserNoThrow(releaser);
+                }
             }
 
             /// <inheritdoc />
@@ -416,9 +416,9 @@ namespace Microsoft.VisualStudio.Threading
                     }
                 }
 
-                return await this.ExecuteCoreAsync(async delegate
+                try
                 {
-                    try
+                    return await this.ExecuteCoreAsync(async delegate
                     {
                         if (this.IsJoinableTaskAware(out JoinableTaskFactory? joinableTaskFactory, out _))
                         {
@@ -440,12 +440,12 @@ namespace Microsoft.VisualStudio.Threading
                         }
 
                         return await operation().ConfigureAwait(true);
-                    }
-                    finally
-                    {
-                        DisposeReleaserNoThrow(releaser);
-                    }
-                });
+                    });
+                }
+                finally
+                {
+                    DisposeReleaserNoThrow(releaser);
+                }
             }
         }
 
@@ -515,9 +515,9 @@ namespace Microsoft.VisualStudio.Threading
                     }
                 }
 
-                await this.ExecuteCoreAsync(async delegate
+                try
                 {
-                    try
+                    await this.ExecuteCoreAsync(async delegate
                     {
                         if (this.IsJoinableTaskAware(out JoinableTaskFactory? joinableTaskFactory, out _))
                         {
@@ -540,19 +540,19 @@ namespace Microsoft.VisualStudio.Threading
 
                         this.reentrancyDetection.Value = ownedBox = new StrongBox<bool>(true);
                         await operation().ConfigureAwaitRunInline();
-                    }
-                    finally
+                    });
+                }
+                finally
+                {
+                    // Make it clear to any forks of our ExecutionContexxt that the semaphore is no longer owned.
+                    // Null check incase the switch to UI thread was cancelled.
+                    if (ownedBox is object)
                     {
-                        // Make it clear to any forks of our ExecutionContexxt that the semaphore is no longer owned.
-                        // Null check incase the switch to UI thread was cancelled.
-                        if (ownedBox is object)
-                        {
-                            ownedBox.Value = false;
-                        }
-
-                        DisposeReleaserNoThrow(releaser);
+                        ownedBox.Value = false;
                     }
-                });
+
+                    DisposeReleaserNoThrow(releaser);
+                }
             }
 
             /// <inheritdoc />
@@ -594,9 +594,9 @@ namespace Microsoft.VisualStudio.Threading
                     }
                 }
 
-                return await this.ExecuteCoreAsync(async delegate
+                try
                 {
-                    try
+                    return await this.ExecuteCoreAsync(async delegate
                     {
                         if (this.IsJoinableTaskAware(out JoinableTaskFactory? joinableTaskFactory, out _))
                         {
@@ -619,19 +619,19 @@ namespace Microsoft.VisualStudio.Threading
 
                         this.reentrancyDetection.Value = ownedBox = new StrongBox<bool>(true);
                         return await operation().ConfigureAwait(true);
-                    }
-                    finally
+                    });
+                }
+                finally
+                {
+                    // Make it clear to any forks of our ExecutionContexxt that the semaphore is no longer owned.
+                    // Null check incase the switch to UI thread was cancelled.
+                    if (ownedBox is object)
                     {
-                        // Make it clear to any forks of our ExecutionContexxt that the semaphore is no longer owned.
-                        // Null check incase the switch to UI thread was cancelled.
-                        if (ownedBox is object)
-                        {
-                            ownedBox.Value = false;
-                        }
-
-                        DisposeReleaserNoThrow(releaser);
+                        ownedBox.Value = false;
                     }
-                });
+
+                    DisposeReleaserNoThrow(releaser);
+                }
             }
 
             /// <inheritdoc />
@@ -725,11 +725,11 @@ namespace Microsoft.VisualStudio.Threading
                     releaser = default;
                 }
 
-                await this.ExecuteCoreAsync(async delegate
+                bool pushed = false;
+                var pushedReleaser = new StrongBox<AsyncSemaphore.Releaser>(releaser);
+                try
                 {
-                    bool pushed = false;
-                    var pushedReleaser = new StrongBox<AsyncSemaphore.Releaser>(releaser);
-                    try
+                    await this.ExecuteCoreAsync(async delegate
                     {
                         if (this.IsJoinableTaskAware(out JoinableTaskFactory? joinableTaskFactory, out _))
                         {
@@ -760,33 +760,33 @@ namespace Microsoft.VisualStudio.Threading
                         }
 
                         await operation().ConfigureAwaitRunInline();
-                    }
-                    finally
+                    });
+                }
+                finally
+                {
+                    try
                     {
-                        try
+                        if (pushed)
                         {
-                            if (pushed)
+                            lock (reentrantStack)
                             {
-                                lock (reentrantStack)
+                                StrongBox<AsyncSemaphore.Releaser>? poppedReleaser = reentrantStack.Pop();
+                                if (!object.ReferenceEquals(poppedReleaser, pushedReleaser))
                                 {
-                                    StrongBox<AsyncSemaphore.Releaser>? poppedReleaser = reentrantStack.Pop();
-                                    if (!object.ReferenceEquals(poppedReleaser, pushedReleaser))
-                                    {
-                                        // When the semaphore faults, we will drain and throw for awaiting tasks one by one.
-                                        this.faulted = true;
+                                    // When the semaphore faults, we will drain and throw for awaiting tasks one by one.
+                                    this.faulted = true;
 #pragma warning disable CA2219 // Do not raise exceptions in finally clauses
-                                        throw Verify.FailOperation(Strings.SemaphoreStackNestingViolated, ReentrancyMode.Stack);
+                                    throw Verify.FailOperation(Strings.SemaphoreStackNestingViolated, ReentrancyMode.Stack);
 #pragma warning restore CA2219 // Do not raise exceptions in finally clauses
-                                    }
                                 }
                             }
                         }
-                        finally
-                        {
-                            DisposeReleaserNoThrow(releaser);
-                        }
                     }
-                });
+                    finally
+                    {
+                        DisposeReleaserNoThrow(releaser);
+                    }
+                }
             }
 
             /// <inheritdoc />
@@ -841,11 +841,11 @@ namespace Microsoft.VisualStudio.Threading
                     releaser = default;
                 }
 
-                return await this.ExecuteCoreAsync(async delegate
+                bool pushed = false;
+                var pushedReleaser = new StrongBox<AsyncSemaphore.Releaser>(releaser);
+                try
                 {
-                    bool pushed = false;
-                    var pushedReleaser = new StrongBox<AsyncSemaphore.Releaser>(releaser);
-                    try
+                    return await this.ExecuteCoreAsync(async delegate
                     {
                         if (this.IsJoinableTaskAware(out JoinableTaskFactory? joinableTaskFactory, out _))
                         {
@@ -876,33 +876,33 @@ namespace Microsoft.VisualStudio.Threading
                         }
 
                         return await operation().ConfigureAwait(true);
-                    }
-                    finally
+                    });
+                }
+                finally
+                {
+                    try
                     {
-                        try
+                        if (pushed)
                         {
-                            if (pushed)
+                            lock (reentrantStack)
                             {
-                                lock (reentrantStack)
+                                StrongBox<AsyncSemaphore.Releaser>? poppedReleaser = reentrantStack.Pop();
+                                if (!object.ReferenceEquals(poppedReleaser, pushedReleaser))
                                 {
-                                    StrongBox<AsyncSemaphore.Releaser>? poppedReleaser = reentrantStack.Pop();
-                                    if (!object.ReferenceEquals(poppedReleaser, pushedReleaser))
-                                    {
-                                        // When the semaphore faults, we will drain and throw for awaiting tasks one by one.
-                                        this.faulted = true;
+                                    // When the semaphore faults, we will drain and throw for awaiting tasks one by one.
+                                    this.faulted = true;
 #pragma warning disable CA2219 // Do not raise exceptions in finally clauses
-                                        throw Verify.FailOperation(Strings.SemaphoreStackNestingViolated, ReentrancyMode.Stack);
+                                    throw Verify.FailOperation(Strings.SemaphoreStackNestingViolated, ReentrancyMode.Stack);
 #pragma warning restore CA2219 // Do not raise exceptions in finally clauses
-                                    }
                                 }
                             }
                         }
-                        finally
-                        {
-                            DisposeReleaserNoThrow(releaser);
-                        }
                     }
-                });
+                    finally
+                    {
+                        DisposeReleaserNoThrow(releaser);
+                    }
+                }
             }
 
             /// <inheritdoc />
@@ -990,10 +990,10 @@ namespace Microsoft.VisualStudio.Threading
                     releaser = default;
                 }
 
-                await this.ExecuteCoreAsync(async delegate
+                bool pushed = false;
+                try
                 {
-                    bool pushed = false;
-                    try
+                    await this.ExecuteCoreAsync(async delegate
                     {
                         if (this.IsJoinableTaskAware(out JoinableTaskFactory? joinableTaskFactory, out _))
                         {
@@ -1022,20 +1022,20 @@ namespace Microsoft.VisualStudio.Threading
                         }
 
                         await operation().ConfigureAwaitRunInline();
-                    }
-                    finally
+                    });
+                }
+                finally
+                {
+                    if (pushed)
                     {
-                        if (pushed)
+                        lock (reentrantStack)
                         {
-                            lock (reentrantStack)
-                            {
-                                releaser = reentrantStack.Pop();
-                            }
+                            releaser = reentrantStack.Pop();
                         }
-
-                        DisposeReleaserNoThrow(releaser);
                     }
-                });
+
+                    DisposeReleaserNoThrow(releaser);
+                }
             }
 
             /// <inheritdoc />
@@ -1086,10 +1086,10 @@ namespace Microsoft.VisualStudio.Threading
                     releaser = default;
                 }
 
-                return await this.ExecuteCoreAsync(async delegate
+                bool pushed = false;
+                try
                 {
-                    bool pushed = false;
-                    try
+                    return await this.ExecuteCoreAsync(async delegate
                     {
                         if (this.IsJoinableTaskAware(out JoinableTaskFactory? joinableTaskFactory, out _))
                         {
@@ -1118,20 +1118,20 @@ namespace Microsoft.VisualStudio.Threading
                         }
 
                         return await operation().ConfigureAwait(true);
-                    }
-                    finally
+                    });
+                }
+                finally
+                {
+                    if (pushed)
                     {
-                        if (pushed)
+                        lock (reentrantStack)
                         {
-                            lock (reentrantStack)
-                            {
-                                releaser = reentrantStack.Pop();
-                            }
+                            releaser = reentrantStack.Pop();
                         }
-
-                        DisposeReleaserNoThrow(releaser);
                     }
-                });
+
+                    DisposeReleaserNoThrow(releaser);
+                }
             }
 
             /// <inheritdoc />
