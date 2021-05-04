@@ -238,7 +238,7 @@ namespace Microsoft.VisualStudio.Threading
         public T Peek()
         {
 #pragma warning disable CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
-            if (!this.TryPeek(out T value))
+            if (!this.TryPeek(out T? value))
 #pragma warning restore CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
             {
                 Verify.FailOperation(Strings.QueueEmpty);

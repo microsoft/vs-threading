@@ -194,36 +194,10 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Gets a value indicating whether the async operation represented by this instance has completed.
+        /// Gets a value indicating whether the async operation represented by this instance has completed,
+        /// as represented by its <see cref="Task"/> property's <see cref="Task.IsCompleted"/> value.
         /// </summary>
-        public bool IsCompleted
-        {
-            get
-            {
-                using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
-                {
-                    lock (this.JoinableTaskContext.SyncContextLock)
-                    {
-                        if (!this.IsCompleteRequested)
-                        {
-                            return false;
-                        }
-
-                        if (this.mainThreadQueue is object && !this.mainThreadQueue.IsCompleted)
-                        {
-                            return false;
-                        }
-
-                        if (this.threadPoolQueue is object && !this.threadPoolQueue.IsCompleted)
-                        {
-                            return false;
-                        }
-
-                        return true;
-                    }
-                }
-            }
-        }
+        public bool IsCompleted => this.IsCompleteRequested;
 
         /// <summary>
         /// Gets the asynchronous task that completes when the async operation completes.
@@ -248,7 +222,12 @@ namespace Microsoft.VisualStudio.Threading
                     }
                 }
 
-                return this.wrappedTask as Task ?? this.GetTaskFromCompletionSource(this.wrappedTask);
+                // Read 'wrappedTask' once to a local variable. Since this read occurs outside a lock, we need to ensure
+                // that writes to the field between the 'Task' type check and the call to 'GetTaskFromCompletionSource'
+                // do not result in passing the wrong object type to the latter (which would result in an
+                // InvalidCastException).
+                var wrappedTask = this.wrappedTask;
+                return wrappedTask as Task ?? this.GetTaskFromCompletionSource(wrappedTask);
             }
         }
 
@@ -280,6 +259,38 @@ namespace Microsoft.VisualStudio.Threading
         /// can avoid significant delays in executing an often trivial continuation.
         /// </remarks>
         internal static bool AwaitShouldCaptureSyncContext => SynchronizationContext.Current is JoinableTaskSynchronizationContext;
+
+        /// <summary>
+        /// Gets a value indicating whether the async operation and any extra queues tracked by this instance has completed.
+        /// </summary>
+        internal bool IsFullyCompleted
+        {
+            get
+            {
+                using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
+                {
+                    lock (this.JoinableTaskContext.SyncContextLock)
+                    {
+                        if (!this.IsCompleteRequested)
+                        {
+                            return false;
+                        }
+
+                        if (this.mainThreadQueue is object && !this.mainThreadQueue.IsCompleted)
+                        {
+                            return false;
+                        }
+
+                        if (this.threadPoolQueue is object && !this.threadPoolQueue.IsCompleted)
+                        {
+                            return false;
+                        }
+
+                        return true;
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// Gets or sets the set of nesting factories (excluding <see cref="owner"/>)
@@ -368,6 +379,21 @@ namespace Microsoft.VisualStudio.Threading
                 return this.weakSelf;
             }
         }
+
+        /// <summary>
+        /// Gets or sets potential unreachable dependent nodes.
+        /// This is a special collection only used in synchronized task when there are other tasks which are marked to block it through ref-count code.
+        /// However, it is possible the reference count is retained by loop-dependencies. This collection tracking those items,
+        /// so the clean-up logic can run when it becomes necessary.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        internal HashSet<IJoinableTaskDependent>? PotentialUnreachableDependents { get; set; }
+
+        /// <summary>
+        /// Gets a value indicating whether PotentialUnreachableDependents is empty.
+        /// </summary>
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+        internal bool HasPotentialUnreachableDependents => this.PotentialUnreachableDependents is object && this.PotentialUnreachableDependents.Count != 0;
 
         /// <summary>
         /// Gets the flags set on this task.
@@ -535,6 +561,14 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="cancellationToken">A cancellation token that will exit this method before the task is completed.</param>
         public void Join(CancellationToken cancellationToken = default(CancellationToken))
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (this.IsCompleted)
+            {
+                this.Task.GetAwaiter().GetResult(); // rethrow any exceptions
+                return;
+            }
+
             // We don't simply call this.CompleteOnCurrentThread because that doesn't take CancellationToken.
             // And it really can't be made to, since it sets state flags indicating the JoinableTask is
             // blocking till completion.
@@ -683,6 +717,18 @@ namespace Microsoft.VisualStudio.Threading
                                 eventsNeedNotify = new List<AsyncManualResetEvent>(tasksNeedNotify.Count);
                                 foreach (JoinableTask? taskToNotify in tasksNeedNotify)
                                 {
+                                    if (mainThreadQueueUpdated && taskToNotify != this && taskToNotify.pendingEventCount == 0 && taskToNotify.HasPotentialUnreachableDependents)
+                                    {
+                                        // It is not essential to clean up potential unreachable dependent items before triggering the UI thread,
+                                        // because dependencies may change, and invalidate this work. However, we try to do this work in the background thread to make it less likely
+                                        // doing the expensive work on the UI thread.
+                                        if (JoinableTaskDependencyGraph.CleanUpPotentialUnreachableDependentItems(taskToNotify, out HashSet<IJoinableTaskDependent>? reachableNodes) &&
+                                            !reachableNodes.Contains(this))
+                                        {
+                                            continue;
+                                        }
+                                    }
+
                                     if (taskToNotify.pendingEventSource is null || taskToNotify == this)
                                     {
                                         taskToNotify.pendingEventSource = this.WeakSelf;
@@ -894,6 +940,9 @@ namespace Microsoft.VisualStudio.Threading
                             }
                             else if (tryAgainAfter is object)
                             {
+                                // prevent referencing tasks which may be GCed during the waiting cycle.
+                                visited?.Clear();
+
                                 ThreadingEventSource.Instance.WaitSynchronouslyStart();
                                 this.owner.WaitSynchronously(tryAgainAfter);
                                 ThreadingEventSource.Instance.WaitSynchronouslyStop();
@@ -941,7 +990,12 @@ namespace Microsoft.VisualStudio.Threading
 
         internal void OnQueueCompleted()
         {
-            if (this.IsCompleted)
+            if ((this.state & JoinableTaskFlags.CompleteFinalized) == JoinableTaskFlags.CompleteFinalized)
+            {
+                return;
+            }
+
+            if (this.IsFullyCompleted)
             {
                 // Note this code may execute more than once, as multiple queue completion
                 // notifications come in.
@@ -949,7 +1003,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 foreach (IJoinableTaskDependent? collection in this.dependencyParents)
                 {
-                    JoinableTaskDependencyGraph.RemoveDependency(collection, this);
+                    JoinableTaskDependencyGraph.RemoveDependency(collection, this, forceCleanup: true);
                 }
 
                 if (this.mainThreadJobSyncContext is object)
@@ -995,7 +1049,7 @@ namespace Microsoft.VisualStudio.Threading
 
             if (this.pendingEventSource is null || taskHasPendingMessages == this)
             {
-                this.pendingEventSource = new WeakReference<JoinableTask>(taskHasPendingMessages);
+                this.pendingEventSource = taskHasPendingMessages.WeakSelf;
             }
 
             this.pendingEventCount += newPendingMessagesCount;
@@ -1024,7 +1078,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 if (work is null)
                 {
-                    if (joinableTask?.IsCompleted != true)
+                    if (joinableTask?.IsCompleteRequested != true)
                     {
                         foreach (IJoinableTaskDependent? item in JoinableTaskDependencyGraph.GetDirectDependentNodes(currentNode))
                         {
@@ -1046,7 +1100,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 lock (this.JoinableTaskContext.SyncContextLock)
                 {
-                    if (this.IsCompleted)
+                    if (this.IsFullyCompleted)
                     {
                         work = null;
                         tryAgainAfter = null;
@@ -1059,7 +1113,9 @@ namespace Microsoft.VisualStudio.Threading
 
                         if (this.pendingEventSource is object)
                         {
-                            if (this.pendingEventSource.TryGetTarget(out JoinableTask? pendingSource) && JoinableTaskDependencyGraph.IsDependingSynchronousTask(pendingSource, this))
+                            if (this.pendingEventSource.TryGetTarget(out JoinableTask? pendingSource) &&
+                                (pendingSource == this ||
+                                 (!this.HasPotentialUnreachableDependents && JoinableTaskDependencyGraph.IsDependingSynchronousTask(pendingSource, this))))
                             {
                                 ExecutionQueue? queue = onMainThread ? pendingSource.mainThreadQueue : pendingSource.threadPoolQueue;
                                 if (queue is object && !queue.IsCompleted && queue.TryDequeue(out work))
@@ -1086,8 +1142,25 @@ namespace Microsoft.VisualStudio.Threading
                             visited.Clear();
                         }
 
-                        if (TryDequeueSelfOrDependencies(this, onMainThread, visited, out work))
+                        bool foundWork = TryDequeueSelfOrDependencies(this, onMainThread, visited, out work);
+
+                        HashSet<IJoinableTaskDependent>? visitedNodes = visited;
+                        if (visitedNodes != null && this.HasPotentialUnreachableDependents)
                         {
+                            // We walked the dependencies tree and use this information to update the PotentialUnreachableDependents list.
+                            this.PotentialUnreachableDependents!.RemoveWhere(n => visitedNodes.Contains(n));
+
+                            if (!foundWork && this.PotentialUnreachableDependents.Count > 0)
+                            {
+                                JoinableTaskDependencyGraph.RemoveUnreachableDependentItems(this, this.PotentialUnreachableDependents, visitedNodes);
+                                this.PotentialUnreachableDependents.Clear();
+                            }
+                        }
+
+                        if (foundWork)
+                        {
+                            Assumes.NotNull(work);
+
                             tryAgainAfter = null;
                             return true;
                         }

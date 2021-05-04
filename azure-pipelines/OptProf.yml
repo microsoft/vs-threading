@@ -6,7 +6,7 @@ schedules:
     branches:
       include:
       - 'v1*'
-      - master
+      - main
     always: true # we must keep data fresh since optimizationdata drops are purged after 30 days
 
 # Avoid errant CI builds: https://developercommunity.visualstudio.com/content/problem/1154409/azure-pipeline-is-triggering-due-to-events-that-ne.html
@@ -28,13 +28,13 @@ variables:
   value: Any CPU
 - name: NUGET_PACKAGES
   value: $(Agent.TempDirectory)/.nuget/packages
-- name: push_to_ci
-  value: true
 - name: PublicRelease
   value: false # avoid using nice version since we're building a preliminary/unoptimized package
 - name: SignType
   value: real
 - group: Library.Template
+- name: NugetSecurityAnalysisWarningLevel
+  value: none # nuget.config requires signed packages by trusted owners
 
 stages:
 - stage: Library
@@ -43,7 +43,7 @@ stages:
   jobs:
   - template: build.yml
     parameters:
-      windowsPool: VSEng-MicroBuildVS2019
+      windowsPool: VSEngSS-MicroBuild2019
       ShouldSkipOptimize: true
 - stage: QueueVSBuild
   jobs:

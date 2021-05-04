@@ -19,7 +19,7 @@ steps:
     buildNumber: $(ProfilingInputsDropName)
     sourcePath: $(Build.ArtifactStagingDirectory)\OptProf\ProfilingInputs
     toLowerCase: false
-    usePat: false
+    usePat: true
   displayName: Publish to Artifact Services - ProfilingInputs
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
   continueOnError: true
@@ -42,5 +42,7 @@ steps:
       /repoName:$(Build.Repository.Name)
       /additionalCodexArguments:-bld
       /additionalCodexArguments:$(Build.ArtifactStagingDirectory)/build_logs
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'), ne(variables['Build.Reason'], 'PullRequest'))
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'), ne(variables['Build.Reason'], 'PullRequest'))
   continueOnError: true
+
+- template: secure-development-tools.yml

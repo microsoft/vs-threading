@@ -67,6 +67,11 @@ namespace Microsoft.VisualStudio.Threading
         private const int PostExecutionStopEvent = 16;
 
         /// <summary>
+        /// The event ID for the <see cref="CircularJoinableTaskDependencyDetected(int, int)"/>.
+        /// </summary>
+        private const int CircularJoinableTaskDependencyDetectedEvent = 17;
+
+        /// <summary>
         /// Logs an issued lock.
         /// </summary>
         [Event(ReaderWriterLockIssuedLockCountsEvent, Task = Tasks.LockRequest, Opcode = Opcodes.ReaderWriterLockIssued)]
@@ -151,6 +156,17 @@ namespace Microsoft.VisualStudio.Threading
         public void PostExecutionStop(int requestId)
         {
             this.WriteEvent(PostExecutionStopEvent, requestId);
+        }
+
+        /// <summary>
+        /// Circular JoinableTask dependency detected.
+        /// </summary>
+        /// <param name="initUnreachableCount">Initial count of unreachable nodes.</param>
+        /// <param name="reachableCount">The size of the connected dependency graph.</param>
+        [Event(CircularJoinableTaskDependencyDetectedEvent, Level = EventLevel.Informational)]
+        public void CircularJoinableTaskDependencyDetected(int initUnreachableCount, int reachableCount)
+        {
+            this.WriteEvent(CircularJoinableTaskDependencyDetectedEvent, initUnreachableCount, reachableCount);
         }
 
         /// <summary>

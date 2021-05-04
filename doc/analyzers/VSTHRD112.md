@@ -49,7 +49,7 @@ class SomeClass : System.IAsyncDisposable, Microsoft.VisualStudio.Threading.IAsy
     {
         // Simply forward the call to the other DisposeAsync overload.
         System.IAsyncDisposable self = this;
-        return self.Dispose().AsTask();
+        return self.DisposeAsync().AsTask();
     }
 
     ValueTask System.IAsyncDisposable.DisposeAsync()

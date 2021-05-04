@@ -30,14 +30,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 {
                     Project project = solution.GetProject(projectId)!;
 
-                    var parseOptions = (CSharpParseOptions)project.ParseOptions!;
-                    project = project.WithParseOptions(parseOptions.WithLanguageVersion(LanguageVersion.CSharp7_1));
-
-                    if (this.HasEntryPoint)
-                    {
-                        project = project.WithCompilationOptions(project.CompilationOptions!.WithOutputKind(OutputKind.ConsoleApplication));
-                    }
-
                     if (this.IncludeMicrosoftVisualStudioThreading)
                     {
                         project = project.AddMetadataReference(MetadataReference.CreateFromFile(typeof(JoinableTaskFactory).Assembly.Location));
@@ -72,13 +64,16 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                 });
             }
 
-            public bool HasEntryPoint { get; set; }
-
             public bool IncludeMicrosoftVisualStudioThreading { get; set; } = true;
 
             public bool IncludeWindowsBase { get; set; } = true;
 
             public bool IncludeVisualStudioSdk { get; set; } = true;
+
+            protected override ParseOptions CreateParseOptions()
+            {
+                return ((CSharpParseOptions)base.CreateParseOptions()).WithLanguageVersion(LanguageVersion.CSharp8);
+            }
 
             private static string ReadManifestResource(Assembly assembly, string resourceName)
             {

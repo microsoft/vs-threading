@@ -71,9 +71,9 @@ internal class SomeUserOfJTF
     [Import]
     ThreadingContext ThreadingContext { get; set; }
 
-    public async Task SomeMainThreadMethodAsync()
+    public async Task SomeMainThreadMethodAsync(CancellationToken cancellationToken)
     {
-        await this.ThreadingContext.JoinableTaskContext.SwitchToMainThreadAsync();
+        await this.ThreadingContext.JoinableTaskContext.Factory.SwitchToMainThreadAsync(cancellationToken);
         // Do work here.
     }
 }

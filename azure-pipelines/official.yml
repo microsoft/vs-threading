@@ -1,7 +1,7 @@
 trigger:
   branches:
     include:
-    - master
+    - main
     - 'v16.*'
     - 'validate/*'
   paths:
@@ -15,7 +15,7 @@ schedules:
   displayName: Daily vs-insertion
   branches:
     include:
-    - master
+    - main
     - 'v16.*'
 
 parameters:
@@ -29,6 +29,9 @@ parameters:
   type: boolean
   default: false
 
+variables:
+  NugetSecurityAnalysisWarningLevel: none # nuget.config requires signed packages by trusted owners
+
 stages:
 
 - stage: Build
@@ -38,12 +41,13 @@ stages:
     DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
     BuildConfiguration: Release
     BuildPlatform: Any CPU
+    push_to_ci: true
     NUGET_PACKAGES: $(Agent.TempDirectory)/.nuget/packages
     SignTypeSelection: ${{ parameters.SignTypeSelection }}
   jobs:
   - template: build.yml
     parameters:
-      windowsPool: VSEng-MicroBuildVS2019
+      windowsPool: VSEngSS-MicroBuild2019
       ShouldSkipOptimize: ${{ parameters.ShouldSkipOptimize }}
 
 - stage: symbol_archive
@@ -69,7 +73,7 @@ stages:
       inputs:
         SymbolsFeatureName: $(SymbolsFeatureName)
         SymbolsSymwebProject: VS
-        SymbolsUncPath: \\cpvsbuild\drops\$(TeamName)\$(Build.DefinitionName)\$(Build.SourceBranchName)\$(Build.BuildNumber)\Symbols.Archival
+        SymbolsUncPath: \\cpvsbuild\drops\$(TeamName)\$(Build.DefinitionName)\$(Build.SourceBranchName)\$(Build.BuildId)\Symbols.Archival
         SymbolsEmailContacts: vsidemicrobuild
         SymbolsAgentPath: $(Pipeline.Workspace)/symbols-Windows
     - task: MicroBuildCleanup@1
@@ -101,3 +105,5 @@ stages:
               packagesToPush: $(Pipeline.Workspace)/deployables-Windows/NuGet/*.nupkg
               nuGetFeedType: external
               publishFeedCredentials: azure-public/vssdk
+              allowPackageConflicts: true
+            continueOnError: true # until "skip on conflict" is offered as a task input.

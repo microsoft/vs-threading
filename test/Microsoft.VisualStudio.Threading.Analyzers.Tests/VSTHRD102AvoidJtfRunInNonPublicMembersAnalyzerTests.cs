@@ -4,6 +4,7 @@
 namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
     using System.Threading.Tasks;
+    using Microsoft.CodeAnalysis;
     using Xunit;
     using Verify = CSharpCodeFixVerifier<VSTHRD102AvoidJtfRunInNonPublicMembersAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
@@ -150,8 +151,11 @@ class Program {
 ";
             await new Verify.Test
             {
-                TestCode = test,
-                HasEntryPoint = true,
+                TestState =
+                {
+                    Sources = { test },
+                    OutputKind = OutputKind.ConsoleApplication,
+                },
             }.RunAsync();
         }
 

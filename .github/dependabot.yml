@@ -4,9 +4,9 @@
 version: 2
 updates:
 - package-ecosystem: nuget
-  directory: /src
+  directory: /
   schedule:
-    interval: weekly
+    interval: monthly
   ignore:
   - dependency-name: Microsoft.CodeAnalysis* # We intentionally target older VS versions.
   - dependency-name: DllExport # Later versions don't offer what we want.

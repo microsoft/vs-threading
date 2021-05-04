@@ -10,6 +10,10 @@ jobs:
   steps:
   - checkout: self
     clean: true
+
+  - ${{ if eq(variables['Build.Reason'], 'Schedule') }}:
+    - template: schedule-only-steps.yml
+
   - template: install-dependencies.yml
 
   - powershell: '& (./azure-pipelines/Get-nbgv.ps1) cloud'
@@ -52,7 +56,7 @@ jobs:
   - macOS
   pool:
     vmImage: Ubuntu 18.04
-  condition: succeededOrFailed()
+  condition: ne(variables['OptProf'], 'true')
   steps:
   - checkout: self
     clean: true

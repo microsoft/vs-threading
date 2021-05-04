@@ -6,7 +6,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis.Testing;
     using Xunit;
-    using static VSTHRD103UseAsyncOptionAnalyzer;
+    using static Microsoft.VisualStudio.Threading.Analyzers.VSTHRD103UseAsyncOptionAnalyzer;
     using Verify = CSharpCodeFixVerifier<VSTHRD103UseAsyncOptionAnalyzer, VSTHRD103UseAsyncOptionCodeFix>;
 
     public class VSTHRD103UseAsyncOptionAnalyzerTests
@@ -234,6 +234,68 @@ class Test {
 ";
             DiagnosticResult expected = Verify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(7, 11).WithArguments("Wait");
             await Verify.VerifyCodeFixAsync(test, expected, withFix);
+        }
+
+        [Fact]
+        public async Task TaskWaitInValueTaskReturningMethodGeneratesWarning()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    ValueTask T() {
+        Task t = null;
+        t.{|#0:Wait|}();
+        return default;
+    }
+}
+";
+
+            var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    async ValueTask T() {
+        Task t = null;
+        await t;
+    }
+}
+";
+            await Verify.VerifyCodeFixAsync(test, Verify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Wait"), withFix);
+        }
+
+        [Fact]
+        public async Task TaskWait_InIAsyncEnumerableAsyncMethod_ShouldReportWarning()
+        {
+            var test = @"
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+class Test {
+    async IAsyncEnumerable<int> FooAsync()
+    {
+        Task.Delay(TimeSpan.FromSeconds(5)).{|#0:Wait|}();
+        yield return 1;
+    }
+}
+";
+            var withFix = @"
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
+class Test {
+    async IAsyncEnumerable<int> FooAsync()
+    {
+        await Task.Delay(TimeSpan.FromSeconds(5));
+        yield return 1;
+    }
+}
+";
+            await Verify.VerifyCodeFixAsync(test, Verify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Wait"), withFix);
         }
 
         [Fact]

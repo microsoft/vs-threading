@@ -42,4 +42,4 @@ void DoSomething()
 
 Refer to [Asynchronous and multithreaded programming within VS using the JoinableTaskFactory][1] for more information.
 
-[1]: http://blogs.msdn.com/b/andrewarnottms/archive/2014/05/07/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory.aspx
+[1]: https://devblogs.microsoft.com/premier-developer/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory/

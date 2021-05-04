@@ -4,7 +4,7 @@ pr: none
 resources:
   pipelines:
   - pipeline: CI
-    source: Library # TODO: This should match the name of your CI pipeline
+    source: vs-threading
     trigger:
       tags:
       - auto-release
@@ -58,7 +58,6 @@ stages:
           - download: CI
             artifact: deployables-Windows
             displayName: Download deployables-Windows artifact
-            patterns: 'deployables-Windows/*'
           - task: NuGetToolInstaller@1
             displayName: Use NuGet 5.x
             inputs:

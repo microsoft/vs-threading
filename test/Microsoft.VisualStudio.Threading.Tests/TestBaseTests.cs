@@ -1,154 +1,150 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Microsoft.VisualStudio.Threading.Tests
+using System;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft;
+using Microsoft.VisualStudio.Threading;
+using Xunit;
+using Xunit.Abstractions;
+using Xunit.Sdk;
+
+public class TestBaseTests : TestBase
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Runtime.InteropServices;
-    using System.Text;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using Xunit;
-    using Xunit.Abstractions;
-    using Xunit.Sdk;
-
-    public class TestBaseTests : TestBase
+    public TestBaseTests(ITestOutputHelper logger)
+        : base(logger)
     {
-        public TestBaseTests(ITestOutputHelper logger)
-            : base(logger)
-        {
-        }
+    }
 
-        [SkippableFact]
-        public void ExecuteOnSTA_ExecutesDelegateOnSTA()
+    [SkippableFact]
+    public void ExecuteOnSTA_ExecutesDelegateOnSTA()
+    {
+        Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+        bool executed = false;
+        this.ExecuteOnSTA(delegate
         {
-            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
-            bool executed = false;
-            this.ExecuteOnSTA(delegate
+            Assert.Equal(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
+            Assert.Null(SynchronizationContext.Current);
+            executed = true;
+        });
+        Assert.True(executed);
+    }
+
+    [SkippableFact]
+    public void ExecuteOnSTA_PropagatesExceptions()
+    {
+        Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+        Assert.Throws<ApplicationException>(() => this.ExecuteOnSTA(() =>
+        {
+            throw new ApplicationException();
+        }));
+    }
+
+    [StaFact]
+    public void ExecuteOnDispatcher_ExecutesDelegateOnSTA()
+    {
+        bool executed = false;
+        this.ExecuteOnDispatcher(delegate
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 Assert.Equal(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
-                Assert.Null(SynchronizationContext.Current);
-                executed = true;
-            });
-            Assert.True(executed);
-        }
+            }
 
-        [SkippableFact]
-        public void ExecuteOnSTA_PropagatesExceptions()
-        {
-            Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
-            Assert.Throws<ApplicationException>(() => this.ExecuteOnSTA(() =>
-            {
-                throw new ApplicationException();
-            }));
-        }
+            Assert.NotNull(SynchronizationContext.Current);
+            executed = true;
+        });
+        Assert.True(executed);
+    }
 
-        [StaFact]
-        public void ExecuteOnDispatcher_ExecutesDelegateOnSTA()
+    [Fact]
+    public void ExecuteOnDispatcher_ExecutesDelegateOnMTA()
+    {
+        // Wrap the whole thing in Task.Run to force it to an MTA thread,
+        // since xunit uses STA when tests run in batches.
+        Task.Run(delegate
         {
             bool executed = false;
             this.ExecuteOnDispatcher(delegate
             {
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    Assert.Equal(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
+                    Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
                 }
 
                 Assert.NotNull(SynchronizationContext.Current);
                 executed = true;
             });
             Assert.True(executed);
-        }
+        }).WaitWithoutInlining(throwOriginalException: true);
+    }
 
-        [Fact]
-        public void ExecuteOnDispatcher_ExecutesDelegateOnMTA()
+    [Fact]
+    public void ExecuteOnDispatcher_PropagatesExceptions()
+    {
+        Assert.Throws<ApplicationException>(() => this.ExecuteOnDispatcher(() =>
         {
-            // Wrap the whole thing in Task.Run to force it to an MTA thread,
-            // since xunit uses STA when tests run in batches.
-            Task.Run(delegate
-            {
-                bool executed = false;
-                this.ExecuteOnDispatcher(delegate
-                {
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    {
-                        Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
-                    }
+            throw new ApplicationException();
+        }));
+    }
 
-                    Assert.NotNull(SynchronizationContext.Current);
-                    executed = true;
-                });
-                Assert.True(executed);
-            }).WaitWithoutInlining(throwOriginalException: true);
-        }
-
-        [Fact]
-        public void ExecuteOnDispatcher_PropagatesExceptions()
+    [SkippableFact]
+    public async Task ExecuteInIsolation_PassingTest()
+    {
+        if (await this.ExecuteInIsolationAsync())
         {
-            Assert.Throws<ApplicationException>(() => this.ExecuteOnDispatcher(() =>
-            {
-                throw new ApplicationException();
-            }));
+            this.Logger.WriteLine("Some output from isolated process.");
         }
+    }
 
-        [SkippableFact]
-        public async Task ExecuteInIsolation_PassingTest()
+    [SkippableFact]
+    public async Task ExecuteInIsolation_FailingTest()
+    {
+        bool executeHere;
+        try
         {
-            if (await this.ExecuteInIsolationAsync())
-            {
-                this.Logger.WriteLine("Some output from isolated process.");
-            }
+            executeHere = await this.ExecuteInIsolationAsync();
         }
-
-        [SkippableFact]
-        public async Task ExecuteInIsolation_FailingTest()
+        catch (XunitException ex)
         {
-            bool executeHere;
-            try
-            {
-                executeHere = await this.ExecuteInIsolationAsync();
-            }
-            catch (XunitException ex)
-            {
-                // This is the outer invocation and it failed as expected.
-                this.Logger.WriteLine(ex.ToString());
-                return;
-            }
-
-            Assumes.True(executeHere);
-            throw new Exception("Intentional test failure");
+            // This is the outer invocation and it failed as expected.
+            this.Logger.WriteLine(ex.ToString());
+            return;
         }
+
+        Assumes.True(executeHere);
+        throw new Exception("Intentional test failure");
+    }
 
 #if NETFRAMEWORK
-        [StaFact]
-        public async Task ExecuteInIsolation_PassingOnSTA()
+    [StaFact]
+    public async Task ExecuteInIsolation_PassingOnSTA()
+    {
+        if (await this.ExecuteInIsolationAsync())
         {
-            if (await this.ExecuteInIsolationAsync())
-            {
-                Assert.Equal(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
-            }
+            Assert.Equal(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
         }
-
-        [StaFact]
-        public async Task ExecuteInIsolation_FailingOnSTA()
-        {
-            bool executeHere;
-            try
-            {
-                executeHere = await this.ExecuteInIsolationAsync();
-            }
-            catch (XunitException ex)
-            {
-                // This is the outer invocation and it failed as expected.
-                this.Logger.WriteLine(ex.ToString());
-                return;
-            }
-
-            Assumes.True(executeHere);
-            throw new Exception("Intentional test failure");
-        }
-#endif
     }
+
+    [StaFact]
+    public async Task ExecuteInIsolation_FailingOnSTA()
+    {
+        bool executeHere;
+        try
+        {
+            executeHere = await this.ExecuteInIsolationAsync();
+        }
+        catch (XunitException ex)
+        {
+            // This is the outer invocation and it failed as expected.
+            this.Logger.WriteLine(ex.ToString());
+            return;
+        }
+
+        Assumes.True(executeHere);
+        throw new Exception("Intentional test failure");
+    }
+#endif
 }
