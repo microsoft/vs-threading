@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#pragma warning disable CA1034 // Nested types should not be visible
-
 namespace Microsoft.VisualStudio.Threading
 {
     using System;
@@ -218,9 +216,7 @@ namespace Microsoft.VisualStudio.Threading
                         // subscription to have begun before we return: for the async part to simply be notification.
                         // This async method we're calling uses .ConfigureAwait(false) internally so this won't
                         // deadlock if we're called on a thread with a single-thread SynchronizationContext.
-#pragma warning disable CA2000 // Dispose objects before losing scope
                         dedicatedThreadReleaser = DownlevelRegistryWatcherSupport.ExecuteOnDedicatedThreadAsync(registerAction).GetAwaiter().GetResult();
-#pragma warning restore CA2000 // Dispose objects before losing scope
                     }
 
                     await evt.WaitHandle.ToTask(cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -235,7 +231,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// The result of <see cref="ConfigureAwaitForAggregateException(Task, bool)"/> to prepare a <see cref="Task"/> to be awaited while throwing with all inner exceptions.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "Awaitables are not compared.")]
         public readonly struct AggregateExceptionAwaitable
         {
             private readonly Task task;
@@ -262,7 +257,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// The result of <see cref="AggregateExceptionAwaitable.GetAwaiter"/> to prepare a <see cref="Task"/> to be awaited while throwing with all inner exceptions.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "Awaitables are not compared.")]
         public readonly struct AggregateExceptionAwaiter : ICriticalNotifyCompletion
         {
             private readonly Task task;
@@ -305,7 +299,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// An awaitable that executes continuations on the specified task scheduler.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "Awaitables are not compared.")]
         public readonly struct TaskSchedulerAwaitable
         {
             /// <summary>
@@ -344,7 +337,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// An awaiter returned from <see cref="GetAwaiter(TaskScheduler)"/>.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "Awaitables are not compared.")]
         public readonly struct TaskSchedulerAwaiter : ICriticalNotifyCompletion
         {
             /// <summary>
@@ -444,7 +436,6 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Does nothing.
             /// </summary>
-            [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
             public void GetResult()
             {
             }
@@ -454,7 +445,6 @@ namespace Microsoft.VisualStudio.Threading
         /// An awaitable that will always lead the calling async method to yield,
         /// then immediately resume, possibly on the original <see cref="SynchronizationContext"/>.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "Awaitables are not compared.")]
         public readonly struct ConfiguredTaskYieldAwaitable
         {
             /// <summary>
@@ -482,7 +472,6 @@ namespace Microsoft.VisualStudio.Threading
         /// An awaiter that will always lead the calling async method to yield,
         /// then immediately resume, possibly on the original <see cref="SynchronizationContext"/>.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "Awaitables are not compared.")]
         public readonly struct ConfiguredTaskYieldAwaiter : ICriticalNotifyCompletion
         {
             /// <summary>
@@ -503,7 +492,6 @@ namespace Microsoft.VisualStudio.Threading
             /// Gets a value indicating whether the caller should yield.
             /// </summary>
             /// <value>Always false.</value>
-            [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
             public bool IsCompleted => false;
 
             /// <summary>
@@ -542,7 +530,6 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Does nothing.
             /// </summary>
-            [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
             public void GetResult()
             {
             }
@@ -551,7 +538,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// A Task awaitable that has affinity to executing callbacks synchronously on the completing callstack.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "Awaitables are not compared.")]
         public readonly struct ExecuteContinuationSynchronouslyAwaitable
         {
             /// <summary>
@@ -579,7 +565,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// A Task awaiter that has affinity to executing callbacks synchronously on the completing callstack.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "Awaitables are not compared.")]
         public readonly struct ExecuteContinuationSynchronouslyAwaiter : INotifyCompletion
         {
             /// <summary>
@@ -628,7 +613,6 @@ namespace Microsoft.VisualStudio.Threading
         /// A Task awaitable that has affinity to executing callbacks synchronously on the completing callstack.
         /// </summary>
         /// <typeparam name="T">The type of value returned by the awaited <see cref="Task"/>.</typeparam>
-        [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "Awaitables are not compared.")]
         public readonly struct ExecuteContinuationSynchronouslyAwaitable<T>
         {
             /// <summary>
@@ -657,7 +641,6 @@ namespace Microsoft.VisualStudio.Threading
         /// A Task awaiter that has affinity to executing callbacks synchronously on the completing callstack.
         /// </summary>
         /// <typeparam name="T">The type of value returned by the awaited <see cref="Task"/>.</typeparam>
-        [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "Awaitables are not compared.")]
         public readonly struct ExecuteContinuationSynchronouslyAwaiter<T> : INotifyCompletion
         {
             /// <summary>
@@ -843,7 +826,6 @@ namespace Microsoft.VisualStudio.Threading
             /// <remarks>
             /// This method serves as the <see cref="ThreadStart"/> for our dedicated thread.
             /// </remarks>
-            [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Justification = "We store the exception in a Task.")]
             private static void Worker()
             {
                 while (true)

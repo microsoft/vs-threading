@@ -481,7 +481,6 @@ namespace Microsoft.VisualStudio.Threading
         /// A single hang occurrence may invoke this method multiple times, with increasing
         /// values in the <paramref name="hangDuration"/> parameter.
         /// </remarks>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         protected internal virtual void OnHangDetected(TimeSpan hangDuration, int notificationCount, Guid hangId)
         {
             List<JoinableTaskContextNode> listeners;
@@ -517,7 +516,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Invoked when an earlier hang report is false alarm.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         protected internal virtual void OnFalseHangDetected(TimeSpan hangDuration, Guid hangId)
         {
             List<JoinableTaskContextNode> listeners;
@@ -620,9 +618,7 @@ namespace Microsoft.VisualStudio.Threading
         /// An instance of this <see cref="HangDetails"/> class will be passed to the
         /// <see cref="JoinableTaskContextNode"/> instances who registered the hang notifications.
         /// </summary>
-#pragma warning disable CA1034 // Nested types should not be visible
         public class HangDetails
-#pragma warning restore CA1034 // Nested types should not be visible
         {
             /// <summary>Initializes a new instance of the <see cref="HangDetails"/> class.</summary>
             /// <param name="hangDuration">The duration of the current hang.</param>

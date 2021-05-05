@@ -98,7 +98,6 @@ namespace Microsoft.VisualStudio.Threading
         /// Decrements the counter by one and returns an awaitable that executes the continuation when the countdown reaches zero.
         /// </summary>
         /// <returns>An awaitable.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         public Task SignalAndWaitAsync()
         {
             try

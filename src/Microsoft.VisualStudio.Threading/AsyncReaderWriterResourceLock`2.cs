@@ -65,14 +65,12 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Flags that modify default lock behavior.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1726:UsePreferredTerms", MessageId = "Flags")]
         [Flags]
         public new enum LockFlags
         {
             /// <summary>
             /// The default behavior applies.
             /// </summary>
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
             None = 0x0,
 
             /// <summary>
@@ -87,7 +85,6 @@ namespace Microsoft.VisualStudio.Threading
             /// potential changes because it doesn't defeat concurrent readers until it knows there
             /// is a change to actually make.
             /// </remarks>
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
             StickyWrite = 0x1,
 
             /// <summary>
@@ -97,7 +94,6 @@ namespace Microsoft.VisualStudio.Threading
             /// This flag is dormant for non-write locks.  But if present on an upgradeable read lock,
             /// this flag will activate for a nested write lock.
             /// </remarks>
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
             SkipInitialPreparation = 0x1000,
         }
 
@@ -213,8 +209,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Returns the aggregate of the lock flags for all nested locks.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1726:UsePreferredTerms", MessageId = "Flags")]
         protected new LockFlags GetAggregateLockFlags()
         {
             return (LockFlags)base.GetAggregateLockFlags();
@@ -244,7 +238,6 @@ namespace Microsoft.VisualStudio.Threading
         /// but only when transitioning from no access -- it is not invoked when transitioning
         /// from concurrent access to exclusive access.
         /// </remarks>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1726:UsePreferredTerms", MessageId = "Flags")]
         protected abstract Task PrepareResourceForExclusiveAccessAsync(TResource resource, LockFlags lockFlags, CancellationToken cancellationToken);
 
         /// <summary>
@@ -271,10 +264,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// An awaitable that is returned from asynchronous lock requests.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-#pragma warning disable CA1034 // Nested types should not be visible
         public readonly struct ResourceAwaitable
-#pragma warning restore CA1034 // Nested types should not be visible
         {
             /// <summary>
             /// The underlying lock awaitable.
@@ -300,7 +290,6 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Gets the awaiter value.
             /// </summary>
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
             public ResourceAwaiter GetAwaiter()
             {
                 return new ResourceAwaiter(this.awaitable.GetAwaiter(), this.helper);
@@ -310,11 +299,8 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Manages asynchronous access to a lock.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
         [DebuggerDisplay("{awaiter.kind}")]
-#pragma warning disable CA1034 // Nested types should not be visible
         public readonly struct ResourceAwaiter : ICriticalNotifyCompletion
-#pragma warning restore CA1034 // Nested types should not be visible
         {
             /// <summary>
             /// The underlying lock awaiter.
@@ -388,7 +374,6 @@ namespace Microsoft.VisualStudio.Threading
             /// Applies the issued lock to the caller and returns the value used to release the lock.
             /// </summary>
             /// <returns>The value to dispose of to release the lock.</returns>
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
             public ResourceReleaser GetResult()
             {
                 if (this.awaiter is null)
@@ -403,11 +388,8 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// A value whose disposal releases a held lock.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
         [DebuggerDisplay("{releaser.awaiter.kind}")]
-#pragma warning disable CA1034 // Nested types should not be visible
         public readonly struct ResourceReleaser : IDisposable, System.IAsyncDisposable
-#pragma warning restore CA1034 // Nested types should not be visible
         {
             /// <summary>
             /// The underlying lock releaser.

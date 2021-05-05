@@ -186,9 +186,7 @@ namespace Microsoft.VisualStudio.Threading
             }
             else
             {
-#pragma warning disable CA2008 // Do not create tasks without passing a TaskScheduler
                 Task? reported = taskFactory.StartNew(() => this.handler(value)).Unwrap();
-#pragma warning restore CA2008 // Do not create tasks without passing a TaskScheduler
                 lock (syncObject)
                 {
                     outstandingTasks.Add(reported);
@@ -231,10 +229,7 @@ namespace Microsoft.VisualStudio.Threading
             syncObject = this.syncObject;
             outstandingTasks = this.outstandingTasks;
             taskFactory = this.taskFactory;
-
-#pragma warning disable CS8762 // Parameter may not have a null value when exiting in some condition.
             return joinableTaskFactory is object;
-#pragma warning restore CS8762 // Parameter may not have a null value when exiting in some condition.
         }
     }
 }

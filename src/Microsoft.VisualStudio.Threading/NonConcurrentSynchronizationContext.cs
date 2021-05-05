@@ -124,9 +124,7 @@ namespace Microsoft.VisualStudio.Threading
                         cb(s);
                         m.SetResult(null);
                     }
-#pragma warning disable CA1031 // Do not catch general exception types
                     catch (Exception ex)
-#pragma warning restore CA1031 // Do not catch general exception types
                     {
                         m.SetException(ex);
                     }
@@ -142,7 +140,6 @@ namespace Microsoft.VisualStudio.Threading
         /// Executes queued work on the threadpool, one at a time.
         /// </summary>
         /// <returns>A task that always completes successfully.</returns>
-        [SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters", MessageId = "System.Environment.FailFast(System.String,System.Exception)")]
         private async Task ProcessQueueAsync()
         {
             try
@@ -158,9 +155,7 @@ namespace Microsoft.VisualStudio.Threading
                             work.Item1(work.Item2);
                         }
                     }
-#pragma warning disable CA1031 // Do not catch general exception types
                     catch (Exception ex)
-#pragma warning restore CA1031 // Do not catch general exception types
                     {
                         this.UnhandledException?.Invoke(this, ex);
                     }
@@ -170,9 +165,7 @@ namespace Microsoft.VisualStudio.Threading
                     }
                 }
             }
-#pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception ex)
-#pragma warning restore CA1031 // Do not catch general exception types
             {
                 // A failure to schedule work is fatal because it can lead to hangs that are
                 // very hard to diagnose to a failure in the scheduler, and even harder to identify

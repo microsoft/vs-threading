@@ -17,7 +17,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="original">The first token.</param>
         /// <param name="other">The second token.</param>
         /// <returns>A struct that contains the combined <see cref="CancellationToken"/> and a means to release memory when you're done using it.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000", Justification = "The CancellationTokenSource is created and returned in a struct responsible for its disposal.")]
         public static CombinedCancellationToken CombineWith(this CancellationToken original, CancellationToken other)
         {
             if (original.IsCancellationRequested || !other.CanBeCanceled)
@@ -41,7 +40,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="original">The first token.</param>
         /// <param name="others">The additional tokens.</param>
         /// <returns>A struct that contains the combined <see cref="CancellationToken"/> and a means to release memory when you're done using it.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000", Justification = "The CancellationTokenSource is created and returned in a struct responsible for its disposal.")]
         public static CombinedCancellationToken CombineWith(this CancellationToken original, params CancellationToken[] others)
         {
             Requires.NotNull(others, nameof(others));
@@ -133,9 +131,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Provides access to a <see cref="System.Threading.CancellationToken"/> that combines multiple other tokens,
         /// and allows convenient disposal of any applicable <see cref="CancellationTokenSource"/>.
         /// </summary>
-#pragma warning disable CA1034 // Nested types should not be visible
         public readonly struct CombinedCancellationToken : IDisposable, IEquatable<CombinedCancellationToken>
-#pragma warning restore CA1034 // Nested types should not be visible
         {
             /// <summary>
             /// The object to dispose when this struct is disposed.
@@ -147,7 +143,6 @@ namespace Microsoft.VisualStudio.Threading
             /// that contains an aggregate <see cref="System.Threading.CancellationToken"/> whose source must be disposed.
             /// </summary>
             /// <param name="cancellationTokenSource">The cancellation token source.</param>
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1062", Justification = "We are prepared to handle null values for CancellationTokenSource.")]
             public CombinedCancellationToken(CancellationTokenSource cancellationTokenSource)
             {
                 this.cts = cancellationTokenSource;

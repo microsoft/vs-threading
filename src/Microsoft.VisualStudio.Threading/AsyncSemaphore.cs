@@ -291,10 +291,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// A value whose disposal triggers the release of a lock.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-#pragma warning disable CA1034 // Nested types should not be visible
         public readonly struct Releaser : IDisposable
-#pragma warning restore CA1034 // Nested types should not be visible
         {
             /// <summary>
             /// The lock instance to release.
@@ -346,9 +343,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 CancellationTokenRegistration cancellationTokenRegistration;
                 IDisposable? timerTokenSource;
-#pragma warning disable CA2002 // Do not lock on objects with weak identity
                 lock (this)
-#pragma warning restore CA2002 // Do not lock on objects with weak identity
                 {
                     cancellationTokenRegistration = this.CancellationTokenRegistration;
                     this.CancellationTokenRegistration = default;

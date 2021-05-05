@@ -28,7 +28,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <c>true</c> if the location's value is changed by applying the result of the <paramref name="applyChange"/> function;
         /// <c>false</c> if the location's value remained the same because the last invocation of <paramref name="applyChange"/> returned the existing value.
         /// </returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference", MessageId = "0#")]
         public static bool ApplyChangeOptimistically<T>(ref T hotLocation, Func<T, T> applyChange)
             where T : class?
         {
@@ -71,7 +70,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <c>true</c> if the location's value is changed by applying the result of the <paramref name="applyChange"/> function;
         /// <c>false</c> if the location's value remained the same because the last invocation of <paramref name="applyChange"/> returned the existing value.
         /// </returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference", MessageId = "0#")]
         public static bool ApplyChangeOptimistically<T, TArg>(ref T hotLocation, TArg applyChangeArgument, Func<T, TArg, T> applyChange)
             where T : class?
         {
@@ -238,9 +236,7 @@ namespace Microsoft.VisualStudio.Threading
                                             var t2 = (CancelableTaskCompletionSource<T>)s2!;
                                             t2.CancellationTokenRegistration.Dispose();
                                         }
-#pragma warning disable CA1031 // Do not catch general exception types
                                         catch (Exception ex)
-#pragma warning restore CA1031 // Do not catch general exception types
                                         {
                                             // Swallow any exception.
                                             Report.Fail(ex.Message);

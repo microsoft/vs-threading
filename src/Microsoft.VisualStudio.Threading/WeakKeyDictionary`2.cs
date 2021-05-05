@@ -16,7 +16,6 @@ namespace Microsoft.VisualStudio.Threading
     /// <remarks>
     /// See also Microsoft.Build.Collections.WeakDictionary.
     /// </remarks>
-    [SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix", Justification = "This is a dictionary, despite the fact it doesn't implement IDictionary.")]
     internal class WeakKeyDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
         where TKey : class
     {

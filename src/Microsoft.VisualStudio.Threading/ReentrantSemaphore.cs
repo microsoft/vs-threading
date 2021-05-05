@@ -232,9 +232,7 @@ namespace Microsoft.VisualStudio.Threading
         {
             joinableTaskFactory = this.joinableTaskFactory;
             joinableTaskCollection = this.joinableTaskCollection;
-#pragma warning disable CS8762 // Parameter may not have a null value when exiting in some condition.
             return this.joinableTaskCollection is object;
-#pragma warning restore CS8762 // Parameter may not have a null value when exiting in some condition.
         }
 
         /// <summary>
@@ -268,10 +266,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// A structure that hides any evidence that the caller has entered a <see cref="ReentrantSemaphore"/> till this value is disposed.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-#pragma warning disable CA1034 // Nested types should not be visible
         public readonly struct RevertRelevance : IDisposable
-#pragma warning restore CA1034 // Nested types should not be visible
         {
             /// <summary>
             /// The delegate to invoke on disposal.

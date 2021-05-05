@@ -18,7 +18,6 @@ namespace Microsoft.VisualStudio.Threading
         /// Contributes data for a hang report.
         /// </summary>
         /// <returns>The hang report contribution. Null values should be ignored.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         HangReportContribution GetHangReport();
     }
 }

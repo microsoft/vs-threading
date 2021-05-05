@@ -226,7 +226,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets an awaiter that completes when this event is signaled.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public TaskAwaiter GetAwaiter()
         {

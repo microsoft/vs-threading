@@ -26,7 +26,6 @@ namespace Microsoft.VisualStudio.Threading
         /// Contributes data for a hang report.
         /// </summary>
         /// <returns>The hang report contribution. Null values should be ignored.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         protected virtual HangReportContribution GetHangReport()
         {
             using (this.NoMessagePumpSynchronizationContext.Apply())
@@ -147,7 +146,6 @@ namespace Microsoft.VisualStudio.Threading
             return result;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private static string GetAsyncReturnStack(JoinableTaskFactory.SingleExecuteProtector singleExecuteProtector)
         {
             Requires.NotNull(singleExecuteProtector, nameof(singleExecuteProtector));
