@@ -55,7 +55,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Contributes data for a hang report.
         /// </summary>
         /// <returns>The hang report contribution. Null values should be ignored.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         protected virtual HangReportContribution GetHangReport()
         {
             using (this.NoMessagePumpSynchronizationContext.Apply())
@@ -125,7 +125,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Appends details of a given collection of awaiters to the hang report.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private static XElement CreateAwaiterNode(Awaiter awaiter)
         {
             Requires.NotNull(awaiter, nameof(awaiter));

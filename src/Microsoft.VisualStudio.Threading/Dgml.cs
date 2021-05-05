@@ -44,7 +44,6 @@ namespace Microsoft.VisualStudio.Threading
             return dgml;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal static XDocument WithCategories(this XDocument document, params string[] categories)
         {
             Requires.NotNull(document, nameof(document));
@@ -179,7 +178,6 @@ namespace Microsoft.VisualStudio.Threading
             return document;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal static XElement ContainedBy(this XElement node, XElement container)
         {
             Requires.NotNull(node, nameof(node));
@@ -225,7 +223,6 @@ namespace Microsoft.VisualStudio.Threading
             return element;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal static XDocument WithStyle(this XDocument document, string categoryId, IEnumerable<KeyValuePair<string, string?>> properties, string targetType = "Node")
         {
             Requires.NotNull(document, nameof(document));
@@ -251,7 +248,6 @@ namespace Microsoft.VisualStudio.Threading
             return document;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
         internal static XDocument WithStyle(this XDocument document, string categoryId, string targetType = "Node", string? foreground = null, string? background = null, string? icon = null)
         {
             var properties = new Dictionary<string, string?>();

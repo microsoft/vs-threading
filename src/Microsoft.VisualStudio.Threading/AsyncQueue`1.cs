@@ -16,7 +16,6 @@ namespace Microsoft.VisualStudio.Threading
     /// A thread-safe, asynchronously dequeuable queue.
     /// </summary>
     /// <typeparam name="T">The type of values kept by the queue.</typeparam>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1711:IdentifiersShouldNotHaveIncorrectSuffix")]
     [DebuggerDisplay("Count = {Count}, Completed = {completeSignaled}")]
     public class AsyncQueue<T> : ThreadingTools.ICancellationNotification
     {
@@ -263,7 +262,6 @@ namespace Microsoft.VisualStudio.Threading
         /// Thrown when this instance has an empty queue and <see cref="Complete()"/> has been called.
         /// Also thrown when <paramref name="cancellationToken"/> is canceled before a work item can be dequeued.
         /// </exception>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         public Task<T> DequeueAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             if (cancellationToken.IsCancellationRequested)
@@ -317,9 +315,7 @@ namespace Microsoft.VisualStudio.Threading
             bool result = this.TryDequeueInternal(null, out value);
 #pragma warning restore CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
             this.CompleteIfNecessary();
-#pragma warning disable CS8762 // Parameter must have a non-null value when exiting in some condition.
             return result;
-#pragma warning restore CS8762 // Parameter must have a non-null value when exiting in some condition.
         }
 
         /// <inheritdoc />
@@ -352,9 +348,7 @@ namespace Microsoft.VisualStudio.Threading
             bool result = this.TryDequeueInternal(valueCheck, out value);
 #pragma warning restore CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
             this.CompleteIfNecessary();
-#pragma warning disable CS8762 // Parameter must have a non-null value when exiting in some condition.
             return result;
-#pragma warning restore CS8762 // Parameter must have a non-null value when exiting in some condition.
         }
 
         /// <summary>

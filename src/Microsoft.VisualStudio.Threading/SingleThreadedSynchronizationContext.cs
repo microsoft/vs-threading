@@ -61,7 +61,6 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <inheritdoc/>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031", Justification = "We are catching it to rethrow elsewhere.")]
         public override void Send(SendOrPostCallback d, object? state)
         {
             Requires.NotNull(d, nameof(d));
@@ -80,9 +79,7 @@ namespace Microsoft.VisualStudio.Threading
             else
             {
                 Exception? caughtException = null;
-#pragma warning disable CA2000 // Dispose objects before losing scope
                 var evt = new ManualResetEventSlim();
-#pragma warning restore CA2000 // Dispose objects before losing scope
                 var ctxt = ExecutionContext.Capture();
                 lock (this.messageQueue)
                 {
@@ -195,9 +192,7 @@ namespace Microsoft.VisualStudio.Threading
         /// A message pumping frame that may be pushed with <see cref="PushFrame(Frame)"/> to pump messages
         /// on the owning thread.
         /// </summary>
-#pragma warning disable CA1034 // Nested types should not be visible
         public class Frame
-#pragma warning restore CA1034 // Nested types should not be visible
         {
             /// <summary>
             /// The owning sync context.

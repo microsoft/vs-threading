@@ -13,33 +13,28 @@ namespace Microsoft.VisualStudio.Threading
     /// <summary>
     /// Extensions to the Task Parallel Library.
     /// </summary>
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Tpl")]
     public static partial class TplExtensions
     {
         /// <summary>
         /// A singleton completed task.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         [Obsolete("Use Task.CompletedTask instead.")]
         public static readonly Task CompletedTask = Task.FromResult(default(EmptyStruct));
 
         /// <summary>
         /// A task that is already canceled.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         [Obsolete("Use Task.FromCanceled instead.")]
         public static readonly Task CanceledTask = Task.FromCanceled(new CancellationToken(canceled: true));
 
         /// <summary>
         /// A completed task with a <c>true</c> result.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly Task<bool> TrueTask = Task.FromResult(true);
 
         /// <summary>
         /// A completed task with a <c>false</c> result.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
         public static readonly Task<bool> FalseTask = Task.FromResult(false);
 
         /// <summary>
@@ -113,7 +108,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <typeparam name="T">The type of value returned by a task.</typeparam>
         /// <param name="task">The task whose completion should be applied to another.</param>
         /// <param name="tcs">The task that should receive the completion status.</param>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "tcs")]
         public static void ApplyResultTo<T>(this Task<T> task, TaskCompletionSource<T> tcs)
         {
             ApplyResultTo(task, tcs, inlineSubsequentCompletion: true);
@@ -125,7 +119,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <typeparam name="T">The type of value returned by a task.</typeparam>
         /// <param name="task">The task whose completion should be applied to another.</param>
         /// <param name="tcs">The task that should receive the completion status.</param>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "tcs")]
         public static void ApplyResultTo<T>(this Task task, TaskCompletionSource<T> tcs)
             //// where T : defaultable
         {
@@ -252,7 +245,6 @@ namespace Microsoft.VisualStudio.Threading
         /// Consumes a task and doesn't do anything with it.  Useful for fire-and-forget calls to async methods within async methods.
         /// </summary>
         /// <param name="task">The task whose result is to be ignored.</param>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "task")]
         public static void Forget(this Task? task)
         {
         }
@@ -293,9 +285,7 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         await handler(sender, args).ConfigureAwait(true);
                     }
-#pragma warning disable CA1031 // Do not catch general exception types
                     catch (Exception ex)
-#pragma warning restore CA1031 // Do not catch general exception types
                     {
                         if (exceptions is null)
                         {
@@ -335,9 +325,7 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         await handler(sender, args).ConfigureAwait(true);
                     }
-#pragma warning disable CA1031 // Do not catch general exception types
                     catch (Exception ex)
-#pragma warning restore CA1031 // Do not catch general exception types
                     {
                         if (exceptions is null)
                         {
@@ -363,7 +351,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="callback">The optional callback to invoke when the task is completed.</param>
         /// <param name="state">The state object provided by the caller of the Begin method.</param>
         /// <returns>A task (that implements <see cref="IAsyncResult"/> that should be returned from the Begin method.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Apm")]
         public static Task<TResult> ToApm<TResult>(this Task<TResult> task, AsyncCallback? callback, object? state)
         {
             Requires.NotNull(task, nameof(task));
@@ -405,7 +392,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="callback">The optional callback to invoke when the task is completed.</param>
         /// <param name="state">The state object provided by the caller of the Begin method.</param>
         /// <returns>A task (that implements <see cref="IAsyncResult"/> that should be returned from the Begin method.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Apm")]
         public static Task ToApm(this Task task, AsyncCallback? callback, object? state)
         {
             Requires.NotNull(task, nameof(task));
@@ -454,7 +440,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <remarks>
         /// The completion of the returned task is asynchronous with respect to the code that actually signals the wait handle.
         /// </remarks>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2001:AvoidCallingProblematicMethods", MessageId = "System.Runtime.InteropServices.SafeHandle.DangerousGetHandle")]
         public static Task<bool> ToTask(this WaitHandle handle, int timeout = Timeout.Infinite, CancellationToken cancellationToken = default(CancellationToken))
         {
             Requires.NotNull(handle, nameof(handle));
@@ -681,15 +666,10 @@ namespace Microsoft.VisualStudio.Threading
             return tcs.Task;
         }
 
-#pragma warning disable CA1034 // Nested types should not be visible
         /// <summary>
         /// An awaitable that wraps a task and never throws an exception when waited on.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-#pragma warning restore CA1034 // Nested types should not be visible
-#pragma warning disable CA1034 // Nested types should not be visible
         public readonly struct NoThrowTaskAwaitable
-#pragma warning restore CA1034 // Nested types should not be visible
         {
             /// <summary>
             /// The task.
@@ -717,22 +697,16 @@ namespace Microsoft.VisualStudio.Threading
             /// Gets the awaiter.
             /// </summary>
             /// <returns>The awaiter.</returns>
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
             public NoThrowTaskAwaiter GetAwaiter()
             {
                 return new NoThrowTaskAwaiter(this.task, this.captureContext);
             }
         }
 
-#pragma warning disable CA1034 // Nested types should not be visible
-/// <summary>
+        /// <summary>
         /// An awaiter that wraps a task and never throws an exception when waited on.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-#pragma warning restore CA1034 // Nested types should not be visible
-#pragma warning disable CA1034 // Nested types should not be visible
         public readonly struct NoThrowTaskAwaiter : ICriticalNotifyCompletion
-#pragma warning restore CA1034 // Nested types should not be visible
         {
             /// <summary>
             /// The task.
@@ -786,7 +760,6 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Does nothing.
             /// </summary>
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
             public void GetResult()
             {
                 // Never throw here.
@@ -865,7 +838,6 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// A task that is already canceled.
             /// </summary>
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104:DoNotDeclareReadOnlyMutableReferenceTypes")]
             internal static readonly Task<T> CanceledTask = Task.FromCanceled<T>(new CancellationToken(canceled: true));
         }
 

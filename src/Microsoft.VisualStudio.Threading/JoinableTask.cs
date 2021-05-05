@@ -604,7 +604,6 @@ namespace Microsoft.VisualStudio.Threading
         /// Gets an awaiter that is equivalent to calling <see cref="JoinAsync"/>.
         /// </summary>
         /// <returns>A task whose result is the result of the asynchronous operation.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         public TaskAwaiter GetAwaiter()
         {
             return this.JoinAsync().GetAwaiter();

@@ -570,7 +570,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="flags">The flag(s) that must be specified for a <c>true</c> result.</param>
         /// <param name="handle">The head of the lock stack to consider.</param>
         /// <returns><c>true</c> if all the specified flags are found somewhere in the lock stack; <c>false</c> otherwise.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1726:UsePreferredTerms", MessageId = "flags")]
         protected bool LockStackContains(LockFlags flags, LockHandle handle)
         {
             LockFlags aggregateFlags = LockFlags.None;
@@ -606,8 +605,6 @@ namespace Microsoft.VisualStudio.Threading
         /// once the presence of certain flag(s) is determined, whereas this will aggregate all flags,
         /// some of which may be defined by derived types.
         /// </remarks>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1726:UsePreferredTerms", MessageId = "Flags")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         protected LockFlags GetAggregateLockFlags()
         {
             LockFlags aggregateFlags = LockFlags.None;
@@ -684,7 +681,6 @@ namespace Microsoft.VisualStudio.Threading
         /// Note: the task scheduler is only used, when the lock is issued later.  If the lock is issued immediately when <see cref="CanCurrentThreadHoldActiveLock"/> returns true, it will be ignored.
         /// </summary>
         /// <returns>A task scheduler to schedule the continutation task when a lock is issued.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         protected virtual TaskScheduler GetTaskSchedulerForReadLockRequest()
         {
             return TaskScheduler.Default;
@@ -1043,7 +1039,6 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="awaiter">The awaiter whose lock should be considered.</param>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "awaiter")]
         private void CheckSynchronizationContextAppropriateForLock(Awaiter? awaiter)
         {
             ////bool syncContextRequired = this.LockStackContains(LockKind.UpgradeableRead, awaiter) || this.LockStackContains(LockKind.Write, awaiter);
@@ -1438,9 +1433,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 await beginAfterPrerequisite.ConfigureAwait(SynchronizationContext.Current is NonConcurrentSynchronizationContext);
             }
-#pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception ex)
-#pragma warning restore CA1031 // Do not catch general exception types
             {
                 prereqException = ex;
             }
@@ -1475,9 +1468,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 await onExclusiveLockReleasedTask.ConfigureAwait(false);
             }
-#pragma warning disable CA1031 // Do not catch general exception types
             catch (Exception ex)
-#pragma warning restore CA1031 // Do not catch general exception types
             {
                 onExclusiveLockReleasedTaskException = ex;
             }
@@ -1586,9 +1577,7 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         await callback().ConfigureAwait(true);
                     }
-#pragma warning disable CA1031 // Do not catch general exception types
                     catch (Exception ex)
-#pragma warning restore CA1031 // Do not catch general exception types
                     {
                         if (exceptions is null)
                         {
@@ -1915,9 +1904,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Gets the awaiter value.
             /// </summary>
-#pragma warning disable CA1034 // Nested types should not be visible
             public Awaiter GetAwaiter()
-#pragma warning restore CA1034 // Nested types should not be visible
             {
                 if (this.awaiter is null)
                 {
@@ -1932,9 +1919,7 @@ namespace Microsoft.VisualStudio.Threading
         /// A value whose disposal releases a held lock.
         /// </summary>
         [DebuggerDisplay("{awaiter.kind}")]
-#pragma warning disable CA1034 // Nested types should not be visible
         public readonly struct Releaser : IDisposable, System.IAsyncDisposable
-#pragma warning restore CA1034 // Nested types should not be visible
         {
             /// <summary>
             /// The awaiter who manages the lifetime of a lock.
@@ -2020,9 +2005,7 @@ namespace Microsoft.VisualStudio.Threading
                 if (this.awaiter is object)
                 {
                     var nonConcurrentSyncContext = SynchronizationContext.Current as NonConcurrentSynchronizationContext;
-#pragma warning disable CA1034 // Nested types should not be visible
                     using (nonConcurrentSyncContext is object ? nonConcurrentSyncContext.LoanBackAnyHeldResource(this.awaiter.OwningLock) : default(NonConcurrentSynchronizationContext.LoanBack))
-#pragma warning restore CA1034 // Nested types should not be visible
                     {
                         return this.awaiter.ReleaseAsync();
                     }
@@ -2035,9 +2018,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// A value whose disposal restores visibility of any locks held by the caller.
         /// </summary>
-#pragma warning disable CA1034 // Nested types should not be visible
         public readonly struct Suppression : IDisposable
-#pragma warning restore CA1034 // Nested types should not be visible
         {
             /// <summary>
             /// The locking class.
@@ -2187,9 +2168,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             public LockHandle NestingLock
             {
-#pragma warning disable CA1034 // Nested types should not be visible
                 get { return this.IsValid ? new LockHandle(this.awaiter!.NestingLock) : default(LockHandle); }
-#pragma warning restore CA1034 // Nested types should not be visible
             }
 
             /// <summary>
@@ -2205,9 +2184,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Manages asynchronous access to a lock.
         /// </summary>
         [DebuggerDisplay("{kind}")]
-#pragma warning disable CA1034 // Nested types should not be visible
         public class Awaiter : ICriticalNotifyCompletion
-#pragma warning restore CA1034 // Nested types should not be visible
         {
             /// <summary>
             /// A singleton delegate for use in cancellation token registration to avoid memory allocations for delegates each time.
@@ -2601,7 +2578,6 @@ namespace Microsoft.VisualStudio.Threading
             /// When we don't have a valid nesting lock, we will create a new NonConcurrentSynchronizationContext for an exclusive lock.  For read lock, we don't put it within a NonConcurrentSynchronizationContext,
             /// we set it to DefaultSynchronizationContext to mark we have computed it.  The result is cached.
             /// </summary>
-            [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope", Justification = "NonConcurrentSynchronizationContext is shared among locks, and cannot be disposed.")]
             private SynchronizationContext GetEffectiveSynchronizationContext()
             {
                 if (this.synchronizationContext is null)
@@ -2801,9 +2777,7 @@ namespace Microsoft.VisualStudio.Threading
                         delegateInvoked = true; // set now, before the delegate might throw.
                         d(state);
                     }
-#pragma warning disable CA1031 // Do not catch general exception types
                     catch (Exception ex)
-#pragma warning restore CA1031 // Do not catch general exception types
                     {
                         // We just eat these up to avoid crashing the process by throwing on a threadpool thread.
                         Report.Fail("An unhandled exception was thrown from within a posted message. {0}", ex);
@@ -2832,9 +2806,7 @@ namespace Microsoft.VisualStudio.Threading
                             delegateInvoked = true; // set now, before the delegate might throw.
                             d(state);
                         }
-#pragma warning disable CA1031 // Do not catch general exception types
                         catch (Exception ex)
-#pragma warning restore CA1031 // Do not catch general exception types
                         {
                             // We just eat these up to avoid crashing the process by throwing on a threadpool thread.
                             Report.Fail("An unhandled exception was thrown from within a posted message. {0}", ex);

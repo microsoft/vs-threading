@@ -253,10 +253,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// A value whose disposal cancels a <see cref="Join"/> operation.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-#pragma warning disable CA1034 // Nested types should not be visible
         public struct JoinRelease : IDisposable
-#pragma warning restore CA1034 // Nested types should not be visible
         {
             private IJoinableTaskDependent? parentDependencyNode;
             private IJoinableTaskDependent? childDependencyNode;

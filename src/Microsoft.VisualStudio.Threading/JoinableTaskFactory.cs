@@ -259,7 +259,6 @@ namespace Microsoft.VisualStudio.Threading
         /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
         /// <para>See the <see cref="Run(Func{Task})" /> overload documentation for an example.</para>
         /// </remarks>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public T Run<T>(Func<Task<T>> asyncMethod)
         {
             return this.Run(asyncMethod, JoinableTaskCreationOptions.None);
@@ -278,7 +277,6 @@ namespace Microsoft.VisualStudio.Threading
         /// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
         /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
         /// </remarks>
-        [SuppressMessage("Microsoft.Design", "CA1006:DoNotNestGenericTypesInMemberSignatures")]
         public T Run<T>(Func<Task<T>> asyncMethod, JoinableTaskCreationOptions creationOptions)
         {
             VerifyNoNonConcurrentSyncContext();
@@ -686,7 +684,6 @@ namespace Microsoft.VisualStudio.Threading
             return job;
         }
 
-        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Justification = "All exceptions are forwarded to the caller by another means.")]
         private void ExecuteJob<T>(Func<Task> asyncMethod, JoinableTask job)
         {
             using (var framework = new RunFramework(this, job))
@@ -710,7 +707,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// An awaitable struct that facilitates an asynchronous transition to the Main thread.
         /// </summary>
-        [SuppressMessage("Microsoft.Design", "CA1034:NestedTypesShouldNotBeVisible"), SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
         public readonly struct MainThreadAwaitable
         {
             private readonly JoinableTaskFactory? jobFactory;
@@ -737,7 +733,6 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Gets the awaiter.
             /// </summary>
-            [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
             public MainThreadAwaiter GetAwaiter()
             {
                 if (this.jobFactory is null)
@@ -752,10 +747,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// An awaiter struct that facilitates an asynchronous transition to the Main thread.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes")]
-#pragma warning disable CA1034 // Nested types should not be visible
         public readonly struct MainThreadAwaiter : ICriticalNotifyCompletion
-#pragma warning restore CA1034 // Nested types should not be visible
         {
             private static readonly Action<object> SafeCancellationAction = state => ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, state);
 
@@ -908,7 +900,6 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             /// <param name="continuation">The action to invoke when the operation completes.</param>
             /// <param name="flowExecutionContext">A value indicating whether to capture and reapply the current ExecutionContext for the continuation.</param>
-            [SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters", MessageId = "System.Environment.FailFast(System.String,System.Exception)"), SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Justification = "Failing here is worth crashing the process for.")]
             private void OnCompleted(Action continuation, bool flowExecutionContext)
             {
                 Assumes.True(this.jobFactory is object);
@@ -1103,7 +1094,6 @@ namespace Microsoft.VisualStudio.Threading
             /// Gets a string that describes the delegate that this instance invokes.
             /// FOR DIAGNOSTIC PURPOSES ONLY.
             /// </summary>
-            [SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Justification = "Used in DebuggerDisplay attributes.")]
             internal string DelegateLabel
             {
                 get

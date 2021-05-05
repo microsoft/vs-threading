@@ -93,7 +93,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <exception cref="InvalidOperationException">
         /// Thrown when the value factory calls <see cref="GetValueAsync()"/> on this instance.
         /// </exception>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate")]
         public Task<T> GetValueAsync() => this.GetValueAsync(CancellationToken.None);
 
         /// <summary>
@@ -109,7 +108,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <exception cref="InvalidOperationException">
         /// Thrown when the value factory calls <see cref="GetValueAsync()"/> on this instance.
         /// </exception>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         public Task<T> GetValueAsync(CancellationToken cancellationToken)
         {
             if (!((this.value is object && this.value.IsCompleted) || this.recursiveFactoryCheck.Value is null))

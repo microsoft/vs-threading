@@ -150,7 +150,6 @@ namespace Microsoft.VisualStudio.Threading
         /// However, this method provides no guarantees that the address will remain valid for the caller,
         /// so it is only useful for diagnostics and when we don't expect addresses to be changing much any more.
         /// </remarks>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA1801:ReviewUnusedParameters", MessageId = "value", Justification = "We no-op on one platform.")]
         private static unsafe IntPtr GetAddress(object value) => new IntPtr(Unsafe.AsPointer(ref value));
 
         /// <summary>

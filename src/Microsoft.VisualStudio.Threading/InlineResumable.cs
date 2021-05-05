@@ -36,7 +36,6 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Does and returns nothing.
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic", Justification = "Awaiter pattern requires this to be an instance method.")]
         public void GetResult()
         {
         }
