@@ -689,21 +689,37 @@ namespace Microsoft.VisualStudio.Threading
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes", Justification = "All exceptions are forwarded to the caller by another means.")]
         private void ExecuteJob<T>(Func<Task> asyncMethod, JoinableTask job)
         {
-            using (var framework = new RunFramework(this, job))
+            try
             {
-                Task asyncMethodResult;
-                try
+                using (var framework = new RunFramework(this, job))
                 {
-                    asyncMethodResult = asyncMethod();
-                }
-                catch (Exception ex)
-                {
-                    var tcs = new TaskCompletionSource<T>();
-                    tcs.SetException(ex);
-                    asyncMethodResult = tcs.Task;
-                }
+                    Task asyncMethodResult;
+                    try
+                    {
+                        asyncMethodResult = asyncMethod();
+                    }
+                    catch (Exception ex)
+                    {
+                        var tcs = new TaskCompletionSource<T>();
+                        tcs.SetException(ex);
+                        asyncMethodResult = tcs.Task;
+                    }
 
-                job.SetWrappedTask(asyncMethodResult);
+                    job.SetWrappedTask(asyncMethodResult);
+                }
+            }
+            catch (Exception ex) when (FailFast(ex))
+            {
+                // We use a crashing exception filter to capture all the detail possible (even before unwinding the callstack)
+                // when an exception is thrown from this critical method.
+                // In particular, we have seen the WeakReference object that is instantiated by "new RunFramework" throw OutOfMemoryException.
+                throw Assumes.NotReachable();
+            }
+
+            static bool FailFast(Exception ex)
+            {
+                Environment.FailFast("Unexpected exception thrown in critical scheduling code.", ex);
+                throw Assumes.NotReachable();
             }
         }
 
