@@ -298,7 +298,7 @@ namespace Microsoft.VisualStudio.Threading
             /// When the value in an entry is decremented to 0, the entry is removed from the map.
             /// </remarks>
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-            private WeakKeyDictionary<IJoinableTaskDependent, int> childDependentNodes;
+            private Dictionary<IJoinableTaskDependent, int> childDependentNodes;
 
             /// <summary>
             /// The head of a singly linked list of records to track which task may process events of this task.
@@ -309,7 +309,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Gets a value indicating whether the <see cref="childDependentNodes"/> is empty.
             /// </summary>
-            internal bool HasNoChildDependentNode => this.childDependentNodes is null || this.childDependentNodes.Count == 0 || !this.childDependentNodes.Any();
+            internal bool HasNoChildDependentNode => this.childDependentNodes is null || this.childDependentNodes.Count == 0;
 
             /// <summary>
             /// Gets a snapshot of all joined tasks.
@@ -360,7 +360,7 @@ namespace Microsoft.VisualStudio.Threading
                         ref JoinableTaskDependentData data = ref parentTaskOrCollection.GetJoinableTaskDependentData();
                         if (data.childDependentNodes is null)
                         {
-                            data.childDependentNodes = new WeakKeyDictionary<IJoinableTaskDependent, int>(capacity: 2);
+                            data.childDependentNodes = new Dictionary<IJoinableTaskDependent, int>(capacity: 2);
                         }
 
                         if (data.childDependentNodes.TryGetValue(joinChild, out int refCount) && !parentTaskOrCollection.NeedRefCountChildDependencies)
@@ -479,7 +479,7 @@ namespace Microsoft.VisualStudio.Threading
                     }
                 }
 
-                WeakKeyDictionary<IJoinableTaskDependent, int>? childDependentNodes = taskOrCollection.GetJoinableTaskDependentData().childDependentNodes;
+                Dictionary<IJoinableTaskDependent, int>? childDependentNodes = taskOrCollection.GetJoinableTaskDependentData().childDependentNodes;
                 if (childDependentNodes is object)
                 {
                     foreach (KeyValuePair<IJoinableTaskDependent, int> item in childDependentNodes)
@@ -563,7 +563,7 @@ namespace Microsoft.VisualStudio.Threading
                             return;
                         }
 
-                        WeakKeyDictionary<IJoinableTaskDependent, int>? dependencies = taskOrCollection.GetJoinableTaskDependentData().childDependentNodes;
+                        Dictionary<IJoinableTaskDependent, int>? dependencies = taskOrCollection.GetJoinableTaskDependentData().childDependentNodes;
                         if (dependencies is object)
                         {
                             foreach (KeyValuePair<IJoinableTaskDependent, int> item in dependencies)
@@ -691,7 +691,7 @@ namespace Microsoft.VisualStudio.Threading
 
                     if (this.childDependentNodes is object)
                     {
-                        var childrenTasks = new List<IJoinableTaskDependent>(this.childDependentNodes.Keys);
+                        Dictionary<IJoinableTaskDependent, int>.KeyCollection? childrenTasks = this.childDependentNodes.Keys;
                         while (existingTaskTracking is object)
                         {
                             RemoveDependingSynchronousTaskFrom(childrenTasks, existingTaskTracking.SynchronousTask, force: existingTaskTracking.SynchronousTask == thisDependentNode);
@@ -901,7 +901,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <param name="tasks">A list of tasks we need update the tracking list.</param>
             /// <param name="syncTask">The synchronous task we want to remove.</param>
             /// <param name="force">We always remove it from the tracking list if it is true.  Otherwise, we keep tracking the reference count.</param>
-            private static void RemoveDependingSynchronousTaskFrom(IReadOnlyList<IJoinableTaskDependent> tasks, JoinableTask syncTask, bool force)
+            private static void RemoveDependingSynchronousTaskFrom(IReadOnlyCollection<IJoinableTaskDependent> tasks, JoinableTask syncTask, bool force)
             {
                 Requires.NotNull(tasks, nameof(tasks));
                 Requires.NotNull(syncTask, nameof(syncTask));
