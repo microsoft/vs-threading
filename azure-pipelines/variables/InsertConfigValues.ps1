@@ -4,7 +4,7 @@ $dirsToSearch = "$BinPath\NuGet\*.nupkg","$BinPath\CoreXT\*.nupkg" |? { Test-Pat
 $icv=@()
 if ($dirsToSearch) {
     Get-ChildItem -Path $dirsToSearch |% {
-        if ($_.Name -match "^(.*)\.(\d+\.\d+\.\d+(?:-.*?)?)(?:\.symbols)?\.nupkg$") {
+        if ($_.Name -match "^(.*?)\.(\d+\.\d+\.\d+(?:\.\d+)?(?:-.*?)?)(?:\.symbols)?\.nupkg$") {
             $id = $Matches[1]
             $version = $Matches[2]
             # Avoid inserting analyzers in an optprof run.
