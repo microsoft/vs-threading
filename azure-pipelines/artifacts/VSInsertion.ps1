@@ -21,13 +21,21 @@ $profilingInputs.Project.ItemGroup.TestStore.Include = "vstsdrop:" + (& "$PSScri
 $profilingInputs.Save("$ArtifactPath\ProfilingInputs.props")
 
 $nbgv = & "$PSScriptRoot\..\Get-nbgv.ps1"
-$version = $(& $nbgv get-version -p "$RepoRoot\src" -f json | ConvertFrom-Json).NuGetPackageVersion
-& (& "$PSScriptRoot\..\Get-NuGetTool.ps1") pack "$PSScriptRoot\..\InsertionMetadataPackage.nuspec" -OutputDirectory $CoreXTPackages -BasePath $ArtifactPath -Version $version | Out-Null
+$InsertionMetadataVersion = $(& $nbgv get-version -p "$RepoRoot\src" -f json | ConvertFrom-Json).NuGetPackageVersion
+if ($env:BUILD_BUILDID) {
+    # We must ensure unique versions for the insertion metadata package so
+    # it can contain information that is unique to this build.
+    # In particular it includes the ProfilingInputsDropName, which contains the BuildId.
+    # A non-unique package version here may collide with a prior run of this same commit,
+    # ultimately resulting in a failure of the optprof run.
+    $InsertionMetadataVersion += '.' + $env:BUILD_BUILDID
+}
+& (& "$PSScriptRoot\..\Get-NuGetTool.ps1") pack "$PSScriptRoot\..\InsertionMetadataPackage.nuspec" -OutputDirectory $CoreXTPackages -BasePath $ArtifactPath -Version $InsertionMetadataVersion | Out-Null
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
 @{
     "$NuGetPackages" = (Get-ChildItem "$NuGetPackages\*.nupkg");
-    "$CoreXTPackages" = (Get-ChildItem "$CoreXTPackages\Microsoft.VisualStudio.Threading.VSInsertionMetadata.$version.nupkg");
+    "$CoreXTPackages" = (Get-ChildItem "$CoreXTPackages\Microsoft.VisualStudio.Threading.VSInsertionMetadata.$InsertionMetadataVersion.nupkg");
 }
