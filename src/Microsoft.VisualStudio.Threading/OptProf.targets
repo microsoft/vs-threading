@@ -4,7 +4,6 @@
       <Technology>IBC</Technology>
       <InstallationPath>Common7\IDE\PublicAssemblies\Microsoft.VisualStudio.Threading.16.0\$(TargetFileName)</InstallationPath>
       <InstrumentationArguments>/ExeConfig:"%VisualStudio.InstallationUnderTest.Path%\Common7\IDE\vsn.exe"</InstrumentationArguments>
-      <OptimizationArguments>-PartialNGEN</OptimizationArguments>
       <Scenarios>
         <TestContainer Name="VSPE" Repository="VS">
           <!-- When adding to this list, be sure to also add to VS repo too (e.g. https://dev.azure.com/devdiv/DevDiv/_git/VS/pullrequest/203770) -->
