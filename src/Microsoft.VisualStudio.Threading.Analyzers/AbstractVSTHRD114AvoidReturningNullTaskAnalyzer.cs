@@ -13,8 +13,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     /// Finds await expressions on <see cref="Task"/> that do not use <see cref="Task.ConfigureAwait(bool)"/>.
     /// Also works on <see cref="ValueTask"/>.
     /// </summary>
-    [DiagnosticAnalyzer(LanguageNames.CSharp, LanguageNames.VisualBasic)]
-    public class VSTHRD114AvoidReturningNullTaskAnalyzer : DiagnosticAnalyzer
+    public abstract class AbstractVSTHRD114AvoidReturningNullTaskAnalyzer : DiagnosticAnalyzer
     {
         public const string Id = "VSTHRD114";
 
@@ -30,28 +29,15 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// <inheritdoc />
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Descriptor);
 
+        private protected abstract LanguageUtils LanguageUtils { get; }
+
         /// <inheritdoc />
         public override void Initialize(AnalysisContext context)
         {
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
 
-            context.RegisterOperationAction(Utils.DebuggableWrapper(context => AnalyzerReturnOperation(context)), OperationKind.Return);
-        }
-
-        private static void AnalyzerReturnOperation(OperationAnalysisContext context)
-        {
-            var returnOperation = (IReturnOperation)context.Operation;
-
-            if (returnOperation.ReturnedValue is { ConstantValue: { HasValue: true, Value: null } } && // could be null for implicit returns
-                returnOperation.ReturnedValue.Syntax is { } returnedValueSyntax &&
-                Utils.GetContainingFunctionBlock(returnOperation) is { } block &&
-                FindOwningSymbol(block, context.ContainingSymbol) is { } method &&
-                !method.IsAsync &&
-                Utils.IsTask(method.ReturnType))
-            {
-                context.ReportDiagnostic(Diagnostic.Create(Descriptor, returnedValueSyntax.GetLocation()));
-            }
+            context.RegisterOperationAction(Utils.DebuggableWrapper(context => this.AnalyzerReturnOperation(context)), OperationKind.Return);
         }
 
         private static IMethodSymbol? FindOwningSymbol(IBlockOperation block, ISymbol containingSymbol)
@@ -67,6 +53,22 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
                 _ => null,
             };
+        }
+
+        private void AnalyzerReturnOperation(OperationAnalysisContext context)
+        {
+            var returnOperation = (IReturnOperation)context.Operation;
+
+            if (returnOperation.ReturnedValue is { ConstantValue: { HasValue: true, Value: null } } && // could be null for implicit returns
+                returnOperation.ReturnedValue.Syntax is { } returnedValueSyntax &&
+                Utils.GetContainingFunctionBlock(returnOperation) is { } block &&
+                FindOwningSymbol(block, context.ContainingSymbol) is { } method &&
+                !method.IsAsync &&
+                Utils.IsTask(method.ReturnType) &&
+                !this.LanguageUtils.MethodReturnsNullableReferenceType(method))
+            {
+                context.ReportDiagnostic(Diagnostic.Create(Descriptor, returnedValueSyntax.GetLocation()));
+            }
         }
     }
 }

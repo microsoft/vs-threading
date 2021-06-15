@@ -203,6 +203,29 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             return objectCreation.Syntax;
         }
 
+        internal override bool MethodReturnsNullableReferenceType(IMethodSymbol methodSymbol)
+        {
+            SyntaxReference? syntaxReference = methodSymbol.DeclaringSyntaxReferences.FirstOrDefault();
+            if (syntaxReference == null)
+            {
+                return false;
+            }
+
+            SyntaxNode syntaxNode = syntaxReference.GetSyntax();
+            TypeSyntax? returnType = null;
+
+            if (syntaxNode is MethodDeclarationSyntax methodDeclSyntax)
+            {
+                returnType = methodDeclSyntax.ReturnType;
+            }
+            else if (syntaxNode is LocalFunctionStatementSyntax localFunc)
+            {
+                returnType = localFunc.ReturnType;
+            }
+
+            return returnType != null && returnType.IsKind(SyntaxKind.NullableType);
+        }
+
         internal readonly struct ContainingFunctionData
         {
             internal ContainingFunctionData(CSharpSyntaxNode function, bool isAsync, ParameterListSyntax parameterList, CSharpSyntaxNode blockOrExpression)

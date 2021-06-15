@@ -14,5 +14,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         internal abstract SyntaxNode IsolateMethodName(IInvocationOperation invocation);
 
         internal abstract SyntaxNode IsolateMethodName(IObjectCreationOperation objectCreation);
+
+        internal abstract bool MethodReturnsNullableReferenceType(IMethodSymbol method);
     }
 }

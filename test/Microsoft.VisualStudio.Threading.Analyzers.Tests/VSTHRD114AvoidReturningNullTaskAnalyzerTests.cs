@@ -5,8 +5,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
     using System.Threading.Tasks;
     using Xunit;
-    using VerifyCS = CSharpCodeFixVerifier<VSTHRD114AvoidReturningNullTaskAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
-    using VerifyVB = VisualBasicCodeFixVerifier<VSTHRD114AvoidReturningNullTaskAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
+    using VerifyCS = CSharpCodeFixVerifier<CSharpVSTHRD114AvoidReturningNullTaskAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
+    using VerifyVB = VisualBasicCodeFixVerifier<VisualBasicVSTHRD114AvoidReturningNullTaskAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
     public class VSTHRD114AvoidReturningNullTaskAnalyzerTests
     {
@@ -275,6 +275,45 @@ class Test
     public void Foo()
     {
         async Task<object> GetTaskObj()
+        {
+            return null;
+        }
+    }
+}
+";
+            await new VerifyCS.Test
+            {
+                TestCode = csharpTest,
+            }.RunAsync();
+        }
+
+        [Fact]
+        public async Task ReturnNullableTask_NoDiagnostic()
+        {
+            var csharpTest = @"
+using System;
+using System.Threading.Tasks;
+
+class Test
+{
+    public Task? GetTask()
+    {
+        return null;
+    }
+
+    public Task<int>? GetTaskOfInt()
+    {
+        return null;
+    }
+
+    public Task<object?>? GetTaskOfNullableObject()
+    {
+        return null;
+    }
+
+    public void LocalFunc()
+    {
+        Task<object>? GetTaskObj()
         {
             return null;
         }
