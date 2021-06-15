@@ -27,10 +27,12 @@ class Tests
     public void Test()
     {
         JoinableTaskFactory jtf = ThreadHelper.JoinableTaskFactory;
-        System.Threading.Tasks.Task task = SomeOperationAsync();
+        System.Threading.Tasks.Task task1 = SomeOperationAsync();
+        System.Threading.Tasks.Task task2 = SomeOperationAsync();
         jtf.Run(async delegate
         {
-            await task;
+            await task1;
+            await (task2);  // Bug 849
         });
     }
 
@@ -42,7 +44,11 @@ class Tests
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic().WithLocation(14, 19);
+            DiagnosticResult[] expected =
+            {
+                Verify.Diagnostic().WithLocation(15, 19),
+                Verify.Diagnostic().WithLocation(16, 19),
+            };
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
@@ -1222,6 +1228,28 @@ public static class Boom {
             };
 
             await test.RunAsync();
+        }
+
+        [Fact]
+        public async Task DoNotReportWarningWithParenthesizedAwaitExpressions()
+        {
+            // This is a test for bug 849. Parenthesized expressions caused an InvalidCastException.
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task FooAsync() {
+        await (Task.Delay(1));
+        await ((Task.Delay(1)));
+        await (((Task.Delay(1))));
+
+        await (Task.Delay(1).ConfigureAwait(false));
+        await ((Task.Delay(1).ConfigureAwait(false)));
+        await (((Task.Delay(1).ConfigureAwait(false))));
+    }
+}
+";
+            await Verify.VerifyAnalyzerAsync(test);
         }
 
         private DiagnosticResult CreateDiagnostic(int line, int column, int length) =>

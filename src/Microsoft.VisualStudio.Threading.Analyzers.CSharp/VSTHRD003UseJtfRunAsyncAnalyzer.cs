@@ -134,6 +134,14 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             SymbolInfo symbolToConsider = semanticModel.GetSymbolInfo(expressionSyntax, cancellationToken);
             if (CommonInterest.TaskConfigureAwait.Any(configureAwait => configureAwait.IsMatch(symbolToConsider.Symbol)))
             {
+                // If the invocation is wrapped inside parentheses then drill down to get the invocation.
+                while (expressionSyntax is ParenthesizedExpressionSyntax parenthesizedExprSyntax)
+                {
+                    expressionSyntax = parenthesizedExprSyntax.Expression;
+                }
+
+                Debug.Assert(expressionSyntax is InvocationExpressionSyntax, "expressionSyntax should be an invocation");
+
                 if (((InvocationExpressionSyntax)expressionSyntax).Expression is MemberAccessExpressionSyntax memberAccessExpression)
                 {
                     symbolToConsider = semanticModel.GetSymbolInfo(memberAccessExpression.Expression, cancellationToken);
