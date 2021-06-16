@@ -46,7 +46,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
                 // Only consider invocations that are direct statements. Otherwise, we assume their
                 // result is awaited, assigned, or otherwise consumed.
-                if (invocation.Parent?.GetType().Equals(typeof(ExpressionStatementSyntax)) ?? false)
+                if (invocation.Parent is ExpressionStatementSyntax || invocation.Parent is ConditionalAccessExpressionSyntax)
                 {
                     var methodSymbol = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IMethodSymbol;
                     if (this.IsAwaitableType(methodSymbol?.ReturnType, context.Compilation, context.CancellationToken))

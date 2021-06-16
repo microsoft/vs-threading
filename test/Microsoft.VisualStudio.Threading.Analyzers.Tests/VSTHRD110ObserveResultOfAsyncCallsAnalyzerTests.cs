@@ -363,6 +363,45 @@ class Test {
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
+        [Fact]
+        public async Task ConditionalAccess_ProducesDiagnostic()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    void Foo(Test? tester)
+    {
+        tester?.BarAsync();
+    }
+
+    Task BarAsync() => null;
+}
+";
+
+            DiagnosticResult expected = this.CreateDiagnostic(7, 17, 8);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
+        public async Task ConditionalAccessAwaited_ProducesNoDiagnostic()
+        {
+            var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task Foo(Test? tester)
+    {
+        await (tester?.BarAsync() ?? Task.CompletedTask);
+    }
+
+    Task BarAsync() => null;
+}
+";
+
+            await Verify.VerifyAnalyzerAsync(test);
+        }
+
         private DiagnosticResult CreateDiagnostic(int line, int column, int length)
             => Verify.Diagnostic().WithSpan(line, column, line, column + length);
     }
