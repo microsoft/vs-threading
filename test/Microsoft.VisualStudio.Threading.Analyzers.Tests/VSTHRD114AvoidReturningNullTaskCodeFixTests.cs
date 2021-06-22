@@ -5,8 +5,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 {
     using System.Threading.Tasks;
     using Xunit;
-    using VerifyCS = CSharpCodeFixVerifier<VSTHRD114AvoidReturningNullTaskAnalyzer, VSTHRD114AvoidReturningNullTaskCodeFix>;
-    using VerifyVB = VisualBasicCodeFixVerifier<VSTHRD114AvoidReturningNullTaskAnalyzer, VSTHRD114AvoidReturningNullTaskCodeFix>;
+    using VerifyCS = CSharpCodeFixVerifier<CSharpVSTHRD114AvoidReturningNullTaskAnalyzer, VSTHRD114AvoidReturningNullTaskCodeFix>;
+    using VerifyVB = VisualBasicCodeFixVerifier<VisualBasicVSTHRD114AvoidReturningNullTaskAnalyzer, VSTHRD114AvoidReturningNullTaskCodeFix>;
 
     public class VSTHRD114AvoidReturningNullTaskCodeFixTests
     {

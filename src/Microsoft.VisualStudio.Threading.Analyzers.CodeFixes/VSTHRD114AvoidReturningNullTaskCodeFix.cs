@@ -16,7 +16,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     public class VSTHRD114AvoidReturningNullTaskCodeFix : CodeFixProvider
     {
         private static readonly ImmutableArray<string> ReusableFixableDiagnosticIds = ImmutableArray.Create(
-            VSTHRD114AvoidReturningNullTaskAnalyzer.Id);
+            AbstractVSTHRD114AvoidReturningNullTaskAnalyzer.Id);
 
         /// <inheritdoc />
         public override ImmutableArray<string> FixableDiagnosticIds => ReusableFixableDiagnosticIds;

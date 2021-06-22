@@ -87,5 +87,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         {
             return objectCreation.Syntax;
         }
+
+        internal override bool MethodReturnsNullableReferenceType(IMethodSymbol methodSymbol)
+        {
+            // VB.NET doesn't support nullable reference types
+            return false;
+        }
     }
 }
