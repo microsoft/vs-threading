@@ -4339,7 +4339,14 @@ public class JoinableTaskTests : JoinableTaskTestBase
         // the last reference to the JoinableTask.
         this.PushFrameTillQueueIsEmpty();
 
-        result = null; // TODO: THIS is modifying the closure that we allege to be testing. We should remove this line and get the test to pass.
+        // Clear the callback property or otherwise `result` will remain alive (causing `weakResult` to still have a target).
+        // This behaviour happens because there are multiple closures in this method. When more than one closure is defined
+        // in a method, the C# compiler generates a single private class with multiple methods, one for each closure, and
+        // creates fields for all the captured variables from all closures.
+        // So although the callback closure only explicitly uses `transitionedToMainThread` the compiler-generated private
+        // class also keeps `result` alive.
+        factory.PostToUnderlyingSynchronizationContextCallback = null;
+
         return weakResult;
     }
 
