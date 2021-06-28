@@ -970,7 +970,7 @@ using System;
 
 namespace TestNS {
     class SomeClass { }
-    class SomeInterface { }
+    interface SomeInterface { }
 }
 
 class Test {
@@ -1053,7 +1053,7 @@ using System;
 
 namespace TestNS {
     class SomeClass { }
-    class SomeInterface { }
+    interface SomeInterface { }
 }
 
 class Test {
@@ -1096,7 +1096,7 @@ using System;
 
 namespace TestNS {
     class SomeClass { }
-    class SomeInterface { }
+    interface SomeInterface { }
 }
 
 class Test {
