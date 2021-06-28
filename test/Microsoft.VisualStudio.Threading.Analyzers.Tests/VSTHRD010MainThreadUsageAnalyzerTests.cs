@@ -1864,6 +1864,46 @@ class Test
             await Verify.VerifyAnalyzerAsync(test, expect);
         }
 
+        [Fact]
+        public async Task StructMembers()
+        {
+            var test = @"
+namespace TestNS
+{
+    struct SomeStruct
+    {
+        public static void DoSomething()
+        {
+        }
+
+        public string Name { get; set; }
+    }
+}
+
+namespace Foo
+{
+    class MyProgram
+    {
+        static void Main()
+        {
+            TestNS.SomeStruct.DoSomething();
+
+            var st = new TestNS.SomeStruct();
+            st.Name = ""TheValue"";
+            string val = st.Name;
+        }
+    }
+}
+";
+            var expect = new DiagnosticResult[]
+            {
+                Verify.Diagnostic(DescriptorSync).WithSpan(20, 31, 20, 42).WithArguments("SomeStruct", "Test.VerifyOnUIThread"),
+                Verify.Diagnostic(DescriptorSync).WithSpan(23, 16, 23, 20).WithArguments("SomeStruct", "Test.VerifyOnUIThread"),
+                Verify.Diagnostic(DescriptorSync).WithSpan(24, 29, 24, 33).WithArguments("SomeStruct", "Test.VerifyOnUIThread"),
+            };
+            await Verify.VerifyAnalyzerAsync(test, expect);
+        }
+
         private static class CodeFixIndex
         {
             public const int SwitchToMainThreadAsync = 0;
