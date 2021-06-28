@@ -1227,9 +1227,8 @@ namespace Microsoft.VisualStudio.Threading
                 if (invokeDelegate is object)
                 {
                     this.OnExecuting();
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
-                    SynchronizationContext? syncContext = this.job is object ? this.job.ApplicableJobSyncContext : this.job.Factory.ApplicableJobSyncContext;
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
+                    RoslynDebug.Assert(this.job is object);
+                    SynchronizationContext? syncContext = this.job.ApplicableJobSyncContext;
                     using (syncContext.Apply(checkForChangesOnRevert: false))
                     {
                         if (invokeDelegate is Action action)
