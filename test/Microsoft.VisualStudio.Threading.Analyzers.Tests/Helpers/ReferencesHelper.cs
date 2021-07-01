@@ -26,7 +26,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 
         static ReferencesHelper()
         {
+#pragma warning disable RS0030 // Do not used banned APIs
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+#pragma warning restore RS0030 // Do not used banned APIs
         }
     }
 }
