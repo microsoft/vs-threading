@@ -20,8 +20,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
             "Microsoft.VisualStudio.Shell.Interop.dll",
             "Microsoft.VisualStudio.Shell.Interop.11.0.dll",
             "Microsoft.VisualStudio.Shell.Interop.14.0.DesignTime.dll",
-            "Microsoft.VisualStudio.Shell.Immutable.14.0.dll",
-            "Microsoft.VisualStudio.Shell.14.0.dll",
+            "Microsoft.VisualStudio.Shell.Framework.dll",
+            "Microsoft.VisualStudio.Shell.15.0.dll",
         });
 
         static ReferencesHelper()
