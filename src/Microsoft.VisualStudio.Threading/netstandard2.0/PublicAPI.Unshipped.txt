@@ -2,13 +2,23 @@ Microsoft.VisualStudio.Threading.JoinableTaskFactory.MainThreadAwaitable.NoThrow
 Microsoft.VisualStudio.Threading.TplExtensions.NoThrowValueTaskAwaitable
 Microsoft.VisualStudio.Threading.TplExtensions.NoThrowValueTaskAwaitable.GetAwaiter() -> Microsoft.VisualStudio.Threading.TplExtensions.NoThrowValueTaskAwaiter
 Microsoft.VisualStudio.Threading.TplExtensions.NoThrowValueTaskAwaitable.NoThrowValueTaskAwaitable(System.Threading.Tasks.ValueTask task, bool captureContext) -> void
+Microsoft.VisualStudio.Threading.TplExtensions.NoThrowValueTaskAwaitable<TResult>
+Microsoft.VisualStudio.Threading.TplExtensions.NoThrowValueTaskAwaitable<TResult>.GetAwaiter() -> Microsoft.VisualStudio.Threading.TplExtensions.NoThrowValueTaskAwaiter<TResult>
+Microsoft.VisualStudio.Threading.TplExtensions.NoThrowValueTaskAwaitable<TResult>.NoThrowValueTaskAwaitable(System.Threading.Tasks.ValueTask<TResult> task, bool captureContext) -> void
 Microsoft.VisualStudio.Threading.TplExtensions.NoThrowValueTaskAwaiter
 Microsoft.VisualStudio.Threading.TplExtensions.NoThrowValueTaskAwaiter.GetResult() -> void
 Microsoft.VisualStudio.Threading.TplExtensions.NoThrowValueTaskAwaiter.IsCompleted.get -> bool
 Microsoft.VisualStudio.Threading.TplExtensions.NoThrowValueTaskAwaiter.NoThrowValueTaskAwaiter(System.Threading.Tasks.ValueTask task, bool captureContext) -> void
 Microsoft.VisualStudio.Threading.TplExtensions.NoThrowValueTaskAwaiter.OnCompleted(System.Action! continuation) -> void
 Microsoft.VisualStudio.Threading.TplExtensions.NoThrowValueTaskAwaiter.UnsafeOnCompleted(System.Action! continuation) -> void
+Microsoft.VisualStudio.Threading.TplExtensions.NoThrowValueTaskAwaiter<TResult>
+Microsoft.VisualStudio.Threading.TplExtensions.NoThrowValueTaskAwaiter<TResult>.GetResult() -> void
+Microsoft.VisualStudio.Threading.TplExtensions.NoThrowValueTaskAwaiter<TResult>.IsCompleted.get -> bool
+Microsoft.VisualStudio.Threading.TplExtensions.NoThrowValueTaskAwaiter<TResult>.NoThrowValueTaskAwaiter(System.Threading.Tasks.ValueTask<TResult> task, bool captureContext) -> void
+Microsoft.VisualStudio.Threading.TplExtensions.NoThrowValueTaskAwaiter<TResult>.OnCompleted(System.Action! continuation) -> void
+Microsoft.VisualStudio.Threading.TplExtensions.NoThrowValueTaskAwaiter<TResult>.UnsafeOnCompleted(System.Action! continuation) -> void
 static Microsoft.VisualStudio.Threading.TplExtensions.NoThrowAwaitable(this System.Threading.Tasks.ValueTask task, bool captureContext = true) -> Microsoft.VisualStudio.Threading.TplExtensions.NoThrowValueTaskAwaitable
+static Microsoft.VisualStudio.Threading.TplExtensions.NoThrowAwaitable<TResult>(this System.Threading.Tasks.ValueTask<TResult> task, bool captureContext = true) -> Microsoft.VisualStudio.Threading.TplExtensions.NoThrowValueTaskAwaitable<TResult>
 virtual Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.GetTaskSchedulerToPrepareResourcesForConcurrentAccess(TResource! resource) -> System.Threading.Tasks.TaskScheduler!
 Microsoft.VisualStudio.Threading.JoinableTaskContext.Capture() -> string?
 Microsoft.VisualStudio.Threading.JoinableTaskFactory.RunAsync(System.Func<System.Threading.Tasks.Task!>! asyncMethod, string? parentToken, Microsoft.VisualStudio.Threading.JoinableTaskCreationOptions creationOptions) -> Microsoft.VisualStudio.Threading.JoinableTask!
