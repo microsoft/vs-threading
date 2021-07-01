@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Security;
 using System.Threading;
@@ -239,6 +240,19 @@ public static partial class TplExtensions
     public static NoThrowTaskAwaitable NoThrowAwaitable(this Task task, bool captureContext = true)
     {
         return new NoThrowTaskAwaitable(task, captureContext);
+    }
+
+    /// <summary>
+    /// Returns an awaitable for the specified task that will never throw, even if the source task
+    /// faults or is canceled.
+    /// </summary>
+    /// <param name="task">The task whose completion should signal the completion of the returned awaitable.</param>
+    /// <param name="captureContext">if set to <see langword="true"/> the continuation will be scheduled on the caller's context; <see langword="false"/> to always execute the continuation on the threadpool.</param>
+    /// <returns>An awaitable.</returns>
+    [SuppressMessage("ApiDesign", "RS0026:Do not add multiple public overloads with optional parameters", Justification = "The receiver type is disjoint.")]
+    public static NoThrowValueTaskAwaitable NoThrowAwaitable(this ValueTask task, bool captureContext = true)
+    {
+        return new NoThrowValueTaskAwaitable(task, captureContext);
     }
 
     /// <summary>
@@ -761,6 +775,104 @@ public static partial class TplExtensions
         public void GetResult()
         {
             // Never throw here.
+        }
+    }
+
+    /// <summary>
+    /// An awaitable that wraps a task and never throws an exception when waited on.
+    /// </summary>
+    public readonly struct NoThrowValueTaskAwaitable
+    {
+        /// <summary>
+        /// The task.
+        /// </summary>
+        private readonly ValueTask task;
+
+        /// <summary>
+        /// A value indicating whether the continuation should be scheduled on the current sync context.
+        /// </summary>
+        private readonly bool captureContext;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NoThrowValueTaskAwaitable"/> struct.
+        /// </summary>
+        /// <param name="task">The task.</param>
+        /// <param name="captureContext">Whether the continuation should be scheduled on the current sync context.</param>
+        public NoThrowValueTaskAwaitable(ValueTask task, bool captureContext)
+        {
+            this.task = task.Preserve();
+            this.captureContext = captureContext;
+        }
+
+        /// <summary>
+        /// Gets the awaiter.
+        /// </summary>
+        /// <returns>The awaiter.</returns>
+        public NoThrowValueTaskAwaiter GetAwaiter()
+        {
+            return new NoThrowValueTaskAwaiter(this.task, this.captureContext);
+        }
+    }
+
+    /// <summary>
+    /// An awaiter that wraps a task and never throws an exception when waited on.
+    /// </summary>
+    public readonly struct NoThrowValueTaskAwaiter : ICriticalNotifyCompletion
+    {
+        /// <summary>
+        /// The task.
+        /// </summary>
+        private readonly ValueTask task;
+
+        /// <summary>
+        /// A value indicating whether the continuation should be scheduled on the current sync context.
+        /// </summary>
+        private readonly bool captureContext;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NoThrowValueTaskAwaiter"/> struct.
+        /// </summary>
+        /// <param name="task">The task.</param>
+        /// <param name="captureContext">if set to <see langword="true"/> [capture context].</param>
+        public NoThrowValueTaskAwaiter(ValueTask task, bool captureContext)
+        {
+            this.task = task;
+            this.captureContext = captureContext;
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the task has completed.
+        /// </summary>
+        public bool IsCompleted
+        {
+            get { return this.task.IsCompleted; }
+        }
+
+        /// <summary>
+        /// Schedules a delegate for execution at the conclusion of a task's execution.
+        /// </summary>
+        /// <param name="continuation">The action.</param>
+        public void OnCompleted(Action continuation)
+        {
+            this.task.ConfigureAwait(this.captureContext).GetAwaiter().OnCompleted(continuation);
+        }
+
+        /// <summary>
+        /// Schedules a delegate for execution at the conclusion of a task's execution
+        /// without capturing the ExecutionContext.
+        /// </summary>
+        /// <param name="continuation">The action.</param>
+        public void UnsafeOnCompleted(Action continuation)
+        {
+            this.task.ConfigureAwait(this.captureContext).GetAwaiter().UnsafeOnCompleted(continuation);
+        }
+
+        /// <summary>
+        /// Does nothing.
+        /// </summary>
+        public void GetResult()
+        {
+            // No need to do anything with 'task' because we already called Preserve on it.
         }
     }
 
