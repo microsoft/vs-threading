@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -239,6 +238,17 @@ public static partial class TplExtensions
     public static NoThrowTaskAwaitable NoThrowAwaitable(this Task task, bool captureContext = true)
     {
         return new NoThrowTaskAwaitable(task, captureContext);
+    }
+
+    /// <summary>
+    /// Returns an awaitable for the specified <see cref="JoinableTaskFactory.SwitchToMainThreadAsync(CancellationToken)"/>
+    /// operation that will return a Boolean value indicating cancellation rather than throwing an exception.
+    /// </summary>
+    /// <param name="awaitable">The task whose completion should signal the completion of the returned awaitable.</param>
+    /// <returns>An awaitable.</returns>
+    public static JoinableTaskFactory.NoThrowMainThreadAwaitable NoThrowAwaitable(this JoinableTaskFactory.MainThreadAwaitable awaitable)
+    {
+        return awaitable.NoThrowAwaitable;
     }
 
     /// <summary>

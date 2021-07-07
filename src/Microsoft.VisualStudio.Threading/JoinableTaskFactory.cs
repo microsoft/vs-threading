@@ -709,6 +709,19 @@ public partial class JoinableTaskFactory
             this.alwaysYield = alwaysYield;
         }
 
+        internal NoThrowMainThreadAwaitable NoThrowAwaitable
+        {
+            get
+            {
+                if (this.jobFactory is null)
+                {
+                    return default;
+                }
+
+                return new NoThrowMainThreadAwaitable(this.jobFactory, this.job, this.cancellationToken, this.alwaysYield);
+            }
+        }
+
         /// <summary>
         /// Gets the awaiter.
         /// </summary>
@@ -724,9 +737,145 @@ public partial class JoinableTaskFactory
     }
 
     /// <summary>
+    /// An awaitable struct that facilitates an asynchronous transition to the Main thread.
+    /// </summary>
+    public readonly struct NoThrowMainThreadAwaitable
+    {
+        private readonly JoinableTaskFactory? jobFactory;
+
+        private readonly JoinableTask? job;
+
+        private readonly CancellationToken cancellationToken;
+
+        private readonly bool alwaysYield;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NoThrowMainThreadAwaitable"/> struct.
+        /// </summary>
+        internal NoThrowMainThreadAwaitable(JoinableTaskFactory jobFactory, JoinableTask? job, CancellationToken cancellationToken, bool alwaysYield = false)
+        {
+            Requires.NotNull(jobFactory, nameof(jobFactory));
+
+            this.jobFactory = jobFactory;
+            this.job = job;
+            this.cancellationToken = cancellationToken;
+            this.alwaysYield = alwaysYield;
+        }
+
+        /// <summary>
+        /// Gets the awaiter.
+        /// </summary>
+        public NoThrowMainThreadAwaiter GetAwaiter()
+        {
+            if (this.jobFactory is null)
+            {
+                return default;
+            }
+
+            return new NoThrowMainThreadAwaiter(this.jobFactory, this.job, this.alwaysYield, this.cancellationToken);
+        }
+    }
+
+    /// <summary>
     /// An awaiter struct that facilitates an asynchronous transition to the Main thread.
     /// </summary>
     public readonly struct MainThreadAwaiter : ICriticalNotifyCompletion
+    {
+        private readonly MainThreadAwaiterImpl impl;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MainThreadAwaiter"/> struct.
+        /// </summary>
+        internal MainThreadAwaiter(JoinableTaskFactory jobFactory, JoinableTask? job, bool alwaysYield, CancellationToken cancellationToken)
+        {
+            this.impl = new MainThreadAwaiterImpl(jobFactory, job, alwaysYield, throwOnCancellation: true, cancellationToken);
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the caller is already on the Main thread.
+        /// </summary>
+        public bool IsCompleted => this.impl.IsCompleted;
+
+        /// <summary>
+        /// Schedules a continuation for execution on the Main thread
+        /// without capturing the ExecutionContext.
+        /// </summary>
+        /// <param name="continuation">The action to invoke when the operation completes.</param>
+        public void UnsafeOnCompleted(Action continuation)
+        {
+            this.impl.UnsafeOnCompleted(continuation);
+        }
+
+        /// <summary>
+        /// Schedules a continuation for execution on the Main thread.
+        /// </summary>
+        /// <param name="continuation">The action to invoke when the operation completes.</param>
+        public void OnCompleted(Action continuation)
+        {
+            this.impl.OnCompleted(continuation);
+        }
+
+        /// <summary>
+        /// Called on the Main thread to prepare it to execute the continuation.
+        /// </summary>
+        public void GetResult()
+        {
+            this.impl.GetResult();
+        }
+    }
+
+    /// <summary>
+    /// An awaiter struct that facilitates an asynchronous transition to the Main thread.
+    /// </summary>
+    public readonly struct NoThrowMainThreadAwaiter : ICriticalNotifyCompletion
+    {
+        private readonly MainThreadAwaiterImpl impl;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="NoThrowMainThreadAwaiter"/> struct.
+        /// </summary>
+        internal NoThrowMainThreadAwaiter(JoinableTaskFactory jobFactory, JoinableTask? job, bool alwaysYield, CancellationToken cancellationToken)
+        {
+            this.impl = new MainThreadAwaiterImpl(jobFactory, job, alwaysYield, throwOnCancellation: false, cancellationToken);
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether the caller is already on the Main thread.
+        /// </summary>
+        public bool IsCompleted => this.impl.IsCompleted;
+
+        /// <summary>
+        /// Schedules a continuation for execution on the Main thread
+        /// without capturing the ExecutionContext.
+        /// </summary>
+        /// <param name="continuation">The action to invoke when the operation completes.</param>
+        public void UnsafeOnCompleted(Action continuation)
+        {
+            this.impl.UnsafeOnCompleted(continuation);
+        }
+
+        /// <summary>
+        /// Schedules a continuation for execution on the Main thread.
+        /// </summary>
+        /// <param name="continuation">The action to invoke when the operation completes.</param>
+        public void OnCompleted(Action continuation)
+        {
+            this.impl.OnCompleted(continuation);
+        }
+
+        /// <summary>
+        /// Called on the Main thread to prepare it to execute the continuation.
+        /// </summary>
+        public bool GetResult()
+        {
+            return this.impl.GetResult();
+        }
+    }
+
+    /// <summary>
+    /// An awaiter struct that facilitates an asynchronous transition to the Main thread.
+    /// </summary>
+    private readonly struct MainThreadAwaiterImpl : ICriticalNotifyCompletion
     {
         private static readonly Action<object> SafeCancellationAction = state => ThreadPool.QueueUserWorkItem(SingleExecuteProtector.ExecuteOnceWaitCallback, state);
 
@@ -737,6 +886,8 @@ public partial class JoinableTaskFactory
         private readonly CancellationToken cancellationToken;
 
         private readonly bool alwaysYield;
+
+        private readonly bool throwOnCancellation;
 
         private readonly JoinableTask? job;
 
@@ -760,15 +911,16 @@ public partial class JoinableTaskFactory
         private readonly StrongBox<CancellationTokenRegistration?>? cancellationRegistrationPtr;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="MainThreadAwaiter"/> struct.
+        /// Initializes a new instance of the <see cref="MainThreadAwaiterImpl"/> struct.
         /// </summary>
-        internal MainThreadAwaiter(JoinableTaskFactory jobFactory, JoinableTask? job, bool alwaysYield, CancellationToken cancellationToken)
+        internal MainThreadAwaiterImpl(JoinableTaskFactory jobFactory, JoinableTask? job, bool alwaysYield, bool throwOnCancellation, CancellationToken cancellationToken)
         {
             this.jobFactory = jobFactory;
             this.job = job;
             this.cancellationToken = cancellationToken;
             this.synchronousCancellation = cancellationToken.IsCancellationRequested && !alwaysYield;
             this.alwaysYield = alwaysYield;
+            this.throwOnCancellation = throwOnCancellation;
 
             // Don't allocate the pointer if the cancellation token can't be canceled (or already is):
             this.cancellationRegistrationPtr = cancellationToken.CanBeCanceled && !this.synchronousCancellation
@@ -817,7 +969,7 @@ public partial class JoinableTaskFactory
         /// <summary>
         /// Called on the Main thread to prepare it to execute the continuation.
         /// </summary>
-        public void GetResult()
+        public bool GetResult()
         {
             Assumes.True(this.jobFactory is object);
             if (!(this.jobFactory.Context.IsOnMainThread || this.jobFactory.Context.UnderlyingSynchronizationContext is null || this.cancellationToken.IsCancellationRequested))
@@ -867,11 +1019,19 @@ public partial class JoinableTaskFactory
             SynchronizationContext? syncContext = this.job is object ? this.job.ApplicableJobSyncContext : this.jobFactory.ApplicableJobSyncContext;
             syncContext.Apply();
 
-            // Cancel if requested, even if we arrived on the main thread.
-            // Unlike most async methods where throwing OperationCanceledException after completing the work may not be a good idea,
-            // SwitchToMainThreadAsync is a scheduler method, and always precedes some work by the caller that almost certainly should
-            // not be carried out if cancellation was requested.
-            this.cancellationToken.ThrowIfCancellationRequested();
+            if (this.throwOnCancellation)
+            {
+                // Cancel if requested, even if we arrived on the main thread.
+                // Unlike most async methods where throwing OperationCanceledException after completing the work may not be a good idea,
+                // SwitchToMainThreadAsync is a scheduler method, and always precedes some work by the caller that almost certainly should
+                // not be carried out if cancellation was requested.
+                this.cancellationToken.ThrowIfCancellationRequested();
+                return true;
+            }
+            else
+            {
+                return !this.cancellationToken.IsCancellationRequested;
+            }
         }
 
         /// <summary>
