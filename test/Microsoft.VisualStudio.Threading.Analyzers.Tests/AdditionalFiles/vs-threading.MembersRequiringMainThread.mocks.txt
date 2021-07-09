@@ -1,4 +1,5 @@
 ﻿[TestNS.*]
+[TestNS.SomeStruct]
 ![TestNS.FreeThreadedType]
 ![TestNS2.FreeThreadedType]
 [TestNS2.*]

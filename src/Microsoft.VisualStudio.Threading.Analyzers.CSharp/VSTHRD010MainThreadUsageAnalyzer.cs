@@ -443,7 +443,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     throw new ArgumentNullException(nameof(type));
                 }
 
-                bool requiresUIThread = (type.TypeKind == TypeKind.Interface || type.TypeKind == TypeKind.Class)
+                bool requiresUIThread = (type.TypeKind == TypeKind.Interface || type.TypeKind == TypeKind.Class || type.TypeKind == TypeKind.Struct)
                     && this.MembersRequiringMainThread.Contains(type, symbol);
 
                 if (requiresUIThread)
