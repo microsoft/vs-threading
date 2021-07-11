@@ -63,7 +63,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         private const RegexOptions FileNamePatternRegexOptions = RegexOptions.IgnoreCase | RegexOptions.Singleline;
 
-        private static readonly TimeSpan RegexMatchTimeout = TimeSpan.FromMilliseconds(100);  // Prevent expensive CPU hang in Regex.Match if backtracking occurs due to pathological input (see #485).
+        private static readonly TimeSpan RegexMatchTimeout = TimeSpan.FromSeconds(5);  // Prevent expensive CPU hang in Regex.Match if backtracking occurs due to pathological input (see #485).
 
         private static readonly Regex NegatableTypeOrMemberReferenceRegex = new Regex(@"^(?<negated>!)?\[(?<typeName>[^\[\]\:]+)+\](?:\:\:(?<memberName>\S+))?\s*$", RegexOptions.Singleline | RegexOptions.CultureInvariant, RegexMatchTimeout);
 
