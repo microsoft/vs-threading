@@ -183,6 +183,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
             internal const string CompletedTask = nameof(System.Threading.Tasks.Task.CompletedTask);
 
+            internal const string WhenAll = "WhenAll";
+
             internal static readonly IReadOnlyList<string> Namespace = Namespaces.SystemThreadingTasks;
         }
 
