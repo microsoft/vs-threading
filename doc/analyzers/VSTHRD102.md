@@ -22,7 +22,7 @@ internal void DoWork()
 {
     joinableTaskFactory.Run(async delegate // Analyzer will flag this line
     {
-        await DoSomethingAsync();
+        await PublicMethodAsync();
     });
 }
 ```
@@ -47,7 +47,7 @@ public async Task PublicMethodAsync()
 
 internal async Task DoWorkAsync()
 {
-    await DoSomethingAsync();
+    await PublicMethodAsync();
 }
 ```
 
