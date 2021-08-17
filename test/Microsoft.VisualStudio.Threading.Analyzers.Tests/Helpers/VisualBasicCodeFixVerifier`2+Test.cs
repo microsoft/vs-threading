@@ -35,7 +35,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 
                 this.SolutionTransforms.Add((solution, projectId) =>
                 {
-                    Project? project = solution.GetProject(projectId);
+                    Project? project = solution.GetProject(projectId) ?? throw new ArgumentException("Not found.", nameof(projectId));
 
                     if (this.IncludeMicrosoftVisualStudioThreading)
                     {
