@@ -211,9 +211,9 @@ namespace Microsoft.VisualStudio.Threading
             while (queue.Count > 0)
             {
                 IJoinableTaskDependent startDepenentNode = queue.Dequeue();
-                if (candidates.Contains(startDepenentNode))
+                if (startDepenentNode is JoinableTask startTask && candidates.Contains(startTask))
                 {
-                    results.Add((JoinableTask)startDepenentNode);
+                    results.Add(startTask);
                 }
 
                 lock (startDepenentNode.JoinableTaskContext.SyncContextLock)
