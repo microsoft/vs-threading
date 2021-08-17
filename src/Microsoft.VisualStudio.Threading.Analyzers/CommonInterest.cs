@@ -96,7 +96,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     throw new InvalidOperationException($"Regex.Match timeout when parsing line: {line}");
                 }
 
-                if (match == null || !match.Success)
+                if (!match.Success)
                 {
                     throw new InvalidOperationException($"Parsing error on line: {line}");
                 }
@@ -196,7 +196,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 throw new InvalidOperationException($"Regex.Match timeout when parsing line: {line}");
             }
 
-            if (match == null || !match.Success)
+            if (!match.Success)
             {
                 throw new InvalidOperationException($"Parsing error on line: {line}");
             }
