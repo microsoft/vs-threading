@@ -78,6 +78,285 @@ class Test {
         }
 
         [Fact]
+        public async Task TaskWhenAll_CompareWithAndWithout()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    JoinableTaskFactory jtf;
+
+    void Warnings() {
+        int value = jtf.Run(async delegate
+        {
+            Task<int> task1 = Task.Run(() => 1);
+            Task<int> task2 = Task.Run(() => 2);
+            task1.Wait();
+            task2.Wait();
+            return task1.Result + task2.GetAwaiter().GetResult();
+        });
+    }
+
+    void WhenAll_NoWarnings() {
+        int value = jtf.Run(async delegate
+        {
+            Task<int> task1 = Task.Run(() => 1);
+            Task<int> task2 = Task.Run(() => 2);
+            await Task.WhenAll(task1, task2);
+            task1.Wait();    // Don't copy this code, only included for testing
+            task2.Wait();
+            return task1.Result + task2.GetAwaiter().GetResult();
+        });
+    }
+}
+";
+            DiagnosticResult[] expected =
+            {
+                Verify.Diagnostic().WithSpan(14, 19, 14, 23),
+                Verify.Diagnostic().WithSpan(15, 19, 15, 23),
+                Verify.Diagnostic().WithSpan(16, 26, 16, 32),
+                Verify.Diagnostic().WithSpan(16, 54, 16, 63),
+            };
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
+        public async Task TaskWhenAll_Multiple_NoWarning()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    JoinableTaskFactory jtf;
+    void Foo() {
+        int value = jtf.Run(async delegate
+        {
+            var task1 = Task.Run(() => 1);
+            var task2 = Task.Run(() => 2);
+            var task3 = Task.Run(() => 3);
+            var task4 = Task.Run(() => 4);
+
+            await Task.WhenAll(task1, task2);
+            int val = task1.Result + task2.Result;
+
+            await Task.WhenAll(task3, task4);
+            val += task3.Result + task4.Result;
+
+            return val;
+        });
+    }
+}
+";
+            await Verify.VerifyAnalyzerAsync(test);
+        }
+
+        [Fact]
+        public async Task TaskWhenAll_AfterResult_GeneratesWarning()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    JoinableTaskFactory jtf;
+    void Foo() {
+        int value = jtf.Run(async delegate
+        {
+            var task1 = Task.Run(() => 1);
+            var task2 = Task.Run(() => 2);
+            int val = task1.Result;
+            await Task.WhenAll(task1, task2);
+            return val;
+        });
+    }
+}
+";
+            DiagnosticResult expected = Verify.Diagnostic().WithSpan(13, 29, 13, 35);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
+        public async Task TaskWhenAll_DifferentResult_GeneratesWarning()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    JoinableTaskFactory jtf;
+    void Foo() {
+        int value = jtf.Run(async delegate
+        {
+            var task1 = Task.Run(() => 1);
+            var task2 = Task.Run(() => 2);
+            var task3 = Task.Run(() => 3);
+            await Task.WhenAll(task1, task2);
+            int val = 0;
+            val += task1.Result;  // No warning
+            val += task2.Result;  // No warning
+            val += task3.Result;  // Warning here
+            return val;
+        });
+    }
+}
+";
+            DiagnosticResult expected = Verify.Diagnostic().WithSpan(18, 26, 18, 32);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
+        public async Task TaskWhenAll_TaskPassedByValue_NoWarning()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    JoinableTaskFactory jtf;
+    void PassTaskByValue(Task<int> task) {
+        var status = task.Status;
+    }
+    void Foo() {
+        int value = jtf.Run(async delegate
+        {
+            var task1 = Task.Run(() => 1);
+            var task2 = Task.Run(() => 2);
+            await Task.WhenAll(task1, task2);
+            PassTaskByValue(task1);
+            return task1.Result;
+        });
+    }
+}
+";
+            await Verify.VerifyAnalyzerAsync(test);
+        }
+
+        [Fact]
+        public async Task TaskWhenAll_TaskPassedByRef_GeneratesWarning()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    JoinableTaskFactory jtf;
+    void PassTaskByRef(ref Task<int> task) {
+        task = Task.Run(() => 3);
+    }
+    void Foo() {
+        int value = jtf.Run(async delegate
+        {
+            var task1 = Task.Run(() => 1);
+            var task2 = Task.Run(() => 2);
+            await Task.WhenAll(task1, task2);
+            PassTaskByRef(ref task1);
+            return task1.Result;
+        });
+    }
+}
+";
+            DiagnosticResult expected = Verify.Diagnostic().WithSpan(18, 26, 18, 32);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
+        public async Task TaskWhenAll_TaskPassedWithOut_GeneratesWarning()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    JoinableTaskFactory jtf;
+    void TaskPassedWithOut(out Task<int> task) {
+        task = Task.Run(() => 3);
+    }
+    void Foo() {
+        int value = jtf.Run(async delegate
+        {
+            var task1 = Task.Run(() => 1);
+            var task2 = Task.Run(() => 2);
+            await Task.WhenAll(task1, task2);
+            TaskPassedWithOut(out task1);
+            return task1.Result;
+        });
+    }
+}
+";
+            DiagnosticResult expected = Verify.Diagnostic().WithSpan(18, 26, 18, 32);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
+        public async Task TaskWhenAll_TaskVariableReused_GeneratesWarning()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    JoinableTaskFactory jtf;
+    void Foo() {
+        int value = jtf.Run(async delegate
+        {
+            var task1 = Task.Run(() => 1);
+            var task2 = Task.Run(() => 2);
+            await Task.WhenAll(task1, task2);
+            int val = task1.Result;        // No warning here because of preceding WhenAll
+
+            task1 = Task.Run(() => 11);
+            return val + task1.Result;     // Warning here
+        });
+    }
+}
+";
+            DiagnosticResult expected = Verify.Diagnostic().WithSpan(17, 32, 17, 38);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
+        public async Task TaskWhenAll_MultipleWhenAll_TaskVariableReused_GeneratesWarning()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    JoinableTaskFactory jtf;
+    void Foo() {
+        int value = jtf.Run(async delegate
+        {
+            var task1 = Task.Run(() => 1);
+            var task2 = Task.Run(() => 2);
+            await Task.WhenAll(task1, task2);
+            int val = task1.Result;        // No warning here because of preceding WhenAll
+
+            task1 = Task.Run(() => 11);
+            await Task.WhenAll(task1, task2);
+            val += task2.Result;           // No warning here because of preceding WhenAll
+
+            task2 = Task.Run(() => 22);
+            return val + task2.Result;     // Warning here
+        });
+    }
+}
+";
+            DiagnosticResult expected = Verify.Diagnostic().WithSpan(21, 32, 21, 38);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
         public async Task TaskWaitAllShouldReportWarning()
         {
             var test = @"
