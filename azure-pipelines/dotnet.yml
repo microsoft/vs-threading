@@ -21,15 +21,6 @@ steps:
   condition: and(ne(variables['OptProf'], 'true'), eq(variables['Agent.OS'], 'Windows_NT'))
 
 - task: DotNetCoreCLI@2
-  displayName: dotnet test -f netcoreapp2.1
-  inputs:
-    command: test
-    arguments: --no-build -c $(BuildConfiguration) -f netcoreapp2.1 --filter "TestCategory!=FailsInCloudTest" -v n /p:CollectCoverage=true --settings "$(Build.Repository.LocalPath)/azure-pipelines/$(Agent.OS).runsettings" /bl:"$(Build.ArtifactStagingDirectory)/build_logs/test_netcoreapp2.1.binlog"
-    testRunTitle: netcoreapp2.1-$(Agent.JobName)
-    workingDirectory: test/Microsoft.VisualStudio.Threading.Tests
-  condition: ne(variables['OptProf'], 'true')
-
-- task: DotNetCoreCLI@2
   displayName: dotnet test -f netcoreapp3.1
   inputs:
     command: test
