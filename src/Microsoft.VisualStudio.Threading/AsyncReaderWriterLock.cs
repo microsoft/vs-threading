@@ -1663,8 +1663,8 @@ namespace Microsoft.VisualStudio.Threading
                 if (this.issuedWriteLocks.Count == 0 && this.waitingWriters.Count > 0 && this.waitingReaders.Count > 0 && (this.issuedReadLocks.Count > 0 || this.issuedUpgradeableReadLocks.Count > 0))
                 {
                     HashSet<JoinableTask>? dependentTasks = JoinableTaskDependencyGraph.GetDependentTasksFromCandidates(
-                        this.issuedReadLocks.Concat(this.issuedUpgradeableReadLocks).Where(w => w.AmbientJoinableTask != null).Select(w => w.AmbientJoinableTask!),
-                        this.waitingReaders.Where(w => w.AmbientJoinableTask != null).Select(w => w.AmbientJoinableTask!));
+                        this.issuedReadLocks.Concat(this.issuedUpgradeableReadLocks).Where(w => w.AmbientJoinableTask is not null).Select(w => w.AmbientJoinableTask!),
+                        this.waitingReaders.Where(w => w.AmbientJoinableTask is not null).Select(w => w.AmbientJoinableTask!));
 
                     if (dependentTasks.Count > 0)
                     {
@@ -1673,7 +1673,7 @@ namespace Microsoft.VisualStudio.Threading
                         {
                             Awaiter pendingReader = this.waitingReaders.Dequeue();
                             JoinableTask? readerContext = pendingReader.AmbientJoinableTask;
-                            if (readerContext != null && dependentTasks.Contains(readerContext))
+                            if (readerContext is not null && dependentTasks.Contains(readerContext))
                             {
                                 this.IssueAndExecute(pendingReader);
                             }
@@ -1821,8 +1821,8 @@ namespace Microsoft.VisualStudio.Threading
 
         private void StartPendingWriterDeadlockTimerIfNecessary()
         {
-            if (this.joinableTaskContext != null &&
-                this.pendingWriterLockDeadlockCheckTimer == null &&
+            if (this.joinableTaskContext is not null &&
+                this.pendingWriterLockDeadlockCheckTimer is null &&
                 this.waitingWriters.Count > 0 &&
                 (this.issuedReadLocks.Count > 0 || this.issuedUpgradeableReadLocks.Count > 0))
             {
@@ -1832,7 +1832,7 @@ namespace Microsoft.VisualStudio.Threading
 
         private void StopPendingWriterLockDeadlockWatching()
         {
-            if (this.pendingWriterLockDeadlockCheckTimer != null)
+            if (this.pendingWriterLockDeadlockCheckTimer is not null)
             {
                 this.pendingWriterLockDeadlockCheckTimer.Dispose();
                 this.pendingWriterLockDeadlockCheckTimer = null;
@@ -2285,7 +2285,7 @@ namespace Microsoft.VisualStudio.Threading
                 this.cancellationToken = cancellationToken;
                 this.nestingLock = lck.GetFirstActiveSelfOrAncestor(lck.topAwaiter.Value);
                 this.requestingStackTrace = lck.captureDiagnostics ? new StackTrace(2, true) : null;
-                this.AmbientJoinableTask = (this.nestingLock == null && this.kind != LockKind.Write) ? this.lck.joinableTaskContext?.AmbientTask : null;
+                this.AmbientJoinableTask = (this.nestingLock is null && this.kind != LockKind.Write) ? this.lck.joinableTaskContext?.AmbientTask : null;
             }
 
             /// <summary>

@@ -115,7 +115,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         private static SyntaxNode? GetEnclosingBlock(SyntaxNode node)
         {
-            while (node != null)
+            while (node is not null)
             {
                 if (node.IsKind(SyntaxKind.Block))
                 {
@@ -131,7 +131,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         private static bool IsVariablePassedToInvocation(InvocationExpressionSyntax invocationExpr, string variableName, bool byRef)
         {
             ArgumentListSyntax? argList = invocationExpr.ChildNodes().OfType<ArgumentListSyntax>().FirstOrDefault();
-            if (argList == null)
+            if (argList is null)
             {
                 return false;
             }
@@ -145,7 +145,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 }
 
                 IdentifierNameSyntax identiferName = arg.ChildNodes().OfType<IdentifierNameSyntax>().FirstOrDefault();
-                if (identiferName == null)
+                if (identiferName is null)
                 {
                     return false;
                 }
@@ -200,7 +200,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         private static bool HasTaskCompleted(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax)
         {
             SyntaxNode? enclosingBlock = GetEnclosingBlock(memberAccessSyntax);
-            if (enclosingBlock == null)
+            if (enclosingBlock is null)
             {
                 return false;
             }
@@ -212,7 +212,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             //   task2.GetAwaiter().GetResult();
             string? taskVariableName = null;
             ExpressionSyntax parentExpr = memberAccessSyntax.Expression;
-            while (parentExpr != null)
+            while (parentExpr is not null)
             {
                 if (parentExpr is IdentifierNameSyntax identifierExpr)
                 {
@@ -233,7 +233,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 }
             }
 
-            if (taskVariableName == null)
+            if (taskVariableName is null)
             {
                 return false;
             }

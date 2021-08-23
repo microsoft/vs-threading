@@ -2406,7 +2406,7 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
                     this.Logger.WriteLine($"Releasing related read lock {sequence}.");
                 }
 
-                if (previousTask != null)
+                if (previousTask is not null)
                 {
                     await previousTask;
                 }

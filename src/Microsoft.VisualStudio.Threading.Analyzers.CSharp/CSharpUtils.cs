@@ -206,7 +206,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         internal override bool MethodReturnsNullableReferenceType(IMethodSymbol methodSymbol)
         {
             SyntaxReference? syntaxReference = methodSymbol.DeclaringSyntaxReferences.FirstOrDefault();
-            if (syntaxReference == null)
+            if (syntaxReference is null)
             {
                 return false;
             }
@@ -223,7 +223,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 returnType = localFunc.ReturnType;
             }
 
-            return returnType != null && returnType.IsKind(SyntaxKind.NullableType);
+            return returnType is not null && returnType.IsKind(SyntaxKind.NullableType);
         }
 
         internal readonly struct ContainingFunctionData

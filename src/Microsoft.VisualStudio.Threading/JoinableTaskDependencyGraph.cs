@@ -202,7 +202,7 @@ namespace Microsoft.VisualStudio.Threading
             var queue = new Queue<IJoinableTaskDependent>();
             foreach (JoinableTask task in sourceTasks)
             {
-                if (task != null && visited.Add(task))
+                if (task is not null && visited.Add(task))
                 {
                     queue.Enqueue(task);
                 }
