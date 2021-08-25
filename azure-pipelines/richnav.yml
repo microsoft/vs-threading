@@ -1,6 +1,6 @@
 jobs:
 - job: RichCodeNavUpload
-  displayName: Rich Code Navigation Upload to Staging
+  displayName: Rich Code Navigation Upload to Production
   pool: Hosted Windows 2019 with VS2019
   steps:
   - template: install-dependencies.yml
