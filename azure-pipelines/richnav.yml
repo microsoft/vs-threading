@@ -1,0 +1,19 @@
+jobs:
+- job: RichCodeNavUpload
+  displayName: Rich Code Navigation Upload to Production
+  pool: Hosted Windows 2019 with VS2019
+  steps:
+  - template: install-dependencies.yml
+  - task: VSBuild@1
+    displayName: Build Visual Studio solution
+    inputs:
+      msbuildArgs: /t:build /m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/msbuild.binlog"
+      platform: Any CPU
+      configuration: $(BuildConfiguration)
+  - task: RichCodeNavIndexer@0
+    displayName: RichCodeNav Upload
+    inputs:
+      languages: 'csharp'
+      environment: production
+      isPrivateFeed: false
+    continueOnError: true

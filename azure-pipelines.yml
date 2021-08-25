@@ -24,3 +24,4 @@ jobs:
 - template: azure-pipelines/build.yml
   parameters:
     ShouldSkipOptimize:
+- template: azure-pipelines/richnav.yml
