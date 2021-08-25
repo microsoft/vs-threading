@@ -44,27 +44,55 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             {
                 if (syntaxNode is SimpleLambdaExpressionSyntax simpleLambda)
                 {
-                    return new ContainingFunctionData(simpleLambda, simpleLambda.AsyncKeyword != default(SyntaxToken), SyntaxFactory.ParameterList().AddParameters(simpleLambda.Parameter), simpleLambda.Body);
+                    return new ContainingFunctionData(simpleLambda, simpleLambda.AsyncKeyword != default(SyntaxToken), SyntaxFactory.ParameterList().AddParameters(simpleLambda.Parameter), simpleLambda.Body, simpleLambda.WithBody);
                 }
 
                 if (syntaxNode is AnonymousMethodExpressionSyntax anonymousMethod)
                 {
-                    return new ContainingFunctionData(anonymousMethod, anonymousMethod.AsyncKeyword != default(SyntaxToken), anonymousMethod.ParameterList, anonymousMethod.Body);
+                    return new ContainingFunctionData(anonymousMethod, anonymousMethod.AsyncKeyword != default(SyntaxToken), anonymousMethod.ParameterList, anonymousMethod.Body, anonymousMethod.WithBody);
                 }
 
                 if (syntaxNode is ParenthesizedLambdaExpressionSyntax lambda)
                 {
-                    return new ContainingFunctionData(lambda, lambda.AsyncKeyword != default(SyntaxToken), lambda.ParameterList, lambda.Body);
+                    return new ContainingFunctionData(lambda, lambda.AsyncKeyword != default(SyntaxToken), lambda.ParameterList, lambda.Body, lambda.WithBody);
                 }
 
                 if (syntaxNode is AccessorDeclarationSyntax accessor)
                 {
-                    return new ContainingFunctionData(accessor, false, SyntaxFactory.ParameterList(), accessor.Body);
+                    Func<CSharpSyntaxNode, CSharpSyntaxNode> bodyReplacement = newBody => newBody switch
+                    {
+                        BlockSyntax block => accessor.WithBody(block),
+                        ArrowExpressionClauseSyntax expression => accessor.WithExpressionBody(expression),
+                        _ => throw new NotSupportedException(),
+                    };
+                    return new ContainingFunctionData(accessor, false, SyntaxFactory.ParameterList(), accessor.Body, bodyReplacement);
                 }
 
                 if (syntaxNode is BaseMethodDeclarationSyntax method)
                 {
-                    return new ContainingFunctionData(method, method.Modifiers.Any(SyntaxKind.AsyncKeyword), method.ParameterList, method.Body);
+                    Func<CSharpSyntaxNode, CSharpSyntaxNode> bodyReplacement = method switch
+                    {
+                        MethodDeclarationSyntax m => (CSharpSyntaxNode newBody) => newBody switch
+                        {
+                            ArrowExpressionClauseSyntax expr => m.WithExpressionBody(expr),
+                            BlockSyntax block => m.WithBody(block),
+                            _ => throw new NotSupportedException(),
+                        },
+                        ConstructorDeclarationSyntax c => (CSharpSyntaxNode newBody) => newBody switch
+                        {
+                            ArrowExpressionClauseSyntax expr => c.WithExpressionBody(expr),
+                            BlockSyntax block => c.WithBody(block),
+                            _ => throw new NotSupportedException(),
+                        },
+                        OperatorDeclarationSyntax o => (CSharpSyntaxNode newBody) => newBody switch
+                        {
+                            ArrowExpressionClauseSyntax expr => o.WithExpressionBody(expr),
+                            BlockSyntax block => o.WithBody(block),
+                            _ => throw new NotSupportedException(),
+                        },
+                        _ => throw new NotSupportedException(),
+                    };
+                    return new ContainingFunctionData(method, method.Modifiers.Any(SyntaxKind.AsyncKeyword), method.ParameterList, method.Body, bodyReplacement);
                 }
 
                 syntaxNode = (CSharpSyntaxNode)syntaxNode.Parent;
@@ -228,12 +256,13 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal readonly struct ContainingFunctionData
         {
-            internal ContainingFunctionData(CSharpSyntaxNode function, bool isAsync, ParameterListSyntax parameterList, CSharpSyntaxNode blockOrExpression)
+            internal ContainingFunctionData(CSharpSyntaxNode function, bool isAsync, ParameterListSyntax parameterList, CSharpSyntaxNode blockOrExpression, Func<CSharpSyntaxNode, CSharpSyntaxNode> bodyReplacement)
             {
                 this.Function = function;
                 this.IsAsync = isAsync;
                 this.ParameterList = parameterList;
                 this.BlockOrExpression = blockOrExpression;
+                this.BodyReplacement = bodyReplacement;
             }
 
             internal CSharpSyntaxNode Function { get; }
@@ -243,6 +272,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             internal ParameterListSyntax ParameterList { get; }
 
             internal CSharpSyntaxNode BlockOrExpression { get; }
+
+            internal Func<CSharpSyntaxNode, CSharpSyntaxNode> BodyReplacement { get; }
         }
     }
 }

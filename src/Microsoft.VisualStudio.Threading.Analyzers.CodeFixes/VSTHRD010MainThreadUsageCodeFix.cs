@@ -140,7 +140,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 }
 
                 BlockSyntax? newBlock = initialBlockSyntax.WithStatements(initialBlockSyntax.Statements.Insert(0, addedStatement));
-                return Task.FromResult(context.Document.WithSyntaxRoot(root.ReplaceNode(container.BlockOrExpression, newBlock)));
+                return Task.FromResult(context.Document.WithSyntaxRoot(root.ReplaceNode(container.BlockOrExpression.Parent, container.BodyReplacement(newBlock))));
             }
         }
     }
