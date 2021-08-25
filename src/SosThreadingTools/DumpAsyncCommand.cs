@@ -57,7 +57,7 @@ namespace CpsDbg
                                         }
 
                                         ClrValueType? nextAsyncBuilder = asyncBuilder.TryGetValueClassField("m_builder");
-                                        if (nextAsyncBuilder == null)
+                                        if (nextAsyncBuilder is null)
                                         {
                                             asyncBuilder = asyncBuilder.TryGetValueClassField("_methodBuilder");
                                         }
@@ -77,7 +77,7 @@ namespace CpsDbg
                                     // and remember references encounted, and we skip them when we go through GC references.
                                     // Note: we can do better by going through other value structures, and extract references from them here, which we can consider when we have a real scenario.
                                     var previousReferences = new Dictionary<ulong, int>();
-                                    if (stateMachine.Type?.GetFieldByName("<>t__builder") != null)
+                                    if (stateMachine.Type?.GetFieldByName("<>t__builder") is not null)
                                     {
                                         foreach (ClrInstanceField field in stateMachine.Type.Fields)
                                         {

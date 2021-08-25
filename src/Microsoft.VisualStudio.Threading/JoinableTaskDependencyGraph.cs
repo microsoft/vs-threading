@@ -202,7 +202,7 @@ namespace Microsoft.VisualStudio.Threading
             var queue = new Queue<IJoinableTaskDependent>();
             foreach (JoinableTask task in sourceTasks)
             {
-                if (task != null && visited.Add(task))
+                if (task is not null && visited.Add(task))
                 {
                     queue.Enqueue(task);
                 }
@@ -211,9 +211,9 @@ namespace Microsoft.VisualStudio.Threading
             while (queue.Count > 0)
             {
                 IJoinableTaskDependent startDepenentNode = queue.Dequeue();
-                if (candidates.Contains(startDepenentNode))
+                if (startDepenentNode is JoinableTask startTask && candidates.Contains(startTask))
                 {
-                    results.Add((JoinableTask)startDepenentNode);
+                    results.Add(startTask);
                 }
 
                 lock (startDepenentNode.JoinableTaskContext.SyncContextLock)

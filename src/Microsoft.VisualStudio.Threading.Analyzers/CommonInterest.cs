@@ -63,9 +63,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         private const RegexOptions FileNamePatternRegexOptions = RegexOptions.IgnoreCase | RegexOptions.Singleline;
 
-        private static readonly Regex NegatableTypeOrMemberReferenceRegex = new Regex(@"^(?<negated>!)?\[(?<typeName>[^\[\]\:]+)+\](?:\:\:(?<memberName>\S+))?\s*$", RegexOptions.Singleline | RegexOptions.CultureInvariant);
+        private static readonly TimeSpan RegexMatchTimeout = TimeSpan.FromSeconds(5);  // Prevent expensive CPU hang in Regex.Match if backtracking occurs due to pathological input (see #485).
 
-        private static readonly Regex MemberReferenceRegex = new Regex(@"^\[(?<typeName>[^\[\]\:]+)+\]::(?<memberName>\S+)\s*$", RegexOptions.Singleline | RegexOptions.CultureInvariant);
+        private static readonly Regex NegatableTypeOrMemberReferenceRegex = new Regex(@"^(?<negated>!)?\[(?<typeName>[^\[\]\:]+)+\](?:\:\:(?<memberName>\S+))?\s*$", RegexOptions.Singleline | RegexOptions.CultureInvariant, RegexMatchTimeout);
+
+        private static readonly Regex MemberReferenceRegex = new Regex(@"^\[(?<typeName>[^\[\]\:]+)+\]::(?<memberName>\S+)\s*$", RegexOptions.Singleline | RegexOptions.CultureInvariant, RegexMatchTimeout);
 
         /// <summary>
         /// An array with '.' as its only element.
@@ -84,7 +86,16 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         {
             foreach (string line in ReadAdditionalFiles(analyzerOptions, fileNamePattern, cancellationToken))
             {
-                Match match = NegatableTypeOrMemberReferenceRegex.Match(line);
+                Match? match = null;
+                try
+                {
+                    match = NegatableTypeOrMemberReferenceRegex.Match(line);
+                }
+                catch (RegexMatchTimeoutException)
+                {
+                    throw new InvalidOperationException($"Regex.Match timeout when parsing line: {line}");
+                }
+
                 if (!match.Success)
                 {
                     throw new InvalidOperationException($"Parsing error on line: {line}");
@@ -175,7 +186,16 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static QualifiedMember ParseAdditionalFileMethodLine(string line)
         {
-            Match match = MemberReferenceRegex.Match(line);
+            Match? match = null;
+            try
+            {
+                match = MemberReferenceRegex.Match(line);
+            }
+            catch (RegexMatchTimeoutException)
+            {
+                throw new InvalidOperationException($"Regex.Match timeout when parsing line: {line}");
+            }
+
             if (!match.Success)
             {
                 throw new InvalidOperationException($"Parsing error on line: {line}");

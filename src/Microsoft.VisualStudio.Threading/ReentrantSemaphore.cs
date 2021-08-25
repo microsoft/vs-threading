@@ -899,7 +899,10 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             protected override void ThrowIfFaulted()
             {
-                Verify.Operation(!this.faulted, Strings.SemaphoreMisused);
+                if (this.faulted)
+                {
+                    throw Verify.FailOperation(Strings.SemaphoreMisused);
+                }
             }
         }
 

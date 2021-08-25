@@ -186,5 +186,11 @@ dotnet_diagnostic.SA1133.severity = none
 # SA1108: Block statements should not contain embedded comments
 dotnet_diagnostic.SA1108.severity = suggestion
 
+# CSIsNull001: Use `is null` for null checks
+dotnet_diagnostic.CSIsNull001.severity = warning
+
+# CSIsNull002: Use `is object` for non-null checks
+dotnet_diagnostic.CSIsNull002.severity = warning
+
 [*.sln]
 indent_style = tab
