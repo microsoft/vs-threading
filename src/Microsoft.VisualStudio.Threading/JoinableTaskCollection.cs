@@ -175,7 +175,7 @@ namespace Microsoft.VisualStudio.Threading
 
             using (this.Join())
             {
-                await this.emptyEvent.WaitAsync(cancellationToken).ConfigureAwait(false);
+                await this.emptyEvent.WaitAsync(cancellationToken).ConfigureAwaitRunInline();
             }
         }
 
