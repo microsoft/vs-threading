@@ -90,6 +90,7 @@ stages:
       displayName: Insert VS Payload
       inputs:
         SkipCreatePR: true
+        CustomScriptExecutionCommand: src\VSSDK\NuGet\AllowUnstablePackages.ps1
     - task: benjhuser.tfs-extensions-build-tasks.trigger-build-task.TriggerBuild@3
       displayName: Trigger a new build of DD-CB-PR
       inputs:
