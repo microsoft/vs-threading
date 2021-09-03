@@ -16,3 +16,8 @@ steps:
     signType: $(SignType)
     zipSources: false
   displayName: Install MicroBuild Signing Plugin
+
+- task: MicroBuildLocalizationPlugin@3
+  inputs:
+    languages: $(LocLanguages)
+  displayName: Install MicroBuild Localization Plugin
