@@ -27,6 +27,11 @@
     Skips the package restore step.
 .PARAMETER Signing
     Install the MicroBuild signing plugin for building test-signed builds on desktop machines.
+.PARAMETER Localization
+    Install the MicroBuild localization plugin for building loc builds on desktop machines.
+    The environment is configured to build pseudo-loc for JPN only, but may be used to build
+    all languages with shipping-style loc by using the `/p:loctype=full,loclanguages=vs`
+    when building.
 .PARAMETER OptProf
     Install the MicroBuild OptProf plugin for building optimized assemblies on desktop machines.
 .PARAMETER AccessToken
@@ -44,6 +49,8 @@ Param (
     [switch]$NoRestore,
     [Parameter()]
     [switch]$Signing,
+    [Parameter()]
+    [switch]$Localization,
     [Parameter()]
     [switch]$OptProf,
     [Parameter()]
@@ -90,6 +97,13 @@ try {
         Write-Host "Installing MicroBuild signing plugin" -ForegroundColor $HeaderColor
         & $InstallNuGetPkgScriptPath MicroBuild.Plugins.Signing -source $MicroBuildPackageSource -Verbosity $nugetVerbosity
         $EnvVars['SignType'] = "Test"
+    }
+
+    if ($Localization) {
+        Write-Host "Installing MicroBuild localization plugin" -ForegroundColor $HeaderColor
+        & $InstallNuGetPkgScriptPath MicroBuild.Plugins.Localization -source $MicroBuildPackageSource -Verbosity $nugetVerbosity
+        $EnvVars['LocType'] = "Pseudo"
+        $EnvVars['LocLanguages'] = "JPN"
     }
 
     if ($OptProf) {

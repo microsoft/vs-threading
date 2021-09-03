@@ -45,7 +45,6 @@
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="5.0.0" />
     <PackageReference Include="Microsoft.VisualStudio.Validation" Version="16.10.34" />
     <PackageReference Include="Microsoft.Win32.Registry" Version="5.0.0" />
-    <PackageReference Include="XliffTasks" Version="1.0.0-beta.19505.1" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
     <!-- We don't consume the analyzers in this library itself,
