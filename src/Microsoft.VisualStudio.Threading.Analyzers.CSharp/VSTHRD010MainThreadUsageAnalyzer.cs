@@ -148,6 +148,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 compilationStartContext.RegisterOperationAction(Utils.DebuggableWrapper(c => this.AddToCallerCalleeMap(c, callerToCalleeMap)), OperationKind.Invocation);
                 compilationStartContext.RegisterOperationAction(Utils.DebuggableWrapper(c => this.AddToCallerCalleeMap(c, callerToCalleeMap)), OperationKind.PropertyReference);
 
+                // Strictly speaking, this will miss access to the underlying field, but there's no method to put in the map in that case
+                compilationStartContext.RegisterOperationAction(Utils.DebuggableWrapper(c => this.AddToCallerCalleeMap(c, callerToCalleeMap)), OperationKind.EventAssignment);
+
                 compilationStartContext.RegisterCompilationEndAction(compilationEndContext =>
                 {
                     Dictionary<IMethodSymbol, List<CallInfo>>? calleeToCallerMap = CreateCalleeToCallerMap(callerToCalleeMap);
@@ -253,6 +256,13 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     break;
                 case IPropertyReferenceOperation propertyReference:
                     targetMethod = GetPropertyAccessor(propertyReference.Property);
+                    break;
+                case IEventAssignmentOperation eventAssignmentOperation:
+                    IEventReferenceOperation eventReference = eventAssignmentOperation.EventReference;
+                    targetMethod = eventAssignmentOperation.Adds
+                        ? eventReference.Event.AddMethod
+                        : eventReference.Event.RemoveMethod;
+                    locationToBlame = eventReference.Syntax;
                     break;
             }
 
@@ -373,6 +383,14 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                 if (property is object)
                 {
                     this.AnalyzeMemberWithinContext(property.ContainingType, property, context, memberAccessSyntax.Name.GetLocation());
+                }
+                else
+                {
+                    var @event = context.SemanticModel.GetSymbolInfo(context.Node).Symbol as IEventSymbol;
+                    if (@event is object)
+                    {
+                        this.AnalyzeMemberWithinContext(@event.ContainingType, @event, context, memberAccessSyntax.Name.GetLocation());
+                    }
                 }
             }
 
