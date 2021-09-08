@@ -48,7 +48,7 @@ stages:
   jobs:
   - template: build.yml
     parameters:
-      windowsPool: VSEngSS-MicroBuild2019
+      windowsPool: VSEngSS-MicroBuild2019-1ES
       ShouldSkipOptimize: ${{ parameters.ShouldSkipOptimize }}
 
 - stage: symbol_archive
