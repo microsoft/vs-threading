@@ -1,10 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<LCX SchemaVersion="6.0" Name="D:\a\_work\1\s\bin\Microsoft.VisualStudio.Threading.Analyzers\Release\netstandard1.3\Microsoft.VisualStudio.Threading.Analyzers.dll" PsrId="211" SrcCul="en-US" xmlns="http://schemas.microsoft.com/locstudio/2006/6/lcx" TgtCul="tr-TR">
+<LCX SchemaVersion="6.0" Name="D:\a\_work\1\s\bin\Microsoft.VisualStudio.Threading.Analyzers\Release\netstandard1.3\Microsoft.VisualStudio.Threading.Analyzers.dll" PsrId="211" FileType="1" SrcCul="en-US" TgtCul="tr-TR" xmlns="http://schemas.microsoft.com/locstudio/2006/6/lcx">
   <OwnedComments>
     <Cmt Name="Dev" />
     <Cmt Name="LcxAdmin" />
     <Cmt Name="RCCX" />
   </OwnedComments>
+  <Settings Name="@vsLocTools@\default.lss" Type="Lss" />
   <Item ItemId=";Managed Resources" ItemType="0" PsrId="211" Leaf="true">
     <Disp Icon="Expand" Expand="true" Disp="true" LocTbl="false" />
   </Item>
@@ -17,13 +18,13 @@
           <Val><![CDATA[Await {0} instead]]></Val>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["await" is a C# keyword and should not be translated.]D;]A;{0} is a method name.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";SystemIAsyncDisposablePackageNote" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[The System.IAsyncDisposable interface is defined in the Microsoft.Bcl.AsyncInterfaces NuGet package.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[System.IAsyncDisposable arabirimi Microsoft.Bcl.AsyncInterfaces NuGet paketinde tanımlanmıştır.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -32,64 +33,73 @@
           <Val><![CDATA[Use await instead]]></Val>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["await" is a C# keyword and should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD001_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Kilitlenebilen ya da öncelik belirtilmesini gerektiren API’ler yerine JoinableTaskFactory.SwitchToMainThreadAsync() öğesinin UI iş parçacığına geçmesini bekleyin.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD001_Title" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid legacy thread switching APIs]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[İş parçacıkları arasında geçiş yapan eski API’lerden kaçının]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA[thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD002_CodeFix_Await_Title" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Use await instead]]></Val>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["await" is a C# keyword and should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD002_MessageFormat" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or JoinableTaskFactory.Run instead.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Görevlerde veya bekleyen öğelerde zaman uyumlu olarak beklemek kilitlenmelere neden olabilir. Bunun yerine bekleyen veya JoinableTaskFactory.Run kullanın.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["await" is a C# keyword and should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD002_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid problematic synchronous waits]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Sorunlu zaman uyumlu beklemelerden kaçının]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD003_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid awaiting or returning a Task representing work that was not started within your context as that can lead to deadlocks.]D;]A;Start the work within this context, or use JoinableTaskFactory.RunAsync to start the task and await the returned JoinableTask instead.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Çıkmazlara yol açabileceğinden, bağlamınızda başlatılmamış işi temsil eden bir Görevi beklemekten veya döndürmekten kaçının.]D;]A;İşi bu bağlamda başlatın veya bunun yerine görevi başlatmak için JoinableTaskFactory.RunAsync kullanıp döndürülen JoinableTask öğesini bekleyin.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD003_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid awaiting foreign Tasks]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Yabancı Görevleri beklemekten kaçının]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD004_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Calls to JoinableTaskFactory.SwitchToMainThreadAsync() must be awaited.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[JoinableTaskFactory.SwitchToMainThreadAsync() çağrıları beklenmelidir.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -98,37 +108,40 @@
           <Val><![CDATA[Await SwitchToMainThreadAsync]]></Val>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA[Do not translate either of these. The first is a keyword, the second is a method name.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD010_MessageFormat_Async" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Accessing "{0}" should only be done on the main thread. Await JoinableTaskFactory.SwitchToMainThreadAsync() first.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA["{0}" erişimi yalnızca ana iş parçacığı üzerinde gerçekleştirilmelidir. Önce JoinableTaskFactory.SwitchToMainThreadAsync() metodunu bekleyin.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA[{0} is a type or member name.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD010_MessageFormat_Sync" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Accessing "{0}" should only be done on the main thread. Call {1}() first.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA["{0}" erişimi yalnızca ana iş parçacığı üzerinde gerçekleştirilmelidir. Önce {1}() çağırın.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA[{0} is a type or member name and {1} is the name of a method that throws if not called from the main thread.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD010_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Invoke single-threaded types on Main thread]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Ana iş parçacığındaki tek iş parçacıklı türleri çağırın]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD011_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Lazy<Task<T>>.Value can deadlock.]D;]A;Use AsyncLazy<T> instead.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Lazy<Task<T>>.Değer kilitlenebilir.]D;]A;Bunun yerine AsyncLazy<T> kullanın.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -141,96 +154,126 @@
       <Item ItemId=";VSTHRD011b_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Invoking or blocking on async code in a Lazy<T> value factory can deadlock.]D;]A;Use AsyncLazy<T> instead.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Bir Lazy<T> değer fabrikasındaki asenkron kod üzerinde çağrı veya engelleme yapma çıkmaza neden olabilir.]D;]A;Bunun yerine AsyncLazy<T> kullanın.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD012_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Ana iş parçacığında kilitlenmeleri önlemek için bu çağrıda (veya başka bir aşırı yüklemede) bir JoinableTaskFactory örneği sağlayın.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD012_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Provide JoinableTaskFactory where allowed]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[İzin veriliyorsa JoinableTaskFactory sağlayın]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD100_CodeFix_Title" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Change return type to Task]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Döndürme türünü Task olarak değiştirin]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA[Task is a type name and should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD100_MessageFormat" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid "async void" methods, because any exceptions not handled by the method will crash the process.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA["async void" metotları tarafından işlenmeyen tüm özel durumlar işlemi kilitleyeceğinden bunları kullanmayın.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["async void" is a pair of C# keywords. Do not translate them.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD100_Title" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid async void methods]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Async void metotları kullanmayın]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["async void" is a pair of C# keywords. Do not translate them.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD101_MessageFormat" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid using async lambda for a void returning delegate type, because any exceptions not handled by the delegate will crash the process.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Temsilci tarafından işlenmeyen tüm özel durumlar işlemi kilitleyeceğinden, temsilci türü döndüren bir void için async lambda kullanmayın.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["void" is a C# keyword and should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD101_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid unsupported async delegates]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Desteklenmeyen async temsilcilerini kullanmayın]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD102_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Limit use of synchronously blocking method calls such as JoinableTaskFactory.Run or Task.Result to public entrypoint members where you must be synchronous. Using it for internal members can needlessly add synchronous frames between asynchronous frames, leading to threadpool exhaustion.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Zaman uyumlu olmanız gereken genel giriş noktası üyelerinde, JoinableTaskFactory.Run veya Task.Result gibi zaman uyumlu olarak engelleyen metot çağrılarının kullanımını sınırlayın. Bunu iç üyeler için kullanmak, zaman uyumsuz çerçevelerin arasına gereksiz yere zaman uyumlu çerçeveler ekleyerek iş parçacığı havuzunun tükenmesine sebep olabilir.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD102_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Implement internal logic asynchronously]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[İç mantığı zaman uyumsuz olarak uygulayın]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD103_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[{0} synchronously blocks. Await {1} instead.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[{0} zaman uyumlu olarak engeller. Bunun yerine {1} bekleyin.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD103_MessageFormat_UseAwaitInstead" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[{0} synchronously blocks. Use await instead.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[{0} zaman uyumlu olarak engeller. Bunun yerine await kullanın.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD103_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Call async methods when in an async method]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Zaman uyumsuz metottayken zaman uyumsuz metotlar çağırın]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD104_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Bu metodun zaman uyumlu olarak engellemeyen zaman uyumsuz bir sürümünü sunun. Sonra bir JoinableTaskFactory.Run temsilcisi içinde bu zaman uyumsuz metoda çağrı yapmak için bu metodu basitleştirin.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -243,24 +286,36 @@
       <Item ItemId=";VSTHRD105_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid method overloads that assume TaskScheduler.Current. Use an overload that accepts a TaskScheduler and specify TaskScheduler.Default (or any other) explicitly.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[TaskScheduler.Current varsayan metot aşırı yüklemelerinden kaçının. TaskScheduler kabul eden bir aşırı yükleme kullanın ve TaskScheduler.Default (veya başka birini) açık olarak belirtin.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD105_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid method overloads that assume TaskScheduler.Current]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[TaskScheduler.Current varsayan metot aşırı yüklemelerinden kaçının]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD106_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[AsyncEventHandler delegates should be invoked via the extension method "TplExtensions.InvokeAsync()" defined in Microsoft.VisualStudio.Threading assembly.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[AsyncEventHandler temsilcileri, Microsoft.VisualStudio.Threading bütünleştirilmiş kodunda tanımlanan "TplExtensions.InvokeAsync()" genişletme metodu aracılığıyla çağrılmalıdır.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD106_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Use InvokeAsync to raise async events]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Async olayları tetiklemek için InvokeAsync kullanın]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -269,61 +324,76 @@
           <Val><![CDATA[Await using expression]]></Val>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["await" and "using" are C# keywords and should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD107_MessageFormat" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Missing await operator for "using" expression.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[“using” ifadesi için await işleci eksik.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["await" and "using" are C# keywords and should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD107_Title" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Await Task within using expression]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[using ifadesi içinde await Task]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["await Task" is a C# compound term, and "using" is a C# keyword. These should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD108_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Thread affinity checks should be unconditional.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[İş parçacığı benzeşim denetimleri koşulsuz olmalıdır.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD108_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Assert thread affinity unconditionally]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[İş parçacığı benzeşimini koşulsuz olarak onayla]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD109_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid throwing when not on the main thread while in an async or Task-returning method. Switch to the thread required instead.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Ana iş parçacığında değilken, zaman uyumsuz veya Task döndüren metot içinden özel durum oluşturmaktan kaçının. Bunun yerine, gereken iş parçacığına geçin.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD109_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Switch instead of assert in async methods]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Zaman uyumsuz metotlarda assert yerine switch]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD110_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Observe the awaitable result of this method call by awaiting it, assigning to a variable, or passing it to another method.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Bu metot çağrısının beklenebilir sonucunu bekleyerek, bir değişkene atayarak veya bir başka metoda geçirerek gözlemleyin.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD110_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Observe result of async calls]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Zaman uyumsuz çağrıların sonucunu gözlemleyin]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -332,46 +402,43 @@
           <Val><![CDATA[Add .ConfigureAwait(false)]]></Val>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA[".ConfigureAwait(false)" should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD111_CodeFix_True_Title" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Add .ConfigureAwait(true)]]></Val>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA[".ConfigureAwait(true)" should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD111_MessageFormat" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Add .ConfigureAwait(bool) to your await expression.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[await ifadenize .ConfigureAwait(bool) ekleyin.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA[".ConfigureAwait(bool)" and "await" should NOT be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD111_Title" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Use ConfigureAwait(bool)]]></Val>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["ConfigureAwait(bool)" is a reference and should NOT be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD112_CodeFix_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Add implementation of System.IAsyncDisposable.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[System.IAsyncDisposable uygulamasını ekleyin.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD112_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Implement the System.IAsyncDisposable interface when implementing the obsolete Microsoft.VisualStudio.Threading.IAsyncDisposable interface.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Eski Microsoft.VisualStudio.Threading.IAsyncDisposable arabirimini uygularken System.IAsyncDisposable arabirimini uygulayın.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -384,54 +451,63 @@
       <Item ItemId=";VSTHRD113_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Add a check for System.IAsyncDisposable in the same code block that checks for Microsoft.VisualStudio.Threading.IAsyncDisposable that behaves similarly.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Microsoft.VisualStudio.Threading.IAsyncDisposable için benzer şekilde davranıp davranmadığını denetleyen aynı kod bloğunda System.IAsyncDisposable için bir denetim ekleyin.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD113_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Check for System.IAsyncDisposable]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[System.IAsyncDisposable olup olmadığını denetle]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD114_CodeFix_CompletedTask" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Use 'Task.CompletedTask' instead]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Bunun yerine 'Task.CompletedTask' kullanın]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["Task.CompletedTask" should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD114_CodeFix_FromResult" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Use 'Task.FromResult' instead]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Bunun yerine 'Task.FromResult' kullanın]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["Task.FromResult" should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD114_MessageFormat" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid returning null from a Task-returning method.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Bir Görev döndürme metodundan null döndürmekten kaçının.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA[Task is a type name and should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD114_Title" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid returning a null Task]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Null Görev döndürmekten kaçının]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA[Task is a type name and should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD200_AddAsync_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Use "Async" suffix in names of methods that return an awaitable type.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Beklenebilir bir tür döndüren metotların adlarında “Async” ekini kullanın.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -440,19 +516,22 @@
           <Val><![CDATA[Rename to {0}]]></Val>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA[{0} is a method name.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD200_RemoveAsync_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid "Async" suffix in names of methods that do not return an awaitable type.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Beklenebilir bir tür döndürmeyen metotların adlarında “Async” ekini kullanmaktan kaçının.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD200_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Use "Async" suffix for async methods]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Async metotları için "Async" sonekini kullanın]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -461,27 +540,24 @@
           <Val><![CDATA[Call ThrowIfCancellationRequested()]]></Val>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["ThrowIfCancellationRequested" is a method name and should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD201_MessageFormat" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Check for cancellation after calling SwitchToMainThreadAsync(CancellationToken).]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[SwitchToMainThreadAsync(CancellationToken) metodu çağrıldıktan sonra iptal edilip edilmediğini denetleyin.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["SwitchToMainThreadAsync" is a method name and should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD201_Title" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Check cancellation after SwitchToMainThreadAsync]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[SwitchToMainThreadAsync metodundan sonra iptal edilip edilmediğini denetle]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["SwitchToMainThreadAsync" is a method name and should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
     </Item>
   </Item>
@@ -527,4 +603,4 @@
   <Item ItemId=";Version" ItemType="8" PsrId="211" Leaf="true">
     <Disp Icon="Expand" Expand="true" Disp="true" LocTbl="false" />
   </Item>
-<Settings Name="@vsLocTools@\default.lss" Type="Lss" /></LCX>
+</LCX>

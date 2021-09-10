@@ -1,10 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<LCX SchemaVersion="6.0" Name="D:\a\_work\1\s\bin\Microsoft.VisualStudio.Threading\Release\net472\Microsoft.VisualStudio.Threading.dll" PsrId="211" SrcCul="en-US" xmlns="http://schemas.microsoft.com/locstudio/2006/6/lcx" TgtCul="pl-PL">
+<LCX SchemaVersion="6.0" Name="D:\a\_work\1\s\bin\Microsoft.VisualStudio.Threading\Release\net472\Microsoft.VisualStudio.Threading.dll" PsrId="211" FileType="1" SrcCul="en-US" TgtCul="pl-PL" xmlns="http://schemas.microsoft.com/locstudio/2006/6/lcx">
   <OwnedComments>
     <Cmt Name="Dev" />
     <Cmt Name="LcxAdmin" />
     <Cmt Name="RCCX" />
   </OwnedComments>
+  <Settings Name="@vsLocTools@\default.lss" Type="Lss" />
   <Item ItemId=";Managed Resources" ItemType="0" PsrId="211" Leaf="true">
     <Disp Icon="Expand" Expand="true" Disp="true" LocTbl="false" />
   </Item>
@@ -15,153 +16,225 @@
       <Item ItemId=";AppliedSynchronizationContextNotAllowed" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Acquiring locks on threads with a SynchronizationContext applied is not allowed.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Uzyskiwanie blokad wątków z zastosowanym ustawieniem SynchronizationContext nie jest dozwolone.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";CannotUpgradeNonUpgradeableLock" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[A non-upgradeable read lock is held by the caller and cannot be upgraded.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Niemożliwa do uaktualnienia blokada odczytu jest trzymana przez wywołującego i nie może zostać uaktualniona.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";DangerousReadLockRequestFromWriteLockFork" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Dangerous request for read lock from fork of write lock.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Niebezpieczne żądanie blokady odczytu z rozwidlenia po żądaniu blokady zapisu.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";FrameMustBePushedFirst" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[This instance must be pushed first.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[To wystąpienie musi zostać wypchnięte jako pierwsze.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";InvalidAfterCompleted" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Already transitioned to the Completed state.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Nastąpiło już przejście do stanu Ukończone.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";InvalidLock" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[This operation can only be executed against a valid lock.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Operacja może zostać wykonana tylko w stosunku do prawidłowej blokady.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";InvalidWithoutLock" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[A lock is required.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Wymagana jest blokada.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";JoinableTaskContextAndCollectionMismatch" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[JoinableTask does not belong to the context this collection was instantiated with.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Zadanie JoinableTask nie należy do kontekstu, w którym utworzono wystąpienie tej kolekcji.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";JoinableTaskContextNodeAlreadyRegistered" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[This node already registered.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Ten węzeł jest już zarejestrowany.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";LazyValueFaulted" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Lazily created value faulted during construction.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Wystąpił błąd podczas tworzenia wartości z opóźnieniem.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";LazyValueNotCreated" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Lazily created value not yet constructed.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Wartość tworzona z opóźnieniem nie została jeszcze utworzona.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";LockCompletionAlreadyRequested" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[This lock has already been marked for completion.  No new top-level locks can be serviced.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Ta blokada została już oznaczona do ukończenia.  Nie można obsłużyć żadnych nowych blokad najwyższego poziomu.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";MultipleContinuationsNotSupported" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Multiple continuations are not supported.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Wielokrotne kontynuacje nie są obsługiwane.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";NotAllowedUnderURorWLock" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[This operation is not allowed while holding an active upgradeable read or write lock from an AsyncReaderWriterLock.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Ta operacja nie jest dozwolona w trakcie trzymania aktywnej, możliwej do uaktualniania blokady odczytu lub zapisu z elementu AsyncReaderWriterLock.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";PushFromWrongThread" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Message pump can only be run from the original thread.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Pompę komunikatów można uruchomić tylko z oryginalnego wątku.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";QueueEmpty" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[The queue is empty.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Kolejka jest pusta.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";STAThreadCallerNotAllowed" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[This operation cannot be completed on an STA thread.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Nie można ukończyć tej operacji w wątku STA.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";SemaphoreAlreadyHeld" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Semaphore is already held and reentrancy setting is '{0}'.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Semafor już jest ustawiony, a ustawienie ponownego wejścia to „{0}”.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";SemaphoreMisused" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[This semaphore has been misused and can no longer be used.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Tego semafora nadużyto i nie można go już używać.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";SemaphoreStackNestingViolated" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Nested semaphore requests must be released in LIFO order when the reentrancy setting is: '{0}']]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Żądania dotyczące zagnieżdżonego semafora muszą być zwalniane w kolejności LIFO, gdy ustawienie wielobieżności to: „{0}”]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";SwitchToMainThreadFailedToReachExpectedThread" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[An attempt to switch to the main thread failed to reach the expected thread. Was the JoinableTaskContext initialized on the wrong thread or with a SynchronizationContext whose Post method does not execute its delegate on the main thread?]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Próba przełączenia się na główny wątek zakończyła się niepowodzeniem. Nie udało się osiągnąć oczekiwanego wątku. Czy element JoinableTaskContext został zainicjowany w niewłaściwym wątku albo z kontekstem SynchronizationContext, którego metoda Post nie uruchamia swojego delegata w wątku głównym?]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA[An error displayed when there is a serious programming fault with an application. It will usually be thrown early in development in the application and is not expected to be seen by an end user.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";SyncContextFrameMismatchedAffinity" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[This frame has already been used with a different instance.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Ta ramka została już użyta z innym wystąpieniem.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";SyncContextNotSet" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[No SynchronizationContext to reach the main thread has been set.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Nie ustawiono żadnego kontekstu SynchronizationContext umożliwiającego dotarcie do wątku głównego.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";ValueFactoryReentrancy" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[The value factory has called for the value on the same instance.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Fabryka wartości zażądała wartości w tym samym wystąpieniu.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";WriteLockOutlived" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Write lock out-lived by a nested read lock, which is not allowed.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Zagnieżdżona blokada odczytu istnieje dłużej od blokady zapisu, co jest niedozwolone.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -215,4 +288,4 @@
   <Item ItemId=";Version" ItemType="8" PsrId="211" Leaf="true">
     <Disp Icon="Expand" Expand="true" Disp="true" LocTbl="false" />
   </Item>
-<Settings Name="@vsLocTools@\default.lss" Type="Lss" /></LCX>
+</LCX>
