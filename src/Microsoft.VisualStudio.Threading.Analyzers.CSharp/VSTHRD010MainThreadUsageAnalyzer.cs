@@ -258,11 +258,15 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                     targetMethod = GetPropertyAccessor(propertyReference.Property);
                     break;
                 case IEventAssignmentOperation eventAssignmentOperation:
-                    IEventReferenceOperation eventReference = eventAssignmentOperation.EventReference;
-                    targetMethod = eventAssignmentOperation.Adds
-                        ? eventReference.Event.AddMethod
-                        : eventReference.Event.RemoveMethod;
-                    locationToBlame = eventReference.Syntax;
+                    IOperation eventReferenceOp = eventAssignmentOperation.EventReference;
+                    if (eventReferenceOp is IEventReferenceOperation eventReference)
+                    {
+                        targetMethod = eventAssignmentOperation.Adds
+                            ? eventReference.Event.AddMethod
+                            : eventReference.Event.RemoveMethod;
+                        locationToBlame = eventReference.Syntax;
+                    }
+
                     break;
             }
 
