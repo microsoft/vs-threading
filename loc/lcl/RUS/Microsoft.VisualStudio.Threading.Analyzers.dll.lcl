@@ -1,10 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<LCX SchemaVersion="6.0" Name="D:\a\_work\1\s\bin\Microsoft.VisualStudio.Threading.Analyzers\Release\netstandard1.3\Microsoft.VisualStudio.Threading.Analyzers.dll" PsrId="211" SrcCul="en-US" xmlns="http://schemas.microsoft.com/locstudio/2006/6/lcx" TgtCul="ru-RU">
+<LCX SchemaVersion="6.0" Name="D:\a\_work\1\s\bin\Microsoft.VisualStudio.Threading.Analyzers\Release\netstandard1.3\Microsoft.VisualStudio.Threading.Analyzers.dll" PsrId="211" FileType="1" SrcCul="en-US" TgtCul="ru-RU" xmlns="http://schemas.microsoft.com/locstudio/2006/6/lcx">
   <OwnedComments>
     <Cmt Name="Dev" />
     <Cmt Name="LcxAdmin" />
     <Cmt Name="RCCX" />
   </OwnedComments>
+  <Settings Name="@vsLocTools@\default.lss" Type="Lss" />
   <Item ItemId=";Managed Resources" ItemType="0" PsrId="211" Leaf="true">
     <Disp Icon="Expand" Expand="true" Disp="true" LocTbl="false" />
   </Item>
@@ -17,13 +18,13 @@
           <Val><![CDATA[Await {0} instead]]></Val>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["await" is a C# keyword and should not be translated.]D;]A;{0} is a method name.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";SystemIAsyncDisposablePackageNote" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[The System.IAsyncDisposable interface is defined in the Microsoft.Bcl.AsyncInterfaces NuGet package.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Интерфейс System.IAsyncDisposable определен в пакете NuGet Microsoft.Bcl.AsyncInterfaces.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -32,64 +33,73 @@
           <Val><![CDATA[Use await instead]]></Val>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["await" is a C# keyword and should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD001_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Дождитесь, когда JoinableTaskFactory.SwitchToMainThreadAsync() переключится на поток пользовательского интерфейса, и не используйте API, которые могут вызывать взаимоблокировки или требуют указания приоритета.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD001_Title" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid legacy thread switching APIs]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Избегайте использования устаревших API переключения потоков]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA[thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD002_CodeFix_Await_Title" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Use await instead]]></Val>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["await" is a C# keyword and should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD002_MessageFormat" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or JoinableTaskFactory.Run instead.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Синхронное ожидание задач или объектов awaiter может приводить к взаимоблокировкам. Используйте вместо этого await или JoinableTaskFactory.Run.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["await" is a C# keyword and should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD002_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid problematic synchronous waits]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Избегание проблемных синхронных ожиданий]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD003_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid awaiting or returning a Task representing work that was not started within your context as that can lead to deadlocks.]D;]A;Start the work within this context, or use JoinableTaskFactory.RunAsync to start the task and await the returned JoinableTask instead.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Не рекомендуется ожидать или возвращать задачу, представляющую работу, которая не была запущена в вашем контексте, так как это может привести к взаимоблокировке.]D;]A;Запустите работу в этом контексте или используйте JoinableTaskFactory.RunAsync, чтобы запустить задачу, и ожидайте возвращаемую задачу JoinableTask.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD003_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid awaiting foreign Tasks]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Не рекомендуется ожидать внешние задачи]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD004_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Calls to JoinableTaskFactory.SwitchToMainThreadAsync() must be awaited.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[К вызовам JoinableTaskFactory.SwitchToMainThreadAsync() нужно применять оператор await.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -98,37 +108,40 @@
           <Val><![CDATA[Await SwitchToMainThreadAsync]]></Val>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA[Do not translate either of these. The first is a keyword, the second is a method name.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD010_MessageFormat_Async" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Accessing "{0}" should only be done on the main thread. Await JoinableTaskFactory.SwitchToMainThreadAsync() first.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Доступ к "{0}" должен осуществляться только в основном потоке. Сначала примените await к JoinableTaskFactory.SwitchToMainThreadAsync().]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA[{0} is a type or member name.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD010_MessageFormat_Sync" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Accessing "{0}" should only be done on the main thread. Call {1}() first.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Доступ к "{0}" должен осуществляться только в основном потоке. Сначала вызовите {1}().]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA[{0} is a type or member name and {1} is the name of a method that throws if not called from the main thread.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD010_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Invoke single-threaded types on Main thread]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Использование однопоточных типов в основном потоке]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD011_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Lazy<Task<T>>.Value can deadlock.]D;]A;Use AsyncLazy<T> instead.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Lazy<Task<T>>.Value может попадать во взаимоблокировку.]D;]A;Используйте вместо этого AsyncLazy<T>.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -141,96 +154,126 @@
       <Item ItemId=";VSTHRD011b_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Invoking or blocking on async code in a Lazy<T> value factory can deadlock.]D;]A;Use AsyncLazy<T> instead.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Вызов и блокировка асинхронного кода в фабрике значений Lazy<T> могут попадать во взаимоблокировку.]D;]A;Используйте вместо этого AsyncLazy<T>.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD012_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Укажите экземпляр JoinableTaskFactory в этом вызове (или другой перегрузке), чтобы избежать взаимоблокировки с основным потоком.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD012_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Provide JoinableTaskFactory where allowed]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Указывайте JoinableTaskFactory, где это возможно]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD100_CodeFix_Title" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Change return type to Task]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Изменение типа возвращаемого значения на Task]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA[Task is a type name and should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD100_MessageFormat" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid "async void" methods, because any exceptions not handled by the method will crash the process.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Избегайте методов "async void", так как любые исключения, не обработанные этим методом, вызовут сбой процесса.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["async void" is a pair of C# keywords. Do not translate them.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD100_Title" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid async void methods]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Избегание методов async void]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["async void" is a pair of C# keywords. Do not translate them.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD101_MessageFormat" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid using async lambda for a void returning delegate type, because any exceptions not handled by the delegate will crash the process.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Не используйте лямбда-выражения async в типах делегатов, которые возвращают void, так как исключения, не обработанные делегатом, вызовут сбой процесса.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["void" is a C# keyword and should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD101_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid unsupported async delegates]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Избегание неподдерживаемых делегатов async]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD102_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Limit use of synchronously blocking method calls such as JoinableTaskFactory.Run or Task.Result to public entrypoint members where you must be synchronous. Using it for internal members can needlessly add synchronous frames between asynchronous frames, leading to threadpool exhaustion.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Разрешите использовать вызовы методов синхронной блокировки, такие как JoinableTaskFactory.Run или Task.Result, только элементам общедоступных точек входа, где требуется синхронизация. Если их будут использовать внутренние элементы, между асинхронными фреймами могут быть добавлены лишние синхронные фреймы, что приведет к нехватке ресурсов в пуле потока.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD102_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Implement internal logic asynchronously]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Реализация внутренней логики асинхронно]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD103_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[{0} synchronously blocks. Await {1} instead.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[{0} синхронно блокирует. Вместо этого используйте Await {1}.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD103_MessageFormat_UseAwaitInstead" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[{0} synchronously blocks. Use await instead.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[{0} синхронно блокирует. Вместо этого используйте await.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD103_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Call async methods when in an async method]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Вызов асинхронных методов в методе async]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD104_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Expose an async version of this method that does not synchronously block. Then simplify this method to call that async method within a JoinableTaskFactory.Run delegate.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Предоставьте асинхронную версию этого метода, которая не использует синхронную блокировку. Затем упростите этот метод, вызывая асинхронную версию внутри делегата JoinableTaskFactory.Run.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -243,24 +286,36 @@
       <Item ItemId=";VSTHRD105_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid method overloads that assume TaskScheduler.Current. Use an overload that accepts a TaskScheduler and specify TaskScheduler.Default (or any other) explicitly.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Избегайте перегрузок методов, предполагающих TaskScheduler.Current. Используйте перегрузку, которая допускает TaskScheduler, и явно укажите свойство TaskScheduler.Default (или любое другое).]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD105_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid method overloads that assume TaskScheduler.Current]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Избегание перегрузок методов, предполагающих TaskScheduler.Current]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD106_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[AsyncEventHandler delegates should be invoked via the extension method "TplExtensions.InvokeAsync()" defined in Microsoft.VisualStudio.Threading assembly.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Делегаты AsyncEventHandler следует вызывать при помощи метода расширения "TplExtensions.InvokeAsync()", определенного в сборке Microsoft.VisualStudio.Threading.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD106_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Use InvokeAsync to raise async events]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Использование InvokeAsync для вызова асинхронных событий]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -269,61 +324,76 @@
           <Val><![CDATA[Await using expression]]></Val>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["await" and "using" are C# keywords and should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD107_MessageFormat" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Missing await operator for "using" expression.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Отсутствует оператор await для выражения "using".]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["await" and "using" are C# keywords and should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD107_Title" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Await Task within using expression]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Задача await в выражении "using"]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["await Task" is a C# compound term, and "using" is a C# keyword. These should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD108_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Thread affinity checks should be unconditional.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Проверки сходства потоков должны быть безусловными.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD108_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Assert thread affinity unconditionally]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Утверждайте сходства потоков безусловно]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD109_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid throwing when not on the main thread while in an async or Task-returning method. Switch to the thread required instead.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Избегайте возникновения исключений в потоках, кроме основного, в асинхронном методе или методе, возвращающем Task. Вместо этого переключитесь на нужный поток.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD109_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Switch instead of assert in async methods]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Параметр вместо оператора assert в асинхронных методах]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD110_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Observe the awaitable result of this method call by awaiting it, assigning to a variable, or passing it to another method.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Чтобы получить результат, поддерживающий await для этого вызова метода, примените к нему оператор await, назначьте его переменной или передайте в другой метод.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD110_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Observe result of async calls]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Просмотр результатов асинхронных вызовов]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -332,46 +402,43 @@
           <Val><![CDATA[Add .ConfigureAwait(false)]]></Val>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA[".ConfigureAwait(false)" should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD111_CodeFix_True_Title" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Add .ConfigureAwait(true)]]></Val>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA[".ConfigureAwait(true)" should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD111_MessageFormat" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Add .ConfigureAwait(bool) to your await expression.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Добавьте .ConfigureAwait(bool) в свое выражение await.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA[".ConfigureAwait(bool)" and "await" should NOT be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD111_Title" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Use ConfigureAwait(bool)]]></Val>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["ConfigureAwait(bool)" is a reference and should NOT be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD112_CodeFix_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Add implementation of System.IAsyncDisposable.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Добавление реализации System.IAsyncDisposable.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD112_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Implement the System.IAsyncDisposable interface when implementing the obsolete Microsoft.VisualStudio.Threading.IAsyncDisposable interface.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Реализуйте интерфейс System.IAsyncDisposable при реализации устаревшего интерфейса Microsoft.VisualStudio.Threading.IAsyncDisposable.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -384,54 +451,63 @@
       <Item ItemId=";VSTHRD113_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Add a check for System.IAsyncDisposable in the same code block that checks for Microsoft.VisualStudio.Threading.IAsyncDisposable that behaves similarly.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Добавьте проверку для System.IAsyncDisposable в том же блоке кода, который проверяет аналогично работающий Microsoft.VisualStudio.Threading.IAsyncDisposable.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD113_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Check for System.IAsyncDisposable]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Проверка System.IAsyncDisposable]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD114_CodeFix_CompletedTask" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Use 'Task.CompletedTask' instead]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Вместо этого используйте "Task.CompletedTask".]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["Task.CompletedTask" should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD114_CodeFix_FromResult" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Use 'Task.FromResult' instead]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Вместо этого используйте "Task.FromResult".]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["Task.FromResult" should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD114_MessageFormat" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid returning null from a Task-returning method.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Не возвращайте значение NULL из метода, возвращающего тип Task.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA[Task is a type name and should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD114_Title" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid returning a null Task]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Не возвращайте тип Task со значением NULL]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA[Task is a type name and should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD200_AddAsync_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Use "Async" suffix in names of methods that return an awaitable type.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Используйте суффикс "Async" в именах методов, которые возвращают тип, поддерживающий ожидание.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -440,19 +516,22 @@
           <Val><![CDATA[Rename to {0}]]></Val>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA[{0} is a method name.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD200_RemoveAsync_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Avoid "Async" suffix in names of methods that do not return an awaitable type.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Старайтесь не использовать суффикс "Async" в именах методов, которые не возвращают тип, поддерживающий ожидание.]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD200_Title" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Use "Async" suffix for async methods]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Использование суффикса "Async" в асинхронных методах]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -461,27 +540,24 @@
           <Val><![CDATA[Call ThrowIfCancellationRequested()]]></Val>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["ThrowIfCancellationRequested" is a method name and should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD201_MessageFormat" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Check for cancellation after calling SwitchToMainThreadAsync(CancellationToken).]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Проверить отмену после вызова SwitchToMainThreadAsync(CancellationToken).]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["SwitchToMainThreadAsync" is a method name and should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
       <Item ItemId=";VSTHRD201_Title" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Check cancellation after SwitchToMainThreadAsync]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Проверить отмену после вызова SwitchToMainThreadAsync]]></Val>
+          </Tgt>
         </Str>
         <Disp Icon="Str" />
-        <Cmts>
-          <Cmt Name="RCCX"><![CDATA["SwitchToMainThreadAsync" is a method name and should not be translated.]]></Cmt>
-        </Cmts>
       </Item>
     </Item>
   </Item>
@@ -527,4 +603,4 @@
   <Item ItemId=";Version" ItemType="8" PsrId="211" Leaf="true">
     <Disp Icon="Expand" Expand="true" Disp="true" LocTbl="false" />
   </Item>
-<Settings Name="@vsLocTools@\default.lss" Type="Lss" /></LCX>
+</LCX>
