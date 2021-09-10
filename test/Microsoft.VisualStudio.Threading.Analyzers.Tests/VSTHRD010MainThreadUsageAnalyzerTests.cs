@@ -1630,6 +1630,39 @@ class A
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 
+        [Fact]
+        public async Task Events()
+        {
+            var test = @"
+namespace TestNS
+{
+    interface SomeInterface
+    {
+        event System.Action UIEventName;
+    }
+}
+
+class A
+{
+    void Handler()
+    {
+    }
+
+    void Test(TestNS.SomeInterface i)
+    {
+        i.UIEventName += this.Handler;
+        i.UIEventName -= this.Handler;
+    }
+}
+";
+            DiagnosticResult[] expected =
+            {
+                Verify.Diagnostic(DescriptorSync).WithSpan(18, 11, 18, 22).WithArguments("SomeInterface", "Test.VerifyOnUIThread"),
+                Verify.Diagnostic(DescriptorSync).WithSpan(19, 11, 19, 22).WithArguments("SomeInterface", "Test.VerifyOnUIThread"),
+            };
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
         /// <summary>
         /// Field initializers should never have thread affinity since the thread cannot be enforced before the code is executed,
         /// since initializers run before the user-defined constructor.
