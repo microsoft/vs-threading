@@ -22,7 +22,7 @@ public abstract class TestBase
     /// The maximum length of time to wait for something that we expect will happen
     /// within the timeout.
     /// </summary>
-    protected static readonly TimeSpan UnexpectedTimeout = Debugger.IsAttached ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(5);
+    protected static readonly TimeSpan UnexpectedTimeout = Debugger.IsAttached ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(10);
 
     /// <summary>
     /// The maximum length of time to wait for something that we do not expect will happen
