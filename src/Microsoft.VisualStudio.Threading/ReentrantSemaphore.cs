@@ -688,8 +688,8 @@ namespace Microsoft.VisualStudio.Threading
                 try
                 {
                     bool resumeOnMainThread = this.IsJoinableTaskAware(out _, out JoinableTaskCollection? joinableTaskCollection)
-                    ? joinableTaskCollection.Context.IsOnMainThread
-                    : false;
+                        ? joinableTaskCollection.Context.IsOnMainThread
+                        : false;
                     bool mustYield = false;
                     if (reentrantStack.Count == 0)
                     {
