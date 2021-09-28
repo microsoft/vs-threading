@@ -193,6 +193,7 @@ namespace Microsoft.VisualStudio.Threading
                             head.Value.Trigger.TrySetException(new ObjectDisposedException(this.GetType().FullName));
                             waitersCopy.Add(head.Value);
                             this.waiters.RemoveFirst();
+                            head.Value.Node = null;
                         }
                     }
 
