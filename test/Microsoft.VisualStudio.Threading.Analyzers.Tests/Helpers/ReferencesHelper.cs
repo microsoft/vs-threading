@@ -17,9 +17,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 
         internal static readonly ImmutableArray<string> VSSDKPackageReferences = ImmutableArray.Create(new string[]
         {
-            "Microsoft.VisualStudio.Shell.Interop.dll",
-            "Microsoft.VisualStudio.Shell.Interop.11.0.dll",
-            "Microsoft.VisualStudio.Shell.Interop.14.0.DesignTime.dll",
             "Microsoft.VisualStudio.Shell.Framework.dll",
             "Microsoft.VisualStudio.Shell.15.0.dll",
         });

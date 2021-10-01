@@ -1265,7 +1265,7 @@ using Task = System.Threading.Tasks.Task;
 
 class Test : AsyncPackage {
     Microsoft.VisualStudio.Shell.IAsyncServiceProvider asp;
-    Microsoft.VisualStudio.Shell.Interop.IAsyncServiceProvider asp2;
+    Microsoft.VisualStudio.Shell.Interop.COMAsyncServiceProvider.IAsyncServiceProvider asp2;
 
     async Task Foo() {
         Guid guid = Guid.Empty;
@@ -1291,7 +1291,7 @@ using Task = System.Threading.Tasks.Task;
 
 class Test : AsyncPackage {
     Microsoft.VisualStudio.Shell.IAsyncServiceProvider asp;
-    Microsoft.VisualStudio.Shell.Interop.IAsyncServiceProvider asp2;
+    Microsoft.VisualStudio.Shell.Interop.COMAsyncServiceProvider.IAsyncServiceProvider asp2;
 
     async Task Foo() {
         Guid guid = Guid.Empty;
@@ -1310,7 +1310,7 @@ using Task = System.Threading.Tasks.Task;
 
 class Test : AsyncPackage {
     Microsoft.VisualStudio.Shell.IAsyncServiceProvider asp;
-    Microsoft.VisualStudio.Shell.Interop.IAsyncServiceProvider asp2;
+    Microsoft.VisualStudio.Shell.Interop.COMAsyncServiceProvider.IAsyncServiceProvider asp2;
 
     async Task Foo() {
         await JoinableTaskFactory.SwitchToMainThreadAsync(DisposalToken);
