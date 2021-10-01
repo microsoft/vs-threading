@@ -728,6 +728,7 @@ namespace Microsoft.VisualStudio.Threading
                     ? (object)resource
                     : Tuple.Create(resource, this.service.GetAggregateLockFlags());
 
+                bool joinToExistingTask = false;
                 if (!this.resourcePreparationTasks.TryGetValue(resource, out ResourcePreparationTaskAndValidity preparationTask))
                 {
                     Func<object, Task>? preparationDelegate = forConcurrentUse
@@ -760,14 +761,38 @@ namespace Microsoft.VisualStudio.Threading
                             finalState);
                     }
                 }
+                else
+                {
+                    joinToExistingTask = true;
+                }
 
                 Assumes.NotNull(preparationTask.PreparationTask);
                 this.resourcePreparationTasks[resource] = preparationTask;
 
+                Task computationTask = preparationTask.PreparationTask;
+
+                if (forConcurrentUse && joinToExistingTask)
+                {
+                    return computationTask.ContinueWith(
+                        t =>
+                        {
+                            switch (t.Status)
+                            {
+                                case TaskStatus.Faulted:
+                                case TaskStatus.Canceled:
+                                    t.GetAwaiter().GetResult();
+                                    break;
+                            }
+                        },
+                        cancellationToken,
+                        TaskContinuationOptions.RunContinuationsAsynchronously,
+                        TaskScheduler.Default);
+                }
+
                 // We tack cancellation onto the task that we actually return to the caller.
                 // This doesn't cancel resource preparation, but it does allow the caller to return early
                 // in the event of their own cancellation token being canceled.
-                return preparationTask.PreparationTask.WithCancellation(cancellationToken);
+                return computationTask.WithCancellation(cancellationToken);
             }
 
             /// <summary>

@@ -639,6 +639,41 @@ public class AsyncReaderWriterResourceLockTests : TestBase
             }));
     }
 
+    [Fact]
+    public async Task ResourcePreparedConcurrentlyContinutationWontBlockEachOther()
+    {
+        var resourceTask1 = new TaskCompletionSource<object?>();
+        Task? preparationEnteredTask1 = this.resourceLock.SetPreparationTask(this.resources[1], resourceTask1.Task);
+
+        var task1Blocker = new ManualResetEvent(false);
+
+        var task1 = Task.Run(async delegate
+        {
+            using (AsyncReaderWriterResourceLock<int, Resource>.ResourceReleaser access = await this.resourceLock.ReadLockAsync())
+            {
+                Resource? resource1 = await access.GetResourceAsync(1);
+                task1Blocker.WaitOne();
+            }
+        });
+
+        var task2 = Task.Run(async delegate
+        {
+            using (AsyncReaderWriterResourceLock<int, Resource>.ResourceReleaser access = await this.resourceLock.ReadLockAsync())
+            {
+                Resource? resource2 = await access.GetResourceAsync(1);
+            }
+        });
+
+        await preparationEnteredTask1;
+
+        resourceTask1.SetResult(null);
+
+        await task2;
+
+        task1Blocker.Set();
+        await task1;
+    }
+
     /// <summary>
     /// Verifies that a given resource is only prepared on one thread at a time.
     /// </summary>
