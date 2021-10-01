@@ -776,9 +776,12 @@ namespace Microsoft.VisualStudio.Threading
                     return computationTask.ContinueWith(
                         t =>
                         {
-                            if (t.IsFaulted)
+                            switch (t.Status)
                             {
-                                t.GetAwaiter().GetResult();
+                                case TaskStatus.Faulted:
+                                case TaskStatus.Canceled:
+                                    t.GetAwaiter().GetResult();
+                                    break;
                             }
                         },
                         cancellationToken,
