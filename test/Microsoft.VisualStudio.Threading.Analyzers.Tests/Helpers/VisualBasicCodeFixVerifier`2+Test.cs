@@ -20,15 +20,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
     {
         public class Test : VisualBasicCodeFixTest<TAnalyzer, TCodeFix, XUnitVerifier>
         {
-            private static readonly ImmutableArray<string> VSSDKPackageReferences = ImmutableArray.Create(new string[]
-            {
-                "Microsoft.VisualStudio.Shell.Interop.dll",
-                "Microsoft.VisualStudio.Shell.Interop.11.0.dll",
-                "Microsoft.VisualStudio.Shell.Interop.14.0.DesignTime.dll",
-                "Microsoft.VisualStudio.Shell.Framework.dll",
-                "Microsoft.VisualStudio.Shell.15.0.dll",
-            });
-
             public Test()
             {
                 this.ReferenceAssemblies = ReferencesHelper.DefaultReferences;
@@ -52,7 +43,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
                         project = project.AddMetadataReference(MetadataReference.CreateFromFile(typeof(IOleServiceProvider).Assembly.Location));
 
                         var nugetPackagesFolder = Environment.CurrentDirectory;
-                        foreach (var reference in VisualBasicCodeFixVerifier<TAnalyzer, TCodeFix>.Test.VSSDKPackageReferences)
+                        foreach (var reference in ReferencesHelper.VSSDKPackageReferences)
                         {
                             project = project.AddMetadataReference(MetadataReference.CreateFromFile(Path.Combine(nugetPackagesFolder, reference)));
                         }
