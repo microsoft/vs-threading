@@ -99,7 +99,7 @@ internal static class TestUtilities
         {
             listener.AssertUiEnabled = false;
         }
-#elif NET5_0
+#else
         Trace.Listeners.Clear();
 #endif
 
