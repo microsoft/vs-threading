@@ -774,10 +774,7 @@ namespace Microsoft.VisualStudio.Threading
                 if (forConcurrentUse && joinToExistingTask && !computationTask.IsCompleted && !cancellationToken.IsCancellationRequested)
                 {
                     return computationTask.ContinueWith(
-                        t =>
-                        {
-                            t.GetAwaiter().GetResult();
-                        },
+                        t => t.GetAwaiter().GetResult(),
                         cancellationToken,
                         TaskContinuationOptions.RunContinuationsAsynchronously,
                         TaskScheduler.Default);
