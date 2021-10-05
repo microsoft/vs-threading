@@ -771,7 +771,7 @@ namespace Microsoft.VisualStudio.Threading
 
                 Task computationTask = preparationTask.PreparationTask;
 
-                if (forConcurrentUse && joinToExistingTask && !computationTask.IsCompleted)
+                if (forConcurrentUse && joinToExistingTask && !computationTask.IsCompleted && !cancellationToken.IsCancellationRequested)
                 {
                     return computationTask.ContinueWith(
                         t =>
