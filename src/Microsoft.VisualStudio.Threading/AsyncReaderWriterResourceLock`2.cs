@@ -660,9 +660,6 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         this.SetResourceAsAccessed(resource);
 
-                        // We can't currently use the caller's cancellation token for this task because
-                        // this task may be shared with others or call this method later, and we wouldn't
-                        // want their requests to be cancelled as a result of this first caller cancelling.
                         preparationTask = this.PrepareResourceAsync(resource, cancellationToken);
                     }
 
@@ -740,6 +737,9 @@ namespace Microsoft.VisualStudio.Threading
                     // Let's also hide the ARWL from the delegate if this is a shared lock request.
                     using (forConcurrentUse ? this.service.HideLocks() : default(Suppression))
                     {
+                        // We can't currently use the caller's cancellation token for this task because
+                        // this task may be shared with others or call this method later, and we wouldn't
+                        // want their requests to be cancelled as a result of this first caller cancelling.
                         preparationTask = new ResourcePreparationTaskAndValidity(
                             Task.Factory.StartNew(NullableHelpers.AsNullableArgFunc(preparationDelegate), stateObject, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap(),
                             finalState);
@@ -771,19 +771,10 @@ namespace Microsoft.VisualStudio.Threading
 
                 Task computationTask = preparationTask.PreparationTask;
 
-                if (forConcurrentUse && joinToExistingTask)
+                if (forConcurrentUse && joinToExistingTask && !computationTask.IsCompleted && !cancellationToken.IsCancellationRequested)
                 {
                     return computationTask.ContinueWith(
-                        t =>
-                        {
-                            switch (t.Status)
-                            {
-                                case TaskStatus.Faulted:
-                                case TaskStatus.Canceled:
-                                    t.GetAwaiter().GetResult();
-                                    break;
-                            }
-                        },
+                        t => t.GetAwaiter().GetResult(),
                         cancellationToken,
                         TaskContinuationOptions.RunContinuationsAsynchronously,
                         TaskScheduler.Default);
