@@ -6,12 +6,11 @@ namespace Microsoft.VisualStudio.Threading
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Runtime.CompilerServices;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.VisualStudio.Threading;
 
     /// <summary>
     /// A non-blocking lock that allows concurrent access, exclusive access, or concurrent with upgradeability to exclusive access,
@@ -494,7 +493,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// A map of resources to the tasks that most recently began evaluating them.
             /// </summary>
-            private WeakKeyDictionary<TResource, ResourcePreparationTaskAndValidity> resourcePreparationTasks = new WeakKeyDictionary<TResource, ResourcePreparationTaskAndValidity>(capacity: 2);
+            private WeakKeyDictionary<TResource, ResourcePreparationTaskState> resourcePreparationStates = new WeakKeyDictionary<TResource, ResourcePreparationTaskState>(capacity: 2);
 
             /// <summary>
             /// Initializes a new instance of the <see cref="Helper"/> class.
@@ -584,7 +583,7 @@ namespace Microsoft.VisualStudio.Threading
                 {
                     if (ambientLock.HasWriteLock || ambientLock.HasUpgradeableReadLock)
                     {
-                        foreach (KeyValuePair<TResource, AsyncReaderWriterResourceLock<TMoniker, TResource>.Helper.ResourcePreparationTaskAndValidity> resource in this.resourcePreparationTasks)
+                        foreach (KeyValuePair<TResource, AsyncReaderWriterResourceLock<TMoniker, TResource>.Helper.ResourcePreparationTaskState> resource in this.resourcePreparationStates)
                         {
                             if (resourceCheck(resource.Key, state))
                             {
@@ -673,7 +672,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             internal void SetAllResourcesToUnknownState()
             {
-                this.SetUnknownResourceState(this.resourcePreparationTasks.Select(rp => rp.Key).ToList());
+                this.SetUnknownResourceState(this.resourcePreparationStates.Select(rp => rp.Key).ToList());
             }
 
             /// <summary>
@@ -685,10 +684,11 @@ namespace Microsoft.VisualStudio.Threading
 
                 lock (this.service.SyncObject)
                 {
-                    this.resourcePreparationTasks.TryGetValue(resource, out ResourcePreparationTaskAndValidity previousState);
-                    this.resourcePreparationTasks[resource] = new ResourcePreparationTaskAndValidity(
-                        previousState.PreparationTask ?? Task.CompletedTask, // preserve the original task if it exists in case it's not finished
-                        ResourceState.Unknown);
+                    this.resourcePreparationStates.TryGetValue(resource, out ResourcePreparationTaskState? previousState);
+                    this.resourcePreparationStates[resource] = ResourcePreparationTaskState.Create(
+                        _ => previousState?.InnerTask ?? Task.CompletedTask,
+                        ResourceState.Unknown,
+                        CancellationToken.None).PreparationState;
                 }
             }
 
@@ -725,8 +725,9 @@ namespace Microsoft.VisualStudio.Threading
                     ? (object)resource
                     : Tuple.Create(resource, this.service.GetAggregateLockFlags());
 
-                bool joinToExistingTask = false;
-                if (!this.resourcePreparationTasks.TryGetValue(resource, out ResourcePreparationTaskAndValidity preparationTask))
+                Task? preparationTask = null;
+
+                if (!this.resourcePreparationStates.TryGetValue(resource, out ResourcePreparationTaskState? preparationState))
                 {
                     Func<object, Task>? preparationDelegate = forConcurrentUse
                         ? this.prepareResourceConcurrentDelegate
@@ -740,12 +741,13 @@ namespace Microsoft.VisualStudio.Threading
                         // We can't currently use the caller's cancellation token for this task because
                         // this task may be shared with others or call this method later, and we wouldn't
                         // want their requests to be cancelled as a result of this first caller cancelling.
-                        preparationTask = new ResourcePreparationTaskAndValidity(
-                            Task.Factory.StartNew(NullableHelpers.AsNullableArgFunc(preparationDelegate), stateObject, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap(),
-                            finalState);
+                        (preparationState, preparationTask) = ResourcePreparationTaskState.Create(
+                            combinedCancellationToken => Task.Factory.StartNew(NullableHelpers.AsNullableArgFunc(preparationDelegate), stateObject, combinedCancellationToken, TaskCreationOptions.None, TaskScheduler.Default).Unwrap(),
+                            finalState,
+                            cancellationToken);
                     }
                 }
-                else if (preparationTask.State != finalState || preparationTask.PreparationTask.IsFaulted)
+                else if (preparationState.State != finalState || preparationState.InnerTask.IsFaulted || !preparationState.TryJoinPrepationTask(out preparationTask, cancellationToken))
                 {
                     Func<Task, object, Task>? preparationDelegate = forConcurrentUse
                         ? this.prepareResourceConcurrentContinuationDelegate
@@ -756,34 +758,17 @@ namespace Microsoft.VisualStudio.Threading
                     // Let's also hide the ARWL from the delegate if this is a shared lock request.
                     using (forConcurrentUse ? this.service.HideLocks() : default(Suppression))
                     {
-                        preparationTask = new ResourcePreparationTaskAndValidity(
-                            preparationTask.PreparationTask.ContinueWith(preparationDelegate!, stateObject, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap(),
-                            finalState);
+                        (preparationState, preparationTask) = ResourcePreparationTaskState.Create(
+                            combinedCancellationToken => preparationState.InnerTask.ContinueWith(preparationDelegate!, stateObject, combinedCancellationToken, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap(),
+                            finalState,
+                            cancellationToken);
                     }
                 }
-                else
-                {
-                    joinToExistingTask = true;
-                }
 
-                Assumes.NotNull(preparationTask.PreparationTask);
-                this.resourcePreparationTasks[resource] = preparationTask;
+                Assumes.NotNull(preparationState);
+                this.resourcePreparationStates[resource] = preparationState;
 
-                Task computationTask = preparationTask.PreparationTask;
-
-                if (forConcurrentUse && joinToExistingTask && !computationTask.IsCompleted && !cancellationToken.IsCancellationRequested)
-                {
-                    return computationTask.ContinueWith(
-                        t => t.GetAwaiter().GetResult(),
-                        cancellationToken,
-                        TaskContinuationOptions.RunContinuationsAsynchronously,
-                        TaskScheduler.Default);
-                }
-
-                // We tack cancellation onto the task that we actually return to the caller.
-                // This doesn't cancel resource preparation, but it does allow the caller to return early
-                // in the event of their own cancellation token being canceled.
-                return computationTask.WithCancellation(cancellationToken);
+                return preparationTask;
             }
 
             /// <summary>
@@ -806,28 +791,47 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Tracks a task that prepares a resource for either concurrent or exclusive use.
             /// </summary>
-            private readonly struct ResourcePreparationTaskAndValidity
+            private class ResourcePreparationTaskState : CancellableJoinComputation
             {
                 /// <summary>
-                /// Initializes a new instance of the <see cref="ResourcePreparationTaskAndValidity"/> struct.
+                /// Initializes a new instance of the <see cref="ResourcePreparationTaskState"/> class.
                 /// </summary>
-                internal ResourcePreparationTaskAndValidity(Task preparationTask, ResourceState finalState)
-                    : this()
+                internal ResourcePreparationTaskState(Func<CancellationToken, Task> taskCreation, ResourceState finalState, bool canBeCancelled)
+                    : base(taskCreation, canBeCancelled)
                 {
-                    Requires.NotNull(preparationTask, nameof(preparationTask));
-                    this.PreparationTask = preparationTask;
                     this.State = finalState;
                 }
 
                 /// <summary>
-                /// Gets the task that is preparing the resource.
-                /// </summary>
-                internal Task PreparationTask { get; }
-
-                /// <summary>
-                /// Gets the state the resource will be in when <see cref="PreparationTask"/> has completed.
+                /// Gets the state the resource will be in when inner task has completed.
                 /// </summary>
                 internal ResourceState State { get; }
+
+                /// <summary>
+                /// Creates a task to prepare the source and returns it with <see cref="ResourcePreparationTaskState"/>.
+                /// </summary>
+                /// <param name="taskCreation">A callback method to create the preparation task.</param>
+                /// <param name="finalState">The final resource state when the preparation is done.</param>
+                /// <param name="cancellationToken">A cancellation token to abort the preparation task.</param>
+                /// <returns>The preparation task and its status to be used to join more waiting tasks later.</returns>
+                internal static (ResourcePreparationTaskState PreparationState, Task InitialTask) Create(Func<CancellationToken, Task> taskCreation, ResourceState finalState, CancellationToken cancellationToken)
+                {
+                    var preparationState = new ResourcePreparationTaskState(taskCreation, finalState, cancellationToken.CanBeCanceled);
+                    Assumes.True(preparationState.TryJoinComputation(isInitialTask: true, out Task? initialTask, cancellationToken));
+
+                    return (preparationState, initialTask);
+                }
+
+                /// <summary>
+                /// Try to join an existing preparation task.
+                /// </summary>
+                /// <param name="task">The new waiting task to be compeleted when the resource preparation is done.</param>
+                /// <param name="cancellationToken">A cancellation token to abandone the new waiting task.</param>
+                /// <returns>True if it joins sucessfully, it return false, if the current task has been cancelled.</returns>
+                internal bool TryJoinPrepationTask([NotNullWhen(true)] out Task? task, CancellationToken cancellationToken)
+                {
+                    return this.TryJoinComputation(isInitialTask: false, out task, cancellationToken);
+                }
             }
         }
     }
