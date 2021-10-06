@@ -141,8 +141,6 @@ namespace Microsoft.VisualStudio.Threading
                 return true;
             }
 
-            Assumes.NotNull(this.joinedWaitingList);
-
             if (cancellationToken.IsCancellationRequested)
             {
                 if (isInitialTask)
@@ -206,8 +204,14 @@ namespace Microsoft.VisualStudio.Threading
 
                         task = this.JoinNotCancellableTaskAsync(isInitialTask, CancellationToken.None);
                     }
+                    else if (!this.isCancellationAllowed)
+                    {
+                        task = this.JoinNotCancellableTaskAsync(isInitialTask, cancellationToken);
+                    }
                     else
                     {
+                        Assumes.NotNull(this.joinedWaitingList);
+
                         var status = new WaitingCancellationStatus(this, cancellationToken);
 
                         this.joinedWaitingList.Add(status);
