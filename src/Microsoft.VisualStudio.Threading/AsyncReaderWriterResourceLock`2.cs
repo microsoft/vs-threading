@@ -504,17 +504,28 @@ namespace Microsoft.VisualStudio.Threading
                 Requires.NotNull(service, nameof(service));
 
                 this.service = service;
-                this.prepareResourceConcurrentDelegate = state => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state, CancellationToken.None);
+                this.prepareResourceConcurrentDelegate = state =>
+                {
+                    var tuple = (Tuple<TResource, CancellationToken>)state;
+                    return this.service.PrepareResourceForConcurrentAccessAsync(tuple.Item1, tuple.Item2);
+                };
+
                 this.prepareResourceExclusiveDelegate = state =>
                 {
-                    var tuple = (Tuple<TResource, LockFlags>)state;
-                    return this.service.PrepareResourceForExclusiveAccessAsync(tuple.Item1, tuple.Item2, CancellationToken.None);
+                    var tuple = (Tuple<TResource, LockFlags, CancellationToken>)state;
+                    return this.service.PrepareResourceForExclusiveAccessAsync(tuple.Item1, tuple.Item2, tuple.Item3);
                 };
-                this.prepareResourceConcurrentContinuationDelegate = (prev, state) => this.service.PrepareResourceForConcurrentAccessAsync((TResource)state, CancellationToken.None);
+
+                this.prepareResourceConcurrentContinuationDelegate = (prev, state) =>
+                {
+                    var tuple = (Tuple<TResource, CancellationToken>)state;
+                    return this.service.PrepareResourceForConcurrentAccessAsync(tuple.Item1, tuple.Item2);
+                };
+
                 this.prepareResourceExclusiveContinuationDelegate = (prev, state) =>
                 {
-                    var tuple = (Tuple<TResource, LockFlags>)state;
-                    return this.service.PrepareResourceForExclusiveAccessAsync(tuple.Item1, tuple.Item2, CancellationToken.None);
+                    var tuple = (Tuple<TResource, LockFlags, CancellationToken>)state;
+                    return this.service.PrepareResourceForExclusiveAccessAsync(tuple.Item1, tuple.Item2, tuple.Item3);
                 };
             }
 
@@ -721,9 +732,6 @@ namespace Microsoft.VisualStudio.Threading
                 // as that can cause premature starting of the next task in the chain.
                 bool forConcurrentUse = forcePrepareConcurrent || !this.service.IsWriteLockHeld;
                 AsyncReaderWriterResourceLock<TMoniker, TResource>.Helper.ResourceState finalState = forConcurrentUse ? ResourceState.Concurrent : ResourceState.Exclusive;
-                object stateObject = forConcurrentUse
-                    ? (object)resource
-                    : Tuple.Create(resource, this.service.GetAggregateLockFlags());
 
                 Task? preparationTask = null;
 
@@ -742,7 +750,12 @@ namespace Microsoft.VisualStudio.Threading
                         // this task may be shared with others or call this method later, and we wouldn't
                         // want their requests to be cancelled as a result of this first caller cancelling.
                         (preparationState, preparationTask) = ResourcePreparationTaskState.Create(
-                            combinedCancellationToken => Task.Factory.StartNew(NullableHelpers.AsNullableArgFunc(preparationDelegate), stateObject, combinedCancellationToken, TaskCreationOptions.None, TaskScheduler.Default).Unwrap(),
+                            combinedCancellationToken => Task.Factory.StartNew(
+                                NullableHelpers.AsNullableArgFunc(preparationDelegate),
+                                forConcurrentUse ? Tuple.Create(resource, combinedCancellationToken) : Tuple.Create(resource, this.service.GetAggregateLockFlags(), combinedCancellationToken),
+                                combinedCancellationToken,
+                                TaskCreationOptions.None,
+                                TaskScheduler.Default).Unwrap(),
                             finalState,
                             cancellationToken);
                     }
@@ -759,7 +772,12 @@ namespace Microsoft.VisualStudio.Threading
                     using (forConcurrentUse ? this.service.HideLocks() : default(Suppression))
                     {
                         (preparationState, preparationTask) = ResourcePreparationTaskState.Create(
-                            combinedCancellationToken => preparationState.InnerTask.ContinueWith(preparationDelegate!, stateObject, combinedCancellationToken, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap(),
+                            combinedCancellationToken => preparationState.InnerTask.ContinueWith(
+                                preparationDelegate!,
+                                forConcurrentUse ? Tuple.Create(resource, combinedCancellationToken) : Tuple.Create(resource, this.service.GetAggregateLockFlags(), combinedCancellationToken),
+                                combinedCancellationToken,
+                                TaskContinuationOptions.RunContinuationsAsynchronously,
+                                TaskScheduler.Default).Unwrap(),
                             finalState,
                             cancellationToken);
                     }

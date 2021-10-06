@@ -666,7 +666,8 @@ public class AsyncReaderWriterResourceLockTests : TestBase
 
         await preparationEnteredTask1;
 
-        resourceTask1.SetResult(null);
+        // the test code can block itself.
+        Task.Run(() => resourceTask1.SetResult(null)).Forget();
 
         await task2;
 
@@ -744,7 +745,7 @@ public class AsyncReaderWriterResourceLockTests : TestBase
     public async Task PreparationReservesLock()
     {
         var resourceTask = new TaskCompletionSource<object?>();
-        Task? nowait = this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task);
+        Task<CancellationToken> preparationStartTask = this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task);
 
         Task<Resource> resource;
         using (AsyncReaderWriterResourceLock<int, Resource>.ResourceReleaser access = await this.resourceLock.ReadLockAsync())
@@ -756,6 +757,35 @@ public class AsyncReaderWriterResourceLockTests : TestBase
         Assert.False(resource.IsCompleted);
         resourceTask.SetResult(null);
         await resource;
+
+        Assert.True(preparationStartTask.IsCompleted);
+        Assert.True(!preparationStartTask.Result.CanBeCanceled);
+    }
+
+    [Fact]
+    public async Task PreparationResourceTaskCanBeCancelled()
+    {
+        using (AsyncReaderWriterResourceLock<int, Resource>.ResourceReleaser access = await this.resourceLock.ReadLockAsync())
+        {
+            var resourceTask = new TaskCompletionSource<object?>();
+            Task<CancellationToken> preparationStartTask = this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task);
+
+            var cancellationSource = new CancellationTokenSource();
+            Task<Resource> resource = access.GetResourceAsync(1, cancellationSource.Token);
+
+            Assert.False(resource.IsCompleted, "ResourceTask should still be pending");
+            CancellationToken token = await preparationStartTask;
+
+            Assert.True(token.CanBeCanceled, "ResourceTask can be cancelled.");
+            Assert.False(token.IsCancellationRequested);
+
+            token.Register(() => resourceTask.TrySetCanceled(token));
+
+            cancellationSource.Cancel();
+
+            await resource.NoThrowAwaitable();
+            Assert.True(resource.IsCanceled, "Resource task should be cancelled.");
+        }
     }
 
     /// <summary>
@@ -1227,7 +1257,7 @@ public class AsyncReaderWriterResourceLockTests : TestBase
     {
         private readonly List<Resource> resources;
 
-        private readonly Dictionary<Resource, Tuple<TaskCompletionSource<object?>, Task>> preparationTasks = new Dictionary<Resource, Tuple<TaskCompletionSource<object?>, Task>>();
+        private readonly Dictionary<Resource, Tuple<TaskCompletionSource<CancellationToken>, Task>> preparationTasks = new Dictionary<Resource, Tuple<TaskCompletionSource<CancellationToken>, Task>>();
 
         private readonly AsyncAutoResetEvent preparationTaskBegun = new AsyncAutoResetEvent();
 
@@ -1253,12 +1283,12 @@ public class AsyncReaderWriterResourceLockTests : TestBase
 
         internal new bool CaptureDiagnostics => base.CaptureDiagnostics;
 
-        internal Task SetPreparationTask(Resource resource, Task task)
+        internal Task<CancellationToken> SetPreparationTask(Resource resource, Task task)
         {
             Requires.NotNull(resource, nameof(resource));
             Requires.NotNull(task, nameof(task));
 
-            var tcs = new TaskCompletionSource<object?>();
+            var tcs = new TaskCompletionSource<CancellationToken>();
             lock (this.preparationTasks)
             {
                 this.preparationTasks[resource] = Tuple.Create(tcs, task);
@@ -1294,7 +1324,7 @@ public class AsyncReaderWriterResourceLockTests : TestBase
             resource.ConcurrentAccessPreparationCount++;
             resource.CurrentState = Resource.State.PreparingConcurrent;
             this.preparationTaskBegun.Set();
-            await this.GetPreparationTask(resource);
+            await this.GetPreparationTask(resource, cancellationToken);
             resource.CurrentState = Resource.State.Concurrent;
             VerboseLog(this.logger, "Preparing resource {0} for concurrent access finished.", this.resources.IndexOf(resource));
         }
@@ -1312,18 +1342,18 @@ public class AsyncReaderWriterResourceLockTests : TestBase
                 resource.ExclusiveAccessPreparationCount++;
                 resource.CurrentState = Resource.State.PreparingExclusive;
                 this.preparationTaskBegun.Set();
-                await this.GetPreparationTask(resource);
+                await this.GetPreparationTask(resource, cancellationToken);
                 resource.CurrentState = Resource.State.Exclusive;
                 VerboseLog(this.logger, "Preparing resource {0} for exclusive access finished.", this.resources.IndexOf(resource));
             }
         }
 
-        private async Task GetPreparationTask(Resource resource)
+        private async Task GetPreparationTask(Resource resource, CancellationToken cancellationToken)
         {
             Assert.True(this.IsWriteLockHeld || !this.IsAnyLockHeld);
             Assert.False(Monitor.IsEntered(this.SyncObject));
 
-            Tuple<TaskCompletionSource<object?>, Task>? tuple;
+            Tuple<TaskCompletionSource<CancellationToken>, Task>? tuple;
             lock (this.preparationTasks)
             {
                 if (this.preparationTasks.TryGetValue(resource, out tuple))
@@ -1334,7 +1364,7 @@ public class AsyncReaderWriterResourceLockTests : TestBase
 
             if (tuple is object)
             {
-                tuple.Item1.SetResult(null); // signal that the preparation method has been entered
+                tuple.Item1.SetResult(cancellationToken); // signal that the preparation method has been entered
                 await tuple.Item2;
             }
 
