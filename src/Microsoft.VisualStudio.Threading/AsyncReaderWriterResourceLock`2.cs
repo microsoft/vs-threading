@@ -486,6 +486,16 @@ namespace Microsoft.VisualStudio.Threading
             private readonly Func<Task, object, Task> prepareResourceExclusiveContinuationDelegate;
 
             /// <summary>
+            /// A reusable delegate that invokes the <see cref="AsyncReaderWriterResourceLock{TMoniker, TResource}.PrepareResourceForConcurrentAccessAsync"/> method.
+            /// </summary>
+            private readonly Func<Task, object, Task> prepareResourceConcurrentContinuationOnPossibleCancelledTaskDelegate;
+
+            /// <summary>
+            /// A reusable delegate that invokes the <see cref="AsyncReaderWriterResourceLock{TMoniker, TResource}.PrepareResourceForExclusiveAccessAsync"/> method.
+            /// </summary>
+            private readonly Func<Task, object, Task> prepareResourceExclusiveContinuationOnPossibleCancelledTaskDelegateDelegate;
+
+            /// <summary>
             /// A collection of all the resources requested within the outermost upgradeable read lock.
             /// </summary>
             private readonly HashSet<TResource> resourcesAcquiredWithinUpgradeableRead = new HashSet<TResource>();
@@ -524,6 +534,28 @@ namespace Microsoft.VisualStudio.Threading
 
                 this.prepareResourceExclusiveContinuationDelegate = (prev, state) =>
                 {
+                    var tuple = (Tuple<TResource, LockFlags, CancellationToken>)state;
+                    return this.service.PrepareResourceForExclusiveAccessAsync(tuple.Item1, tuple.Item2, tuple.Item3);
+                };
+
+                this.prepareResourceConcurrentContinuationOnPossibleCancelledTaskDelegate = (prev, state) =>
+                {
+                    if (!prev.IsFaulted && !prev.IsCanceled)
+                    {
+                        return prev;
+                    }
+
+                    var tuple = (Tuple<TResource, CancellationToken>)state;
+                    return this.service.PrepareResourceForConcurrentAccessAsync(tuple.Item1, tuple.Item2);
+                };
+
+                this.prepareResourceExclusiveContinuationOnPossibleCancelledTaskDelegateDelegate = (prev, state) =>
+                {
+                    if (!prev.IsFaulted && !prev.IsCanceled)
+                    {
+                        return prev;
+                    }
+
                     var tuple = (Tuple<TResource, LockFlags, CancellationToken>)state;
                     return this.service.PrepareResourceForExclusiveAccessAsync(tuple.Item1, tuple.Item2, tuple.Item3);
                 };
@@ -760,26 +792,41 @@ namespace Microsoft.VisualStudio.Threading
                             cancellationToken);
                     }
                 }
-                else if (preparationState.State != finalState || preparationState.InnerTask.IsFaulted || !preparationState.TryJoinPrepationTask(out preparationTask, cancellationToken))
+                else
                 {
-                    Func<Task, object, Task>? preparationDelegate = forConcurrentUse
-                        ? this.prepareResourceConcurrentContinuationDelegate
-                        : this.prepareResourceExclusiveContinuationDelegate;
-
-                    // We kick this off on a new task because we're currently holding a private lock
-                    // and don't want to execute arbitrary code.
-                    // Let's also hide the ARWL from the delegate if this is a shared lock request.
-                    using (forConcurrentUse ? this.service.HideLocks() : default(Suppression))
+                    Func<Task, object, Task>? preparationDelegate = null;
+                    if (preparationState.State != finalState || preparationState.InnerTask.IsFaulted)
                     {
-                        (preparationState, preparationTask) = ResourcePreparationTaskState.Create(
-                            combinedCancellationToken => preparationState.InnerTask.ContinueWith(
-                                preparationDelegate!,
-                                forConcurrentUse ? Tuple.Create(resource, combinedCancellationToken) : Tuple.Create(resource, this.service.GetAggregateLockFlags(), combinedCancellationToken),
-                                combinedCancellationToken,
-                                TaskContinuationOptions.RunContinuationsAsynchronously,
-                                TaskScheduler.Default).Unwrap(),
-                            finalState,
-                            cancellationToken);
+                        preparationDelegate = forConcurrentUse
+                            ? this.prepareResourceConcurrentContinuationDelegate
+                            : this.prepareResourceExclusiveContinuationDelegate;
+                    }
+                    else if (!preparationState.TryJoinPrepationTask(out preparationTask, cancellationToken))
+                    {
+                        preparationDelegate = forConcurrentUse
+                            ? this.prepareResourceConcurrentContinuationOnPossibleCancelledTaskDelegate
+                            : this.prepareResourceExclusiveContinuationOnPossibleCancelledTaskDelegateDelegate;
+                    }
+
+                    if (preparationTask is null)
+                    {
+                        Assumes.NotNull(preparationDelegate);
+
+                        // We kick this off on a new task because we're currently holding a private lock
+                        // and don't want to execute arbitrary code.
+                        // Let's also hide the ARWL from the delegate if this is a shared lock request.
+                        using (forConcurrentUse ? this.service.HideLocks() : default(Suppression))
+                        {
+                            (preparationState, preparationTask) = ResourcePreparationTaskState.Create(
+                                combinedCancellationToken => preparationState.InnerTask.ContinueWith(
+                                    preparationDelegate!,
+                                    forConcurrentUse ? Tuple.Create(resource, combinedCancellationToken) : Tuple.Create(resource, this.service.GetAggregateLockFlags(), combinedCancellationToken),
+                                    CancellationToken.None,
+                                    TaskContinuationOptions.RunContinuationsAsynchronously,
+                                    TaskScheduler.Default).Unwrap(),
+                                finalState,
+                                cancellationToken);
+                        }
                     }
                 }
 

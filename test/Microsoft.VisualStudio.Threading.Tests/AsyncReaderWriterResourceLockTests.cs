@@ -926,6 +926,130 @@ public class AsyncReaderWriterResourceLockTests : TestBase
         }
     }
 
+    [Fact]
+    public async Task PreparationResourcePendingCancelledWontBlockFutureRequest()
+    {
+        using (AsyncReaderWriterResourceLock<int, Resource>.ResourceReleaser access = await this.resourceLock.ReadLockAsync())
+        {
+            var resourceTask = new TaskCompletionSource<object?>();
+            Task<CancellationToken> preparationStartTask = this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task);
+
+            var cancellationSource = new CancellationTokenSource();
+            Task<Resource> resource = access.GetResourceAsync(1, cancellationSource.Token);
+
+            Assert.False(resource.IsCompleted, "ResourceTask should still be pending");
+            CancellationToken token = await preparationStartTask;
+
+            Assert.True(token.CanBeCanceled, "ResourceTask can be cancelled.");
+            Assert.False(token.IsCancellationRequested);
+
+            cancellationSource.Cancel();
+
+            Assert.False(resource.IsCompleted, "ResourceTask should still be pending");
+            Assert.True(token.IsCancellationRequested);
+
+            var secondResourceTask = new TaskCompletionSource<object?>();
+            Task<CancellationToken> preparationStartTask2 = this.resourceLock.SetPreparationTask(this.resources[1], secondResourceTask.Task);
+
+            var cancellationSource2 = new CancellationTokenSource();
+            Task<Resource> resourceTask2 = access.GetResourceAsync(1, cancellationSource2.Token);
+            Assert.False(resourceTask2.IsCompleted, "ResourceTask should still be pending");
+            Assert.False(resource.IsCompleted, "ResourceTask should still be pending");
+
+            secondResourceTask.SetResult(null);
+            Assert.False(resourceTask2.IsCompleted, "ResourceTask should still be pending");
+
+            resourceTask.TrySetCanceled(token);
+            await resource.NoThrowAwaitable();
+            Assert.True(resource.IsCanceled, "Resource task should be cancelled.");
+
+            await resourceTask2;
+        }
+    }
+
+    [Fact]
+    public async Task PreparationResourceNotCancelledStillUsedByFutureRequest()
+    {
+        using (AsyncReaderWriterResourceLock<int, Resource>.ResourceReleaser access = await this.resourceLock.ReadLockAsync())
+        {
+            var resourceTask = new TaskCompletionSource<object?>();
+            Task<CancellationToken> preparationStartTask = this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task);
+
+            var cancellationSource = new CancellationTokenSource();
+            Task<Resource> resource = access.GetResourceAsync(1, cancellationSource.Token);
+
+            Assert.False(resource.IsCompleted, "ResourceTask should still be pending");
+            CancellationToken token = await preparationStartTask;
+
+            Assert.True(token.CanBeCanceled, "ResourceTask can be cancelled.");
+            Assert.False(token.IsCancellationRequested);
+
+            cancellationSource.Cancel();
+
+            Assert.False(resource.IsCompleted, "ResourceTask should still be pending");
+            Assert.True(token.IsCancellationRequested);
+
+            var secondResourceTask = new TaskCompletionSource<object?>();
+            Task<CancellationToken> preparationStartTask2 = this.resourceLock.SetPreparationTask(this.resources[1], secondResourceTask.Task);
+
+            var cancellationSource2 = new CancellationTokenSource();
+            Task<Resource> resourceTask2 = access.GetResourceAsync(1, cancellationSource2.Token);
+            Assert.False(resourceTask2.IsCompleted, "ResourceTask should still be pending");
+            Assert.False(resource.IsCompleted, "ResourceTask should still be pending");
+
+            Assert.False(resourceTask2.IsCompleted, "ResourceTask should still be pending");
+
+            resourceTask.SetResult(null);
+
+            await resource;
+            await resourceTask2;
+        }
+    }
+
+    [Fact]
+    public async Task PreparationResourceCancellationInMiddleWontBlockByFutureRequest()
+    {
+        using (AsyncReaderWriterResourceLock<int, Resource>.ResourceReleaser access = await this.resourceLock.ReadLockAsync())
+        {
+            var resourceTask = new TaskCompletionSource<object?>();
+            Task<CancellationToken> preparationStartTask = this.resourceLock.SetPreparationTask(this.resources[1], resourceTask.Task);
+
+            var cancellationSource = new CancellationTokenSource();
+            Task<Resource> resource = access.GetResourceAsync(1, cancellationSource.Token);
+
+            Assert.False(resource.IsCompleted, "ResourceTask should still be pending");
+            CancellationToken token = await preparationStartTask;
+
+            Assert.True(token.CanBeCanceled, "ResourceTask can be cancelled.");
+            Assert.False(token.IsCancellationRequested);
+
+            cancellationSource.Cancel();
+
+            Assert.False(resource.IsCompleted, "ResourceTask should still be pending");
+            Assert.True(token.IsCancellationRequested);
+
+            var secondResourceTask = new TaskCompletionSource<object?>();
+            Task<CancellationToken> preparationStartTask2 = this.resourceLock.SetPreparationTask(this.resources[1], secondResourceTask.Task);
+
+            var cancellationSource2 = new CancellationTokenSource();
+            Task<Resource> resourceTask2 = access.GetResourceAsync(1, cancellationSource2.Token);
+            Assert.False(resourceTask2.IsCompleted, "ResourceTask should still be pending");
+            Assert.False(resource.IsCompleted, "ResourceTask should still be pending");
+
+            cancellationSource2.Cancel();
+
+            Task<Resource> resourceTask3 = access.GetResourceAsync(1, CancellationToken.None);
+            Assert.False(resourceTask3.IsCompleted, "ResourceTask should still be pending");
+
+            resourceTask.SetResult(null);
+
+            await resource;
+            await resourceTask3;
+
+            await resourceTask2.NoThrowAwaitable();
+        }
+    }
+
     /// <summary>
     /// Verifies the behavior of AsyncReaderWriterResourceLock.SetAllResourcesToUnknownState()
     /// that sets all accessed or not-yet-accessed resources to Unknown state.
