@@ -67,6 +67,7 @@ namespace Microsoft.VisualStudio.Threading
 
             if (allowCancelled)
             {
+                // Note: this continuation is chained asynchronously to prevent it to be inlined when we triggers the cancellation token.
                 this.InnerTask.ContinueWith(
                     (t, s) =>
                     {
@@ -116,7 +117,7 @@ namespace Microsoft.VisualStudio.Threading
                     },
                     this,
                     CancellationToken.None,
-                    TaskContinuationOptions.ExecuteSynchronously,
+                    TaskContinuationOptions.RunContinuationsAsynchronously,
                     TaskScheduler.Default).Forget();
             }
         }
@@ -212,10 +213,23 @@ namespace Microsoft.VisualStudio.Threading
                     {
                         Assumes.NotNull(this.joinedWaitingList);
 
-                        var status = new WaitingCancellationStatus(this, cancellationToken);
+                        WaitingCancellationStatus status;
+
+                        // we need increase the outstanding count before creating WiatingCancellationStatus.
+                        // Under a rare race condition the cancellation token can be trigger with this time frame, and lead OnWaitingTaskCancelled to be called recursively
+                        // within this lock. It would be critical to make sure the outstandingWaitingCount to increase before decreasing there.
+                        this.outstandingWaitingCount++;
+                        try
+                        {
+                            status = new WaitingCancellationStatus(this, cancellationToken);
+                        }
+                        catch
+                        {
+                            this.outstandingWaitingCount--;
+                            throw;
+                        }
 
                         this.joinedWaitingList.Add(status);
-                        this.outstandingWaitingCount++;
 
                         task = status.Task;
                     }
