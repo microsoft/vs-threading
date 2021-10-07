@@ -237,19 +237,28 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns>A task to complete when the computation ends.</returns>
         private Task JoinNotCancellableTaskAsync(bool isInitialTask, CancellationToken cancellationToken)
         {
-            if (!isInitialTask && !this.InnerTask.IsCompleted && !cancellationToken.IsCancellationRequested)
+            if (this.InnerTask.IsCompleted || (isInitialTask && !cancellationToken.CanBeCanceled))
             {
-                return this.InnerTask.ContinueWith(
-                    t => t.GetAwaiter().GetResult(),
-                    cancellationToken,
-                    TaskContinuationOptions.RunContinuationsAsynchronously,
-                    TaskScheduler.Default);
+                // Note: we don't reuse the inner task directly even for second request which is not cancellable.
+                // This is to prevent two task sychorized continuations, which can be blocking each other causing unexpected deadlocks.
+                // Adding an extra async task continuation prevents this problem, because all async continuation will be queued before calling synchronized task continuations,
+                // which are called one by one.
+                return this.InnerTask;
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
             }
 
             // We tack cancellation onto the task that we actually return to the caller.
             // This doesn't cancel resource preparation, but it does allow the caller to return early
             // in the event of their own cancellation token being canceled.
-            return this.InnerTask.WithCancellation(cancellationToken);
+            return this.InnerTask.ContinueWith(
+                t => t.GetAwaiter().GetResult(),
+                cancellationToken,
+                TaskContinuationOptions.RunContinuationsAsynchronously,
+                TaskScheduler.Default);
         }
 
         /// <summary>
