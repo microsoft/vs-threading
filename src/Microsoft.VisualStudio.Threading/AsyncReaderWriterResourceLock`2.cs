@@ -501,7 +501,7 @@ namespace Microsoft.VisualStudio.Threading
             private readonly HashSet<TResource> resourcesAcquiredWithinUpgradeableRead = new HashSet<TResource>();
 
             /// <summary>
-            /// A map of resources to the tasks that most recently began evaluating them.
+            /// A map of resources to the status of tasks that most recently began evaluating them.
             /// </summary>
             private WeakKeyDictionary<TResource, ResourcePreparationTaskState> resourcePreparationStates = new WeakKeyDictionary<TResource, ResourcePreparationTaskState>(capacity: 2);
 

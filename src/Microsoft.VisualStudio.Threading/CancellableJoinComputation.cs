@@ -67,7 +67,7 @@ namespace Microsoft.VisualStudio.Threading
 
             if (allowCancelled)
             {
-                // Note: this continuation is chained asynchronously to prevent it to be inlined when we triggers the cancellation token.
+                // Note: this continuation is chained asynchronously to prevent being inlined when we trigger the combined cancellation token.
                 this.InnerTask.ContinueWith(
                     (t, s) =>
                     {
