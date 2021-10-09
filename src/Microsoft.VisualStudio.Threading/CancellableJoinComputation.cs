@@ -88,31 +88,41 @@ namespace Microsoft.VisualStudio.Threading
 
                         combinedCancellationTokenSource?.Dispose();
 
-                        for (int i = 0; i < allWaitingTasks.Count; i++)
+                        if (t.IsCanceled)
                         {
-                            WaitingCancellationStatus status = allWaitingTasks[i];
-
-                            if (t.IsFaulted)
+                            for (int i = 0; i < allWaitingTasks.Count; i++)
                             {
-                                allWaitingTasks[i].TrySetException(t.Exception!);
-                            }
-                            else if (t.IsCanceled)
-                            {
+                                WaitingCancellationStatus status = allWaitingTasks[i];
                                 if (status.CancellationToken.IsCancellationRequested)
                                 {
-                                    allWaitingTasks[i].TrySetCanceled(status.CancellationToken);
+                                    status.TrySetCanceled(status.CancellationToken);
                                 }
                                 else
                                 {
-                                    allWaitingTasks[i].TrySetCanceled();
+                                    status.TrySetCanceled();
                                 }
-                            }
-                            else
-                            {
-                                allWaitingTasks[i].TrySetResult(true);
-                            }
 
-                            status.Dispose();
+                                status.Dispose();
+                            }
+                        }
+                        else if (t.IsFaulted)
+                        {
+                            System.Collections.ObjectModel.ReadOnlyCollection<Exception> exceptions = t.Exception!.InnerExceptions;
+                            for (int i = 0; i < allWaitingTasks.Count; i++)
+                            {
+                                WaitingCancellationStatus status = allWaitingTasks[i];
+                                status.TrySetException(exceptions);
+                                status.Dispose();
+                            }
+                        }
+                        else
+                        {
+                            for (int i = 0; i < allWaitingTasks.Count; i++)
+                            {
+                                WaitingCancellationStatus status = allWaitingTasks[i];
+                                status.TrySetResult(true);
+                                status.Dispose();
+                            }
                         }
                     },
                     this,
