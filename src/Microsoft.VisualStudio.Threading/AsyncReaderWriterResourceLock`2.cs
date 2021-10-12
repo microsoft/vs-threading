@@ -538,6 +538,8 @@ namespace Microsoft.VisualStudio.Threading
                     return this.service.PrepareResourceForExclusiveAccessAsync(tuple.Item1, tuple.Item2, tuple.Item3);
                 };
 
+                // this delegate is to handle the case that we prepare resource when the previous task might be cancelled.
+                // Because the previous task might not be cancelled, but actually finished. In that case, we will consider the work has done, and there is no need to prepare it again.
                 this.prepareResourceConcurrentContinuationOnPossibleCancelledTaskDelegate = (prev, state) =>
                 {
                     if (!prev.IsFaulted && !prev.IsCanceled)

@@ -50,11 +50,11 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Initializes a new instance of the <see cref="CancellableJoinComputation"/> class.
         /// </summary>
-        /// <param name="taskCreation">A callback to create the task.</param>
+        /// <param name="taskFactory">A callback to create the task.</param>
         /// <param name="allowCancelled">Whether the inner task can be cancelled.</param>
-        internal CancellableJoinComputation(Func<CancellationToken, Task> taskCreation, bool allowCancelled)
+        internal CancellableJoinComputation(Func<CancellationToken, Task> taskFactory, bool allowCancelled)
         {
-            Requires.NotNull(taskCreation, nameof(taskCreation));
+            Requires.NotNull(taskFactory, nameof(taskFactory));
 
             if (allowCancelled)
             {
@@ -63,7 +63,7 @@ namespace Microsoft.VisualStudio.Threading
                 this.joinedWaitingList = new List<WaitingCancellationStatus>(capacity: 2);
             }
 
-            this.InnerTask = taskCreation(this.combinedCancellationTokenSource?.Token ?? CancellationToken.None);
+            this.InnerTask = taskFactory(this.combinedCancellationTokenSource?.Token ?? CancellationToken.None);
 
             if (allowCancelled)
             {
@@ -207,7 +207,7 @@ namespace Microsoft.VisualStudio.Threading
 
                     if (!cancellationToken.CanBeCanceled)
                     {
-                        // A single joined client which doesn't allow cancellation would turn the entire computation not cancallable.
+                        // A single joined client which doesn't allow cancellation would turn the entire computation not cancellable.
                         combinedCancellationTokenSourceToDispose = this.combinedCancellationTokenSource;
                         this.combinedCancellationTokenSource = null;
 
