@@ -189,7 +189,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 using (var evt = new ManualResetEvent(false))
                 {
-                    Action registerAction = delegate
+                    static void DoNotify(SafeRegistryHandle registryKeyHandle, bool watchSubtree, RegistryChangeNotificationFilters change, WaitHandle evt)
                     {
                         int win32Error = NativeMethods.RegNotifyChangeKeyValue(
                             registryKeyHandle,
@@ -201,12 +201,12 @@ namespace Microsoft.VisualStudio.Threading
                         {
                             throw new Win32Exception(win32Error);
                         }
-                    };
+                    }
 
                     if (LightUps.IsWindows8OrLater)
                     {
                         change |= NativeMethods.REG_NOTIFY_THREAD_AGNOSTIC;
-                        registerAction();
+                        DoNotify(registryKeyHandle, watchSubtree, change, evt);
                     }
                     else
                     {
@@ -216,6 +216,7 @@ namespace Microsoft.VisualStudio.Threading
                         // subscription to have begun before we return: for the async part to simply be notification.
                         // This async method we're calling uses .ConfigureAwait(false) internally so this won't
                         // deadlock if we're called on a thread with a single-thread SynchronizationContext.
+                        Action registerAction = () => DoNotify(registryKeyHandle, watchSubtree, change, evt);
                         dedicatedThreadReleaser = DownlevelRegistryWatcherSupport.ExecuteOnDedicatedThreadAsync(registerAction).GetAwaiter().GetResult();
                     }
 
