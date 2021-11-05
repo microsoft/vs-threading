@@ -187,7 +187,7 @@ namespace Microsoft.VisualStudio.Threading
             IDisposable? dedicatedThreadReleaser = null;
             try
             {
-                using (var evt = new ManualResetEventSlim())
+                using (var evt = new ManualResetEvent(false))
                 {
                     Action registerAction = delegate
                     {
@@ -195,7 +195,7 @@ namespace Microsoft.VisualStudio.Threading
                             registryKeyHandle,
                             watchSubtree,
                             change,
-                            evt.WaitHandle.SafeWaitHandle,
+                            evt.SafeWaitHandle,
                             true);
                         if (win32Error != 0)
                         {
@@ -219,7 +219,7 @@ namespace Microsoft.VisualStudio.Threading
                         dedicatedThreadReleaser = DownlevelRegistryWatcherSupport.ExecuteOnDedicatedThreadAsync(registerAction).GetAwaiter().GetResult();
                     }
 
-                    await evt.WaitHandle.ToTask(cancellationToken: cancellationToken).ConfigureAwait(false);
+                    await evt.ToTask(cancellationToken: cancellationToken).ConfigureAwait(false);
                 }
             }
             finally
