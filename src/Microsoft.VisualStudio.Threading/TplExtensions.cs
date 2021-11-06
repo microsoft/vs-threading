@@ -462,39 +462,37 @@ namespace Microsoft.VisualStudio.Threading
             cancellationToken.ThrowIfCancellationRequested();
             var tcs = new TaskCompletionSource<bool>();
 
-            // Arrange that if the caller signals their cancellation token that we complete the task
-            // we return immediately. Because of the continuation we've scheduled on that task, this
-            // will automatically release the wait handle notification as well.
-            CancellationTokenRegistration cancellationRegistration =
-                cancellationToken.Register(
-                    state =>
-                    {
-                        var tuple = (Tuple<TaskCompletionSource<bool>, CancellationToken>)state!;
-                        tuple.Item1.TrySetCanceled(tuple.Item2);
-                    },
-                    Tuple.Create(tcs, cancellationToken));
-
             RegisteredWaitHandle callbackHandle = ThreadPool.RegisterWaitForSingleObject(
                 handle,
-                (state, timedOut) => ((TaskCompletionSource<bool>)state!).TrySetResult(!timedOut),
+                static (state, timedOut) => ((TaskCompletionSource<bool>)state!).TrySetResult(!timedOut),
                 state: tcs,
                 millisecondsTimeOutInterval: timeout,
                 executeOnlyOnce: true);
 
-            // It's important that we guarantee that when the returned task completes (whether cancelled, timed out, or signaled)
-            // that we release all resources.
             if (cancellationToken.CanBeCanceled)
             {
+                // Arrange that if the caller signals their cancellation token that we complete the task
+                // we return immediately. Because of the continuation we've scheduled on that task, this
+                // will automatically release the wait handle notification as well.
+                CancellationTokenRegistration cancellationRegistration =
+                    cancellationToken.Register(
+                        static state =>
+                        {
+                            var tuple = (Tuple<TaskCompletionSource<bool>, CancellationToken>)state!;
+                            tuple.Item1.TrySetCanceled(tuple.Item2);
+                        },
+                        Tuple.Create(tcs, cancellationToken));
+
                 // We have a cancellation token registration and a wait handle registration to release.
-                // Use a tuple as a state object to avoid allocating delegates and closures each time this method is called.
+                // Each time this code executes, allocate one tuple as a state object to reduce from allocating an implicit closure *and* a delegate.
                 tcs.Task.ContinueWith(
-                    (_, state) =>
+                    static (_, state) =>
                     {
                         var tuple = (Tuple<RegisteredWaitHandle, CancellationTokenRegistration>)state!;
                         tuple.Item1.Unregister(null); // release resources for the async callback
                         tuple.Item2.Dispose(); // release memory for cancellation token registration
                     },
-                    Tuple.Create<RegisteredWaitHandle, CancellationTokenRegistration>(callbackHandle, cancellationRegistration),
+                    Tuple.Create(callbackHandle, cancellationRegistration),
                     CancellationToken.None,
                     TaskContinuationOptions.ExecuteSynchronously,
                     TaskScheduler.Default);
@@ -504,7 +502,7 @@ namespace Microsoft.VisualStudio.Threading
                 // Since the cancellation token was the default one, the only thing we need to track is clearing the RegisteredWaitHandle,
                 // so do this such that we allocate as few objects as possible.
                 tcs.Task.ContinueWith(
-                    (_, state) => ((RegisteredWaitHandle)state!).Unregister(null),
+                    static (_, state) => ((RegisteredWaitHandle)state!).Unregister(null),
                     callbackHandle,
                     CancellationToken.None,
                     TaskContinuationOptions.ExecuteSynchronously,
