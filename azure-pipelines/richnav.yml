@@ -1,7 +1,8 @@
 jobs:
 - job: RichCodeNavUpload
   displayName: Rich Code Navigation Upload to Production
-  pool: Hosted Windows 2019 with VS2019
+  pool:
+    vmImage: windows-2022
   steps:
   - template: install-dependencies.yml
   - task: VSBuild@1

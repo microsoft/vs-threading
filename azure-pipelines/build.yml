@@ -1,9 +1,10 @@
 parameters:
 - name: windowsPool
-  type: string
-  default: Hosted Windows 2019 with VS2019
+  type: object
+  default:
+    vmImage: windows-2022
 - name: ShouldSkipOptimize
-  includeMacOS:
+- name: includeMacOS
 
 jobs:
 - job: Windows
