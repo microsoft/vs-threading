@@ -43,8 +43,8 @@ stages:
                   { "label" : "enhancement", "displayName": "Enhancements", "state" : "closed" }
                 ]
 
-- stage: nuget_org
-  displayName: nuget.org
+- stage: push_packages
+  displayName: Push packages
   dependsOn: GitHubRelease
   jobs:
   - deployment: push
@@ -63,9 +63,16 @@ stages:
             inputs:
               versionSpec: 5.x
           - task: NuGetCommand@2
-            displayName: NuGet push
+            displayName: nuget.org
             inputs:
               command: push
               packagesToPush: $(Pipeline.Workspace)/CI/deployables-Windows/NuGet/*.nupkg
               nuGetFeedType: external
               publishFeedCredentials: VisualStudioExtensibility (nuget.org)
+          - task: NuGetCommand@2
+            displayName: WinDBG Gallery
+            inputs:
+              command: push
+              packagesToPush: $(Pipeline.Workspace)/CI/deployables-Windows/WinDBGGallery/*.nupkg
+              nuGetFeedType: external
+              publishFeedCredentials: microsoft package push (andarno)
