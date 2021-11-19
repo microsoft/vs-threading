@@ -1128,7 +1128,9 @@ namespace Microsoft.VisualStudio.Threading
                                     // We cannot issue an upgradeable read lock to folks who have (only) a read lock.
                                     throw new InvalidOperationException(Strings.CannotUpgradeNonUpgradeableLock);
                                 }
+#pragma warning disable CA1508 // Avoid dead conditional code
                                 else if (this.issuedUpgradeableReadLocks.Count == 0 && this.issuedWriteLocks.Count == 0)
+#pragma warning restore CA1508 // Avoid dead conditional code
                                 {
                                     issued = true;
                                 }
