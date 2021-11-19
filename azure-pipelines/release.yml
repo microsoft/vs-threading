@@ -21,7 +21,9 @@ stages:
       runOnce:
         deploy:
           steps:
-          - download: none
+          - download: CI
+            artifact: deployables-Windows
+            displayName: Download deployables-Windows artifact
           - powershell: |
               Write-Host "##vso[build.updatebuildnumber]$(resources.pipeline.CI.runName)"
             displayName: Set pipeline name
@@ -34,6 +36,8 @@ stages:
               tagSource: userSpecifiedTag
               tag: v$(resources.pipeline.CI.runName)
               title: v$(resources.pipeline.CI.runName)
+              assets: |
+                $(Pipeline.Workspace)/CI/deployables-Windows/SosThreadingTools.zip
               isDraft: true # After running this step, visit the new draft release, edit, and publish.
               changeLogCompareToRelease: lastNonDraftRelease
               changeLogType: issueBased

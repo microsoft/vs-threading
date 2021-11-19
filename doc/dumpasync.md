@@ -8,7 +8,7 @@ for an app hang that is waiting for async methods to complete.
 
 Using this tool requires that you download and install [WinDbg][WinDbg], which can attach to a running process or DMP file. The `!dumpasync` extension is only available for WinDbg.
 
-The `!dumpasync` extension itself is exported from the `SosThreadingTools.dll` library, which you can acquire from [our releases page](https://github.com/Microsoft/vs-threading/releases).
+The `!dumpasync` extension itself is exported from the `SosThreadingTools.dll` library, which is included in a zip that you can acquire from [our releases page](https://github.com/Microsoft/vs-threading/releases).
 
 ## Usage
 
