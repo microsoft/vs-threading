@@ -1144,7 +1144,7 @@ namespace Microsoft.VisualStudio.Threading
                         bool foundWork = TryDequeueSelfOrDependencies(this, onMainThread, visited, out work);
 
                         HashSet<IJoinableTaskDependent>? visitedNodes = visited;
-                        if (visitedNodes is not null && this.HasPotentialUnreachableDependents)
+                        if (this.HasPotentialUnreachableDependents)
                         {
                             // We walked the dependencies tree and use this information to update the PotentialUnreachableDependents list.
                             this.PotentialUnreachableDependents!.RemoveWhere(n => visitedNodes.Contains(n));

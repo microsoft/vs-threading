@@ -3,6 +3,7 @@ parameters:
   type: string
   default: Hosted Windows 2019 with VS2019
 - name: ShouldSkipOptimize
+  includeMacOS:
 
 jobs:
 - job: Windows
@@ -32,7 +33,7 @@ jobs:
 - job: Linux
   condition: ne(variables['OptProf'], 'true')
   pool:
-    vmImage: Ubuntu 18.04
+    vmImage: Ubuntu 20.04
   steps:
   - checkout: self
     clean: true
@@ -40,7 +41,7 @@ jobs:
   - template: dotnet.yml
 
 - job: macOS
-  condition: ne(variables['OptProf'], 'true')
+  condition: and(${{ parameters.includeMacOS }}, ne(variables['OptProf'], 'true'))
   pool:
     vmImage: macOS-10.15
   steps:
@@ -55,7 +56,7 @@ jobs:
   - Linux
   - macOS
   pool:
-    vmImage: Ubuntu 18.04
+    vmImage: Ubuntu 20.04
   condition: ne(variables['OptProf'], 'true')
   steps:
   - checkout: self
@@ -64,4 +65,5 @@ jobs:
     parameters:
       initArgs: -NoRestore
   - template: publish-codecoverage.yml
-  - template: publish-deployables.yml
+    parameters:
+      includeMacOS: ${{ parameters.includeMacOS }}
