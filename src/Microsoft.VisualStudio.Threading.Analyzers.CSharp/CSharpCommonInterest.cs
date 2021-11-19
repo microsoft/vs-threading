@@ -139,7 +139,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             foreach (ArgumentSyntax arg in argList.ChildNodes().OfType<ArgumentSyntax>())
             {
                 // `byRef` includes `out` parameters because they are the same as `ref` except don't require initialization first.
-                if (byRef && (arg.RefKindKeyword.Kind() != SyntaxKind.RefKeyword && arg.RefKindKeyword.Kind() != SyntaxKind.OutKeyword))
+                if (byRef && !arg.RefKindKeyword.IsKind(SyntaxKind.RefKeyword) && !arg.RefKindKeyword.IsKind(SyntaxKind.OutKeyword))
                 {
                     continue;
                 }

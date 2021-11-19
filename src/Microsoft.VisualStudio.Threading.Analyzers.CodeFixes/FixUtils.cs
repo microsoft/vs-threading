@@ -21,7 +21,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
 
         internal static AnonymousFunctionExpressionSyntax MakeMethodAsync(this AnonymousFunctionExpressionSyntax method, bool hasReturnValue, SemanticModel semanticModel, CancellationToken cancellationToken)
         {
-            if (method.AsyncKeyword.Kind() == SyntaxKind.AsyncKeyword)
+            if (method.AsyncKeyword.IsKind(SyntaxKind.AsyncKeyword))
             {
                 // already async
                 return method;
@@ -101,7 +101,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             TypeSyntax returnType = method.ReturnType;
             if (!Utils.HasAsyncCompatibleReturnType(methodSymbol))
             {
-                hasReturnValue = (method.ReturnType as PredefinedTypeSyntax)?.Keyword.Kind() != SyntaxKind.VoidKeyword;
+                hasReturnValue = (method.ReturnType as PredefinedTypeSyntax)?.Keyword.IsKind(SyntaxKind.VoidKeyword) is not true;
 
                 // Determine new return type.
                 returnType = hasReturnValue
