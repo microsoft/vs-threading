@@ -21,7 +21,9 @@ stages:
       runOnce:
         deploy:
           steps:
-          - download: none
+          - download: CI
+            artifact: deployables-Windows
+            displayName: Download deployables-Windows artifact
           - powershell: |
               Write-Host "##vso[build.updatebuildnumber]$(resources.pipeline.CI.runName)"
             displayName: Set pipeline name
@@ -34,6 +36,8 @@ stages:
               tagSource: userSpecifiedTag
               tag: v$(resources.pipeline.CI.runName)
               title: v$(resources.pipeline.CI.runName)
+              assets: |
+                $(Pipeline.Workspace)/CI/deployables-Windows/SosThreadingTools.zip
               isDraft: true # After running this step, visit the new draft release, edit, and publish.
               changeLogCompareToRelease: lastNonDraftRelease
               changeLogType: issueBased
@@ -43,8 +47,8 @@ stages:
                   { "label" : "enhancement", "displayName": "Enhancements", "state" : "closed" }
                 ]
 
-- stage: nuget_org
-  displayName: nuget.org
+- stage: push_packages
+  displayName: Push packages
   dependsOn: GitHubRelease
   jobs:
   - deployment: push
@@ -63,9 +67,16 @@ stages:
             inputs:
               versionSpec: 5.x
           - task: NuGetCommand@2
-            displayName: NuGet push
+            displayName: nuget.org
             inputs:
               command: push
               packagesToPush: $(Pipeline.Workspace)/CI/deployables-Windows/NuGet/*.nupkg
               nuGetFeedType: external
               publishFeedCredentials: VisualStudioExtensibility (nuget.org)
+          - task: NuGetCommand@2
+            displayName: WinDBG Gallery
+            inputs:
+              command: push
+              packagesToPush: $(Pipeline.Workspace)/CI/deployables-Windows/WinDBGGallery/*.nupkg
+              nuGetFeedType: external
+              publishFeedCredentials: microsoft package push (andarno)

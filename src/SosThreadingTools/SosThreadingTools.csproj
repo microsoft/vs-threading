@@ -15,7 +15,7 @@
 
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
-    <PackageOutputPath>$(RepoBinPath)Packages\$(Configuration)\WinDBGGallery\</PackageOutputPath>
+    <PackageOutputPath>$(RepoRootPath)bin\Packages\$(Configuration)\WinDBGGallery\</PackageOutputPath>
 
     <!-- We build a package with legacy PDBs included for the gallery's convenience. -->
     <DebugType>full</DebugType>
