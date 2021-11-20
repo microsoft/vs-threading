@@ -20,7 +20,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Strings {
@@ -89,7 +89,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority..
+        ///   Looks up a localized string similar to Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority.
         /// </summary>
         internal static string VSTHRD001_MessageFormat {
             get {
@@ -153,7 +153,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Calls to JoinableTaskFactory.SwitchToMainThreadAsync() must be awaited..
+        ///   Looks up a localized string similar to Calls to JoinableTaskFactory.SwitchToMainThreadAsync() must be awaited.
         /// </summary>
         internal static string VSTHRD004_MessageFormat {
             get {
@@ -198,8 +198,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock.
-        ///Use AsyncLazy&lt;T&gt; instead..
+        ///   Looks up a localized string similar to Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock. Use AsyncLazy&lt;T&gt; instead..
         /// </summary>
         internal static string VSTHRD011_MessageFormat {
             get {
@@ -217,8 +216,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Invoking or blocking on async code in a Lazy&lt;T&gt; value factory can deadlock.
-        ///Use AsyncLazy&lt;T&gt; instead..
+        ///   Looks up a localized string similar to Invoking or blocking on async code in a Lazy&lt;T&gt; value factory can deadlock. Use AsyncLazy&lt;T&gt; instead..
         /// </summary>
         internal static string VSTHRD011b_MessageFormat {
             get {
@@ -227,7 +225,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread..
+        ///   Looks up a localized string similar to Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.
         /// </summary>
         internal static string VSTHRD012_MessageFormat {
             get {
@@ -254,7 +252,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Avoid &quot;async void&quot; methods, because any exceptions not handled by the method will crash the process..
+        ///   Looks up a localized string similar to Avoid &quot;async void&quot; methods, because any exceptions not handled by the method will crash the process.
         /// </summary>
         internal static string VSTHRD100_MessageFormat {
             get {
@@ -272,7 +270,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Avoid using async lambda for a void returning delegate type, because any exceptions not handled by the delegate will crash the process..
+        ///   Looks up a localized string similar to Avoid using async lambda for a void returning delegate type, because any exceptions not handled by the delegate will crash the process.
         /// </summary>
         internal static string VSTHRD101_MessageFormat {
             get {
@@ -371,7 +369,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to AsyncEventHandler delegates should be invoked via the extension method &quot;TplExtensions.InvokeAsync()&quot; defined in Microsoft.VisualStudio.Threading assembly..
+        ///   Looks up a localized string similar to AsyncEventHandler delegates should be invoked via the extension method &quot;TplExtensions.InvokeAsync()&quot; defined in Microsoft.VisualStudio.Threading assembly.
         /// </summary>
         internal static string VSTHRD106_MessageFormat {
             get {
@@ -398,7 +396,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Missing await operator for &quot;using&quot; expression..
+        ///   Looks up a localized string similar to Missing await operator for &quot;using&quot; expression.
         /// </summary>
         internal static string VSTHRD107_MessageFormat {
             get {
@@ -416,7 +414,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Thread affinity checks should be unconditional..
+        ///   Looks up a localized string similar to Thread affinity checks should be unconditional.
         /// </summary>
         internal static string VSTHRD108_MessageFormat {
             get {
@@ -488,7 +486,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Add .ConfigureAwait(bool) to your await expression..
+        ///   Looks up a localized string similar to Add .ConfigureAwait(bool) to your await expression.
         /// </summary>
         internal static string VSTHRD111_MessageFormat {
             get {
@@ -515,7 +513,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Implement the System.IAsyncDisposable interface when implementing the obsolete Microsoft.VisualStudio.Threading.IAsyncDisposable interface..
+        ///   Looks up a localized string similar to Implement the System.IAsyncDisposable interface when implementing the obsolete Microsoft.VisualStudio.Threading.IAsyncDisposable interface.
         /// </summary>
         internal static string VSTHRD112_MessageFormat {
             get {
@@ -533,7 +531,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Add a check for System.IAsyncDisposable in the same code block that checks for Microsoft.VisualStudio.Threading.IAsyncDisposable that behaves similarly..
+        ///   Looks up a localized string similar to Add a check for System.IAsyncDisposable in the same code block that checks for Microsoft.VisualStudio.Threading.IAsyncDisposable that behaves similarly.
         /// </summary>
         internal static string VSTHRD113_MessageFormat {
             get {
@@ -569,7 +567,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Avoid returning null from a Task-returning method..
+        ///   Looks up a localized string similar to Avoid returning null from a Task-returning method.
         /// </summary>
         internal static string VSTHRD114_MessageFormat {
             get {
@@ -587,7 +585,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Use &quot;Async&quot; suffix in names of methods that return an awaitable type..
+        ///   Looks up a localized string similar to Use &quot;Async&quot; suffix in names of methods that return an awaitable type.
         /// </summary>
         internal static string VSTHRD200_AddAsync_MessageFormat {
             get {
@@ -605,7 +603,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Avoid &quot;Async&quot; suffix in names of methods that do not return an awaitable type..
+        ///   Looks up a localized string similar to Avoid &quot;Async&quot; suffix in names of methods that do not return an awaitable type.
         /// </summary>
         internal static string VSTHRD200_RemoveAsync_MessageFormat {
             get {

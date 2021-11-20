@@ -11,10 +11,9 @@ steps:
     AccessToken: $(System.AccessToken)
   displayName: Install OptProf Plugin
 
-- task: MicroBuildSigningPlugin@2
+- task: MicroBuildSigningPlugin@3
   inputs:
     signType: $(SignType)
-    zipSources: false
   displayName: Install MicroBuild Signing Plugin
 
 - task: MicroBuildLocalizationPlugin@3

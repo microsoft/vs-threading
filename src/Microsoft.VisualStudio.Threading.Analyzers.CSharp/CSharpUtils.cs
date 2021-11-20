@@ -29,7 +29,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             }
 
             var memberAccessExpression = invocation.Expression as MemberAccessExpressionSyntax;
+#pragma warning disable CA1508 // Avoid dead conditional code
             ExpressionSyntax invokedMethodName = memberAccessExpression?.Name ?? invocation.Expression as IdentifierNameSyntax ?? (invocation.Expression as MemberBindingExpressionSyntax)?.Name ?? invocation.Expression;
+#pragma warning restore CA1508 // Avoid dead conditional code
             return invokedMethodName;
         }
 

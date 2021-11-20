@@ -1,17 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
-  <!--
-    Microsoft ResX Schema
-
+  <!-- 
+    Microsoft ResX Schema 
+    
     Version 2.0
-
-    The primary goals of this format is to allow a simple XML format
-    that is mostly human readable. The generation and parsing of the
-    various data types are done through the TypeConverter classes
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
     associated with the data types.
-
+    
     Example:
-
+    
     ... ado.net/XML headers & schema ...
     <resheader name="resmimetype">text/microsoft-resx</resheader>
     <resheader name="version">2.0</resheader>
@@ -26,36 +26,36 @@
         <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
         <comment>This is a comment</comment>
     </data>
-
-    There are any number of "resheader" rows that contain simple
+                
+    There are any number of "resheader" rows that contain simple 
     name/value pairs.
-
-    Each data row contains a name, and value. The row also contains a
-    type or mimetype. Type corresponds to a .NET class that support
-    text/value conversion through the TypeConverter architecture.
-    Classes that don't support this are serialized and stored with the
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
     mimetype set.
-
-    The mimetype is used for serialized objects, and tells the
-    ResXResourceReader how to depersist the object. This is currently not
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
     extensible. For a given mimetype the value must be set accordingly:
-
-    Note - application/x-microsoft.net.object.binary.base64 is the format
-    that the ResXResourceWriter will generate, however the reader can
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
     read any of the formats listed below.
-
+    
     mimetype: application/x-microsoft.net.object.binary.base64
-    value   : The object must be serialized with
+    value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
             : and then encoded with base64 encoding.
-
+    
     mimetype: application/x-microsoft.net.object.soap.base64
-    value   : The object must be serialized with
+    value   : The object must be serialized with 
             : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
             : and then encoded with base64 encoding.
 
     mimetype: application/x-microsoft.net.object.bytearray.base64
-    value   : The object must be serialized into a byte array
+    value   : The object must be serialized into a byte array 
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
@@ -145,7 +145,7 @@
     <comment>Task is a type name and should not be translated.</comment>
   </data>
   <data name="VSTHRD100_MessageFormat" xml:space="preserve">
-    <value>Avoid "async void" methods, because any exceptions not handled by the method will crash the process.</value>
+    <value>Avoid "async void" methods, because any exceptions not handled by the method will crash the process</value>
     <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
   </data>
   <data name="VSTHRD100_Title" xml:space="preserve">
@@ -153,14 +153,14 @@
     <comment>"async void" is a pair of C# keywords. Do not translate them.</comment>
   </data>
   <data name="VSTHRD101_MessageFormat" xml:space="preserve">
-    <value>Avoid using async lambda for a void returning delegate type, because any exceptions not handled by the delegate will crash the process.</value>
+    <value>Avoid using async lambda for a void returning delegate type, because any exceptions not handled by the delegate will crash the process</value>
     <comment>"void" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD101_Title" xml:space="preserve">
     <value>Avoid unsupported async delegates</value>
   </data>
   <data name="VSTHRD106_MessageFormat" xml:space="preserve">
-    <value>AsyncEventHandler delegates should be invoked via the extension method "TplExtensions.InvokeAsync()" defined in Microsoft.VisualStudio.Threading assembly.</value>
+    <value>AsyncEventHandler delegates should be invoked via the extension method "TplExtensions.InvokeAsync()" defined in Microsoft.VisualStudio.Threading assembly</value>
   </data>
   <data name="VSTHRD106_Title" xml:space="preserve">
     <value>Use InvokeAsync to raise async events</value>
@@ -173,12 +173,10 @@ Start the work within this context, or use JoinableTaskFactory.RunAsync to start
     <value>Avoid awaiting foreign Tasks</value>
   </data>
   <data name="VSTHRD011b_MessageFormat" xml:space="preserve">
-    <value>Invoking or blocking on async code in a Lazy&lt;T&gt; value factory can deadlock.
-Use AsyncLazy&lt;T&gt; instead.</value>
+    <value>Invoking or blocking on async code in a Lazy&lt;T&gt; value factory can deadlock. Use AsyncLazy&lt;T&gt; instead.</value>
   </data>
   <data name="VSTHRD011_MessageFormat" xml:space="preserve">
-    <value>Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock.
-Use AsyncLazy&lt;T&gt; instead.</value>
+    <value>Lazy&lt;Task&lt;T&gt;&gt;.Value can deadlock. Use AsyncLazy&lt;T&gt; instead.</value>
   </data>
   <data name="VSTHRD011_Title" xml:space="preserve">
     <value>Use AsyncLazy&lt;T&gt;</value>
@@ -203,7 +201,7 @@ Use AsyncLazy&lt;T&gt; instead.</value>
     <comment>{0} is a method name.</comment>
   </data>
   <data name="VSTHRD200_AddAsync_MessageFormat" xml:space="preserve">
-    <value>Use "Async" suffix in names of methods that return an awaitable type.</value>
+    <value>Use "Async" suffix in names of methods that return an awaitable type</value>
   </data>
   <data name="VSTHRD200_Title" xml:space="preserve">
     <value>Use "Async" suffix for async methods</value>
@@ -215,7 +213,7 @@ Use AsyncLazy&lt;T&gt; instead.</value>
     <value>Avoid method overloads that assume TaskScheduler.Current</value>
   </data>
   <data name="VSTHRD012_MessageFormat" xml:space="preserve">
-    <value>Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.</value>
+    <value>Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread</value>
   </data>
   <data name="VSTHRD012_Title" xml:space="preserve">
     <value>Provide JoinableTaskFactory where allowed</value>
@@ -227,14 +225,14 @@ Use AsyncLazy&lt;T&gt; instead.</value>
     <value>Offer async methods</value>
   </data>
   <data name="VSTHRD001_MessageFormat" xml:space="preserve">
-    <value>Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority.</value>
+    <value>Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority</value>
   </data>
   <data name="VSTHRD001_Title" xml:space="preserve">
     <value>Avoid legacy thread switching APIs</value>
     <comment>thread switching APIs refers to Visual Studio SDK or .NET methods that can be used to switch threads, but are obsolete and should be avoided.</comment>
   </data>
   <data name="VSTHRD107_MessageFormat" xml:space="preserve">
-    <value>Missing await operator for "using" expression.</value>
+    <value>Missing await operator for "using" expression</value>
     <comment>"await" and "using" are C# keywords and should not be translated.</comment>
   </data>
   <data name="VSTHRD107_Title" xml:space="preserve">
@@ -250,7 +248,7 @@ Use AsyncLazy&lt;T&gt; instead.</value>
     <comment>"await" is a C# keyword and should not be translated.</comment>
   </data>
   <data name="VSTHRD108_MessageFormat" xml:space="preserve">
-    <value>Thread affinity checks should be unconditional.</value>
+    <value>Thread affinity checks should be unconditional</value>
   </data>
   <data name="VSTHRD108_Title" xml:space="preserve">
     <value>Assert thread affinity unconditionally</value>
@@ -266,7 +264,7 @@ Use AsyncLazy&lt;T&gt; instead.</value>
     <value>Switch instead of assert in async methods</value>
   </data>
   <data name="VSTHRD004_MessageFormat" xml:space="preserve">
-    <value>Calls to JoinableTaskFactory.SwitchToMainThreadAsync() must be awaited.</value>
+    <value>Calls to JoinableTaskFactory.SwitchToMainThreadAsync() must be awaited</value>
   </data>
   <data name="VSTHRD004_Title" xml:space="preserve">
     <value>Await SwitchToMainThreadAsync</value>
@@ -279,7 +277,7 @@ Use AsyncLazy&lt;T&gt; instead.</value>
     <value>Observe result of async calls</value>
   </data>
   <data name="VSTHRD200_RemoveAsync_MessageFormat" xml:space="preserve">
-    <value>Avoid "Async" suffix in names of methods that do not return an awaitable type.</value>
+    <value>Avoid "Async" suffix in names of methods that do not return an awaitable type</value>
   </data>
   <data name="VSTHRD111_CodeFix_False_Title" xml:space="preserve">
     <value>Add .ConfigureAwait(false)</value>
@@ -290,7 +288,7 @@ Use AsyncLazy&lt;T&gt; instead.</value>
     <comment>".ConfigureAwait(true)" should not be translated.</comment>
   </data>
   <data name="VSTHRD111_MessageFormat" xml:space="preserve">
-    <value>Add .ConfigureAwait(bool) to your await expression.</value>
+    <value>Add .ConfigureAwait(bool) to your await expression</value>
     <comment>".ConfigureAwait(bool)" and "await" should NOT be translated.</comment>
   </data>
   <data name="VSTHRD111_Title" xml:space="preserve">
@@ -313,13 +311,13 @@ Use AsyncLazy&lt;T&gt; instead.</value>
     <value>Add implementation of System.IAsyncDisposable.</value>
   </data>
   <data name="VSTHRD112_MessageFormat" xml:space="preserve">
-    <value>Implement the System.IAsyncDisposable interface when implementing the obsolete Microsoft.VisualStudio.Threading.IAsyncDisposable interface.</value>
+    <value>Implement the System.IAsyncDisposable interface when implementing the obsolete Microsoft.VisualStudio.Threading.IAsyncDisposable interface</value>
   </data>
   <data name="VSTHRD112_Title" xml:space="preserve">
     <value>Implement System.IAsyncDisposable</value>
   </data>
   <data name="VSTHRD113_MessageFormat" xml:space="preserve">
-    <value>Add a check for System.IAsyncDisposable in the same code block that checks for Microsoft.VisualStudio.Threading.IAsyncDisposable that behaves similarly.</value>
+    <value>Add a check for System.IAsyncDisposable in the same code block that checks for Microsoft.VisualStudio.Threading.IAsyncDisposable that behaves similarly</value>
   </data>
   <data name="VSTHRD113_Title" xml:space="preserve">
     <value>Check for System.IAsyncDisposable</value>
@@ -328,7 +326,7 @@ Use AsyncLazy&lt;T&gt; instead.</value>
     <value>The System.IAsyncDisposable interface is defined in the Microsoft.Bcl.AsyncInterfaces NuGet package.</value>
   </data>
   <data name="VSTHRD114_MessageFormat" xml:space="preserve">
-    <value>Avoid returning null from a Task-returning method.</value>
+    <value>Avoid returning null from a Task-returning method</value>
     <comment>Task is a type name and should not be translated.</comment>
   </data>
   <data name="VSTHRD114_Title" xml:space="preserve">
