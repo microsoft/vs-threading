@@ -11,7 +11,7 @@ $config = 'Debug'
 if ($env:BUILDCONFIGURATION) { $config = $env:BUILDCONFIGURATION }
 $NuGetPackages = "$RepoRoot\bin\Packages\$config\NuGet"
 $CoreXTPackages = "$RepoRoot\bin\Packages\$config\CoreXT"
-if (-not (Test-Path $NuGetPackages)) { Write-Error "No NuGet packages found. Has a build been run?"; return @{} }
+if (-not (Test-Path $NuGetPackages)) { Write-Warning "No NuGet packages found. Has a build been run?"; return @{} }
 $ArtifactBasePath = "$RepoRoot\obj\_artifacts"
 $ArtifactPath = "$ArtifactBasePath\VSInsertion"
 if (-not (Test-Path $ArtifactPath)) { New-Item -ItemType Directory -Path $ArtifactPath | Out-Null }
