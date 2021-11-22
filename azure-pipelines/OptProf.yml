@@ -43,7 +43,7 @@ stages:
   jobs:
   - template: build.yml
     parameters:
-      windowsPool: VSEngSS-MicroBuild2019-1ES
+      windowsPool: VSEngSS-MicroBuild2022-1ES
       ShouldSkipOptimize: true
 - stage: QueueVSBuild
   jobs:
