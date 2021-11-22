@@ -30,6 +30,9 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
 
     <MicroBuildVersion>2.0.66</MicroBuildVersion>
+
+    <!-- Workaround build break in microbuild agents. -->
+    <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
   </PropertyGroup>
 
   <ItemGroup>
