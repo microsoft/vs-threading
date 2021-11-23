@@ -42,10 +42,13 @@
       </Item>
       <Item ItemId=";VSTHRD001_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority.]]></Val>
+          <Val><![CDATA[Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Warten Sie darauf, dass "JoinableTaskFactory.SwitchToMainThreadAsync()" zum UI-Thread wechselt anstelle von APIs, bei denen Deadlocks auftreten können oder für die unter Umständen eine Priorität festgelegt werden muss.]]></Val>
+            <Val><![CDATA[Warten Sie darauf, dass "JoinableTaskFactory.SwitchToMainThreadAsync()" zum UI-Thread wechselt, anstelle von APIs, bei denen Deadlocks auftreten können, oder für die unter Umständen eine Priorität festgelegt werden muss]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -105,10 +108,13 @@
       </Item>
       <Item ItemId=";VSTHRD004_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Calls to JoinableTaskFactory.SwitchToMainThreadAsync() must be awaited.]]></Val>
+          <Val><![CDATA[Calls to JoinableTaskFactory.SwitchToMainThreadAsync() must be awaited]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Aufrufe an "JoinableTaskFactory.SwitchToMainThreadAsync()" müssen mit "await" abgewartet werden.]]></Val>
+            <Val><![CDATA[Aufrufe an "JoinableTaskFactory.SwitchToMainThreadAsync()" müssen abgewartet werden]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Calls to JoinableTaskFactory.SwitchToMainThreadAsync() must be awaited.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -150,10 +156,13 @@
       </Item>
       <Item ItemId=";VSTHRD011_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Lazy<Task<T>>.Value can deadlock.]D;]A;Use AsyncLazy<T> instead.]]></Val>
+          <Val><![CDATA[Lazy<Task<T>>.Value can deadlock. Use AsyncLazy<T> instead.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Bei "Lazy<Task<T>>.Value" kann ein Deadlock auftreten.]D;]A;Verwenden Sie stattdessen "AsyncLazy<T>".]]></Val>
+            <Val><![CDATA[Bei "Lazy<Task<T>>.Value" kann ein Deadlock auftreten. Verwenden Sie stattdessen "AsyncLazy<T>".]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Lazy<Task<T>>.Value can deadlock.]D;]A;Use AsyncLazy<T> instead.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -168,19 +177,25 @@
       </Item>
       <Item ItemId=";VSTHRD011b_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Invoking or blocking on async code in a Lazy<T> value factory can deadlock.]D;]A;Use AsyncLazy<T> instead.]]></Val>
+          <Val><![CDATA[Invoking or blocking on async code in a Lazy<T> value factory can deadlock. Use AsyncLazy<T> instead.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Beim Aufrufen oder Blockieren bei asynchronem Code in einer Lazy<T>-Wertfactory kann ein Deadlock auftreten.]D;]A;Verwenden Sie stattdessen "AsyncLazy<T>".]]></Val>
+            <Val><![CDATA[Beim Aufrufen oder Blockieren bei asynchronem Code in einer Lazy<T>-Wertfactory kann ein Deadlock auftreten. Verwenden Sie stattdessen "AsyncLazy<T>".]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Invoking or blocking on async code in a Lazy<T> value factory can deadlock.]D;]A;Use AsyncLazy<T> instead.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD012_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.]]></Val>
+          <Val><![CDATA[Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Stellen Sie in diesem Aufruf (oder einer anderen Überladung) eine Instanz von "JoinableTaskFactory" bereit, um Deadlocks beim Hauptthread zu vermeiden.]]></Val>
+            <Val><![CDATA[Stellen Sie in diesem Aufruf (oder einer anderen Überladung) eine Instanz von JoinableTaskFactory bereit, um Deadlocks mit dem Hauptthread zu vermeiden]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -204,10 +219,13 @@
       </Item>
       <Item ItemId=";VSTHRD100_MessageFormat" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Avoid "async void" methods, because any exceptions not handled by the method will crash the process.]]></Val>
+          <Val><![CDATA[Avoid "async void" methods, because any exceptions not handled by the method will crash the process]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Vermeiden Sie "async void"-Methoden, da Ausnahmen, die nicht von der Methode verarbeitet werden, zu einem Absturz des Prozesses führen.]]></Val>
+            <Val><![CDATA[Vermeiden Sie "async void"-Methoden, weil Ausnahmen, die nicht von der Methode verarbeitet werden, zu einem Absturz des Prozesses führen.]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Avoid "async void" methods, because any exceptions not handled by the method will crash the process.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -222,10 +240,13 @@
       </Item>
       <Item ItemId=";VSTHRD101_MessageFormat" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Avoid using async lambda for a void returning delegate type, because any exceptions not handled by the delegate will crash the process.]]></Val>
+          <Val><![CDATA[Avoid using async lambda for a void returning delegate type, because any exceptions not handled by the delegate will crash the process]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Vermeiden Sie die Verwendung von Async-Lambdafunktionen für als "Void" zurückgebenden Delegattypen, da Ausnahmen, die nicht vom Delegaten verarbeitet werden, zu einem Absturz des Prozesses führen.]]></Val>
+            <Val><![CDATA[Vermeiden Sie die Verwendung von Async-Lambdafunktionen für ungültig zurückgebende Delegattypen, da Ausnahmen, die nicht vom Delegaten verarbeitet werden, zu einem Absturz des Prozesses führen]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Avoid using async lambda for a void returning delegate type, because any exceptions not handled by the delegate will crash the process.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -321,10 +342,13 @@
       </Item>
       <Item ItemId=";VSTHRD106_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[AsyncEventHandler delegates should be invoked via the extension method "TplExtensions.InvokeAsync()" defined in Microsoft.VisualStudio.Threading assembly.]]></Val>
+          <Val><![CDATA[AsyncEventHandler delegates should be invoked via the extension method "TplExtensions.InvokeAsync()" defined in Microsoft.VisualStudio.Threading assembly]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[AsyncEventHandler-Delegaten müssen über die Erweiterungsmethode "TplExtensions.InvokeAsync()", die in der Microsoft.VisualStudio.Threading-Assembly definiert ist, aufgerufen werden.]]></Val>
+            <Val><![CDATA[AsyncEventHandler-Delegaten sollten über die Erweiterungsmethode "TplExtensions.InvokeAsync()", die in der Microsoft.VisualStudio.Threading-Assembly definiert ist, aufgerufen werden]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[AsyncEventHandler delegates should be invoked via the extension method "TplExtensions.InvokeAsync()" defined in Microsoft.VisualStudio.Threading assembly.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -348,10 +372,13 @@
       </Item>
       <Item ItemId=";VSTHRD107_MessageFormat" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Missing await operator for "using" expression.]]></Val>
+          <Val><![CDATA[Missing await operator for "using" expression]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Der await-Operator für den "using"-Ausdruck fehlt.]]></Val>
+            <Val><![CDATA[Der await-Operator für den "using"-Ausdruck fehlt]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Missing await operator for "using" expression.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -366,10 +393,13 @@
       </Item>
       <Item ItemId=";VSTHRD108_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Thread affinity checks should be unconditional.]]></Val>
+          <Val><![CDATA[Thread affinity checks should be unconditional]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Überprüfungen der Threadaffinität dürfen keine Bedingungen umfassen.]]></Val>
+            <Val><![CDATA[Threadaffinitätsprüfungen sollten bedingungslos sein]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Thread affinity checks should be unconditional.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -438,10 +468,13 @@
       </Item>
       <Item ItemId=";VSTHRD111_MessageFormat" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Add .ConfigureAwait(bool) to your await expression.]]></Val>
+          <Val><![CDATA[Add .ConfigureAwait(bool) to your await expression]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Fügen Sie ".ConfigureAwait(bool)" zu Ihrem await-Ausdruck hinzu.]]></Val>
+            <Val><![CDATA[Fügen Sie ".ConfigureAwait(bool)" zu Ihrem await-Ausdruck hinzu]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Add .ConfigureAwait(bool) to your await expression.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -465,10 +498,13 @@
       </Item>
       <Item ItemId=";VSTHRD112_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Implement the System.IAsyncDisposable interface when implementing the obsolete Microsoft.VisualStudio.Threading.IAsyncDisposable interface.]]></Val>
+          <Val><![CDATA[Implement the System.IAsyncDisposable interface when implementing the obsolete Microsoft.VisualStudio.Threading.IAsyncDisposable interface]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Implementieren Sie die System.IAsyncDisposable-Schnittstelle, wenn Sie die veraltete Microsoft.VisualStudio.Threading.IAsyncDisposable-Schnittstelle implementieren.]]></Val>
+            <Val><![CDATA[Implementieren Sie die System.IAsyncDisposable-Schnittstelle, wenn Sie die veraltete Microsoft.VisualStudio.Threading.IAsyncDisposable-Schnittstelle implementieren]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Implement the System.IAsyncDisposable interface when implementing the obsolete Microsoft.VisualStudio.Threading.IAsyncDisposable interface.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -483,10 +519,13 @@
       </Item>
       <Item ItemId=";VSTHRD113_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Add a check for System.IAsyncDisposable in the same code block that checks for Microsoft.VisualStudio.Threading.IAsyncDisposable that behaves similarly.]]></Val>
+          <Val><![CDATA[Add a check for System.IAsyncDisposable in the same code block that checks for Microsoft.VisualStudio.Threading.IAsyncDisposable that behaves similarly]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Fügen Sie eine Überprüfung auf System.IAsyncDisposable im gleichen Codeblock hinzu, der auf Microsoft.VisualStudio.Threading.IAsyncDisposable mit ähnlichem Verhalten überprüft.]]></Val>
+            <Val><![CDATA[Fügen Sie eine Überprüfung auf System.IAsyncDisposable im gleichen Codeblock hinzu, der auf Microsoft.VisualStudio.Threading.IAsyncDisposable mit ähnlichem Verhalten überprüft]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Add a check for System.IAsyncDisposable in the same code block that checks for Microsoft.VisualStudio.Threading.IAsyncDisposable that behaves similarly.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -519,10 +558,13 @@
       </Item>
       <Item ItemId=";VSTHRD114_MessageFormat" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Avoid returning null from a Task-returning method.]]></Val>
+          <Val><![CDATA[Avoid returning null from a Task-returning method]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Vermeiden Sie die Rückgabe von NULL aus einer Methode zur Rückgabe von Aufgaben.]]></Val>
+            <Val><![CDATA[Vermeiden Sie die Rückgabe von NULL aus einer Methode zur Rückgabe von Aufgaben]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Avoid returning null from a Task-returning method.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -537,10 +579,13 @@
       </Item>
       <Item ItemId=";VSTHRD200_AddAsync_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Use "Async" suffix in names of methods that return an awaitable type.]]></Val>
+          <Val><![CDATA[Use "Async" suffix in names of methods that return an awaitable type]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Verwenden Sie das Suffix "Async" in Namen von Methoden, die einen Typ zurückgeben, der "await" unterstützt.]]></Val>
+            <Val><![CDATA[Verwenden Sie das Suffix "Async" in Namen von Methoden, die einen Typ zurückgeben, der "await" unterstützt]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Use "Async" suffix in names of methods that return an awaitable type.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -555,10 +600,13 @@
       </Item>
       <Item ItemId=";VSTHRD200_RemoveAsync_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Avoid "Async" suffix in names of methods that do not return an awaitable type.]]></Val>
+          <Val><![CDATA[Avoid "Async" suffix in names of methods that do not return an awaitable type]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Vermeiden Sie das Suffix "Async" in Namen von Methoden, die keinen Typ zurückgeben, der "await" unterstützt.]]></Val>
+            <Val><![CDATA[Vermeiden Sie das Suffix "Async" in Namen von Methoden, die keinen Typ zurückgeben, der "await" unterstützt]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Avoid "Async" suffix in names of methods that do not return an awaitable type.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
