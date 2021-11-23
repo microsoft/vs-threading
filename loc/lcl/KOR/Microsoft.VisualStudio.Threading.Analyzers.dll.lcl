@@ -42,10 +42,13 @@
       </Item>
       <Item ItemId=";VSTHRD001_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority.]]></Val>
+          <Val><![CDATA[Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[JoinableTaskFactory.SwitchToMainThreadAsync()가 교착 상태를 일으킬 수 있고 우선 순위를 지정해야 하는 API 대신 UI 스레드로 전환될 때까지 기다립니다.]]></Val>
+            <Val><![CDATA[JoinableTaskFactory.SwitchToMainThreadAsync()가 교착 상태를 일으킬 수 있고 우선 순위를 지정해야 하는 API 대신 UI 스레드로 전환될 때까지 기다립니다]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Await JoinableTaskFactory.SwitchToMainThreadAsync() to switch to the UI thread instead of APIs that can deadlock or require specifying a priority.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -105,10 +108,13 @@
       </Item>
       <Item ItemId=";VSTHRD004_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Calls to JoinableTaskFactory.SwitchToMainThreadAsync() must be awaited.]]></Val>
+          <Val><![CDATA[Calls to JoinableTaskFactory.SwitchToMainThreadAsync() must be awaited]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[JoinableTaskFactory.SwitchToMainThreadAsync() 호출을 대기해야 합니다.]]></Val>
+            <Val><![CDATA[JoinableTaskFactory.SwitchToMainThreadAsync() 호출을 대기해야 합니다]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Calls to JoinableTaskFactory.SwitchToMainThreadAsync() must be awaited.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -150,10 +156,13 @@
       </Item>
       <Item ItemId=";VSTHRD011_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Lazy<Task<T>>.Value can deadlock.]D;]A;Use AsyncLazy<T> instead.]]></Val>
+          <Val><![CDATA[Lazy<Task<T>>.Value can deadlock. Use AsyncLazy<T> instead.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Lazy<Task<T>>.Value는 교착 상태를 초래할 수 있습니다.]D;]A;대신 AsyncLazy<T>를 사용하세요.]]></Val>
+            <Val><![CDATA[Lazy<Task<T>>.Value는 교착 상태를 초래할 수 있습니다. 대신 AsyncLazy<T>를 사용하세요.]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Lazy<Task<T>>.Value can deadlock.]D;]A;Use AsyncLazy<T> instead.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -168,19 +177,25 @@
       </Item>
       <Item ItemId=";VSTHRD011b_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Invoking or blocking on async code in a Lazy<T> value factory can deadlock.]D;]A;Use AsyncLazy<T> instead.]]></Val>
+          <Val><![CDATA[Invoking or blocking on async code in a Lazy<T> value factory can deadlock. Use AsyncLazy<T> instead.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Lazy<T> 값 팩터리에서 비동기 코드를 호출하거나 차단하면 교착 상태가 발생할 수 있습니다.]D;]A;대신 AsyncLazy<T>를 사용하세요.]]></Val>
+            <Val><![CDATA[Lazy<T> 값 팩터리에서 비동기 코드를 호출하거나 차단하면 교착 상태가 발생할 수 있습니다. 대신 AsyncLazy<T>를 사용하세요.]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Invoking or blocking on async code in a Lazy<T> value factory can deadlock.]D;]A;Use AsyncLazy<T> instead.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
       <Item ItemId=";VSTHRD012_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.]]></Val>
+          <Val><![CDATA[Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[주 스레드에서 교착 상태를 방지하려면 이 호출(또는 다른 오버로드)에서 JoinableTaskFactory의 인스턴스를 제공하세요.]]></Val>
+            <Val><![CDATA[주 스레드에서 교착 상태를 방지하려면 이 호출(또는 다른 오버로드)에서 JoinableTaskFactory의 인스턴스를 제공하세요]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Provide an instance of JoinableTaskFactory in this call (or another overload) to avoid deadlocks with the main thread.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -204,10 +219,13 @@
       </Item>
       <Item ItemId=";VSTHRD100_MessageFormat" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Avoid "async void" methods, because any exceptions not handled by the method will crash the process.]]></Val>
+          <Val><![CDATA[Avoid "async void" methods, because any exceptions not handled by the method will crash the process]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[메서드에서 처리하지 않은 예외로 프로세스가 중단될 수 있으므로 "async void" 메서드를 사용하지 마세요.]]></Val>
+            <Val><![CDATA[메서드에서 처리하지 않은 예외는 프로세스에 크래시를 일으키므로 "async void" 메서드를 사용하지 마세요]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Avoid "async void" methods, because any exceptions not handled by the method will crash the process.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -222,10 +240,13 @@
       </Item>
       <Item ItemId=";VSTHRD101_MessageFormat" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Avoid using async lambda for a void returning delegate type, because any exceptions not handled by the delegate will crash the process.]]></Val>
+          <Val><![CDATA[Avoid using async lambda for a void returning delegate type, because any exceptions not handled by the delegate will crash the process]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[대리자에서 처리하지 않은 예외로 프로세스가 중단될 수 있으므로 void 반환 대리자 형식에 대해 비동기 람다를 사용하지 마세요.]]></Val>
+            <Val><![CDATA[대리자에서 처리하지 않은 예외로 프로세스가 중단될 수 있으므로 void 반환 대리자 형식에 대해 비동기 람다를 사용하지 마세요]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Avoid using async lambda for a void returning delegate type, because any exceptions not handled by the delegate will crash the process.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -321,10 +342,13 @@
       </Item>
       <Item ItemId=";VSTHRD106_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[AsyncEventHandler delegates should be invoked via the extension method "TplExtensions.InvokeAsync()" defined in Microsoft.VisualStudio.Threading assembly.]]></Val>
+          <Val><![CDATA[AsyncEventHandler delegates should be invoked via the extension method "TplExtensions.InvokeAsync()" defined in Microsoft.VisualStudio.Threading assembly]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Microsoft.VisualStudio.Threading 어셈블리에 정의된 "TplExtensions.InvokeAsync()" 확장 메서드를 통해 AsyncEventHandler 대리자를 호출해야 합니다.]]></Val>
+            <Val><![CDATA[Microsoft.VisualStudio.Threading 어셈블리에 정의된 "TplExtensions.InvokeAsync()" 확장 메서드를 통해 AsyncEventHandler 대리자를 호출해야 합니다]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[AsyncEventHandler delegates should be invoked via the extension method "TplExtensions.InvokeAsync()" defined in Microsoft.VisualStudio.Threading assembly.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -348,10 +372,13 @@
       </Item>
       <Item ItemId=";VSTHRD107_MessageFormat" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Missing await operator for "using" expression.]]></Val>
+          <Val><![CDATA[Missing await operator for "using" expression]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
             <Val><![CDATA["using" 식의 await 연산자 누락]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Missing await operator for "using" expression.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -366,10 +393,13 @@
       </Item>
       <Item ItemId=";VSTHRD108_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Thread affinity checks should be unconditional.]]></Val>
+          <Val><![CDATA[Thread affinity checks should be unconditional]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[스레드 선호도 검사는 비조건부여야 합니다.]]></Val>
+            <Val><![CDATA[스레드 선호도 검사는 비조건부여야 합니다]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Thread affinity checks should be unconditional.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -438,10 +468,13 @@
       </Item>
       <Item ItemId=";VSTHRD111_MessageFormat" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Add .ConfigureAwait(bool) to your await expression.]]></Val>
+          <Val><![CDATA[Add .ConfigureAwait(bool) to your await expression]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[.ConfigureAwait(bool)를 await 식에 추가합니다.]]></Val>
+            <Val><![CDATA[.ConfigureAwait(bool)를 await 식에 추가합니다]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Add .ConfigureAwait(bool) to your await expression.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -465,10 +498,13 @@
       </Item>
       <Item ItemId=";VSTHRD112_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Implement the System.IAsyncDisposable interface when implementing the obsolete Microsoft.VisualStudio.Threading.IAsyncDisposable interface.]]></Val>
+          <Val><![CDATA[Implement the System.IAsyncDisposable interface when implementing the obsolete Microsoft.VisualStudio.Threading.IAsyncDisposable interface]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[사용되지 않는 Microsoft.VisualStudio.Threading.IAsyncDisposable 인터페이스를 구현할 때는 System.IAsyncDisposable 인터페이스를 구현합니다.]]></Val>
+            <Val><![CDATA[사용되지 않는 Microsoft.VisualStudio.Threading.IAsyncDisposable 인터페이스를 구현할 때는 System.IAsyncDisposable 인터페이스를 구현합니다]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Implement the System.IAsyncDisposable interface when implementing the obsolete Microsoft.VisualStudio.Threading.IAsyncDisposable interface.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -483,10 +519,13 @@
       </Item>
       <Item ItemId=";VSTHRD113_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Add a check for System.IAsyncDisposable in the same code block that checks for Microsoft.VisualStudio.Threading.IAsyncDisposable that behaves similarly.]]></Val>
+          <Val><![CDATA[Add a check for System.IAsyncDisposable in the same code block that checks for Microsoft.VisualStudio.Threading.IAsyncDisposable that behaves similarly]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[비슷한 동작을 수행하는 Microsoft.VisualStudio.Threading.IAsyncDisposable을 검사하는 코드 블록 안에 System.IAsyncDisposable에 대한 검사를 추가합니다.]]></Val>
+            <Val><![CDATA[비슷한 동작을 수행하는 Microsoft.VisualStudio.Threading.IAsyncDisposable을 검사하는 코드 블록 안에 System.IAsyncDisposable에 대한 검사를 추가합니다]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Add a check for System.IAsyncDisposable in the same code block that checks for Microsoft.VisualStudio.Threading.IAsyncDisposable that behaves similarly.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -519,10 +558,13 @@
       </Item>
       <Item ItemId=";VSTHRD114_MessageFormat" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Avoid returning null from a Task-returning method.]]></Val>
+          <Val><![CDATA[Avoid returning null from a Task-returning method]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Task-returning 메서드에서 null 반환을 방지합니다.]]></Val>
+            <Val><![CDATA[Task-returning 메서드에서 null 반환을 방지합니다]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Avoid returning null from a Task-returning method.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -537,10 +579,13 @@
       </Item>
       <Item ItemId=";VSTHRD200_AddAsync_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Use "Async" suffix in names of methods that return an awaitable type.]]></Val>
+          <Val><![CDATA[Use "Async" suffix in names of methods that return an awaitable type]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[대기할 수 있는 형식을 반환하는 메서드의 이름에 "Async" 접미사를 사용합니다.]]></Val>
+            <Val><![CDATA[대기할 수 있는 형식을 반환하는 메서드의 이름에 "Async" 접미사를 사용합니다]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Use "Async" suffix in names of methods that return an awaitable type.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
@@ -555,10 +600,13 @@
       </Item>
       <Item ItemId=";VSTHRD200_RemoveAsync_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Avoid "Async" suffix in names of methods that do not return an awaitable type.]]></Val>
+          <Val><![CDATA[Avoid "Async" suffix in names of methods that do not return an awaitable type]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[대기할 수 있는 형식을 반환하지 않는 메서드의 이름에 "Async" 접미사를 사용하지 않습니다.]]></Val>
+            <Val><![CDATA[대기할 수 있는 형식을 반환하지 않는 메서드의 이름에 "Async" 접미사를 사용하지 않습니다]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Avoid "Async" suffix in names of methods that do not return an awaitable type.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
