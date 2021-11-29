@@ -44,6 +44,7 @@ stages:
   - template: build.yml
     parameters:
       windowsPool: VSEngSS-MicroBuild2022-1ES
+      includeMacOS: false
       ShouldSkipOptimize: true
 - stage: QueueVSBuild
   jobs:
