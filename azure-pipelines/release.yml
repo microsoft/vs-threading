@@ -47,8 +47,8 @@ stages:
                   { "label" : "enhancement", "displayName": "Enhancements", "state" : "closed" }
                 ]
 
-- stage: push_packages
-  displayName: Push packages
+- stage: nuget_org
+  displayName: nuget.org
   dependsOn: GitHubRelease
   jobs:
   - deployment: push
@@ -67,7 +67,7 @@ stages:
             inputs:
               versionSpec: 5.x
           - task: NuGetCommand@2
-            displayName: nuget.org
+            displayName: NuGet push
             inputs:
               command: push
               packagesToPush: $(Pipeline.Workspace)/CI/deployables-Windows/NuGet/*.nupkg

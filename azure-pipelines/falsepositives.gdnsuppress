@@ -1,0 +1,104 @@
+{
+  "version": "latest",
+  "suppressionSets": {
+    "falsepositives": {
+      "name": "falsepositives",
+      "createdDate": "2022-01-05 22:51:28Z",
+      "lastUpdatedDate": "2022-01-05 22:51:28Z"
+    }
+  },
+  "results": {
+    "f2d4b996c6d7c4016ec4fcd8ffee323140ad820bf3e162080d3def56e8341e91": {
+      "signature": "f2d4b996c6d7c4016ec4fcd8ffee323140ad820bf3e162080d3def56e8341e91",
+      "alternativeSignatures": [],
+      "target": "src/Microsoft.VisualStudio.Threading.Analyzers.CSharp/VSTHRD003UseJtfRunAsyncAnalyzer.cs",
+      "memberOf": [
+        "falsepositives"
+      ],
+      "tool": "policheck",
+      "ruleId": "80411",
+      "justification": null,
+      "createdDate": "2022-01-05 21:55:03Z",
+      "expirationDate": null,
+      "type": null
+    },
+    "5bd7dbbf8a0e638bc4ee65d7db6dc4ab9054ddd64f8ec5cf4031380b01100b63": {
+      "signature": "5bd7dbbf8a0e638bc4ee65d7db6dc4ab9054ddd64f8ec5cf4031380b01100b63",
+      "alternativeSignatures": [],
+      "target": "src/Microsoft.VisualStudio.Threading.Analyzers.CSharp/VSTHRD003UseJtfRunAsyncAnalyzer.cs",
+      "memberOf": [
+        "falsepositives"
+      ],
+      "tool": "policheck",
+      "ruleId": "80411",
+      "justification": null,
+      "createdDate": "2022-01-05 21:55:03Z",
+      "expirationDate": null,
+      "type": null
+    },
+    "ed020ef10e60a1a49245aad9cd8922514ac643fe6f2f689cabdfc2205d725de5": {
+      "signature": "ed020ef10e60a1a49245aad9cd8922514ac643fe6f2f689cabdfc2205d725de5",
+      "alternativeSignatures": [
+        "2b12d128e16023e34f3070e5d1c3014207692966829acbf838fe1ec92ddf6798"
+      ],
+      "target": "microsoft.visualstudio.threading/release/net472/microsoft.visualstudio.threading.dll",
+      "memberOf": [
+        "falsepositives"
+      ],
+      "tool": "apiscan",
+      "ruleId": "documentationnotfound",
+      "justification": null,
+      "createdDate": "2022-01-05 21:55:03Z",
+      "expirationDate": null,
+      "type": null
+    },
+    "72600e5e09c73929820080a3d7fbbd591c4aac41a606251af6755e2ea3e96286": {
+      "signature": "72600e5e09c73929820080a3d7fbbd591c4aac41a606251af6755e2ea3e96286",
+      "alternativeSignatures": [
+        "e0697b669d792491bda5ab3c49a1c1bc71adc6c2a4cd903163c8d956aec5d16f"
+      ],
+      "target": "microsoft.visualstudio.threading/release/netstandard2.0/microsoft.visualstudio.threading.dll",
+      "memberOf": [
+        "falsepositives"
+      ],
+      "tool": "apiscan",
+      "ruleId": "documentationnotfound",
+      "justification": null,
+      "createdDate": "2022-01-05 21:55:03Z",
+      "expirationDate": null,
+      "type": null
+    },
+    "020f08af56f0cc9f5fe08f1a8b1fd0c1e4eae1c279dd347be77f1a7fabcff8f6": {
+      "signature": "020f08af56f0cc9f5fe08f1a8b1fd0c1e4eae1c279dd347be77f1a7fabcff8f6",
+      "alternativeSignatures": [
+        "a558e750375b35019cd9a75dbad28be2d3ca71e5fe00a69e275f097b7fd94483"
+      ],
+      "target": "bin/SosThreadingTools/Release/net472/win-x64/SosThreadingTools.dll",
+      "memberOf": [
+        "falsepositives"
+      ],
+      "tool": "binskim",
+      "ruleId": "BA2010",
+      "justification": null,
+      "createdDate": "2022-01-05 22:51:28Z",
+      "expirationDate": null,
+      "type": null
+    },
+    "c26038cded62714187b699785c344c1732b33f73f98e738270603dc5c03a8be8": {
+      "signature": "c26038cded62714187b699785c344c1732b33f73f98e738270603dc5c03a8be8",
+      "alternativeSignatures": [
+        "7964039bd373d0bc2e2f97d0b4a4f8d7b8b94c226fedb17c5bc9a012866ce46a"
+      ],
+      "target": "bin/SosThreadingTools/Release/net472/win-x86/SosThreadingTools.dll",
+      "memberOf": [
+        "falsepositives"
+      ],
+      "tool": "binskim",
+      "ruleId": "BA2010",
+      "justification": null,
+      "createdDate": "2022-01-05 22:51:28Z",
+      "expirationDate": null,
+      "type": null
+    }
+  }
+}
