@@ -1,3 +1,7 @@
+parameters:
+- name: EnableAPIScan
+  type: boolean
+
 steps:
 - task: MicroBuildCodesignVerify@3
   displayName: Verify Signed Files
@@ -8,9 +12,6 @@ steps:
 - task: MicroBuildCleanup@1
   condition: succeededOrFailed()
   displayName: MicroBuild Cleanup
-
-- task: ComponentGovernanceComponentDetection@0
-  displayName: Component Detection
 
 - task: ms-vscs-artifact.build-tasks.artifactDropTask-1.artifactDropTask@0
   inputs:
@@ -45,3 +46,5 @@ steps:
   continueOnError: true
 
 - template: secure-development-tools.yml
+  parameters:
+    EnableAPIScan: ${{ parameters.EnableAPIScan }}

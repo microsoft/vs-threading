@@ -21,6 +21,12 @@ dotnet_diagnostic.VSTHRD111.severity = none
 # VSTHRD200: Use Async suffix for async methods
 dotnet_diagnostic.VSTHRD200.severity = silent
 
+# CA1014: Mark assemblies with CLSCompliant
+dotnet_diagnostic.CA1014.severity = none
+
+# CA1050: Declare types in namespaces
+dotnet_diagnostic.CA1050.severity = none
+
 # CA1303: Do not pass literals as localized parameters
 dotnet_diagnostic.CA1303.severity = none
 
@@ -70,4 +76,4 @@ dotnet_diagnostic.CA1307.severity = suggestion
 dotnet_diagnostic.SA1604.severity = suggestion
 
 # SA1401: Fields should be private
-dotnet_diagnostic.SA1401.severity = none
+dotnet_diagnostic.SA1401.severity = silent

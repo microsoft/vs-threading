@@ -1,11 +1,74 @@
+parameters:
+- name: EnableAPIScan
+  type: boolean
+
 steps:
 
- ### Check for checked in credentials.
 - task: CredScan@3
-  displayName: 'Run CredScan'
+  displayName: Run CredScan
 
- ### Run PoliCheck to check for disallowed terms. targetType: F indicates we're searching files and folders.
-- task: PoliCheck@1
-  displayName: 'Run PoliCheck'
+- task: PoliCheck@2
+  displayName: Run PoliCheck
   inputs:
     targetType: F
+    targetArgument: $(System.DefaultWorkingDirectory)
+    optionsUEPATH: $(System.DefaultWorkingDirectory)\azure-pipelines\PoliCheckExclusions.xml
+
+- task: BinSkim@3
+  displayName: Run BinSkim
+  inputs:
+    InputType: Basic
+    Function: analyze
+    AnalyzeTarget: $(BinSkimTargets)
+
+- task: CopyFiles@2
+  displayName: Collect APIScan inputs
+  inputs:
+    SourceFolder: $(Build.ArtifactStagingDirectory)/Symbols-$(Agent.JobName)
+    # Exclude any patterns from the Contents (e.g. `!**/git2*`) that we have symbols for but do not need to run APIScan on.
+    Contents: |
+      **
+    TargetFolder: $(Build.ArtifactStagingDirectory)/APIScanInputs
+  condition: and(succeeded(), ${{ parameters.EnableAPIScan }}, ne(variables.ApiScanClientId, ''))
+
+- task: APIScan@2
+  displayName: Run APIScan
+  inputs:
+    softwareFolder: $(Build.ArtifactStagingDirectory)/APIScanInputs
+    softwareName: $(SymbolsFeatureName)
+    softwareVersionNum: $(NBGV_MajorMinorVersion)
+    isLargeApp: false
+    toolVersion: Latest
+  condition: and(succeeded(), ${{ parameters.EnableAPIScan }}, ne(variables.ApiScanClientId, ''))
+  env:
+    AzureServicesAuthConnectionString: runAs=App;AppId=$(ApiScanClientId);TenantId=$(ApiScanTenant);AppKey=$(ApiScanSecret)
+
+- task: SdtReport@2
+  displayName: Create Security Analysis Report
+  inputs:
+    GdnExportAllTools: true
+
+- task: PublishSecurityAnalysisLogs@3
+  displayName: Publish Code Analysis Logs
+  inputs:
+    ArtifactName: CodeAnalysisLogs
+    ArtifactType: Container
+    PublishProcessedResults: true
+    AllTools: true
+    ToolLogsNotFoundAction: Standard
+
+- task: PostAnalysis@2
+  displayName: Break on compliance issues
+  inputs:
+    GdnBreakAllTools: true
+    GdnBreakGdnToolBinSkimSeverity: Warning
+    GdnBreakSuppressionFiles: $(System.DefaultWorkingDirectory)/azure-pipelines/falsepositives.gdnsuppress
+    GdnBreakSuppressionSets: falsepositives
+    GdnBreakOutputSuppressionFile: $(Build.ArtifactStagingDirectory)/guardian_failures_as_suppressions/
+    GdnBreakOutputSuppressionSet: falsepositives
+
+# This is useful when false positives appear so we can copy some of the output into the suppressions file.
+- publish: $(Build.ArtifactStagingDirectory)/guardian_failures_as_suppressions
+  artifact: guardian_failures_as_suppressions
+  displayName: Publish Guardian failures
+  condition: failed()

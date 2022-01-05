@@ -2,6 +2,15 @@ parameters:
 - name: ShouldSkipOptimize
 
 steps:
+- task: ComponentGovernanceComponentDetection@0
+  displayName: Component Detection
+
+- task: notice@0
+  displayName: Generate NOTICE file
+  inputs:
+    outputfile: $(System.DefaultWorkingDirectory)/obj/NOTICE
+    outputformat: text
+
 - task: MicroBuildOptProfPlugin@6
   inputs:
     ProfilingInputsDropName: ProfilingInputs/$(System.TeamProject)/$(Build.Repository.Name)/$(Build.SourceBranchName)/$(Build.BuildNumber)
