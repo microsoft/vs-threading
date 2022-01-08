@@ -38,7 +38,7 @@ parameters:
 - name: EnableAPIScan
   displayName: Run APIScan
   type: boolean
-  default: false # enable when we get it passing
+  default: true
 
 variables:
   NugetSecurityAnalysisWarningLevel: none # nuget.config requires signed packages by trusted owners

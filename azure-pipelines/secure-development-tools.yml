@@ -43,6 +43,11 @@ steps:
   env:
     AzureServicesAuthConnectionString: runAs=App;AppId=$(ApiScanClientId);TenantId=$(ApiScanTenant);AppKey=$(ApiScanSecret)
 
+- publish: $(Build.ArtifactStagingDirectory)/APIScanInputs
+  artifact: apiscan
+  displayName: Collect APIScan run details
+  condition: and(${{ parameters.EnableAPIScan }}, ne(variables.ApiScanClientId, '')
+
 - task: SdtReport@2
   displayName: Create Security Analysis Report
   inputs:
