@@ -533,18 +533,18 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
 
             // Release the outer one first. This should throw because the inner one hasn't been released yet.
             release1.Set();
-            await Assert.ThrowsAsync<InvalidOperationException>(() => operation1);
+            await Assert.ThrowsAsync<StackReentrantSemaphoreNestingViolationException>(() => operation1);
 
             // Verify that the semaphore is in a faulted state.
-            Assert.Throws<InvalidOperationException>(() => this.semaphore.CurrentCount);
+            Assert.Throws<SemaphoreFaultedException>(() => this.semaphore.CurrentCount);
 
             // Release the nested one last, which should similarly throw because its parent is already released.
             release2.Set();
-            await Assert.ThrowsAsync<InvalidOperationException>(() => operation2);
+            await Assert.ThrowsAsync<StackReentrantSemaphoreNestingViolationException>(() => operation2);
 
             // Verify that the semaphore is still in a faulted state, and will reject new calls.
-            Assert.Throws<InvalidOperationException>(() => this.semaphore.CurrentCount);
-            await Assert.ThrowsAsync<InvalidOperationException>(() => this.semaphore.ExecuteAsync(() => Task.CompletedTask));
+            Assert.Throws<SemaphoreFaultedException>(() => this.semaphore.CurrentCount);
+            await Assert.ThrowsAsync<SemaphoreFaultedException>(() => this.semaphore.ExecuteAsync(() => Task.CompletedTask));
         });
     }
 
@@ -691,12 +691,12 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
                 Task? pendingSemaphoreTask = semaphore.ExecuteAsync(() => Task.CompletedTask);
 
                 releaser1.Set();
-                await Assert.ThrowsAsync<InvalidOperationException>(() => outerFaultySemaphoreTask).WithCancellation(this.TimeoutToken);
-                await Assert.ThrowsAsync<InvalidOperationException>(() => pendingSemaphoreTask).WithCancellation(this.TimeoutToken);
+                await Assert.ThrowsAsync<StackReentrantSemaphoreNestingViolationException>(() => outerFaultySemaphoreTask).WithCancellation(this.TimeoutToken);
+                await Assert.ThrowsAsync<SemaphoreFaultedException>(() => pendingSemaphoreTask).WithCancellation(this.TimeoutToken);
 
                 releaser1.Set();
-                await Assert.ThrowsAsync<InvalidOperationException>(() => innerFaulterSemaphoreTask).WithCancellation(this.TimeoutToken);
-                await Assert.ThrowsAsync<InvalidOperationException>(() => semaphore.ExecuteAsync(() => Task.CompletedTask)).WithCancellation(this.TimeoutToken);
+                await Assert.ThrowsAsync<StackReentrantSemaphoreNestingViolationException>(() => innerFaulterSemaphoreTask).WithCancellation(this.TimeoutToken);
+                await Assert.ThrowsAsync<SemaphoreFaultedException>(() => semaphore.ExecuteAsync(() => Task.CompletedTask)).WithCancellation(this.TimeoutToken);
             });
     }
 
