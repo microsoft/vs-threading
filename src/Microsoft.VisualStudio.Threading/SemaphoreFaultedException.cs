@@ -5,6 +5,9 @@ namespace Microsoft.VisualStudio.Threading
 {
     using System;
 
+    /// <summary>
+    /// Exception thrown when Semaphore is in a faulted state.
+    /// </summary>
     public class SemaphoreFaultedException : InvalidOperationException
     {
         /// <summary>
