@@ -6,7 +6,7 @@ namespace Microsoft.VisualStudio.Threading
     using System;
 
     /// <summary>
-    /// Exception which is thrown by the Reentrant Semaphore when it's reentrancy is violated.
+    /// Exception which is thrown when the reentrancy contract of a <see cref="ReentrantSemaphore"/> created with <see cref="ReentrancyMode.Stack"/> is violated.
     /// </summary>
     public class StackReentrantSemaphoreNestingViolationException : InvalidOperationException
     {
