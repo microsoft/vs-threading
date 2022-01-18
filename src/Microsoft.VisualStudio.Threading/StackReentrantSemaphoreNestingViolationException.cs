@@ -4,9 +4,10 @@
 namespace Microsoft.VisualStudio.Threading
 {
     using System;
+    using System.Globalization;
 
     /// <summary>
-    /// Exception which is thrown when the reentrancy contract of a <see cref="ReentrantSemaphore"/> created with <see cref="ReentrancyMode.Stack"/> is violated.
+    /// Exception which is thrown when the reentrancy contract of a <see cref="ReentrantSemaphore"/> created with <see cref="ReentrantSemaphore.ReentrancyMode.Stack"/> is violated.
     /// </summary>
     public class StackReentrantSemaphoreNestingViolationException : InvalidOperationException
     {
@@ -14,7 +15,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Initializes a new instance of the <see cref="StackReentrantSemaphoreNestingViolationException"/> class.
         /// </summary>
         public StackReentrantSemaphoreNestingViolationException()
-            : base(string.Format(Strings.SemaphoreStackNestingViolated, ReentrantSemaphore.ReentrancyMode.Stack))
+            : base(string.Format(CultureInfo.CurrentCulture, Strings.SemaphoreStackNestingViolated, ReentrantSemaphore.ReentrancyMode.Stack))
         {
         }
     }

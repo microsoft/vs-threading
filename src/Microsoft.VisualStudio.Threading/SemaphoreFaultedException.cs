@@ -6,7 +6,7 @@ namespace Microsoft.VisualStudio.Threading
     using System;
 
     /// <summary>
-    /// Exception thrown when a <see cref="AsyncSemaphore"/> is in a faulted state.
+    /// Exception thrown when a <see cref="ReentrantSemaphore"/> is in a faulted state.
     /// </summary>
     public class SemaphoreFaultedException : InvalidOperationException
     {
