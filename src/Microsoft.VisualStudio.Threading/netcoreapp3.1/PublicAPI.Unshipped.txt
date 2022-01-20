@@ -3,6 +3,6 @@ Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResour
 Microsoft.VisualStudio.Threading.JoinableTaskContext.IsMainThreadMaybeBlocked() -> bool
 Microsoft.VisualStudio.Threading.SemaphoreFaultedException
 Microsoft.VisualStudio.Threading.SemaphoreFaultedException.SemaphoreFaultedException() -> void
-Microsoft.VisualStudio.Threading.StackReentrantSemaphoreNestingViolationException
-Microsoft.VisualStudio.Threading.StackReentrantSemaphoreNestingViolationException.StackReentrantSemaphoreNestingViolationException() -> void
+Microsoft.VisualStudio.Threading.IllegalSemaphoreUsageException
+Microsoft.VisualStudio.Threading.IllegalSemaphoreUsageException.IllegalSemaphoreUsageException(string! message) -> void
 virtual Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.DeadlockCheckTimeout.get -> System.TimeSpan
