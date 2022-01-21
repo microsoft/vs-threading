@@ -7,7 +7,7 @@ namespace Microsoft.VisualStudio.Threading
     using System.Globalization;
 
     /// <summary>
-    /// Exception which is thrown when the contract of a <see cref="AsyncSemaphore"/> is violated.
+    /// Exception which is thrown when the contract of a <see cref="ReentrantSemaphore"/> is violated.
     /// </summary>
     public class IllegalSemaphoreUsageException : InvalidOperationException
     {
