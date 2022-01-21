@@ -2,7 +2,7 @@
   <ItemGroup>
     <OptProf Include="$(TargetPath)">
       <Technology>IBC</Technology>
-      <InstallationPath>Common7\IDE\PublicAssemblies\Microsoft.VisualStudio.Threading.16.0\$(TargetFileName)</InstallationPath>
+      <InstallationPath>Common7\IDE\PublicAssemblies\Microsoft.VisualStudio.Threading.17.x\$(TargetFileName)</InstallationPath>
       <InstrumentationArguments>/ExeConfig:"%VisualStudio.InstallationUnderTest.Path%\Common7\IDE\vsn.exe"</InstrumentationArguments>
       <Scenarios>
         <TestContainer Name="VSPE" Repository="VS">
