@@ -7,6 +7,7 @@ namespace Microsoft.VisualStudio.Threading
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
@@ -759,7 +760,7 @@ namespace Microsoft.VisualStudio.Threading
                                     // When the semaphore faults, we will drain and throw for awaiting tasks one by one.
                                     this.faulted = true;
 #pragma warning disable CA2219 // Do not raise exceptions in finally clauses
-                                    throw Verify.FailOperation(Strings.SemaphoreStackNestingViolated, ReentrancyMode.Stack);
+                                    throw new IllegalSemaphoreUsageException(string.Format(CultureInfo.CurrentCulture, Strings.SemaphoreStackNestingViolated, ReentrantSemaphore.ReentrancyMode.Stack));
 #pragma warning restore CA2219 // Do not raise exceptions in finally clauses
                                 }
                             }
@@ -873,7 +874,7 @@ namespace Microsoft.VisualStudio.Threading
                                     // When the semaphore faults, we will drain and throw for awaiting tasks one by one.
                                     this.faulted = true;
 #pragma warning disable CA2219 // Do not raise exceptions in finally clauses
-                                    throw Verify.FailOperation(Strings.SemaphoreStackNestingViolated, ReentrancyMode.Stack);
+                                    throw new IllegalSemaphoreUsageException(string.Format(CultureInfo.CurrentCulture, Strings.SemaphoreStackNestingViolated, ReentrantSemaphore.ReentrancyMode.Stack));
 #pragma warning restore CA2219 // Do not raise exceptions in finally clauses
                                 }
                             }
@@ -901,7 +902,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 if (this.faulted)
                 {
-                    throw Verify.FailOperation(Strings.SemaphoreMisused);
+                    throw new SemaphoreFaultedException();
                 }
             }
         }
