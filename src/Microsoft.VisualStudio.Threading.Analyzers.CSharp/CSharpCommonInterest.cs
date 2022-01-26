@@ -176,9 +176,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             MemberAccessExpressionSyntax? memberAccess = memberAccessList.First();
 
             // Does the invocation have the expected `Task.WhenAll` syntax? This is cheaper to verify before looking up its semantic type.
-            var correctSyntax =
-                ((IdentifierNameSyntax)memberAccess.Expression).Identifier.ValueText == Types.Task.TypeName &&
-                ((IdentifierNameSyntax)memberAccess.Name).Identifier.ValueText == Types.Task.WhenAll;
+            bool correctSyntax = memberAccess.Expression is IdentifierNameSyntax { Identifier.ValueText: Types.Task.TypeName }
+                && memberAccess.Name is IdentifierNameSyntax { Identifier.ValueText: Types.Task.WhenAll };
 
             if (!correctSyntax)
             {
