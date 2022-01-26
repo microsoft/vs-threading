@@ -356,5 +356,35 @@ public class Test {
 ";
             await Verify.VerifyAnalyzerAsync(test);
         }
+
+        [Fact]
+        public async Task JtfRunInPrivateMethod__WithMultiMemberAccessExpression_ProducesDiagnostic()
+        {
+            var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Other {
+    internal static JoinableTaskFactory factory;
+}
+
+class Test {
+    Foo foo;
+    JoinableTaskFactory jtf;
+
+    void F() {
+        object v = Other.factory.[|Run|](async () => { return await this.foo.DoSomethingAsync(); });
+        jtf.[|Run|](async delegate {
+            await jtf.SwitchToMainThreadAsync();
+        });
+    }
+
+    class Foo {
+        internal Task<object> DoSomethingAsync() => new TaskCompletionSource<object>().Task;
+    }
+}
+";
+            await Verify.VerifyAnalyzerAsync(test);
+        }
     }
 }
