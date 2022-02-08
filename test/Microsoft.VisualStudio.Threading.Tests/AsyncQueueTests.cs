@@ -25,6 +25,7 @@ public class AsyncQueueTests : TestBase
         Assert.Equal(0, this.queue.Count);
         Assert.True(this.queue.IsEmpty);
         Assert.False(this.queue.Completion.IsCompleted);
+        Assert.Empty(this.queue.ToArray());
     }
 
     [Fact]
@@ -34,6 +35,7 @@ public class AsyncQueueTests : TestBase
         this.queue.Enqueue(value);
         Assert.Equal(1, this.queue.Count);
         Assert.False(this.queue.IsEmpty);
+        Assert.Single(this.queue.ToArray());
     }
 
     [Fact]
@@ -43,6 +45,7 @@ public class AsyncQueueTests : TestBase
         Assert.True(this.queue.TryEnqueue(value));
         Assert.Equal(1, this.queue.Count);
         Assert.False(this.queue.IsEmpty);
+        Assert.Single(this.queue.ToArray());
     }
 
     [Fact]
