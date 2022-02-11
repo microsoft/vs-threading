@@ -324,7 +324,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Returns a copy of this queue as an array.
         /// </summary>
-        internal T[] ToArray()
+        public T[] ToArray()
         {
             lock (this.SyncRoot)
             {
