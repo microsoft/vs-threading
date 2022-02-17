@@ -50,7 +50,8 @@ stages:
   jobs:
   - job: QueueOptProf
     pool:
-      vmImage: windows-latest
+      name: AzurePipelines-EO
+      vmImage: AzurePipelinesWindows2022compliant
     variables:
       InsertPayloadName: vs-threading
       InsertTopicBranch: team/VS-IDE/vs-threading-OptProf-run-$(Build.BuildId)
