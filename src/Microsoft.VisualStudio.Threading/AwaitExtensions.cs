@@ -32,6 +32,20 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
+        /// Gets an awaiter that schedules continuations on the specified <see cref="SynchronizationContext"/>.
+        /// </summary>
+        /// <param name="synchronizationContext">The synchronization context used to execute continuations.</param>
+        /// <returns>An awaitable.</returns>
+        /// <remarks>
+        /// The awaiter that is returned will <em>always</em> result in yielding, even if already executing within the specified <paramref name="synchronizationContext"/>.
+        /// </remarks>
+        public static SynchronizationContextAwaiter GetAwaiter(this SynchronizationContext synchronizationContext)
+        {
+            Requires.NotNull(synchronizationContext, nameof(synchronizationContext));
+            return new SynchronizationContextAwaiter(synchronizationContext);
+        }
+
+        /// <summary>
         /// Gets an awaitable that schedules continuations on the specified scheduler.
         /// </summary>
         /// <param name="scheduler">The task scheduler used to execute continuations.</param>
@@ -432,6 +446,71 @@ namespace Microsoft.VisualStudio.Threading
                     Task.Factory.StartNew(continuation, CancellationToken.None, TaskCreationOptions.None, this.scheduler);
 #endif
                 }
+            }
+
+            /// <summary>
+            /// Does nothing.
+            /// </summary>
+            public void GetResult()
+            {
+            }
+        }
+
+        /// <summary>
+        /// An awaiter returned from <see cref="GetAwaiter(SynchronizationContext)"/>.
+        /// </summary>
+        public readonly struct SynchronizationContextAwaiter : ICriticalNotifyCompletion
+        {
+            private static readonly SendOrPostCallback SyncContextDelegate = s => ((Action)s!)();
+
+            /// <summary>
+            /// The context for continuations.
+            /// </summary>
+            private readonly SynchronizationContext syncContext;
+
+            /// <summary>
+            /// Initializes a new instance of the <see cref="SynchronizationContextAwaiter"/> struct.
+            /// </summary>
+            /// <param name="syncContext">The context for continuations.</param>
+            public SynchronizationContextAwaiter(SynchronizationContext syncContext)
+            {
+                this.syncContext = syncContext;
+            }
+
+            /// <summary>
+            /// Gets a value indicating whether no yield is necessary.
+            /// </summary>
+            /// <value>Always returns <see langword="false"/>.</value>
+            public bool IsCompleted => false;
+
+            /// <summary>
+            /// Schedules a continuation to execute using the specified <see cref="SynchronizationContext"/>.
+            /// </summary>
+            /// <param name="continuation">The delegate to invoke.</param>
+            public void OnCompleted(Action continuation) => this.syncContext.Post(SyncContextDelegate, continuation);
+
+            /// <summary>
+            /// Schedules a continuation to execute using the specified <see cref="SynchronizationContext"/>
+            /// without capturing the <see cref="ExecutionContext"/>.
+            /// </summary>
+            /// <param name="continuation">The action.</param>
+            public void UnsafeOnCompleted(Action continuation)
+            {
+#if NETFRAMEWORK // Only bother suppressing flow on .NET Framework where the perf would improve from doing so.
+                if (ExecutionContext.IsFlowSuppressed())
+                {
+                    this.syncContext.Post(SyncContextDelegate, continuation);
+                }
+                else
+                {
+                    using (ExecutionContext.SuppressFlow())
+                    {
+                        this.syncContext.Post(SyncContextDelegate, continuation);
+                    }
+                }
+#else
+                this.syncContext.Post(SyncContextDelegate, continuation);
+#endif
             }
 
             /// <summary>
