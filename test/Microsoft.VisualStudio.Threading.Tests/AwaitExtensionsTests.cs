@@ -566,6 +566,53 @@ public partial class AwaitExtensionsTests : TestBase
         }
     }
 
+    [Fact]
+    public void GetAwaiter_SynchronizationContext_ValidatesArgs()
+    {
+        Assert.Throws<ArgumentNullException>(() => AwaitExtensions.GetAwaiter((SynchronizationContext)null!));
+    }
+
+    [Fact]
+    public async Task SyncContext_Awaiter()
+    {
+        TaskCompletionSource<SingleThreadedSynchronizationContext> syncContextSource = new();
+        SingleThreadedSynchronizationContext.Frame frame = new();
+        Thread? otherThread = null;
+        Task otherThreadTask = Task.Run(delegate
+        {
+            SingleThreadedSynchronizationContext syncContext;
+            try
+            {
+                syncContext = new();
+                otherThread = Thread.CurrentThread;
+                syncContextSource.SetResult(syncContext);
+            }
+            catch (Exception ex)
+            {
+                syncContextSource.SetException(ex);
+                throw;
+            }
+
+            syncContext.PushFrame(frame);
+        });
+
+        try
+        {
+            SynchronizationContext context = await syncContextSource.Task;
+            Assert.NotSame(Thread.CurrentThread, otherThread);
+            await context;
+            Assert.Same(Thread.CurrentThread, otherThread);
+            await Task.Yield();
+            Assert.Same(Thread.CurrentThread, otherThread);
+            await TaskScheduler.Default.SwitchTo(alwaysYield: true);
+            Assert.NotSame(Thread.CurrentThread, otherThread);
+        }
+        finally
+        {
+            frame.Continue = false;
+        }
+    }
+
     [SkippableFact]
     public async Task AwaitRegKeyChange()
     {
