@@ -8,6 +8,14 @@ Microsoft.VisualStudio.Threading.AwaitExtensions.SynchronizationContextAwaiter.O
 Microsoft.VisualStudio.Threading.AwaitExtensions.SynchronizationContextAwaiter.SynchronizationContextAwaiter(System.Threading.SynchronizationContext! syncContext) -> void
 Microsoft.VisualStudio.Threading.AwaitExtensions.SynchronizationContextAwaiter.UnsafeOnCompleted(System.Action! continuation) -> void
 Microsoft.VisualStudio.Threading.JoinableTaskContext.IsMainThreadMaybeBlocked() -> bool
+Microsoft.VisualStudio.Threading.JoinableTaskFactory.Run<T, TArgs>(System.Func<TArgs, System.Threading.Tasks.Task<T>!>! asyncMethod, TArgs args) -> T
+Microsoft.VisualStudio.Threading.JoinableTaskFactory.Run<T, TArgs>(System.Func<TArgs, System.Threading.Tasks.Task<T>!>! asyncMethod, TArgs args, Microsoft.VisualStudio.Threading.JoinableTaskCreationOptions creationOptions) -> T
+Microsoft.VisualStudio.Threading.JoinableTaskFactory.Run<TArgs>(System.Func<TArgs, System.Threading.Tasks.Task!>! asyncMethod, TArgs args) -> void
+Microsoft.VisualStudio.Threading.JoinableTaskFactory.Run<TArgs>(System.Func<TArgs, System.Threading.Tasks.Task!>! asyncMethod, TArgs args, Microsoft.VisualStudio.Threading.JoinableTaskCreationOptions creationOptions) -> void
+Microsoft.VisualStudio.Threading.JoinableTaskFactory.RunAsync<T, TArgs>(System.Func<TArgs, System.Threading.Tasks.Task<T>!>! asyncMethod, TArgs args) -> Microsoft.VisualStudio.Threading.JoinableTask<T>!
+Microsoft.VisualStudio.Threading.JoinableTaskFactory.RunAsync<T, TArgs>(System.Func<TArgs, System.Threading.Tasks.Task<T>!>! asyncMethod, TArgs args, Microsoft.VisualStudio.Threading.JoinableTaskCreationOptions creationOptions) -> Microsoft.VisualStudio.Threading.JoinableTask<T>!
+Microsoft.VisualStudio.Threading.JoinableTaskFactory.RunAsync<TArgs>(System.Func<TArgs, System.Threading.Tasks.Task!>! asyncMethod, TArgs args) -> Microsoft.VisualStudio.Threading.JoinableTask!
+Microsoft.VisualStudio.Threading.JoinableTaskFactory.RunAsync<TArgs>(System.Func<TArgs, System.Threading.Tasks.Task!>! asyncMethod, TArgs args, Microsoft.VisualStudio.Threading.JoinableTaskCreationOptions creationOptions) -> Microsoft.VisualStudio.Threading.JoinableTask!
 Microsoft.VisualStudio.Threading.SemaphoreFaultedException
 Microsoft.VisualStudio.Threading.SemaphoreFaultedException.SemaphoreFaultedException() -> void
 Microsoft.VisualStudio.Threading.IllegalSemaphoreUsageException
