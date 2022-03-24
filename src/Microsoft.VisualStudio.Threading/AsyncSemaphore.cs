@@ -101,6 +101,8 @@ namespace Microsoft.VisualStudio.Threading
                 return Task.FromCanceled<Releaser>(cancellationToken);
             }
 
+            WaiterInfo? info = null;
+            bool shouldCleanupInfo = false;
             lock (this.syncObject)
             {
                 if (this.disposed)
@@ -119,7 +121,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
                 else
                 {
-                    WaiterInfo info = new WaiterInfo(this, cancellationToken);
+                    info = new WaiterInfo(this, cancellationToken);
                     LinkedListNode<WaiterInfo>? node = this.GetNode(info);
 
                     // Careful: consider that if the token was cancelled just now (after we checked it on entry to this method)
@@ -141,15 +143,22 @@ namespace Microsoft.VisualStudio.Threading
                     else
                     {
                         // Make sure we don't leak the Timer if cancellation happened before we created it.
-                        info.Cleanup();
+                        shouldCleanupInfo = true;
 
                         // Also recycle the unused node.
                         this.RecycleNode(node);
                     }
-
-                    return info.Trigger.Task;
                 }
             }
+
+            // We cleanup outside the lock because cleanup can block on the cancellation handler,
+            // and the handler can take the same lock as we held earlier in this method.
+            if (shouldCleanupInfo)
+            {
+                info.Cleanup();
+            }
+
+            return info.Trigger.Task;
         }
 
         /// <summary>
@@ -230,6 +239,8 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             // Clear registration and references.
+            // We *may* be holding a lock on syncObject at this point iff this handler was executed inline with EnterAsync.
+            // In such a case, we haven't (yet) set WaiterInfo.CTR, so no deadlock risk exists in that case.
             waiterInfo.Cleanup();
         }
 
@@ -340,6 +351,14 @@ namespace Microsoft.VisualStudio.Threading
 
             internal IDisposable? TimerTokenSource { private get; set; }
 
+            /// <summary>
+            /// Disposes of <see cref="CancellationTokenRegistration"/> and any applicable timer.
+            /// </summary>
+            /// <remarks>
+            /// Callers should avoid calling this method while holding the <see cref="AsyncSemaphore.syncObject"/> lock
+            /// since <see cref="CancellationTokenRegistration.Dispose"/> can block on completion of <see cref="CancellationHandler(object?)"/>
+            /// which requires that same lock.
+            /// </remarks>
             internal void Cleanup()
             {
                 CancellationTokenRegistration cancellationTokenRegistration;
