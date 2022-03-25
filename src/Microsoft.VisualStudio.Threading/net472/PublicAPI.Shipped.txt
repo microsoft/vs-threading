@@ -454,3 +454,7 @@ Microsoft.VisualStudio.Threading.AwaitExtensions.AggregateExceptionAwaiter.IsCom
 Microsoft.VisualStudio.Threading.AwaitExtensions.AggregateExceptionAwaiter.OnCompleted(System.Action! continuation) -> void
 Microsoft.VisualStudio.Threading.AwaitExtensions.AggregateExceptionAwaiter.UnsafeOnCompleted(System.Action! continuation) -> void
 static Microsoft.VisualStudio.Threading.AwaitExtensions.ConfigureAwaitForAggregateException(this System.Threading.Tasks.Task! task, bool continueOnCapturedContext = true) -> Microsoft.VisualStudio.Threading.AwaitExtensions.AggregateExceptionAwaitable
+Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.AsyncReaderWriterLock(Microsoft.VisualStudio.Threading.JoinableTaskContext? joinableTaskContext, bool captureDiagnostics = false) -> void
+Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.AsyncReaderWriterResourceLock(Microsoft.VisualStudio.Threading.JoinableTaskContext? joinableTaskContext, bool captureDiagnostics) -> void
+Microsoft.VisualStudio.Threading.JoinableTaskContext.IsMainThreadMaybeBlocked() -> bool
+virtual Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.DeadlockCheckTimeout.get -> System.TimeSpan
