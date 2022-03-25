@@ -38,6 +38,15 @@ steps:
     workingDirectory: test/Microsoft.VisualStudio.Threading.Tests
   condition: ne(variables['OptProf'], 'true')
 
+- task: DotNetCoreCLI@2
+  displayName: dotnet test -f net5.0-windows
+  inputs:
+    command: test
+    arguments: --no-build -c $(BuildConfiguration) -f net5.0-windows --filter "TestCategory!=FailsInCloudTest" -v n /p:CollectCoverage=true --settings "$(Build.Repository.LocalPath)/azure-pipelines/$(Agent.OS).runsettings" /bl:"$(Build.ArtifactStagingDirectory)/build_logs/test_net5.0-windows.binlog"
+    testRunTitle: net5.0-windows-$(Agent.JobName)
+    workingDirectory: test/Microsoft.VisualStudio.Threading.Tests
+  condition: ne(variables['OptProf'], 'true')
+
 # We have to artifically run this script so that the extra .nupkg is produced for variables/InsertConfigValues.ps1 to notice.
 - powershell: azure-pipelines\artifacts\VSInsertion.ps1
   displayName: Prepare VSInsertion artifact

@@ -129,7 +129,7 @@ namespace Microsoft.VisualStudio.Threading
                 foreach (JoinableTaskFactory.SingleExecuteProtector? pendingTasksElement in pendingTask.MainThreadQueueContents)
                 {
                     queueIndex++;
-                    XElement? callstackNode = Dgml.Node(node.Attribute("Id").Value + "MTQueue#" + queueIndex, GetAsyncReturnStack(pendingTasksElement));
+                    XElement? callstackNode = Dgml.Node(node.Attribute("Id")!.Value + "MTQueue#" + queueIndex, GetAsyncReturnStack(pendingTasksElement));
                     XElement? callstackLink = Dgml.Link(callstackNode, node);
                     result.Add(Tuple.Create(callstackNode, callstackLink));
                 }
@@ -137,7 +137,7 @@ namespace Microsoft.VisualStudio.Threading
                 foreach (JoinableTaskFactory.SingleExecuteProtector? pendingTasksElement in pendingTask.ThreadPoolQueueContents)
                 {
                     queueIndex++;
-                    XElement? callstackNode = Dgml.Node(node.Attribute("Id").Value + "TPQueue#" + queueIndex, GetAsyncReturnStack(pendingTasksElement));
+                    XElement? callstackNode = Dgml.Node(node.Attribute("Id")!.Value + "TPQueue#" + queueIndex, GetAsyncReturnStack(pendingTasksElement));
                     XElement? callstackLink = Dgml.Link(callstackNode, node);
                     result.Add(Tuple.Create(callstackNode, callstackLink));
                 }
