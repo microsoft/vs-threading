@@ -9,6 +9,9 @@
 
     <DefineConstants Condition=" '$(TargetFramework)' == 'net472' ">$(DefineConstants);ISOLATED_TEST_SUPPORT</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <TargetFrameworks>$(TargetFrameworks);net5.0-windows</TargetFrameworks>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\src\Microsoft.VisualStudio.Threading\InternalUtilities.cs">
       <Link>InternalUtilities.cs</Link>

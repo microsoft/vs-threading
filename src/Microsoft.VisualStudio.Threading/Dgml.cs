@@ -33,12 +33,12 @@ namespace Microsoft.VisualStudio.Threading
                     new XAttribute("Layout", layout)));
             if (direction is object)
             {
-                dgml.Root.Add(new XAttribute("GraphDirection", direction));
+                dgml.Root!.Add(new XAttribute("GraphDirection", direction));
             }
 
             nodes = new XElement(XName.Get("Nodes", Namespace));
             links = new XElement(XName.Get("Links", Namespace));
-            dgml.Root.Add(nodes);
+            dgml.Root!.Add(nodes);
             dgml.Root.Add(links);
             dgml.WithCategories(Category("Contains", isContainment: true));
             return dgml;
@@ -107,7 +107,7 @@ namespace Microsoft.VisualStudio.Threading
 
         internal static XElement Link(XElement source, XElement target)
         {
-            return Link(source.Attribute("Id").Value, target.Attribute("Id").Value);
+            return Link(source.Attribute("Id")!.Value, target.Attribute("Id")!.Value);
         }
 
         internal static XDocument WithLink(this XDocument document, XElement link)
@@ -192,7 +192,7 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(node, nameof(node));
             Requires.NotNullOrEmpty(containerId, nameof(containerId));
 
-            document.WithLink(Link(containerId, node.Attribute("Id").Value).WithCategories("Contains"));
+            document.WithLink(Link(containerId, node.Attribute("Id")!.Value).WithCategories("Contains"));
             return node;
         }
 
@@ -230,7 +230,7 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(properties, nameof(properties));
             Requires.NotNullOrEmpty(targetType, nameof(targetType));
 
-            XElement? container = document.Root.Element(StylesName);
+            XElement? container = document.Root!.Element(StylesName);
             if (container is null)
             {
                 document.Root.Add(container = new XElement(StylesName));
@@ -241,7 +241,7 @@ namespace Microsoft.VisualStudio.Threading
                 new XAttribute("TargetType", targetType),
                 new XAttribute("GroupLabel", categoryId),
                 new XElement(XName.Get("Condition", Namespace), new XAttribute("Expression", "HasCategory('" + categoryId + "')")));
-            style.Add(properties.Select(p => new XElement(XName.Get("Setter", Namespace), new XAttribute("Property", p.Key), new XAttribute("Value", p.Value))));
+            style.Add(properties.Select(p => new XElement(XName.Get("Setter", Namespace), new XAttribute("Property", p.Key), new XAttribute("Value", p.Value!))));
 
             container.Add(style);
 
@@ -274,7 +274,7 @@ namespace Microsoft.VisualStudio.Threading
             Requires.NotNull(document, nameof(document));
             Requires.NotNull(name, nameof(name));
 
-            XElement? container = document.Root.Element(name);
+            XElement? container = document.Root!.Element(name);
             if (container is null)
             {
                 document.Root.Add(container = new XElement(name));

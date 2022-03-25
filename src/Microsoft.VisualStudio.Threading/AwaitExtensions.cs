@@ -10,6 +10,7 @@ namespace Microsoft.VisualStudio.Threading
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.CompilerServices;
     using System.Runtime.ExceptionServices;
+    using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Win32;
@@ -122,6 +123,11 @@ namespace Microsoft.VisualStudio.Threading
         /// </returns>
         public static Task WaitForChangeAsync(this RegistryKey registryKey, bool watchSubtree = true, RegistryChangeNotificationFilters change = RegistryChangeNotificationFilters.Value | RegistryChangeNotificationFilters.Subkey, CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             Requires.NotNull(registryKey, nameof(registryKey));
 
             return WaitForRegistryChangeAsync(registryKey.Handle, watchSubtree, change, cancellationToken);
