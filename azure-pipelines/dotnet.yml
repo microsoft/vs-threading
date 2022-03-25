@@ -45,7 +45,7 @@ steps:
     arguments: --no-build -c $(BuildConfiguration) -f net5.0-windows --filter "TestCategory!=FailsInCloudTest" -v n /p:CollectCoverage=true --settings "$(Build.Repository.LocalPath)/azure-pipelines/$(Agent.OS).runsettings" /bl:"$(Build.ArtifactStagingDirectory)/build_logs/test_net5.0-windows.binlog"
     testRunTitle: net5.0-windows-$(Agent.JobName)
     workingDirectory: test/Microsoft.VisualStudio.Threading.Tests
-  condition: ne(variables['OptProf'], 'true')
+  condition: and(ne(variables['OptProf'], 'true'), eq(variables['Agent.OS'], 'Windows_NT'))
 
 # We have to artifically run this script so that the extra .nupkg is produced for variables/InsertConfigValues.ps1 to notice.
 - powershell: azure-pipelines\artifacts\VSInsertion.ps1

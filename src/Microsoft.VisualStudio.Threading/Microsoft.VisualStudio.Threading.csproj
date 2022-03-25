@@ -1,13 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;netcoreapp3.1;net5.0;net5.0-windows;net472</TargetFrameworks>
-    <UseWPF Condition=" '$(TargetFramework)' != 'net5.0' ">true</UseWPF>
-    
+    <TargetFrameworks>netstandard2.0;netcoreapp3.1;net5.0;net472</TargetFrameworks>
+
     <Summary>Async synchronization primitives, async collections, TPL and dataflow extensions.</Summary>
     <Description>Async synchronization primitives, async collections, TPL and dataflow extensions. The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This package is applicable to any .NET application (not just Visual Studio).</Description>
     <PackageTags>Threading Async Lock Synchronization Threadsafe</PackageTags>
 
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <TargetFrameworks>$(TargetFrameworks);net5.0-windows</TargetFrameworks>
+    <UseWPF Condition=" '$(TargetFramework)' != 'net5.0' ">true</UseWPF>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Update="Strings.resx">
