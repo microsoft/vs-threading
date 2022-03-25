@@ -1,16 +1,12 @@
 Microsoft.VisualStudio.Threading.AsyncQueue<T>.ToArray() -> T[]!
-Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.AsyncReaderWriterLock(Microsoft.VisualStudio.Threading.JoinableTaskContext? joinableTaskContext, bool captureDiagnostics = false) -> void
-Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.AsyncReaderWriterResourceLock(Microsoft.VisualStudio.Threading.JoinableTaskContext? joinableTaskContext, bool captureDiagnostics) -> void
 Microsoft.VisualStudio.Threading.AwaitExtensions.SynchronizationContextAwaiter
 Microsoft.VisualStudio.Threading.AwaitExtensions.SynchronizationContextAwaiter.GetResult() -> void
 Microsoft.VisualStudio.Threading.AwaitExtensions.SynchronizationContextAwaiter.IsCompleted.get -> bool
 Microsoft.VisualStudio.Threading.AwaitExtensions.SynchronizationContextAwaiter.OnCompleted(System.Action! continuation) -> void
 Microsoft.VisualStudio.Threading.AwaitExtensions.SynchronizationContextAwaiter.SynchronizationContextAwaiter(System.Threading.SynchronizationContext! syncContext) -> void
 Microsoft.VisualStudio.Threading.AwaitExtensions.SynchronizationContextAwaiter.UnsafeOnCompleted(System.Action! continuation) -> void
-Microsoft.VisualStudio.Threading.JoinableTaskContext.IsMainThreadMaybeBlocked() -> bool
 Microsoft.VisualStudio.Threading.SemaphoreFaultedException
 Microsoft.VisualStudio.Threading.SemaphoreFaultedException.SemaphoreFaultedException() -> void
 Microsoft.VisualStudio.Threading.IllegalSemaphoreUsageException
 Microsoft.VisualStudio.Threading.IllegalSemaphoreUsageException.IllegalSemaphoreUsageException(string! message) -> void
 static Microsoft.VisualStudio.Threading.AwaitExtensions.GetAwaiter(this System.Threading.SynchronizationContext! synchronizationContext) -> Microsoft.VisualStudio.Threading.AwaitExtensions.SynchronizationContextAwaiter
-virtual Microsoft.VisualStudio.Threading.AsyncReaderWriterLock.DeadlockCheckTimeout.get -> System.TimeSpan
