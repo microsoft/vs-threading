@@ -183,12 +183,7 @@ namespace Microsoft.VisualStudio.Threading
                 resumableAwaiter?.Resume();
             }
 
-            if (!this.value.IsCompleted)
-            {
-                return this.joinableTask?.JoinAsync(cancellationToken) ?? this.value.WithCancellation(cancellationToken);
-            }
-
-            return this.value.WithCancellation(cancellationToken);
+            return this.joinableTask?.JoinAsync(cancellationToken) ?? this.value.WithCancellation(cancellationToken);
         }
 
         /// <summary>
