@@ -106,7 +106,7 @@ namespace Microsoft.VisualStudio.Threading
         [Event(CompleteOnCurrentThreadStartEvent)]
         public void CompleteOnCurrentThreadStart(int taskId, bool isOnMainThread)
         {
-            this.WriteEvent(CompleteOnCurrentThreadStartEvent, taskId, isOnMainThread);
+            this.WriteEvent(CompleteOnCurrentThreadStartEvent, taskId, Boxed.Box(isOnMainThread));
         }
 
         /// <summary>
@@ -145,7 +145,7 @@ namespace Microsoft.VisualStudio.Threading
         [Event(PostExecutionStartEvent, Level = EventLevel.Verbose)]
         public void PostExecutionStart(int requestId, bool mainThreadAffinitized)
         {
-            this.WriteEvent(PostExecutionStartEvent, requestId, mainThreadAffinitized);
+            this.WriteEvent(PostExecutionStartEvent, requestId, Boxed.Box(mainThreadAffinitized));
         }
 
         /// <summary>
