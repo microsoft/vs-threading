@@ -307,7 +307,7 @@ namespace Microsoft.VisualStudio.Threading
             // Rethrow any fault/cancellation exception, even if we awaited above.
             // But if we skipped the above if branch, this will actually yield
             // on an incompleted task.
-            await task.ConfigureAwait(continueOnCapturedContext);
+            await task.ConfigureAwaitRunInline();
         }
 
         /// <summary>
