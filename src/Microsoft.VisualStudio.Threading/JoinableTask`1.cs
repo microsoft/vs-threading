@@ -72,7 +72,7 @@ namespace Microsoft.VisualStudio.Threading
                     await me.Task.WithCancellation(continueOnCapturedContext: AwaitShouldCaptureSyncContext, cancellationToken).ConfigureAwait(AwaitShouldCaptureSyncContext);
                 }
 
-                return await me.Task.ConfigureAwaitRunInline();
+                return await me.Task.ConfigureAwait(AwaitShouldCaptureSyncContext);
             }
         }
 
