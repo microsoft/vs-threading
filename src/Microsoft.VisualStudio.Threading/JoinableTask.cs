@@ -607,9 +607,16 @@ namespace Microsoft.VisualStudio.Threading
 
             static async Task JoinSlowAsync(JoinableTask me, CancellationToken cancellationToken)
             {
-                using (me.AmbientJobJoinsThis())
+                JoinRelease dependency = me.AmbientJobJoinsThis();
+
+                try
                 {
                     await me.Task.WithCancellation(continueOnCapturedContext: AwaitShouldCaptureSyncContext, cancellationToken).ConfigureAwait(AwaitShouldCaptureSyncContext);
+                }
+                catch
+                {
+                    dependency.Dispose();
+                    throw;
                 }
             }
         }
