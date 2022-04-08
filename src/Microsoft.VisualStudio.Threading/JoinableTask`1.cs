@@ -58,15 +58,18 @@ namespace Microsoft.VisualStudio.Threading
 
             if (!cancellationToken.CanBeCanceled)
             {
-                // if a completed or failed JoinableTask will remove itself from parent dependency chains, so we don't repeat it which requires the sync lock.
+                // A completed or failed JoinableTask will remove itself from parent dependency chains, so we don't repeat it which requires the sync lock.
                 _ = this.AmbientJobJoinsThis();
                 return this.Task;
             }
-
-            return JoinSlowAsync(this, cancellationToken);
+            else
+            {
+                return JoinSlowAsync(this, cancellationToken);
+            }
 
             static async Task<T> JoinSlowAsync(JoinableTask<T> me, CancellationToken cancellationToken)
             {
+                // No need to dispose of this except in cancellation case.
                 JoinableTaskCollection.JoinRelease dependency = me.AmbientJobJoinsThis();
 
                 try
@@ -74,7 +77,7 @@ namespace Microsoft.VisualStudio.Threading
                     await me.Task.WithCancellation(continueOnCapturedContext: AwaitShouldCaptureSyncContext, cancellationToken).ConfigureAwait(AwaitShouldCaptureSyncContext);
                     return await me.Task.ConfigureAwait(AwaitShouldCaptureSyncContext);
                 }
-                catch
+                catch (OperationCanceledException)
                 {
                     dependency.Dispose();
                     throw;
