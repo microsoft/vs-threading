@@ -56,12 +56,32 @@ namespace Microsoft.VisualStudio.Threading
                 return this.Task;
             }
 
-            return JoinSlowAsync(cancellationToken);
-
-            async Task<T> JoinSlowAsync(CancellationToken cancellationToken)
+            if (!cancellationToken.CanBeCanceled)
             {
-                await base.JoinAsync(cancellationToken).ConfigureAwait(AwaitShouldCaptureSyncContext);
-                return await this.Task.ConfigureAwait(AwaitShouldCaptureSyncContext);
+                // A completed or failed JoinableTask will remove itself from parent dependency chains, so we don't repeat it which requires the sync lock.
+                _ = this.AmbientJobJoinsThis();
+                return this.Task;
+            }
+            else
+            {
+                return JoinSlowAsync(this, cancellationToken);
+            }
+
+            static async Task<T> JoinSlowAsync(JoinableTask<T> me, CancellationToken cancellationToken)
+            {
+                // No need to dispose of this except in cancellation case.
+                JoinableTaskCollection.JoinRelease dependency = me.AmbientJobJoinsThis();
+
+                try
+                {
+                    await me.Task.WithCancellation(continueOnCapturedContext: AwaitShouldCaptureSyncContext, cancellationToken).ConfigureAwait(AwaitShouldCaptureSyncContext);
+                    return await me.Task.ConfigureAwait(AwaitShouldCaptureSyncContext);
+                }
+                catch (OperationCanceledException)
+                {
+                    dependency.Dispose();
+                    throw;
+                }
             }
         }
 

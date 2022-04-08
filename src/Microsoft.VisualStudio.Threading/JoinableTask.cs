@@ -590,13 +590,35 @@ namespace Microsoft.VisualStudio.Threading
         /// before the async operation has completed.
         /// </param>
         /// <returns>A task that completes after the asynchronous operation completes and the join is reverted.</returns>
-        public async Task JoinAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public Task JoinAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            using (this.AmbientJobJoinsThis())
+            if (!cancellationToken.CanBeCanceled)
             {
-                await this.Task.WithCancellation(AwaitShouldCaptureSyncContext, cancellationToken).ConfigureAwait(AwaitShouldCaptureSyncContext);
+                // A completed or failed JoinableTask will remove itself from parent dependency chains, so we don't repeat it which requires the sync lock.
+                _ = this.AmbientJobJoinsThis();
+                return this.Task;
+            }
+            else
+            {
+                return JoinSlowAsync(this, cancellationToken);
+            }
+
+            static async Task JoinSlowAsync(JoinableTask me, CancellationToken cancellationToken)
+            {
+                // No need to dispose of this except in cancellation case.
+                JoinRelease dependency = me.AmbientJobJoinsThis();
+
+                try
+                {
+                    await me.Task.WithCancellation(continueOnCapturedContext: AwaitShouldCaptureSyncContext, cancellationToken).ConfigureAwait(AwaitShouldCaptureSyncContext);
+                }
+                catch (OperationCanceledException)
+                {
+                    dependency.Dispose();
+                    throw;
+                }
             }
         }
 
@@ -1055,6 +1077,20 @@ namespace Microsoft.VisualStudio.Threading
             return this.queueNeedProcessEvent;
         }
 
+        private protected JoinRelease AmbientJobJoinsThis()
+        {
+            if (!this.IsCompleted)
+            {
+                JoinableTask? ambientJob = this.JoinableTaskContext.AmbientTask;
+                if (ambientJob is object && ambientJob != this)
+                {
+                    return JoinableTaskDependencyGraph.AddDependency(ambientJob, this);
+                }
+            }
+
+            return default(JoinRelease);
+        }
+
         private static bool TryDequeueSelfOrDependencies(IJoinableTaskDependent currentNode, bool onMainThread, HashSet<IJoinableTaskDependent> visited, [NotNullWhen(true)] out SingleExecuteProtector? work)
         {
             Requires.NotNull(currentNode, nameof(currentNode));
@@ -1190,20 +1226,6 @@ namespace Microsoft.VisualStudio.Threading
                     }
                 }
             }
-        }
-
-        private JoinRelease AmbientJobJoinsThis()
-        {
-            if (!this.IsCompleted)
-            {
-                JoinableTask? ambientJob = this.JoinableTaskContext.AmbientTask;
-                if (ambientJob is object && ambientJob != this)
-                {
-                    return JoinableTaskDependencyGraph.AddDependency(ambientJob, this);
-                }
-            }
-
-            return default(JoinRelease);
         }
     }
 }
