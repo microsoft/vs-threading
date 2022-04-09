@@ -69,7 +69,16 @@ namespace Microsoft.VisualStudio.Threading
             {
                 base.OnCompleted();
 
-                this.owningJob.OnQueueCompleted();
+                if ((this.owningJob.state & JoinableTaskFlags.CompleteFinalized) != JoinableTaskFlags.CompleteFinalized)
+                {
+                    using (this.owningJob.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
+                    {
+                        lock (this.owningJob.JoinableTaskContext.SyncContextLock)
+                        {
+                            this.owningJob.OnQueueCompleted();
+                        }
+                    }
+                }
             }
 
             private void Scavenge()

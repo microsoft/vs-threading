@@ -60,7 +60,7 @@ namespace Microsoft.VisualStudio.Threading
         /// The collections that this job is a member of.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private ListOfOftenOne<IJoinableTaskDependent> dependencyParents;
+        private RarelyRemoveItemSet<IJoinableTaskDependent> dependencyParents;
 
         /// <summary>
         /// The <see cref="System.Threading.Tasks.Task"/> returned by the async delegate that this JoinableTask originally executed,
@@ -479,7 +479,7 @@ namespace Microsoft.VisualStudio.Threading
             get
             {
                 Assumes.True(Monitor.IsEntered(this.JoinableTaskContext.SyncContextLock));
-                return this.dependencyParents.OfType<JoinableTaskCollection>().ToList();
+                return this.dependencyParents.ToArray().OfType<JoinableTaskCollection>();
             }
         }
 
@@ -1022,7 +1022,7 @@ namespace Microsoft.VisualStudio.Threading
                 // notifications come in.
                 this.JoinableTaskContext.OnJoinableTaskCompleted(this);
 
-                foreach (IJoinableTaskDependent? collection in this.dependencyParents)
+                foreach (IJoinableTaskDependent collection in this.dependencyParents.EnumerateAndClear())
                 {
                     JoinableTaskDependencyGraph.RemoveDependency(collection, this, forceCleanup: true);
                 }
