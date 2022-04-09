@@ -19,6 +19,9 @@
     <Compile Include="..\..\src\Microsoft.VisualStudio.Threading\ListOfOftenOne`1.cs">
       <Link>ListOfOftenOne`1.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\Microsoft.VisualStudio.Threading\RarelyRemoveItemSet`1.cs">
+      <Link>RarelyRemoveItemSet`1.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Microsoft.VisualStudio.Threading\RoslynDebug.cs" Link="RoslynDebug.cs" />
     <Compile Include="..\..\src\Microsoft.VisualStudio.Threading\WeakKeyDictionary`2.cs">
       <Link>WeakKeyDictionary`2.cs</Link>
