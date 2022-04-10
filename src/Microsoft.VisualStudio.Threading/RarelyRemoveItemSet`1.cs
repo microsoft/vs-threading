@@ -89,6 +89,7 @@ namespace Microsoft.VisualStudio.Threading
 
                         // prevent holding reference
                         valueArray[this.count] = null!;
+                        break;
                     }
                 }
             }
@@ -135,7 +136,7 @@ namespace Microsoft.VisualStudio.Threading
             return results;
         }
 
-        public struct Enumerable
+        public readonly struct Enumerable
         {
             private readonly object? value;
 
@@ -182,23 +183,20 @@ namespace Microsoft.VisualStudio.Threading
             {
                 get
                 {
-                    if (this.currentIndex == IndexBeforeFirstArrayElement || this.currentIndex == IndexBeforeSingleElement)
+                    if (this.currentIndex >= 0 && this.currentIndex < this.count)
                     {
-                        throw new InvalidOperationException();
+                        return ((T[])this.enumeratedValue!)[this.currentIndex];
+                    }
+                    else if (this.currentIndex == IndexSingleElement)
+                    {
+                        return (T)this.enumeratedValue!;
                     }
 
-                    // enumeratedValue cannot be null here following a call to `MoveNext` that returns true (required
-                    // for correct usage of IEnumerator).
-                    return this.currentIndex == IndexSingleElement
-                        ? (T)this.enumeratedValue!
-                        : ((T[])this.enumeratedValue!)[this.currentIndex];
+                    throw new InvalidOperationException();
                 }
             }
 
-            object System.Collections.IEnumerator.Current
-            {
-                get { return this.Current; }
-            }
+            object System.Collections.IEnumerator.Current => this.Current;
 
             public void Dispose()
             {
@@ -206,28 +204,31 @@ namespace Microsoft.VisualStudio.Threading
 
             public bool MoveNext()
             {
-                if (this.currentIndex == IndexBeforeSingleElement && this.count > 0)
+                if (this.currentIndex >= 0)
                 {
-                    this.currentIndex = IndexSingleElement;
-                    return true;
+                    if (this.currentIndex < this.count)
+                    {
+                        this.currentIndex++;
+                        return this.currentIndex < this.count;
+                    }
                 }
-
-                if (this.currentIndex == IndexSingleElement)
+                else
                 {
-                    return false;
-                }
+                    switch (this.currentIndex)
+                    {
+                        case IndexBeforeSingleElement:
+                            if (this.count > 0)
+                            {
+                                this.currentIndex = IndexSingleElement;
+                                return true;
+                            }
 
-                if (this.currentIndex == IndexBeforeFirstArrayElement)
-                {
-                    this.currentIndex = 0;
-                    return true;
-                }
+                            break;
 
-                var array = (T[]?)this.enumeratedValue;
-                if (this.currentIndex >= 0 && this.currentIndex < this.count)
-                {
-                    this.currentIndex++;
-                    return this.currentIndex < this.count;
+                        case IndexBeforeFirstArrayElement:
+                            this.currentIndex = 0;
+                            return true;
+                    }
                 }
 
                 return false;
