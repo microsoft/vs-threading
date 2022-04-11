@@ -8,10 +8,11 @@ trigger:
     - 'validate/*'
   paths:
     exclude:
-    - .github/
     - doc/
     - '*.md'
     - .vscode/
+    - azure-pipelines/release.yml
+    - azure-pipelines/vs-insertion.yml
 schedules:
 - cron: "0 3 * * *" # Daily @ 8 PM PST
   displayName: Daily vs-insertion
@@ -50,7 +51,6 @@ stages:
     TreatWarningsAsErrors: true
     DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
     BuildConfiguration: Release
-    push_to_ci: true
     NUGET_PACKAGES: $(Agent.TempDirectory)/.nuget/packages
     SignTypeSelection: ${{ parameters.SignTypeSelection }}
     Packaging.EnableSBOMSigning: true
@@ -70,6 +70,7 @@ stages:
   - job: archive
     pool: VSEng-ReleasePool-1ES
     steps:
+    - checkout: none
     - download: current
       artifact: Variables-Windows
       displayName: Download Variables-Windows artifact
@@ -79,8 +80,8 @@ stages:
         targetType: filePath
         filePath: $(Pipeline.Workspace)/Variables-Windows/_pipelines.ps1
     - download: current
-      artifact: symbols-Windows
-      displayName: Download symbols-Windows artifact
+      artifact: symbols-legacy
+      displayName: Download symbols-legacy artifact
     - task: MicroBuildArchiveSymbols@1
       displayName: Archive symbols to Symweb
       inputs:
@@ -88,7 +89,7 @@ stages:
         SymbolsSymwebProject: VS
         SymbolsUncPath: \\cpvsbuild\drops\$(TeamName)\$(Build.DefinitionName)\$(Build.SourceBranchName)\$(Build.BuildId)\Symbols.Archival
         SymbolsEmailContacts: vsidemicrobuild
-        SymbolsAgentPath: $(Pipeline.Workspace)/symbols-Windows
+        SymbolsAgentPath: $(Pipeline.Workspace)/symbols-legacy
     - task: MicroBuildCleanup@1
       displayName: Send Telemetry
 
@@ -96,28 +97,24 @@ stages:
   displayName: azure-public/vssdk feed
   condition: and(succeeded(), eq(dependencies.Build.outputs['Windows.SetPipelineVariables.SignType'], 'Real'))
   jobs:
-  - deployment: push
+  - job: push
     pool:
       name: AzurePipelines-EO
       vmImage: AzurePipelinesUbuntu20.04compliant
-    environment: No-Approval
-    strategy:
-      runOnce:
-        deploy:
-          steps:
-          - download: current
-            artifact: deployables-Windows
-            displayName: Download deployables-Windows artifact
-          - task: NuGetToolInstaller@1
-            displayName: Use NuGet 5.x
-            inputs:
-              versionSpec: 5.x
-          - task: NuGetCommand@2
-            displayName: NuGet push
-            inputs:
-              command: push
-              packagesToPush: $(Pipeline.Workspace)/deployables-Windows/NuGet/*.nupkg
-              nuGetFeedType: external
-              publishFeedCredentials: azure-public/vssdk
-              allowPackageConflicts: true
-            continueOnError: true # until "skip on conflict" is offered as a task input.
+    steps:
+    - checkout: none
+    - download: current
+      artifact: deployables-Windows
+      displayName: Download deployables-Windows artifact
+    - task: UseDotNet@2
+      displayName: Install .NET SDK
+      inputs:
+        packageType: sdk
+        version: 6.x
+    - task: NuGetAuthenticate@0
+      displayName: Authenticate NuGet feeds
+      inputs:
+        nuGetServiceConnections: azure-public/vssdk
+        forceReinstallCredentialProvider: true
+    - script: dotnet nuget push $(Pipeline.Workspace)/deployables-Windows/NuGet/*.nupkg -s https://pkgs.dev.azure.com/azure-public/vside/_packaging/vssdk/nuget/v3/index.json --api-key azdo --skip-duplicate
+      displayName: Push nuget packages

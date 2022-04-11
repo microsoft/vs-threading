@@ -6,15 +6,7 @@ param (
     [string]$ArtifactNameSuffix
 )
 
-$RepoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot (Join-Path .. ..)))
-if ($env:BUILD_ARTIFACTSTAGINGDIRECTORY) {
-    $ArtifactStagingFolder = $env:BUILD_ARTIFACTSTAGINGDIRECTORY
-} else {
-    $ArtifactStagingFolder = Join-Path $RepoRoot (Join-Path obj _artifacts)
-    if (Test-Path $ArtifactStagingFolder) {
-        Remove-Item $ArtifactStagingFolder -Recurse -Force
-    }
-}
+$ArtifactStagingFolder = & "$PSScriptRoot/../Get-ArtifactsStagingDirectory.ps1" -CleanIfLocal
 
 function Create-SymbolicLink {
     param (
@@ -40,7 +32,7 @@ function Create-SymbolicLink {
 # Stage all artifacts
 $Artifacts = & "$PSScriptRoot\_all.ps1" -ArtifactNameSuffix $ArtifactNameSuffix
 $Artifacts |% {
-    $DestinationFolder = (Join-Path (Join-Path $ArtifactStagingFolder "$($_.ArtifactName)$ArtifactNameSuffix") $_.ContainerFolder).TrimEnd('\')
+    $DestinationFolder = [System.IO.Path]::GetFullPath("$ArtifactStagingFolder/$($_.ArtifactName)$ArtifactNameSuffix/$($_.ContainerFolder)").TrimEnd('\')
     $Name = "$(Split-Path $_.Source -Leaf)"
 
     #Write-Host "$($_.Source) -> $($_.ArtifactName)\$($_.ContainerFolder)" -ForegroundColor Yellow

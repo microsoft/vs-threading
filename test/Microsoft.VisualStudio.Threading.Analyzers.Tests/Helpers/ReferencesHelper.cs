@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
@@ -11,9 +11,9 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
     {
         public static ReferenceAssemblies DefaultReferences = ReferenceAssemblies.Default
             .WithPackages(ImmutableArray.Create(
-                new PackageIdentity("System.Collections.Immutable", "1.3.1"),
-                new PackageIdentity("System.Threading.Tasks.Extensions", "4.5.3"),
-                new PackageIdentity("Microsoft.Bcl.AsyncInterfaces", "1.1.0")));
+                new PackageIdentity("System.Collections.Immutable", "5.0.0"),
+                new PackageIdentity("System.Threading.Tasks.Extensions", "4.5.4"),
+                new PackageIdentity("Microsoft.Bcl.AsyncInterfaces", "6.0.0")));
 
         internal static readonly ImmutableArray<string> VSSDKPackageReferences = ImmutableArray.Create(new string[]
         {

@@ -1,5 +1,13 @@
 # This artifact captures everything needed to insert into VS (NuGet packages, insertion metadata, etc.)
 
+<#
+.PARAMETER SbomNotRequired
+    Indicates that returning the artifacts available is preferable to nothing at all when the SBOM has not yet been generated.
+#>
+Param (
+    [switch]$SbomNotRequired
+)
+
 if ($IsMacOS -or $IsLinux) {
     # We only package up for insertions on Windows agents since they are where optprof can happen.
     Write-Verbose "Skipping VSInsertion artifact since we're not on Windows"
@@ -7,14 +15,17 @@ if ($IsMacOS -or $IsLinux) {
 }
 
 $RepoRoot = [System.IO.Path]::GetFullPath("$PSScriptRoot\..\..")
-$config = 'Debug'
-if ($env:BUILDCONFIGURATION) { $config = $env:BUILDCONFIGURATION }
+$BuildConfiguration = $env:BUILDCONFIGURATION
+if (!$BuildConfiguration) {
+    $BuildConfiguration = 'Debug'
+}
+
 $NuGetPackages = "$RepoRoot\bin\Packages\$config\NuGet"
 $CoreXTPackages = "$RepoRoot\bin\Packages\$config\CoreXT"
-if (-not (Test-Path $NuGetPackages)) { Write-Warning "No NuGet packages found. Has a build been run?"; return @{} }
-
 # This artifact is not ready if we're running on the devdiv AzDO account and we don't have an SBOM yet.
-if ($env:SYSTEM_COLLECTIONID -eq '011b8bdf-6d56-4f87-be0d-0092136884d9' -and -not (Test-Path $NuGetPackages/_manifest)) { return @{} }
+if ($env:SYSTEM_COLLECTIONID -eq '011b8bdf-6d56-4f87-be0d-0092136884d9' -and -not (Test-Path $NuGetPackages/_manifest) -and -not $SbomNotRequired) { return @{} }
+
+if (!(Test-Path $NuGetPackages))  { return @{} }
 
 $ArtifactBasePath = "$RepoRoot\obj\_artifacts"
 $ArtifactPath = "$ArtifactBasePath\VSInsertion"
@@ -40,6 +51,6 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 @{
-    "$NuGetPackages" = (Get-ChildItem -Recurse $NuGetPackages);
+    "$NuGetPackages" = (Get-ChildItem $NuGetPackages -Recurse)
     "$CoreXTPackages" = (Get-ChildItem "$CoreXTPackages\Microsoft.VisualStudio.Threading.VSInsertionMetadata.$InsertionMetadataVersion.nupkg");
 }
