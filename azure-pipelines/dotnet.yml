@@ -14,6 +14,7 @@ steps:
 
 - powershell: azure-pipelines/dotnet-test-cloud.ps1 -Configuration $(BuildConfiguration) -Agent $(Agent.JobName) -PublishResults
   displayName: dotnet test
+  condition: and(succeeded(), ne(variables['OptProf'], 'true'))
 
 # We have to artifically run this script so that the extra .nupkg is produced for variables/InsertConfigValues.ps1 to notice.
 - powershell: azure-pipelines\artifacts\VSInsertion.ps1
