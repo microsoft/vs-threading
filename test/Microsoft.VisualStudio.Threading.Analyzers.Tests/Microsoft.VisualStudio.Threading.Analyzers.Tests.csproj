@@ -26,7 +26,7 @@
     <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.CodeFix.Testing.XUnit" Version="1.1.1" />
     <PackageReference Include="Microsoft.CodeAnalysis" Version="3.11.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
-    <PackageReference Include="Microsoft.VisualStudio.Interop" Version="17.1.32304.227" />
+    <PackageReference Include="Microsoft.VisualStudio.Interop" Version="17.2.32408.312" />
     <PackageReference Include="Microsoft.VisualStudio.Shell.15.0" Version="17.1.32304.227" />
     <PackageReference Include="Microsoft.VisualStudio.Shell.Framework" Version="17.1.32304.227" />
     <PackageReference Include="System.Threading.Tasks.Dataflow" Version="6.0.0" />
