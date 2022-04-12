@@ -21,16 +21,11 @@ if (!$BuildConfiguration) {
     $BuildConfiguration = 'Debug'
 }
 
-$NuGetPackages = "$RepoRoot\bin\Packages\$config\NuGet"
-$CoreXTPackages = "$RepoRoot\bin\Packages\$config\CoreXT"
-# This artifact is not ready if we're running on the devdiv AzDO account and we don't have an SBOM yet.
-if ($env:SYSTEM_COLLECTIONID -eq '011b8bdf-6d56-4f87-be0d-0092136884d9' -and -not (Test-Path $NuGetPackages/_manifest) -and -not $SbomNotRequired) {
-    Write-Host "Skipping because SBOM isn't generated yet."
-    return @{}
-}
+$NuGetPackages = "$RepoRoot\bin\Packages\$BuildConfiguration\NuGet"
+$CoreXTPackages = "$RepoRoot\bin\Packages\$BuildConfiguration\CoreXT"
 
 if (!(Test-Path $NuGetPackages)) {
-    Write-Warning "Skipping because packages haven't been built yet."
+    Write-Warning "Skipping because NuGet packages haven't been built yet."
     return @{}
 }
 
@@ -55,6 +50,12 @@ if ($env:BUILD_BUILDID) {
 & (& "$PSScriptRoot\..\Get-NuGetTool.ps1") pack "$PSScriptRoot\..\InsertionMetadataPackage.nuspec" -OutputDirectory $CoreXTPackages -BasePath $ArtifactPath -Version $InsertionMetadataVersion | Out-Null
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
+}
+
+# This artifact is not ready if we're running on the devdiv AzDO account and we don't have an SBOM yet.
+if ($env:SYSTEM_COLLECTIONID -eq '011b8bdf-6d56-4f87-be0d-0092136884d9' -and -not (Test-Path $NuGetPackages/_manifest) -and -not $SbomNotRequired) {
+  Write-Host "Skipping because SBOM isn't generated yet."
+  return @{}
 }
 
 @{
