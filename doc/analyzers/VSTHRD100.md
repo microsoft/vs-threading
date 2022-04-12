@@ -26,4 +26,15 @@ async Task DoSomethingAsync()
 
 A code fix is offered that automatically changes the return type of the method. 
 
+For event handlers, avoid `async void` by using `RunAsync`:
+```csharp
+obj.Event += (s, e) => joinableTaskFactory.RunAsync(() => OnEventAsync(s, e));
+}
+
+private async Task OnEventAsync(object sender, EventArgs e)
+{
+   // async code here.
+}
+```
+
 Refer to [Async/Await - Best Practices in Asynchronous Programming](https://msdn.microsoft.com/en-us/magazine/jj991977.aspx) for more info.
