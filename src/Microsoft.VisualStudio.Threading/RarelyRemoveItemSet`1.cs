@@ -12,12 +12,12 @@ namespace Microsoft.VisualStudio.Threading
     /// </summary>
     /// <typeparam name="T">The type of elements to be stored.</typeparam>
     internal struct RarelyRemoveItemSet<T>
-        where T : class
+        where T : class?
     {
         private const int MaxExpansionSize = 16 * 1024;
 
         /// <summary>
-        /// The single value or array of values stored by this collection. Null if empty.
+        /// The single value or array of values stored by this collection.
         /// </summary>
         private object? value;
 
@@ -29,9 +29,9 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Adds an element to the collection.
         /// </summary>
-        public void Add(T value)
+        internal void Add(T value)
         {
-            if (this.value is T[] valueArray)
+            if (this.value is T?[] valueArray)
             {
                 if (valueArray.Length > this.count)
                 {
@@ -54,8 +54,8 @@ namespace Microsoft.VisualStudio.Threading
                 }
                 else
                 {
-                    Assumes.Equals(1, this.count);
-                    valueArray = new T[2] { (T)this.value!, value };
+                    Assumes.True(this.count == 1);
+                    valueArray = new T?[2] { (T?)this.value, value };
                     this.value = valueArray;
                 }
             }
@@ -66,14 +66,14 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Removes an element from the collection.
         /// </summary>
-        public void Remove(T value)
+        internal void Remove(T value)
         {
             if (this.count == 0)
             {
                 return;
             }
 
-            if (this.value is T[] valueArray)
+            if (this.value is T?[] valueArray)
             {
                 for (int i = 0; i < this.count; i++)
                 {
@@ -84,11 +84,13 @@ namespace Microsoft.VisualStudio.Threading
 
                         if (i < this.count)
                         {
+                            // if the item removed was not the latest item in the array, we move the latest item in the original array there to fill the hole.
+                            // After that, we reduce the size of the array by 1. (This eliminates extra work to move more than one item during Remove.)
                             valueArray[i] = valueArray[this.count];
                         }
 
                         // prevent holding reference
-                        valueArray[this.count] = null!;
+                        valueArray[this.count] = null;
                         break;
                     }
                 }
@@ -103,7 +105,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets the result out of the current list, and reset it to empty.
         /// </summary>
-        public Enumerable EnumerateAndClear()
+        internal Enumerable EnumerateAndClear()
         {
             var copy = new Enumerable(this.value, this.count);
 
@@ -116,48 +118,24 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Make a thread safe copy of the content of this list.
         /// </summary>
-        public T[] ToArray()
+        internal T?[] ToArray()
         {
             if (this.count == 0)
             {
                 return Array.Empty<T>();
             }
 
-            var results = new T[this.count];
-            if (this.value is T[] valueArray)
+            var results = new T?[this.count];
+            if (this.value is T?[] valueArray)
             {
                 Array.Copy(valueArray, results, this.count);
             }
             else
             {
-                results[0] = (T)this.value!;
+                results[0] = (T?)this.value;
             }
 
             return results;
-        }
-
-        public readonly struct Enumerable
-        {
-            private readonly object? value;
-
-            /// <summary>
-            /// The number of items.
-            /// </summary>
-            private readonly int count;
-
-            public Enumerable(object? value, int count)
-            {
-                this.value = value;
-                this.count = count;
-            }
-
-            /// <summary>
-            /// Returns an enumerator for a current snapshot of the collection.
-            /// </summary>
-            public Enumerator GetEnumerator()
-            {
-                return new Enumerator(this.value, this.count);
-            }
         }
 
         public struct Enumerator : IEnumerator<T>
@@ -196,7 +174,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
             }
 
-            object System.Collections.IEnumerator.Current => this.Current;
+            object? System.Collections.IEnumerator.Current => this.Current;
 
             public void Dispose()
             {
@@ -236,7 +214,31 @@ namespace Microsoft.VisualStudio.Threading
 
             public void Reset()
             {
-                this.currentIndex = this.enumeratedValue is T[] ? IndexBeforeFirstArrayElement : IndexBeforeSingleElement;
+                this.currentIndex = this.enumeratedValue is T?[] ? IndexBeforeFirstArrayElement : IndexBeforeSingleElement;
+            }
+        }
+
+        internal readonly struct Enumerable
+        {
+            private readonly object? value;
+
+            /// <summary>
+            /// The number of items.
+            /// </summary>
+            private readonly int count;
+
+            internal Enumerable(object? value, int count)
+            {
+                this.value = value;
+                this.count = count;
+            }
+
+            /// <summary>
+            /// Returns an enumerator for a current snapshot of the collection.
+            /// </summary>
+            public Enumerator GetEnumerator()
+            {
+                return new Enumerator(this.value, this.count);
             }
         }
     }
