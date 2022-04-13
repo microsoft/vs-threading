@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Runtime.CompilerServices;
 using Microsoft.VisualStudio.Threading;
 using Xunit;
 using Xunit.Abstractions;
@@ -150,6 +152,19 @@ public class RarelyRemoveItemSetTests : TestBase
     }
 
     [Fact]
+    public void RemoveFromMultipleGCTest()
+    {
+        WeakReference[]? weakValues = this.RemoveFromMultipleGCTestHelper();
+
+        GC.Collect();
+
+        for (int i = 0; i < 5; i++)
+        {
+            Assert.False(weakValues[i].IsAlive);
+        }
+    }
+
+    [Fact]
     public void EnumerateAndClear()
     {
         this.list.Add(new GenericParameterHelper(1));
@@ -161,5 +176,29 @@ public class RarelyRemoveItemSetTests : TestBase
             Assert.Equal(1, enumerator.Current.Data);
             Assert.False(enumerator.MoveNext());
         }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)] // must not be inlined so that locals are guaranteed to be freed.
+    private WeakReference[] RemoveFromMultipleGCTestHelper()
+    {
+        GenericParameterHelper[]? values = new GenericParameterHelper[5];
+        var weakValues = new WeakReference[5];
+
+        for (int i = 0; i < 5; i++)
+        {
+            values[i] = new GenericParameterHelper(i);
+            weakValues[i] = new WeakReference(values[i]);
+            this.list.Add(values[i]);
+        }
+
+        this.list.Remove(values[4]);
+        this.list.Remove(values[1]);
+        this.list.Remove(values[3]);
+        this.list.Remove(values[0]);
+        this.list.Remove(values[2]);
+
+        Assert.Empty(this.list.ToArray());
+
+        return weakValues;
     }
 }
