@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Linq;
 using Microsoft.VisualStudio.Threading;
 using Xunit;
 using Xunit.Abstractions;
@@ -123,6 +122,31 @@ public class RarelyRemoveItemSetTests : TestBase
         Assert.Equal(2, this.list.ToArray()[0].Data);
         this.list.Remove(value2);
         Assert.Empty(this.list.ToArray());
+    }
+
+    [Fact]
+    public void RemoveFromMultiple()
+    {
+        var values = new GenericParameterHelper[5];
+        for (int i = 0; i < 5; i++)
+        {
+            values[i] = new GenericParameterHelper(i);
+            this.list.Add(values[i]);
+        }
+
+        this.list.Remove(values[2]);
+        Assert.Equal(4, this.list.ToArray().Length);
+
+        this.list.Remove(values[4]);
+        Assert.Equal(3, this.list.ToArray().Length);
+
+        this.list.Remove(values[0]);
+        Assert.Equal(2, this.list.ToArray().Length);
+
+        this.list.Remove(values[3]);
+        Assert.Single(this.list.ToArray());
+
+        Assert.Equal(1, this.list.ToArray()[0].Data);
     }
 
     [Fact]

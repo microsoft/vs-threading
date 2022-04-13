@@ -118,21 +118,21 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Make a thread safe copy of the content of this list.
         /// </summary>
-        internal T?[] ToArray()
+        internal T[] ToArray()
         {
             if (this.count == 0)
             {
                 return Array.Empty<T>();
             }
 
-            var results = new T?[this.count];
+            var results = new T[this.count];
             if (this.value is T?[] valueArray)
             {
                 Array.Copy(valueArray, results, this.count);
             }
             else
             {
-                results[0] = (T?)this.value;
+                results[0] = (T)this.value!;
             }
 
             return results;
