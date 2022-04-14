@@ -138,7 +138,7 @@ namespace Microsoft.VisualStudio.Threading
             return results;
         }
 
-        public struct Enumerator : IEnumerator<T>
+        internal struct Enumerator : IEnumerator<T>
         {
             private const int IndexBeforeFirstArrayElement = -1;
             private const int IndexSingleElement = -2;

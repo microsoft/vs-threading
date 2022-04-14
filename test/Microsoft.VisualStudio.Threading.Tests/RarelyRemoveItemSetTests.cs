@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using Microsoft.VisualStudio.Threading;
 using Xunit;
@@ -138,17 +139,25 @@ public class RarelyRemoveItemSetTests : TestBase
 
         this.list.Remove(values[2]);
         Assert.Equal(4, this.list.ToArray().Length);
+        AssertContains(0, 1, 3, 4);
 
         this.list.Remove(values[4]);
         Assert.Equal(3, this.list.ToArray().Length);
+        AssertContains(0, 1, 3);
 
         this.list.Remove(values[0]);
         Assert.Equal(2, this.list.ToArray().Length);
+        AssertContains(1, 3);
 
         this.list.Remove(values[3]);
         Assert.Single(this.list.ToArray());
+        AssertContains(1);
 
-        Assert.Equal(1, this.list.ToArray()[0].Data);
+        void AssertContains(params int[] values)
+        {
+            // We specifically do not care about order of elements.
+            Assert.Equal(values.OrderBy(k => k), this.list.ToArray().Select(v => v.Data).OrderBy(k => k));
+        }
     }
 
     /// <summary>
