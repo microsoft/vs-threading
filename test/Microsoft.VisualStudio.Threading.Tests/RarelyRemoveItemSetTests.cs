@@ -151,6 +151,9 @@ public class RarelyRemoveItemSetTests : TestBase
         Assert.Equal(1, this.list.ToArray()[0].Data);
     }
 
+    /// <summary>
+    /// Test to make sure the list does not reference deleted items.
+    /// </summary>
     [Fact]
     public void RemoveFromMultipleGCTest()
     {
