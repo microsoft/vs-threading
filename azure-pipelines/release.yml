@@ -58,3 +58,5 @@ jobs:
   - script: dotnet nuget push $(Pipeline.Workspace)/CI/deployables-Windows/NuGet/*.nupkg -s https://api.nuget.org/v3/index.json --api-key $(NuGetOrgApiKey) --skip-duplicate
     displayName: Push nuget packages
     condition: and(succeeded(), ne(variables['NuGetOrgApiKey'], ''))
+  - script: dotnet nuget push $(Pipeline.Workspace)/CI/deployables-Windows/WinDBGGallery/*.nupkg -s https://pkgs.dev.azure.com/microsoft/_packaging/DebuggerExtensions/nuget/v3/index.json --api-key $(MicrosoftAzDOAccount) --skip-duplicate
+    displayName: WinDBG Gallery
