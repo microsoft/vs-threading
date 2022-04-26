@@ -46,7 +46,9 @@ jobs:
       title: v$(resources.pipeline.CI.runName)
       isDraft: true # After running this step, visit the new draft release, edit, and publish.
       isPreRelease: $(IsPrerelease)
-      assets: $(Pipeline.Workspace)/CI/deployables-Windows/NuGet/*.nupkg
+      assets: |
+        $(Pipeline.Workspace)/CI/deployables-Windows/NuGet/*.nupkg
+        $(Pipeline.Workspace)/CI/deployables-Windows/SosThreadingTools.zip
       changeLogCompareToRelease: lastNonDraftRelease
       changeLogType: issueBased
       changeLogLabels: |
