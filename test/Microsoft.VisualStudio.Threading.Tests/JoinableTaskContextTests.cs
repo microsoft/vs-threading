@@ -46,6 +46,41 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
     }
 
     [Fact]
+    public void IsMainThreadBlockedByAnyoneTrue()
+    {
+        Assert.False(this.Context.IsMainThreadBlockedByAnyone);
+        this.Factory.RunAsync(async delegate
+        {
+            await TaskScheduler.Default.SwitchTo(alwaysYield: true);
+
+            Assert.False(this.Context.IsMainThreadBlockedByAnyone);
+
+            await this.Factory.SwitchToMainThreadAsync();
+            this.Factory.Run(async delegate
+            {
+                Assert.True(this.Context.IsMainThreadBlockedByAnyone);
+                await Task.Yield();
+                Assert.True(this.Context.IsMainThreadBlockedByAnyone);
+                await Task.Run(delegate
+                {
+                    Assert.True(this.Context.IsMainThreadBlockedByAnyone);
+                    return Task.CompletedTask;
+                });
+            });
+
+            Assert.False(this.Context.IsMainThreadBlockedByAnyone);
+
+            this.Factory.Run(async delegate
+            {
+                await Task.Yield();
+                Assert.False(this.Context.IsMainThreadBlockedByAnyone);
+            });
+
+            Assert.False(this.Context.IsMainThreadBlockedByAnyone);
+        });
+    }
+
+    [Fact]
     public void ReportHangOnRun()
     {
         this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
