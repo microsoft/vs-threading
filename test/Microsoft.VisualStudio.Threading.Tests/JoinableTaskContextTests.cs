@@ -46,38 +46,52 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
     }
 
     [Fact]
-    public void IsMainThreadBlockedByAnyoneTrue()
+    public void IsMainThreadBlockedByAnyone()
     {
         Assert.False(this.Context.IsMainThreadBlockedByAnyone);
-        this.Factory.RunAsync(async delegate
+        AsyncManualResetEvent mainThreadBlockerEvent = new AsyncManualResetEvent(false);
+        AsyncManualResetEvent backgroundThreadMonitorEvent = new AsyncManualResetEvent(false);
+
+        // Start task to monitor IsMainThreadBlockedByAnyone
+        Task.Run(async () =>
         {
             await TaskScheduler.Default.SwitchTo(alwaysYield: true);
+            await mainThreadBlockerEvent.WaitAsync();
 
-            Assert.False(this.Context.IsMainThreadBlockedByAnyone);
-
-            await this.Factory.SwitchToMainThreadAsync();
-            this.Factory.Run(async delegate
+            bool shouldWaitForMainThreadBlock = true;
+            while (shouldWaitForMainThreadBlock)
             {
-                Assert.True(this.Context.IsMainThreadBlockedByAnyone);
-                await Task.Yield();
-                Assert.True(this.Context.IsMainThreadBlockedByAnyone);
-                await Task.Run(delegate
+                try
                 {
                     Assert.True(this.Context.IsMainThreadBlockedByAnyone);
-                    return Task.CompletedTask;
-                });
-            });
+                    shouldWaitForMainThreadBlock = false;
+                }
+                catch
+                {
+                    // Give the main thread time to enter a blocking state
+                    Thread.Sleep(50);
+                }
+            }
 
-            Assert.False(this.Context.IsMainThreadBlockedByAnyone);
-
-            this.Factory.Run(async delegate
-            {
-                await Task.Yield();
-                Assert.False(this.Context.IsMainThreadBlockedByAnyone);
-            });
-
-            Assert.False(this.Context.IsMainThreadBlockedByAnyone);
+            backgroundThreadMonitorEvent.Set();
         });
+
+        JoinableTask? joinable = this.Factory.RunAsync(async delegate
+        {
+            Assert.False(this.Context.IsMainThreadBlockedByAnyone);
+            await Task.Yield();
+
+            this.Factory.Run(async () =>
+            {
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
+                mainThreadBlockerEvent.Set();
+                await backgroundThreadMonitorEvent.WaitAsync();
+            });
+        });
+
+        joinable.Join();
+
+        Assert.False(this.Context.IsMainThreadBlockedByAnyone);
     }
 
     [Fact]
@@ -445,8 +459,8 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
             this.Logger.WriteLine(report.Content);
             var dgml = XDocument.Parse(report.Content);
             IEnumerable<string>? collectionLabels = from node in dgml.Root!.Element(XName.Get("Nodes", DgmlNamespace))!.Elements()
-                                    where node.Attribute(XName.Get("Category"))?.Value == "Collection"
-                                    select node.Attribute(XName.Get("Label"))?.Value;
+                                                    where node.Attribute(XName.Get("Category"))?.Value == "Collection"
+                                                    select node.Attribute(XName.Get("Label"))?.Value;
             Assert.Contains(collectionLabels, label => label == jtcName);
             return Task.CompletedTask;
         });
@@ -468,8 +482,8 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
         this.Logger.WriteLine(report.Content);
         var dgml = XDocument.Parse(report.Content);
         IEnumerable<string>? collectionLabels = from node in dgml.Root!.Element(XName.Get("Nodes", DgmlNamespace))!.Elements()
-                                where node.Attribute(XName.Get("Category"))?.Value == "Task"
-                                select node.Attribute(XName.Get("Label"))?.Value;
+                                                where node.Attribute(XName.Get("Category"))?.Value == "Task"
+                                                select node.Attribute(XName.Get("Label"))?.Value;
         Assert.Contains(collectionLabels, label => label.Contains(nameof(this.GetHangReportProducesDgmlWithMethodNameRequestingMainThread)));
     }
 
@@ -491,8 +505,8 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
             this.Logger.WriteLine(report.Content);
             var dgml = XDocument.Parse(report.Content);
             IEnumerable<string>? collectionLabels = from node in dgml.Root!.Element(XName.Get("Nodes", DgmlNamespace))!.Elements()
-                                    where node.Attribute(XName.Get("Category"))?.Value == "Task"
-                                    select node.Attribute(XName.Get("Label"))?.Value;
+                                                    where node.Attribute(XName.Get("Category"))?.Value == "Task"
+                                                    select node.Attribute(XName.Get("Label"))?.Value;
             Assert.Contains(collectionLabels, label => label.Contains(nameof(this.YieldingMethodAsync)));
         });
     }

@@ -119,7 +119,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// The count of <see cref="JoinableTaskFactory"/> blocking API calls on the main thread.
         /// </summary>
-        private int mainThreadJTFBlockingCount;
+        private volatile int mainThreadJTFBlockingCount;
 
         /// <summary>
         /// A single joinable task factory that itself cannot be joined.
