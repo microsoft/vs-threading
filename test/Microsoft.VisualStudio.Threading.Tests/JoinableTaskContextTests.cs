@@ -46,31 +46,22 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
     }
 
     [Fact]
-    public void IsMainThreadBlockedByAnyone()
+    public void IsMainThreadBlockedByAnyoneTrue()
     {
         Assert.False(this.Context.IsMainThreadBlockedByAnyone);
         AsyncManualResetEvent mainThreadBlockerEvent = new AsyncManualResetEvent(false);
         AsyncManualResetEvent backgroundThreadMonitorEvent = new AsyncManualResetEvent(false);
 
         // Start task to monitor IsMainThreadBlockedByAnyone
-        Task.Run(async () =>
+        Task monitorTask = Task.Run(async () =>
         {
-            await TaskScheduler.Default.SwitchTo(alwaysYield: true);
-            await mainThreadBlockerEvent.WaitAsync();
+            await mainThreadBlockerEvent.WaitAsync(this.TimeoutToken);
 
-            bool shouldWaitForMainThreadBlock = true;
-            while (shouldWaitForMainThreadBlock)
+            while (!this.Context.IsMainThreadBlockedByAnyone)
             {
-                try
-                {
-                    Assert.True(this.Context.IsMainThreadBlockedByAnyone);
-                    shouldWaitForMainThreadBlock = false;
-                }
-                catch
-                {
-                    // Give the main thread time to enter a blocking state
-                    Thread.Sleep(50);
-                }
+                // Give the main thread time to enter a blocking state, if the test hasn't already timed out.
+                this.TimeoutToken.ThrowIfCancellationRequested();
+                await Task.Delay(AsyncDelay);
             }
 
             backgroundThreadMonitorEvent.Set();
@@ -79,15 +70,57 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
         JoinableTask? joinable = this.Factory.RunAsync(async delegate
         {
             Assert.False(this.Context.IsMainThreadBlockedByAnyone);
-            await Task.Yield();
+            await this.Factory.SwitchToMainThreadAsync(this.TimeoutToken);
 
             this.Factory.Run(async () =>
             {
                 await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 mainThreadBlockerEvent.Set();
-                await backgroundThreadMonitorEvent.WaitAsync();
+                await backgroundThreadMonitorEvent.WaitAsync(this.TimeoutToken);
             });
         });
+
+        joinable.Join();
+        monitorTask.WaitWithoutInlining(throwOriginalException: true);
+
+        Assert.False(this.Context.IsMainThreadBlockedByAnyone);
+    }
+
+    [Fact]
+    public void IsMainThreadBlockedByAnyoneFalse()
+    {
+        Assert.False(this.Context.IsMainThreadBlockedByAnyone);
+        ManualResetEvent backgroundThreadBlockerEvent = new ManualResetEvent(false);
+
+        bool backgroundThreadBlockerEnded = false;
+
+        JoinableTask? joinable = this.Factory.RunAsync(async delegate
+        {
+            Assert.False(this.Context.IsMainThreadBlockedByAnyone);
+            await TaskScheduler.Default.SwitchTo(alwaysYield: true);
+
+            this.Factory.Run(async () =>
+            {
+                backgroundThreadBlockerEvent.Set();
+
+                // Set a large delay
+                await Task.Delay(3 * AsyncDelay);
+                backgroundThreadBlockerEnded = true;
+            });
+        });
+
+        backgroundThreadBlockerEvent.WaitOne(UnexpectedTimeout);
+
+        do
+        {
+            // Give the background thread time to enter a blocking state, if the test hasn't already timed out.
+            this.TimeoutToken.ThrowIfCancellationRequested();
+
+            // IsMainThreadBlockedByAnyone should be false when a background thread is blocked.
+            Assert.False(this.Context.IsMainThreadBlockedByAnyone);
+            Thread.Sleep(AsyncDelay);
+        }
+        while (!backgroundThreadBlockerEnded);
 
         joinable.Join();
 
