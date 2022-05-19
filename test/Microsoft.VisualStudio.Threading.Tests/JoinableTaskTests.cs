@@ -3156,6 +3156,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
 #if ISOLATED_TEST_SUPPORT
     [Fact, Trait("Stress", "true")]
     [Trait("GC", "true")]
+    [Trait("TestCategory", "FailsInCloudTest")]
     public void SwitchToMainThreadMemoryLeak()
     {
         if (this.ExecuteInIsolation())
@@ -3172,6 +3173,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
 
     [Fact, Trait("Stress", "true")]
     [Trait("GC", "true")]
+    [Trait("TestCategory", "FailsInCloudTest")]
     public void SwitchToMainThreadMemoryLeakWithCancellationToken()
     {
         if (this.ExecuteInIsolation())
@@ -3453,6 +3455,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
     }
 
     [Fact]
+    [Trait("TestCategory", "FailsInCloudTest")]
     public void SwitchToMainThreadShouldNotLeakJoinableTaskWhenGetResultRunsFirst()
     {
         WeakReference<object> weakResult = this.SwitchToMainThreadShouldNotLeakJoinableTaskWhenGetResultRunsFirst_Helper();
