@@ -4,15 +4,16 @@
 namespace Microsoft.VisualStudio.Threading
 {
     using System;
-    using System.Collections.Generic;
     using System.ComponentModel;
     using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
     using System.Runtime.CompilerServices;
     using System.Runtime.ExceptionServices;
     using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Windows.Win32;
+    using global::Windows.Win32.Foundation;
+    using global::Windows.Win32.System.Registry;
     using Microsoft.Win32;
     using Microsoft.Win32.SafeHandles;
 
@@ -204,17 +205,26 @@ namespace Microsoft.VisualStudio.Threading
         /// </returns>
         private static async Task WaitForRegistryChangeAsync(SafeRegistryHandle registryKeyHandle, bool watchSubtree, RegistryChangeNotificationFilters change, CancellationToken cancellationToken)
         {
+#if NET5_0_OR_GREATER
+            if (!OperatingSystem.IsWindowsVersionAtLeast(8))
+#else
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+#endif
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             using ManualResetEvent evt = new(false);
-            change |= NativeMethods.REG_NOTIFY_THREAD_AGNOSTIC;
-            int win32Error = NativeMethods.RegNotifyChangeKeyValue(
+            REG_NOTIFY_FILTER dwNotifyFilter = (REG_NOTIFY_FILTER)change | REG_NOTIFY_FILTER.REG_NOTIFY_THREAD_AGNOSTIC;
+            WIN32_ERROR win32Error = PInvoke.RegNotifyChangeKeyValue(
                 registryKeyHandle,
                 watchSubtree,
-                change,
+                dwNotifyFilter,
                 evt.SafeWaitHandle,
                 true);
             if (win32Error != 0)
             {
-                throw new Win32Exception(win32Error);
+                throw new Win32Exception((int)win32Error);
             }
 
             await evt.ToTask(cancellationToken: cancellationToken).ConfigureAwait(false);
