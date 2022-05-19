@@ -4,8 +4,11 @@
 namespace Microsoft.VisualStudio.Threading
 {
     using System;
+    using System.Buffers;
     using System.Runtime.InteropServices;
     using System.Threading;
+    using global::Windows.Win32;
+    using global::Windows.Win32.Foundation;
 
     /// <summary>
     /// A SynchronizationContext whose synchronously blocking Wait method does not allow
@@ -52,9 +55,13 @@ namespace Microsoft.VisualStudio.Threading
             // Off Windows, we can't p/invoke to kernel32, but it appears that .NET Core never calls CoWait, so we can rely on default behavior.
             // We're just going to use the OS as the switch instead of the framework so that (one day) if we drop our .NET Framework specific target,
             // and if .NET Core ever adds CoWait support on Windows, we'll still behave properly.
+#if NET5_0_OR_GREATER
+            if (OperatingSystem.IsWindowsVersionAtLeast(5, 1, 2600))
+#else
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+#endif
             {
-                return NativeMethods.WaitForMultipleObjects((uint)waitHandles.Length, waitHandles, waitAll, (uint)millisecondsTimeout);
+                return (int)PInvoke.WaitForMultipleObjects(MemoryMarshal.Cast<IntPtr, HANDLE>(waitHandles), waitAll, (uint)millisecondsTimeout);
             }
             else
             {
