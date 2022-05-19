@@ -13,8 +13,10 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
         public static ReferenceAssemblies DefaultReferences = ReferenceAssemblies.NetFramework.Net471.Default
 #elif NETCOREAPP3_1
         public static ReferenceAssemblies DefaultReferences = ReferenceAssemblies.NetCore.NetCoreApp31
-#elif NET5_0
+#elif NET6_0
         public static ReferenceAssemblies DefaultReferences = ReferenceAssemblies.Net.Net50
+#else
+#error Fix TFM conditions
 #endif
             .WithPackages(ImmutableArray.Create(
                 new PackageIdentity("System.Collections.Immutable", "5.0.0"),
