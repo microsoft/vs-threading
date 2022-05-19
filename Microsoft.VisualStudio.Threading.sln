@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.28413.118
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32517.449
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.VisualStudio.Threading.Analyzers", "src\Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.csproj", "{536F3F9A-B457-43B8-BC93-CE1C16959037}"
 EndProject
@@ -17,8 +17,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		stylecop.json = stylecop.json
 		version.json = version.json
 	EndProjectSection
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher", "test\Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher\Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.csproj", "{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.VisualStudio.Threading", "src\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj", "{D9BB9FB6-3833-44E8-B7A7-DE729FCE214D}"
 EndProject
@@ -58,14 +56,6 @@ Global
 		{620ED702-B6DA-4454-BF3E-5494D3652724}.Release|Any CPU.Build.0 = Release|Any CPU
 		{620ED702-B6DA-4454-BF3E-5494D3652724}.Release|NonWindows.ActiveCfg = Release|Any CPU
 		{620ED702-B6DA-4454-BF3E-5494D3652724}.Release|NonWindows.Build.0 = Release|Any CPU
-		{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}.Debug|NonWindows.ActiveCfg = Debug|Any CPU
-		{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}.Debug|NonWindows.Build.0 = Debug|Any CPU
-		{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}.Release|NonWindows.ActiveCfg = Release|Any CPU
-		{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}.Release|NonWindows.Build.0 = Release|Any CPU
 		{D9BB9FB6-3833-44E8-B7A7-DE729FCE214D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D9BB9FB6-3833-44E8-B7A7-DE729FCE214D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D9BB9FB6-3833-44E8-B7A7-DE729FCE214D}.Debug|NonWindows.ActiveCfg = Debug|Any CPU
