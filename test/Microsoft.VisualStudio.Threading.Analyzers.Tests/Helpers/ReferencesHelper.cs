@@ -9,7 +9,15 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 
     internal static class ReferencesHelper
     {
-        public static ReferenceAssemblies DefaultReferences = ReferenceAssemblies.Default
+#if NETFRAMEWORK
+        public static ReferenceAssemblies DefaultReferences = ReferenceAssemblies.NetFramework.Net471.Default
+#elif NETCOREAPP3_1
+        public static ReferenceAssemblies DefaultReferences = ReferenceAssemblies.NetCore.NetCoreApp31
+#elif NET6_0
+        public static ReferenceAssemblies DefaultReferences = ReferenceAssemblies.Net.Net60
+#else
+#error Fix TFM conditions
+#endif
             .WithPackages(ImmutableArray.Create(
                 new PackageIdentity("System.Collections.Immutable", "5.0.0"),
                 new PackageIdentity("System.Threading.Tasks.Extensions", "4.5.4"),

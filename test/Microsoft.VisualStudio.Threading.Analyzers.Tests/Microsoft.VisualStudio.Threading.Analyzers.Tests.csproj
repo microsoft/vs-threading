@@ -1,17 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1;net6.0</TargetFrameworks>
     <IsTestProject>true</IsTestProject>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
     <NoWarn>$(NoWarn);NU1701</NoWarn>
     <DefineConstants Condition="'$(TargetFramework)'=='net472'">$(DefineConstants);WINDOWS</DefineConstants>
+    <UsesWpf Condition="'$(TargetFramework)'=='net6.0-windows'">true</UsesWpf>
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetFrameworkIdentifier)' == '.NETFramework' ">
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-    <TargetFrameworks>$(TargetFrameworks);net472</TargetFrameworks>
+    <TargetFrameworks>$(TargetFrameworks);net6.0-windows;net472</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.csproj" />
@@ -27,8 +28,8 @@
     <PackageReference Include="Microsoft.CodeAnalysis" Version="3.11.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
     <PackageReference Include="Microsoft.VisualStudio.Interop" Version="17.1.32304.227" />
-    <PackageReference Include="Microsoft.VisualStudio.Shell.15.0" Version="17.1.32304.227" />
-    <PackageReference Include="Microsoft.VisualStudio.Shell.Framework" Version="17.1.32304.227" />
+    <PackageReference Include="Microsoft.VisualStudio.Shell.15.0" Version="17.1.32304.227" IncludeAssets="runtime" />
+    <PackageReference Include="Microsoft.VisualStudio.Shell.Framework" Version="17.1.32304.227" IncludeAssets="runtime" />
     <PackageReference Include="System.Threading.Tasks.Dataflow" Version="6.0.0" />
     <PackageReference Include="xunit" Version="2.4.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3" />
@@ -53,4 +54,11 @@
       <CustomToolNamespace>AdditionalFiles</CustomToolNamespace>
     </EmbeddedResource>
   </ItemGroup>
+  <Target Name="RemoveWindowsFramework" AfterTargets="ResolvePackageAssets" Condition="'$(TargetFramework)'=='net6.0'">
+    <!-- Our dependency of VS SDK is just for test assets. We have no real Windows dependency. But NuGet doesn't allow us to express that. -->
+    <ItemGroup>
+      <TransitiveFrameworkReference Remove="Microsoft.WindowsDesktop.App" />
+      <TransitiveFrameworkReference Remove="Microsoft.WindowsDesktop.App.WPF" />
+    </ItemGroup>
+  </Target>
 </Project>
