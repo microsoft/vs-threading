@@ -14,7 +14,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 #elif NETCOREAPP3_1
         public static ReferenceAssemblies DefaultReferences = ReferenceAssemblies.NetCore.NetCoreApp31
 #elif NET6_0
-        public static ReferenceAssemblies DefaultReferences = ReferenceAssemblies.Net.Net50
+        public static ReferenceAssemblies DefaultReferences = ReferenceAssemblies.Net.Net60
 #else
 #error Fix TFM conditions
 #endif
