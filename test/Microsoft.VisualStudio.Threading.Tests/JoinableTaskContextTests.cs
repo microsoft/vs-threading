@@ -751,6 +751,39 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
     }
 
     [Fact]
+    public void IsMainThreadBlockedFalseWhenTaskIsCompleted()
+    {
+        var nonBlockingStateObserved = new AsyncManualResetEvent();
+        var nowBlocking = new AsyncManualResetEvent();
+
+        Task? checkTask = null;
+        this.Factory.Run(
+            async () =>
+            {
+                checkTask = Task.Run(
+                    async () =>
+                    {
+                        nonBlockingStateObserved.Set();
+
+                        await nowBlocking;
+
+                        Assert.False(this.Context.IsMainThreadMaybeBlocked());
+                        Assert.False(this.Context.IsMainThreadBlocked());
+                    });
+
+                Assert.True(this.Context.IsMainThreadMaybeBlocked());
+                Assert.True(this.Context.IsMainThreadBlocked());
+
+                await nonBlockingStateObserved;
+            });
+
+        nowBlocking.Set();
+
+        Assert.NotNull(checkTask);
+        checkTask!.Wait();
+    }
+
+    [Fact]
     public void RevertRelevanceDefaultValue()
     {
         var revert = default(JoinableTaskContext.RevertRelevance);

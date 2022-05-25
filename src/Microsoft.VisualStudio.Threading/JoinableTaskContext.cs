@@ -359,6 +359,11 @@ namespace Microsoft.VisualStudio.Threading
             JoinableTask? ambientTask = this.AmbientTask;
             if (ambientTask is object)
             {
+                if ((ambientTask.State & JoinableTask.JoinableTaskFlags.CompleteFinalized) == JoinableTask.JoinableTaskFlags.CompleteFinalized)
+                {
+                    return false;
+                }
+
                 if ((ambientTask.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)
                 {
                     return true;
