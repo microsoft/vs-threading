@@ -117,11 +117,6 @@ namespace Microsoft.VisualStudio.Threading
         private readonly int mainThreadManagedThreadId;
 
         /// <summary>
-        /// The count of <see cref="JoinableTaskFactory"/> blocking API calls on the main thread.
-        /// </summary>
-        private volatile int mainThreadJTFBlockingCount;
-
-        /// <summary>
         /// A single joinable task factory that itself cannot be joined.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -204,11 +199,6 @@ namespace Microsoft.VisualStudio.Threading
         {
             get { return this.AmbientTask is object; }
         }
-
-        /// <summary>
-        /// Gets a value indicating whether the main thread is blocked by any joinable task.
-        /// </summary>
-        public bool IsMainThreadBlockedByAnyone => this.mainThreadJTFBlockingCount > 0;
 
         /// <summary>
         /// Gets the underlying <see cref="SynchronizationContext"/> that controls the main thread in the host.
@@ -484,30 +474,6 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             return new HangNotificationRegistration(node);
-        }
-
-        /// <summary>
-        /// Increment the count of blocking API calls on the main thread.
-        /// </summary>
-        /// <remarks>
-        /// This method should only be called on the main thread.
-        /// </remarks>
-        internal void IncrementMainThreadBlockingCount()
-        {
-            Assumes.True(this.IsOnMainThread);
-            this.mainThreadJTFBlockingCount++;
-        }
-
-        /// <summary>
-        /// Decrement the count of blocking API calls on the main thread.
-        /// </summary>
-        /// <remarks>
-        /// This method should only be called on the main thread.
-        /// </remarks>
-        internal void DecrementMainThreadBlockingCount()
-        {
-            Assumes.True(this.IsOnMainThread);
-            this.mainThreadJTFBlockingCount--;
         }
 
         /// <summary>
