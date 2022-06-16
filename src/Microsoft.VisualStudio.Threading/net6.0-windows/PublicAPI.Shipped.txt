@@ -244,7 +244,6 @@ Microsoft.VisualStudio.Threading.JoinableTaskContext.HangDetails.HangDuration.ge
 Microsoft.VisualStudio.Threading.JoinableTaskContext.HangDetails.HangId.get -> System.Guid
 Microsoft.VisualStudio.Threading.JoinableTaskContext.HangDetails.NotificationCount.get -> int
 Microsoft.VisualStudio.Threading.JoinableTaskContext.IsMainThreadBlocked() -> bool
-Microsoft.VisualStudio.Threading.JoinableTaskContext.IsMainThreadBlockedByAnyone.get -> bool
 Microsoft.VisualStudio.Threading.JoinableTaskContext.IsOnMainThread.get -> bool
 Microsoft.VisualStudio.Threading.JoinableTaskContext.IsWithinJoinableTask.get -> bool
 Microsoft.VisualStudio.Threading.JoinableTaskContext.JoinableTaskContext() -> void
