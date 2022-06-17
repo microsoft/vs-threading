@@ -13,9 +13,6 @@ $NuGetPackages = "$RepoRoot\bin\Packages\$config\NuGet"
 $CoreXTPackages = "$RepoRoot\bin\Packages\$config\CoreXT"
 if (-not (Test-Path $NuGetPackages)) { Write-Warning "No NuGet packages found. Has a build been run?"; return @{} }
 
-# This artifact is not ready if we're running on the devdiv AzDO account and we don't have an SBOM yet.
-if ($env:SYSTEM_COLLECTIONID -eq '011b8bdf-6d56-4f87-be0d-0092136884d9' -and -not (Test-Path $NuGetPackages/_manifest)) { return @{} }
-
 $ArtifactBasePath = "$RepoRoot\obj\_artifacts"
 $ArtifactPath = "$ArtifactBasePath\VSInsertion"
 if (-not (Test-Path $ArtifactPath)) { New-Item -ItemType Directory -Path $ArtifactPath | Out-Null }
@@ -38,6 +35,9 @@ if ($env:BUILD_BUILDID) {
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
+
+# This artifact is not ready if we're running on the devdiv AzDO account and we don't have an SBOM yet.
+if ($env:SYSTEM_COLLECTIONID -eq '011b8bdf-6d56-4f87-be0d-0092136884d9' -and -not (Test-Path $NuGetPackages/_manifest)) { return @{} }
 
 @{
     "$NuGetPackages" = (Get-ChildItem -Recurse $NuGetPackages);
