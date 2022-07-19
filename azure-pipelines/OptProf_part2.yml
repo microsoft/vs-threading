@@ -1,5 +1,3 @@
-# OptProf profiling workflow for VS-Threading repository
-
 trigger: none
 
 resources:
