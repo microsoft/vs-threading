@@ -117,9 +117,9 @@ namespace Microsoft.VisualStudio.Threading
         private readonly int mainThreadManagedThreadId;
 
         /// <summary>
-        /// The count of <see cref="JoinableTaskFactory"/> blocking API calls on the main thread.
+        /// The count of <see cref="JoinableTask"/>s blocking the main thread.
         /// </summary>
-        private volatile int mainThreadJTFBlockingCount;
+        private volatile int mainThreadBlockingJoinableTaskCount;
 
         /// <summary>
         /// A single joinable task factory that itself cannot be joined.
@@ -208,7 +208,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets a value indicating whether the main thread is blocked by any joinable task.
         /// </summary>
-        public bool IsMainThreadBlockedByAnyone => this.mainThreadJTFBlockingCount > 0;
+        public bool IsMainThreadBlockedByAnyJoinableTask => this.mainThreadBlockingJoinableTaskCount > 0;
 
         /// <summary>
         /// Gets the underlying <see cref="SynchronizationContext"/> that controls the main thread in the host.
@@ -487,7 +487,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Increment the count of blocking API calls on the main thread.
+        /// Increment the count of <see cref="JoinableTask"/>s blocking the main thread.
         /// </summary>
         /// <remarks>
         /// This method should only be called on the main thread.
@@ -495,11 +495,11 @@ namespace Microsoft.VisualStudio.Threading
         internal void IncrementMainThreadBlockingCount()
         {
             Assumes.True(this.IsOnMainThread);
-            this.mainThreadJTFBlockingCount++;
+            this.mainThreadBlockingJoinableTaskCount++;
         }
 
         /// <summary>
-        /// Decrement the count of blocking API calls on the main thread.
+        /// Decrement the count of <see cref="JoinableTask"/>s blocking the main thread.
         /// </summary>
         /// <remarks>
         /// This method should only be called on the main thread.
@@ -507,7 +507,7 @@ namespace Microsoft.VisualStudio.Threading
         internal void DecrementMainThreadBlockingCount()
         {
             Assumes.True(this.IsOnMainThread);
-            this.mainThreadJTFBlockingCount--;
+            this.mainThreadBlockingJoinableTaskCount--;
         }
 
         /// <summary>
