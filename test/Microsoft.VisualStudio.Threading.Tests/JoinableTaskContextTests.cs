@@ -46,6 +46,85 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
     }
 
     [Fact]
+    public void IsMainThreadBlockedByAnyJoinableTask_True()
+    {
+        Assert.False(VSThreadHelper.IsMainThreadBlockedByAnyJoinableTask(this.Context));
+        AsyncManualResetEvent mainThreadBlockerEvent = new AsyncManualResetEvent(false);
+        AsyncManualResetEvent backgroundThreadMonitorEvent = new AsyncManualResetEvent(false);
+
+        // Start task to monitor IsMainThreadBlockedByAnyJoinableTask
+        Task monitorTask = Task.Run(async () =>
+        {
+            await mainThreadBlockerEvent.WaitAsync(this.TimeoutToken);
+
+            while (!VSThreadHelper.IsMainThreadBlockedByAnyJoinableTask(this.Context))
+            {
+                // Give the main thread time to enter a blocking state, if the test hasn't already timed out.
+                await Task.Delay(50, this.TimeoutToken);
+            }
+
+            backgroundThreadMonitorEvent.Set();
+        });
+
+        JoinableTask? joinable = this.Factory.RunAsync(async delegate
+        {
+            Assert.False(VSThreadHelper.IsMainThreadBlockedByAnyJoinableTask(this.Context));
+            await this.Factory.SwitchToMainThreadAsync(this.TimeoutToken);
+
+            this.Factory.Run(async () =>
+            {
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
+                mainThreadBlockerEvent.Set();
+                await backgroundThreadMonitorEvent.WaitAsync(this.TimeoutToken);
+            });
+        });
+
+        joinable.Join();
+        monitorTask.WaitWithoutInlining(throwOriginalException: true);
+
+        Assert.False(VSThreadHelper.IsMainThreadBlockedByAnyJoinableTask(this.Context));
+    }
+
+    [Fact]
+    public void IsMainThreadBlockedByAnyJoinableTask_False()
+    {
+        Assert.False(VSThreadHelper.IsMainThreadBlockedByAnyJoinableTask(this.Context));
+        ManualResetEventSlim backgroundThreadBlockerEvent = new();
+
+        JoinableTask? joinable = this.Factory.RunAsync(async delegate
+        {
+            Assert.False(VSThreadHelper.IsMainThreadBlockedByAnyJoinableTask(this.Context));
+            await TaskScheduler.Default.SwitchTo(alwaysYield: true);
+
+            this.Factory.Run(async () =>
+            {
+                backgroundThreadBlockerEvent.Set();
+
+                // Set a delay sufficient for the other thread to have noticed if IsMainThreadBlockedByAnyJoinableTask is true
+                // while we're suspended.
+                await Task.Delay(AsyncDelay);
+            });
+        });
+
+        backgroundThreadBlockerEvent.Wait(UnexpectedTimeout);
+
+        do
+        {
+            // Give the background thread time to enter a blocking state, if the test hasn't already timed out.
+            this.TimeoutToken.ThrowIfCancellationRequested();
+
+            // IsMainThreadBlockedByAnyJoinableTask should be false when a background thread is blocked.
+            Assert.False(VSThreadHelper.IsMainThreadBlockedByAnyJoinableTask(this.Context));
+            Thread.Sleep(10);
+        }
+        while (!joinable.IsCompleted);
+
+        joinable.Join();
+
+        Assert.False(VSThreadHelper.IsMainThreadBlockedByAnyJoinableTask(this.Context));
+    }
+
+    [Fact]
     public void ReportHangOnRun()
     {
         this.Factory.HangDetectionTimeout = TimeSpan.FromMilliseconds(10);
@@ -410,8 +489,8 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
             this.Logger.WriteLine(report.Content);
             var dgml = XDocument.Parse(report.Content);
             IEnumerable<string>? collectionLabels = from node in dgml.Root!.Element(XName.Get("Nodes", DgmlNamespace))!.Elements()
-                                    where node.Attribute(XName.Get("Category"))?.Value == "Collection"
-                                    select node.Attribute(XName.Get("Label"))?.Value;
+                                                    where node.Attribute(XName.Get("Category"))?.Value == "Collection"
+                                                    select node.Attribute(XName.Get("Label"))?.Value;
             Assert.Contains(collectionLabels, label => label == jtcName);
             return Task.CompletedTask;
         });
@@ -433,8 +512,8 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
         this.Logger.WriteLine(report.Content);
         var dgml = XDocument.Parse(report.Content);
         IEnumerable<string>? collectionLabels = from node in dgml.Root!.Element(XName.Get("Nodes", DgmlNamespace))!.Elements()
-                                where node.Attribute(XName.Get("Category"))?.Value == "Task"
-                                select node.Attribute(XName.Get("Label"))?.Value;
+                                                where node.Attribute(XName.Get("Category"))?.Value == "Task"
+                                                select node.Attribute(XName.Get("Label"))?.Value;
         Assert.Contains(collectionLabels, label => label.Contains(nameof(this.GetHangReportProducesDgmlWithMethodNameRequestingMainThread)));
     }
 
@@ -456,8 +535,8 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
             this.Logger.WriteLine(report.Content);
             var dgml = XDocument.Parse(report.Content);
             IEnumerable<string>? collectionLabels = from node in dgml.Root!.Element(XName.Get("Nodes", DgmlNamespace))!.Elements()
-                                    where node.Attribute(XName.Get("Category"))?.Value == "Task"
-                                    select node.Attribute(XName.Get("Label"))?.Value;
+                                                    where node.Attribute(XName.Get("Category"))?.Value == "Task"
+                                                    select node.Attribute(XName.Get("Label"))?.Value;
             Assert.Contains(collectionLabels, label => label.Contains(nameof(this.YieldingMethodAsync)));
         });
     }
