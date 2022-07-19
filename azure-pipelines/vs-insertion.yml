@@ -44,6 +44,7 @@ jobs:
       InsertionBuildPolicy: Request Perf DDRITs
       AutoCompletePR: true
       AutoCompleteMergeStrategy: Squash
+      InsertionAccessToken: $(System.AccessToken)
   - task: MicroBuildCleanup@1
     displayName: Send Telemetry
   - powershell: |
