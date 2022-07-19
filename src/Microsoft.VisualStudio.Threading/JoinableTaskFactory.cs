@@ -545,6 +545,12 @@ namespace Microsoft.VisualStudio.Threading
         protected virtual void WaitSynchronouslyCore(Task task)
         {
             Requires.NotNull(task, nameof(task));
+
+            if (this.Context.IsOnMainThread)
+            {
+                this.Context.IncrementMainThreadBlockingCount();
+            }
+
             int hangTimeoutsCount = 0; // useful for debugging dump files to see how many times we looped.
             int hangNotificationCount = 0;
             Guid hangId = Guid.Empty;
@@ -587,6 +593,13 @@ namespace Microsoft.VisualStudio.Threading
                 // Swallow exceptions thrown by Task.Wait().
                 // Our caller just wants to know when the Task completes,
                 // whether successfully or not.
+            }
+            finally
+            {
+                if (this.Context.IsOnMainThread)
+                {
+                    this.Context.DecrementMainThreadBlockingCount();
+                }
             }
         }
 
