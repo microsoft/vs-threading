@@ -1,4 +1,6 @@
 Microsoft.VisualStudio.Threading.AsyncQueue<T>.ToArray() -> T[]!
+Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaiter.UnsafeOnCompleted(System.Action! continuation) -> void
+Microsoft.VisualStudio.Threading.AwaitExtensions.ExecuteContinuationSynchronouslyAwaiter<T>.UnsafeOnCompleted(System.Action! continuation) -> void
 Microsoft.VisualStudio.Threading.AwaitExtensions.SynchronizationContextAwaiter
 Microsoft.VisualStudio.Threading.AwaitExtensions.SynchronizationContextAwaiter.GetResult() -> void
 Microsoft.VisualStudio.Threading.AwaitExtensions.SynchronizationContextAwaiter.IsCompleted.get -> bool
