@@ -47,9 +47,5 @@
     <ProjectReference Include="..\IsolatedTestHost\IsolatedTestHost.csproj">
       <Private>true</Private>
     </ProjectReference>
-    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher\Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.csproj">
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-      <Private>true</Private>
-    </ProjectReference>
   </ItemGroup>
 </Project>
