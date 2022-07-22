@@ -4,6 +4,7 @@
 namespace Microsoft.VisualStudio.Threading
 {
     using System;
+    using System.Collections.Generic;
     using System.ComponentModel;
     using System.Diagnostics;
     using System.Runtime.CompilerServices;
@@ -206,7 +207,7 @@ namespace Microsoft.VisualStudio.Threading
         private static async Task WaitForRegistryChangeAsync(SafeRegistryHandle registryKeyHandle, bool watchSubtree, RegistryChangeNotificationFilters change, CancellationToken cancellationToken)
         {
 #if NET5_0_OR_GREATER
-            if (!OperatingSystem.IsWindowsVersionAtLeast(8))
+            if (!OperatingSystem.IsWindowsVersionAtLeast(7))
 #else
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 #endif
@@ -214,20 +215,49 @@ namespace Microsoft.VisualStudio.Threading
                 throw new PlatformNotSupportedException();
             }
 
-            using ManualResetEvent evt = new(false);
-            REG_NOTIFY_FILTER dwNotifyFilter = (REG_NOTIFY_FILTER)change | REG_NOTIFY_FILTER.REG_NOTIFY_THREAD_AGNOSTIC;
-            WIN32_ERROR win32Error = PInvoke.RegNotifyChangeKeyValue(
-                registryKeyHandle,
-                watchSubtree,
-                dwNotifyFilter,
-                evt.SafeWaitHandle,
-                true);
-            if (win32Error != 0)
+            IDisposable? dedicatedThreadReleaser = null;
+            try
             {
-                throw new Win32Exception((int)win32Error);
-            }
+                using ManualResetEvent evt = new(false);
+                REG_NOTIFY_FILTER dwNotifyFilter = (REG_NOTIFY_FILTER)change;
 
-            await evt.ToTask(cancellationToken: cancellationToken).ConfigureAwait(false);
+                static void DoNotify(SafeRegistryHandle registryKeyHandle, bool watchSubtree, REG_NOTIFY_FILTER change, WaitHandle evt)
+                {
+                    WIN32_ERROR win32Error = PInvoke.RegNotifyChangeKeyValue(
+                        registryKeyHandle,
+                        watchSubtree,
+                        change,
+                        evt.SafeWaitHandle,
+                        true);
+                    if (win32Error != 0)
+                    {
+                        throw new Win32Exception((int)win32Error);
+                    }
+                }
+
+                if (LightUps.IsWindows8OrLater)
+                {
+                    dwNotifyFilter |= REG_NOTIFY_FILTER.REG_NOTIFY_THREAD_AGNOSTIC;
+                    DoNotify(registryKeyHandle, watchSubtree, dwNotifyFilter, evt);
+                }
+                else
+                {
+                    // Engage our downlevel support by using a single, dedicated thread to guarantee
+                    // that we request notification on a thread that will not be destroyed later.
+                    // Although we *could* await this, we synchronously block because our caller expects
+                    // subscription to have begun before we return: for the async part to simply be notification.
+                    // This async method we're calling uses .ConfigureAwait(false) internally so this won't
+                    // deadlock if we're called on a thread with a single-thread SynchronizationContext.
+                    Action registerAction = () => DoNotify(registryKeyHandle, watchSubtree, dwNotifyFilter, evt);
+                    dedicatedThreadReleaser = DownlevelRegistryWatcherSupport.ExecuteOnDedicatedThreadAsync(registerAction).GetAwaiter().GetResult();
+                }
+
+                await evt.ToTask(cancellationToken: cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                dedicatedThreadReleaser?.Dispose();
+            }
         }
 
         /// <summary>
@@ -749,6 +779,223 @@ namespace Microsoft.VisualStudio.Threading
                     CancellationToken.None,
                     TaskContinuationOptions.ExecuteSynchronously,
                     TaskScheduler.Default);
+            }
+        }
+
+        /// <summary>
+        /// Provides a dedicated thread for requesting registry change notifications.
+        /// </summary>
+        /// <remarks>
+        /// For versions of Windows prior to Windows 8, requesting registry change notifications
+        /// required that the thread that made the request remain alive or else the watcher would
+        /// simply signal the event and stop watching for changes.
+        /// This class provides a single, dedicated thread for requesting such notifications
+        /// so that they don't get canceled when a thread happens to exit.
+        /// The dedicated thread is released when no one is watching the registry any more.
+        /// </remarks>
+        private static class DownlevelRegistryWatcherSupport
+        {
+            /// <summary>
+            /// The size of the stack allocated for a thread that expects to stay within just a few methods in depth.
+            /// </summary>
+            /// <remarks>
+            /// The default stack size for a thread is 1MB.
+            /// </remarks>
+            private const int SmallThreadStackSize = 100 * 1024;
+
+            /// <summary>
+            /// The object to lock when accessing any fields.
+            /// This is also the object that is waited on by the dedicated thread,
+            /// and may be pulsed by others to wake the dedicated thread to do some work.
+            /// </summary>
+            private static readonly object SyncObject = new object();
+
+            /// <summary>
+            /// A queue of actions the dedicated thread should take.
+            /// </summary>
+            private static readonly Queue<Tuple<Action, TaskCompletionSource<EmptyStruct>>> PendingWork = new();
+
+            /// <summary>
+            /// The number of callers that still have an interest in the survival of the dedicated thread.
+            /// The dedicated thread will exit when this value reaches 0.
+            /// </summary>
+            private static int keepAliveCount;
+
+            /// <summary>
+            /// The thread that should stay alive and be dequeuing <see cref="PendingWork"/>.
+            /// </summary>
+            private static Thread? liveThread;
+
+            /// <summary>
+            /// Executes some action on a long-lived thread.
+            /// </summary>
+            /// <param name="action">The delegate to execute.</param>
+            /// <returns>
+            /// A task that either faults with the exception thrown by <paramref name="action"/>
+            /// or completes after successfully executing the delegate
+            /// with a result that should be disposed when it is safe to terminate the long-lived thread.
+            /// </returns>
+            /// <remarks>
+            /// This thread never posts to <see cref="SynchronizationContext.Current"/>, so it is safe
+            /// to call this method and synchronously block on its result.
+            /// </remarks>
+            internal static async Task<IDisposable> ExecuteOnDedicatedThreadAsync(Action action)
+            {
+                Requires.NotNull(action, nameof(action));
+
+                var tcs = new TaskCompletionSource<EmptyStruct>();
+                bool keepAliveCountIncremented = false;
+                try
+                {
+                    lock (SyncObject)
+                    {
+                        PendingWork.Enqueue(Tuple.Create(action, tcs));
+
+                        try
+                        {
+                            // This block intentionally left blank.
+                        }
+                        finally
+                        {
+                            // We make these two assignments within a finally block
+                            // to guard against an untimely ThreadAbortException causing
+                            // us to execute just one of them.
+                            keepAliveCountIncremented = true;
+                            ++keepAliveCount;
+                        }
+
+                        if (keepAliveCount == 1)
+                        {
+                            Assumes.Null(liveThread);
+                            liveThread = new Thread(Worker, SmallThreadStackSize)
+                            {
+                                IsBackground = true,
+                                Name = "Registry watcher",
+                            };
+                            liveThread.Start();
+                        }
+                        else
+                        {
+                            // There *could* temporarily be multiple threads in some race conditions.
+                            // Pulse all of them so that the live one is sure to get the message.
+                            Monitor.PulseAll(SyncObject);
+                        }
+                    }
+
+                    await tcs.Task.ConfigureAwait(false);
+                    return new ThreadHandleRelease();
+                }
+                catch
+                {
+                    if (keepAliveCountIncremented)
+                    {
+                        // Our caller will never have a chance to release their claim on the dedicated thread,
+                        // so do it for them.
+                        ReleaseRefOnDedicatedThread();
+                    }
+
+                    throw;
+                }
+            }
+
+            /// <summary>
+            /// Decrements the count of interested parties in the live thread,
+            /// and helps it to terminate if necessary.
+            /// </summary>
+            private static void ReleaseRefOnDedicatedThread()
+            {
+                lock (SyncObject)
+                {
+                    if (--keepAliveCount == 0)
+                    {
+                        liveThread = null;
+
+                        // Wake up any obsolete thread(s) so they can go to exit.
+                        Monitor.PulseAll(SyncObject);
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Executes thread-affinitized work from a queue until both the queue is empty
+            /// and any lingering interest in the survival of the dedicated thread has been released.
+            /// </summary>
+            /// <remarks>
+            /// This method serves as the <see cref="ThreadStart"/> for our dedicated thread.
+            /// </remarks>
+            private static void Worker()
+            {
+                while (true)
+                {
+                    Tuple<Action, TaskCompletionSource<EmptyStruct>>? work = null;
+                    lock (SyncObject)
+                    {
+                        if (Thread.CurrentThread != liveThread)
+                        {
+                            // Regardless of our PendingWork and keepAliveCount,
+                            // it isn't meant for this thread any more.
+                            // This happens when keepAliveCount (at least temporarily)
+                            // hits 0, so this thread must be assumed to be on its exit path,
+                            // and another thread will be spawned to process new requests.
+                            Assumes.True(liveThread is object || (keepAliveCount == 0 && PendingWork.Count == 0));
+                            return;
+                        }
+
+                        if (PendingWork.Count > 0)
+                        {
+                            work = PendingWork.Dequeue();
+                        }
+                        else if (keepAliveCount == 0)
+                        {
+                            // No work, and no reason to stay alive. Exit the thread.
+                            return;
+                        }
+                        else
+                        {
+                            // Sleep until another thread wants to wake us up with a Pulse.
+                            Monitor.Wait(SyncObject);
+                        }
+                    }
+
+                    if (work is object)
+                    {
+                        try
+                        {
+                            work.Item1();
+                            work.Item2.SetResult(EmptyStruct.Instance);
+                        }
+                        catch (Exception ex)
+                        {
+                            work.Item2.SetException(ex);
+                        }
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Decrements the dedicated thread use counter by at most one upon disposal.
+            /// </summary>
+            private class ThreadHandleRelease : IDisposable
+            {
+                /// <summary>
+                /// A value indicating whether this instance has already been disposed.
+                /// </summary>
+                private bool disposed;
+
+                /// <summary>
+                /// Release the keep alive count reserved by this instance.
+                /// </summary>
+                public void Dispose()
+                {
+                    lock (SyncObject)
+                    {
+                        if (!this.disposed)
+                        {
+                            this.disposed = true;
+                            ReleaseRefOnDedicatedThread();
+                        }
+                    }
+                }
             }
         }
     }
