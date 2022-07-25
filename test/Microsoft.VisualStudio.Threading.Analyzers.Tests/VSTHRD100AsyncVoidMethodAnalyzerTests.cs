@@ -62,6 +62,25 @@ class Test {
         }
 
         [Fact]
+        public async Task ReportWarningOnAsyncVoidDelegate()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void M() {
+        F(async delegate() { await Task.Delay(0); });
+
+        void F(Action a) {}
+    }
+}
+";
+            CodeAnalysis.Testing.DiagnosticResult expected = Verify.Diagnostic().WithLocation(7, 11);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
         public async Task ReportWarningOnAsyncVoidMethodSimilarToAsyncEventHandler()
         {
             var test = @"
