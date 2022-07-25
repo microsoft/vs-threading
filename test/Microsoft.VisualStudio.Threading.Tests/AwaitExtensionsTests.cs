@@ -789,6 +789,51 @@ public partial class AwaitExtensionsTests : TestBase
         }
     }
 
+    [SkippableFact]
+    public async Task AwaitRegKeyChange_DoesNotPreventAppTerminationOnWin7()
+    {
+        Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+        string testExePath = Path.Combine(
+            AppDomain.CurrentDomain.BaseDirectory!,
+            "..",
+            "..",
+            "..",
+            "Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher",
+#if DEBUG
+            "Debug",
+#else
+            "Release",
+#endif
+            "net472",
+            "Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.exe");
+        this.Logger.WriteLine("Using testexe path: {0}", testExePath);
+        var psi = new ProcessStartInfo(testExePath)
+        {
+            CreateNoWindow = true,
+            WindowStyle = ProcessWindowStyle.Hidden,
+        };
+        Process testExeProcess = Process.Start(psi)!;
+        try
+        {
+            // The assertion and timeout are interesting here:
+            // If the dedicated thread is not a background thread, the process does
+            // seem to terminate anyway, but it can sometimes (3 out of 10 times)
+            // take up to 10 seconds to terminate (perhaps when a GC finalizer runs?)
+            // while other times it's really fast.
+            // But when the dedicated thread is a background thread, it seems reliably fast.
+            this.TimeoutTokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+            int exitCode = await AwaitExtensions.WaitForExitAsync(testExeProcess, this.TimeoutToken);
+            Assert.Equal(0, exitCode);
+        }
+        finally
+        {
+            if (!testExeProcess.HasExited)
+            {
+                testExeProcess.Kill();
+            }
+        }
+    }
+
     private class RegKeyTest : IDisposable
     {
         private readonly string keyName;
