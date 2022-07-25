@@ -25,6 +25,43 @@ class Test {
         }
 
         [Fact]
+        public async Task ReportWarningOnAsyncVoidLocalFunction()
+        {
+            var test = @"
+using System;
+
+class Test {
+    void M() {
+        F();
+
+        async void F() {}
+    }
+}
+";
+            CodeAnalysis.Testing.DiagnosticResult expected = Verify.Diagnostic().WithLocation(8, 20);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
+        public async Task ReportWarningOnAsyncVoidLambda()
+        {
+            var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void M() {
+        F(async void () => await Task.Delay(0));
+
+        void F(Action a) {}
+    }
+}
+";
+            CodeAnalysis.Testing.DiagnosticResult expected = Verify.Diagnostic().WithLocation(7, 11);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
         public async Task ReportWarningOnAsyncVoidMethodSimilarToAsyncEventHandler()
         {
             var test = @"

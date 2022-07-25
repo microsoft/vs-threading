@@ -3,14 +3,11 @@
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
-    using System;
-    using System.Collections.Generic;
     using System.Collections.Immutable;
-    using System.Linq;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.Diagnostics;
+    using Microsoft.CodeAnalysis.Operations;
 
     /// <summary>
     /// Detects the Async Void methods which are NOT used as asynchronous event handlers.
@@ -60,15 +57,38 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             context.EnableConcurrentExecution();
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
 
-            context.RegisterSymbolAction(Utils.DebuggableWrapper(this.AnalyzeNode), SymbolKind.Method);
+            context.RegisterSymbolAction(Utils.DebuggableWrapper(AnalyzeNode), SymbolKind.Method);
+            context.RegisterOperationAction(Utils.DebuggableWrapper(AnalyzeOperation), OperationKind.LocalFunction, OperationKind.AnonymousFunction);
         }
 
-        private void AnalyzeNode(SymbolAnalysisContext context)
+        private static void AnalyzeNode(SymbolAnalysisContext context)
         {
             var methodSymbol = (IMethodSymbol)context.Symbol;
             if (methodSymbol.IsAsync && methodSymbol.ReturnsVoid)
             {
                 context.ReportDiagnostic(Diagnostic.Create(Descriptor, methodSymbol.Locations[0]));
+            }
+        }
+
+        private static void AnalyzeOperation(OperationAnalysisContext context)
+        {
+            if (context.Operation is ILocalFunctionOperation localFunctionOperation)
+            {
+                AnalyzeSymbol(localFunctionOperation.Symbol);
+            }
+            else if (context.Operation is IAnonymousFunctionOperation anonymousFunctionOperation)
+            {
+                AnalyzeSymbol(anonymousFunctionOperation.Symbol);
+            }
+
+            return;
+
+            void AnalyzeSymbol(IMethodSymbol methodSymbol)
+            {
+                if (methodSymbol.IsAsync && methodSymbol.ReturnsVoid)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(Descriptor, methodSymbol.Locations[0]));
+                }
             }
         }
     }
