@@ -51,7 +51,7 @@ using System.Threading.Tasks;
 
 class Test {
     void M() {
-        F(async void () => await Task.Delay(0));
+        F(async () => await Task.Delay(0));
 
         void F(Action a) {}
     }
