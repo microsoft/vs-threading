@@ -58,7 +58,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
 
             context.RegisterSymbolAction(Utils.DebuggableWrapper(AnalyzeNode), SymbolKind.Method);
-            context.RegisterOperationAction(Utils.DebuggableWrapper(AnalyzeOperation), OperationKind.LocalFunction, OperationKind.AnonymousFunction);
+            context.RegisterOperationAction(Utils.DebuggableWrapper(AnalyzeOperation), OperationKind.LocalFunction);
         }
 
         private static void AnalyzeNode(SymbolAnalysisContext context)
@@ -74,17 +74,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         {
             if (context.Operation is ILocalFunctionOperation localFunctionOperation)
             {
-                AnalyzeSymbol(localFunctionOperation.Symbol);
-            }
-            else if (context.Operation is IAnonymousFunctionOperation anonymousFunctionOperation)
-            {
-                AnalyzeSymbol(anonymousFunctionOperation.Symbol);
-            }
-
-            return;
-
-            void AnalyzeSymbol(IMethodSymbol methodSymbol)
-            {
+                IMethodSymbol methodSymbol = localFunctionOperation.Symbol;
                 if (methodSymbol.IsAsync && methodSymbol.ReturnsVoid)
                 {
                     context.ReportDiagnostic(Diagnostic.Create(Descriptor, methodSymbol.Locations[0]));
