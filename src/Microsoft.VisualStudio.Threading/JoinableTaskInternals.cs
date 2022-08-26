@@ -22,28 +22,23 @@ public static class JoinableTaskInternals
         return joinableTaskContext?.IsMainThreadBlockedByAnyJoinableTask == true;
     }
 
-    public static JoinableTaskToken GetJoinableTaskToken(JoinableTaskContext? joinableTaskContext)
+    public static JoinableTaskToken? GetJoinableTaskToken(JoinableTaskContext? joinableTaskContext)
     {
+        if (joinableTaskContext?.AmbientTask?.WeakSelf is null)
+        {
+            return null;
+        }
+
         return new JoinableTaskToken() { JoinableTaskReference = joinableTaskContext?.AmbientTask?.WeakSelf };
     }
 
-    public static bool IsMainThreadMaybeBlocked(JoinableTaskToken joinableTaskToken)
+    public static bool IsMainThreadMaybeBlocked(JoinableTaskToken? joinableTaskToken)
     {
-        if (joinableTaskToken.JoinableTaskReference is not null && joinableTaskToken.JoinableTaskReference.TryGetTarget(out JoinableTask? joinableTask))
+        if (joinableTaskToken?.JoinableTaskReference?.TryGetTarget(out JoinableTask? joinableTask) == true)
         {
-            if (joinableTask is object)
+            if (joinableTask is not null)
             {
-                if ((joinableTask.State & JoinableTask.JoinableTaskFlags.CompleteFinalized) == JoinableTask.JoinableTaskFlags.CompleteFinalized)
-                {
-                    return false;
-                }
-
-                if ((joinableTask.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)
-                {
-                    return true;
-                }
-
-                return JoinableTaskDependencyGraph.MaybeHasMainThreadSynchronousTaskWaiting(joinableTask);
+                return joinableTask.MaybeBlockMainThread();
             }
         }
 
