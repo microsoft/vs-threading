@@ -374,12 +374,7 @@ public class JoinableTaskInternalsTests : JoinableTaskTestBase
         this.asyncPump.Run(async delegate
         {
             token = JoinableTaskInternals.GetJoinableTaskToken(this.context);
-
-            token = JoinableTaskInternals.GetJoinableTaskToken(this.context);
-            Assert.Equal(this.context.IsMainThreadMaybeBlocked(), JoinableTaskInternals.IsMainThreadMaybeBlocked(token));
             await TaskScheduler.Default.SwitchTo(alwaysYield: true);
-
-            Assert.Equal(this.context.IsMainThreadMaybeBlocked(), JoinableTaskInternals.IsMainThreadMaybeBlocked(token));
         });
 
         this.asyncPump.Run(async delegate
