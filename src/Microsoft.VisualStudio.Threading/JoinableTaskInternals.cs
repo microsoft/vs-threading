@@ -24,12 +24,13 @@ public static class JoinableTaskInternals
 
     public static JoinableTaskToken? GetJoinableTaskToken(JoinableTaskContext? joinableTaskContext)
     {
-        if (joinableTaskContext?.AmbientTask?.WeakSelf is null)
+        JoinableTask? ambientTask = joinableTaskContext?.AmbientTask;
+        if (ambientTask?.WeakSelf is null)
         {
             return null;
         }
 
-        return new JoinableTaskToken() { JoinableTaskReference = joinableTaskContext?.AmbientTask?.WeakSelf };
+        return new JoinableTaskToken() { JoinableTaskReference = ambientTask?.WeakSelf };
     }
 
     public static bool IsMainThreadMaybeBlocked(JoinableTaskToken? joinableTaskToken)
