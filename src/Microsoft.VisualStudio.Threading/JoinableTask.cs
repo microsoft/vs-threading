@@ -417,24 +417,6 @@ namespace Microsoft.VisualStudio.Threading
         internal MethodInfo? EntryMethodInfo => this.initialDelegate?.GetMethodInfo();
 
         /// <summary>
-        /// Gets a very likely value whether the main thread is blocked by this <see cref="JoinableTask"/>
-        /// </summary>
-        internal bool MaybeBlockMainThread()
-        {
-            if ((this.State & JoinableTask.JoinableTaskFlags.CompleteFinalized) == JoinableTask.JoinableTaskFlags.CompleteFinalized)
-            {
-                return false;
-            }
-
-            if ((this.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)
-            {
-                return true;
-            }
-
-            return JoinableTaskDependencyGraph.MaybeHasMainThreadSynchronousTaskWaiting(this);
-        }
-
-        /// <summary>
         /// Gets a value indicating whether this task has a non-empty queue.
         /// FOR DIAGNOSTICS COLLECTION ONLY.
         /// </summary>
@@ -672,6 +654,24 @@ namespace Microsoft.VisualStudio.Threading
 
         void IJoinableTaskDependent.OnDependencyRemoved(IJoinableTaskDependent joinChild)
         {
+        }
+
+        /// <summary>
+        /// Gets a very likely value whether the main thread is blocked by this <see cref="JoinableTask"/>.
+        /// </summary>
+        internal bool MaybeBlockMainThread()
+        {
+            if ((this.State & JoinableTask.JoinableTaskFlags.CompleteFinalized) == JoinableTask.JoinableTaskFlags.CompleteFinalized)
+            {
+                return false;
+            }
+
+            if ((this.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)
+            {
+                return true;
+            }
+
+            return JoinableTaskDependencyGraph.MaybeHasMainThreadSynchronousTaskWaiting(this);
         }
 
         internal void Post(SendOrPostCallback d, object? state, bool mainThreadAffinitized)
