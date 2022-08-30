@@ -656,6 +656,24 @@ namespace Microsoft.VisualStudio.Threading
         {
         }
 
+        /// <summary>
+        /// Gets a very likely value whether the main thread is blocked by this <see cref="JoinableTask"/>.
+        /// </summary>
+        internal bool MaybeBlockMainThread()
+        {
+            if ((this.State & JoinableTask.JoinableTaskFlags.CompleteFinalized) == JoinableTask.JoinableTaskFlags.CompleteFinalized)
+            {
+                return false;
+            }
+
+            if ((this.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)
+            {
+                return true;
+            }
+
+            return JoinableTaskDependencyGraph.MaybeHasMainThreadSynchronousTaskWaiting(this);
+        }
+
         internal void Post(SendOrPostCallback d, object? state, bool mainThreadAffinitized)
         {
             using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())

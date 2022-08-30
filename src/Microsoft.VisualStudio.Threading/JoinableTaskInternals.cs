@@ -3,6 +3,7 @@
 
 namespace Microsoft.VisualStudio.Threading;
 
+using System;
 using System.ComponentModel;
 
 #pragma warning disable RS0016 // Add public types and members to the declared API
@@ -19,5 +20,33 @@ public static class JoinableTaskInternals
     public static bool IsMainThreadBlockedByAnyJoinableTask(JoinableTaskContext? joinableTaskContext)
     {
         return joinableTaskContext?.IsMainThreadBlockedByAnyJoinableTask == true;
+    }
+
+    public static JoinableTaskToken? GetJoinableTaskToken(JoinableTaskContext? joinableTaskContext)
+    {
+        if (joinableTaskContext?.AmbientTask?.WeakSelf is WeakReference<JoinableTask> currentTask)
+        {
+            return new JoinableTaskToken() { JoinableTaskReference = currentTask };
+        }
+
+        return null;
+    }
+
+    public static bool IsMainThreadMaybeBlocked(JoinableTaskToken? joinableTaskToken)
+    {
+        if (joinableTaskToken?.JoinableTaskReference?.TryGetTarget(out JoinableTask? joinableTask) == true)
+        {
+            if (joinableTask is not null)
+            {
+                return joinableTask.MaybeBlockMainThread();
+            }
+        }
+
+        return false;
+    }
+
+    public struct JoinableTaskToken
+    {
+        internal WeakReference<JoinableTask>? JoinableTaskReference;
     }
 }
