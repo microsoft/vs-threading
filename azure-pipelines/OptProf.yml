@@ -33,8 +33,6 @@ variables:
 - name: SignType
   value: real
 - group: Library.Template
-- name: NugetSecurityAnalysisWarningLevel
-  value: none # nuget.config requires signed packages by trusted owners
 
 stages:
 - stage: Library
