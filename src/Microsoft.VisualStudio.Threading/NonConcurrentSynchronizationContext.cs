@@ -1,13 +1,13 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Threading;
-    using System.Threading.Tasks;
-
     /// <summary>
     /// A <see cref="SynchronizationContext"/> that executes messages in the order they are received.
     /// </summary>
@@ -47,7 +47,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="sticky">
         /// A value indicating whether to set this instance as <see cref="SynchronizationContext.Current" /> when invoking delegates.
         /// This has the effect that async methods that are invoked on this <see cref="SynchronizationContext" />
-        /// will execute their continuations on this <see cref="SynchronizationContext" /> as well unless they use <see cref="Task.ConfigureAwait(bool)" /> with <c>false</c> as the argument.
+        /// will execute their continuations on this <see cref="SynchronizationContext" /> as well unless they use <see cref="Task.ConfigureAwait(bool)" /> with <see langword="false" /> as the argument.
         /// </param>
         public NonConcurrentSynchronizationContext(bool sticky)
         {

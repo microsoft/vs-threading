@@ -1,11 +1,11 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Threading;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using System.Threading;
-
     /// <summary>
     /// Extensions to <see cref="CancellationToken"/>.
     /// </summary>
@@ -170,7 +170,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             /// <param name="left">The left operand.</param>
             /// <param name="right">The right operand.</param>
-            /// <returns><c>true</c> if they are equal; <c>false</c> otherwise.</returns>
+            /// <returns><see langword="true" /> if they are equal; <see langword="false" /> otherwise.</returns>
             public static bool operator ==(CombinedCancellationToken left, CombinedCancellationToken right) => left.Equals(right);
 
             /// <summary>
@@ -178,7 +178,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             /// <param name="left">The left operand.</param>
             /// <param name="right">The right operand.</param>
-            /// <returns><c>true</c> if they are not equal; <c>false</c> if they are equal.</returns>
+            /// <returns><see langword="true" /> if they are not equal; <see langword="false" /> if they are equal.</returns>
             public static bool operator !=(CombinedCancellationToken left, CombinedCancellationToken right) => !(left == right);
 
             /// <summary>

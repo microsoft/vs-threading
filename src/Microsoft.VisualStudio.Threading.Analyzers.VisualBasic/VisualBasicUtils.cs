@@ -1,14 +1,14 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Linq;
+using System.Threading;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Operations;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
-    using System.Linq;
-    using System.Threading;
-    using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.Operations;
-    using Microsoft.CodeAnalysis.VisualBasic.Syntax;
-
     internal sealed class VisualBasicUtils : LanguageUtils
     {
         public static readonly VisualBasicUtils Instance = new VisualBasicUtils();

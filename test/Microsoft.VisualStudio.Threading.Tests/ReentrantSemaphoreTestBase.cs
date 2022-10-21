@@ -341,7 +341,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
             await this.semaphore.ExecuteAsync(async delegate
             {
                 releaseInheritor.Set();
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => innerOperation);
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => innerOperation!);
             });
         });
 
@@ -387,7 +387,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
                 async delegate
                 {
                     releaseInheritor2.Set();
-                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => innerOperation2);
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => innerOperation2!);
                 },
                 this.TimeoutToken);
         }
@@ -540,7 +540,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
 
             // Release the nested one last, which should similarly throw because its parent is already released.
             release2.Set();
-            await Assert.ThrowsAsync<IllegalSemaphoreUsageException>(() => operation2);
+            await Assert.ThrowsAsync<IllegalSemaphoreUsageException>(() => operation2!);
 
             // Verify that the semaphore is still in a faulted state, and will reject new calls.
             Assert.Throws<SemaphoreFaultedException>(() => this.semaphore.CurrentCount);
@@ -695,7 +695,7 @@ public abstract class ReentrantSemaphoreTestBase : TestBase, IDisposable
                 await Assert.ThrowsAsync<SemaphoreFaultedException>(() => pendingSemaphoreTask).WithCancellation(this.TimeoutToken);
 
                 releaser1.Set();
-                await Assert.ThrowsAsync<IllegalSemaphoreUsageException>(() => innerFaulterSemaphoreTask).WithCancellation(this.TimeoutToken);
+                await Assert.ThrowsAsync<IllegalSemaphoreUsageException>(() => innerFaulterSemaphoreTask!).WithCancellation(this.TimeoutToken);
                 await Assert.ThrowsAsync<SemaphoreFaultedException>(() => semaphore.ExecuteAsync(() => Task.CompletedTask)).WithCancellation(this.TimeoutToken);
             });
     }

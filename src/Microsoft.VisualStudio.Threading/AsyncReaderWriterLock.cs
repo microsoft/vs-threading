@@ -1,18 +1,18 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Globalization;
-    using System.Linq;
-    using System.Runtime.CompilerServices;
-    using System.Threading;
-    using System.Threading.Tasks;
-
     /// <summary>
     /// A non-blocking lock that allows concurrent access, exclusive access, or concurrent with upgradeability to exclusive access.
     /// </summary>
@@ -166,7 +166,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Initializes a new instance of the <see cref="AsyncReaderWriterLock"/> class.
         /// </summary>
         /// <param name="captureDiagnostics">
-        /// <c>true</c> to spend additional resources capturing diagnostic details that can be used
+        /// <see langword="true" /> to spend additional resources capturing diagnostic details that can be used
         /// to analyze deadlocks or other issues.</param>
         public AsyncReaderWriterLock(bool captureDiagnostics)
             : this(joinableTaskContext: null, captureDiagnostics)
@@ -180,7 +180,7 @@ namespace Microsoft.VisualStudio.Threading
         /// A JoinableTaskContext to help resolve deadlocks caused by interdependency between top read lock tasks when there is a pending write lock blocking one of them.
         /// </param>
         /// <param name="captureDiagnostics">
-        /// <c>true</c> to spend additional resources capturing diagnostic details that can be used
+        /// <see langword="true" /> to spend additional resources capturing diagnostic details that can be used
         /// to analyze deadlocks or other issues.</param>
         public AsyncReaderWriterLock(JoinableTaskContext? joinableTaskContext, bool captureDiagnostics = false)
         {
@@ -263,7 +263,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Gets a value indicating whether the caller holds a read lock.
         /// </summary>
         /// <remarks>
-        /// This property returns <c>false</c> if any other lock type is held, unless
+        /// This property returns <see langword="false" /> if any other lock type is held, unless
         /// within that alternate lock type this lock is also nested.
         /// </remarks>
         public bool IsReadLockHeld
@@ -276,7 +276,7 @@ namespace Microsoft.VisualStudio.Threading
         /// to the lock compatibility of the caller's context.
         /// </summary>
         /// <remarks>
-        /// This property returns <c>false</c> if any other lock type is held, unless
+        /// This property returns <see langword="false" /> if any other lock type is held, unless
         /// within that alternate lock type this lock is also nested.
         /// </remarks>
         public bool IsPassiveReadLockHeld
@@ -288,7 +288,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Gets a value indicating whether the caller holds an upgradeable read lock.
         /// </summary>
         /// <remarks>
-        /// This property returns <c>false</c> if any other lock type is held, unless
+        /// This property returns <see langword="false" /> if any other lock type is held, unless
         /// within that alternate lock type this lock is also nested.
         /// </remarks>
         public bool IsUpgradeableReadLockHeld
@@ -301,7 +301,7 @@ namespace Microsoft.VisualStudio.Threading
         /// to the lock compatibility of the caller's context.
         /// </summary>
         /// <remarks>
-        /// This property returns <c>false</c> if any other lock type is held, unless
+        /// This property returns <see langword="false" /> if any other lock type is held, unless
         /// within that alternate lock type this lock is also nested.
         /// </remarks>
         public bool IsPassiveUpgradeableReadLockHeld
@@ -313,7 +313,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Gets a value indicating whether the caller holds a write lock.
         /// </summary>
         /// <remarks>
-        /// This property returns <c>false</c> if any other lock type is held, unless
+        /// This property returns <see langword="false" /> if any other lock type is held, unless
         /// within that alternate lock type this lock is also nested.
         /// </remarks>
         public bool IsWriteLockHeld
@@ -326,7 +326,7 @@ namespace Microsoft.VisualStudio.Threading
         /// to the lock compatibility of the caller's context.
         /// </summary>
         /// <remarks>
-        /// This property returns <c>false</c> if any other lock type is held, unless
+        /// This property returns <see langword="false" /> if any other lock type is held, unless
         /// within that alternate lock type this lock is also nested.
         /// </remarks>
         public bool IsPassiveWriteLockHeld
@@ -381,9 +381,9 @@ namespace Microsoft.VisualStudio.Threading
         /// hold an active lock.
         /// </summary>
         /// <remarks>
-        /// The default implementation of this property returns <c>true</c>
+        /// The default implementation of this property returns <see langword="true" />
         /// when the calling thread is NOT an STA thread.
-        /// This property may be overridden to return <c>false</c>
+        /// This property may be overridden to return <see langword="false" />
         /// on threads that may compromise the integrity of the lock.
         /// </remarks>
         protected virtual bool CanCurrentThreadHoldActiveLock
@@ -547,7 +547,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Disposes managed and unmanaged resources held by this instance.
         /// </summary>
-        /// <param name="disposing"><c>true</c> if <see cref="Dispose()"/> was called; <c>false</c> if the object is being finalized.</param>
+        /// <param name="disposing"><see langword="true" /> if <see cref="Dispose()"/> was called; <see langword="false" /> if the object is being finalized.</param>
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
@@ -567,9 +567,9 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Checks whether the aggregated flags from all locks in the lock stack satisfy the specified flag(s).
         /// </summary>
-        /// <param name="flags">The flag(s) that must be specified for a <c>true</c> result.</param>
+        /// <param name="flags">The flag(s) that must be specified for a <see langword="true" /> result.</param>
         /// <param name="handle">The head of the lock stack to consider.</param>
-        /// <returns><c>true</c> if all the specified flags are found somewhere in the lock stack; <c>false</c> otherwise.</returns>
+        /// <returns><see langword="true" /> if all the specified flags are found somewhere in the lock stack; <see langword="false" /> otherwise.</returns>
         protected bool LockStackContains(LockFlags flags, LockHandle handle)
         {
             LockFlags aggregateFlags = LockFlags.None;
@@ -631,7 +631,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Fired when any lock is being released.
         /// </summary>
-        /// <param name="exclusiveLockRelease"><c>true</c> if the last write lock that the caller holds is being released; <c>false</c> otherwise.</param>
+        /// <param name="exclusiveLockRelease"><see langword="true" /> if the last write lock that the caller holds is being released; <see langword="false" /> otherwise.</param>
         /// <param name="releasingLock">The lock being released.</param>
         /// <returns>A task whose completion signals the conclusion of the asynchronous operation.</returns>
         protected virtual Task OnBeforeLockReleasedAsync(bool exclusiveLockRelease, LockHandle releasingLock)
@@ -895,7 +895,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Gets a value indicating whether all issued locks are merely the top-level lock or nesting locks of the specified lock.
         /// </summary>
         /// <param name="awaiter">The most nested lock.</param>
-        /// <returns><c>true</c> if all issued locks are the specified lock or nesting locks of it.</returns>
+        /// <returns><see langword="true" /> if all issued locks are the specified lock or nesting locks of it.</returns>
         private bool AllHeldLocksAreByThisStack(Awaiter? awaiter)
         {
             Assumes.True(awaiter is null || !this.IsLockHeld(LockKind.Write, awaiter)); // this method doesn't yet handle sticky upgraded read locks (that appear in the write lock set).
@@ -928,7 +928,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="kind">The kind of lock being queried for.</param>
         /// <param name="awaiter">The (possibly nested) lock.</param>
-        /// <returns><c>true</c> if the lock holder (also) holds the specified kind of lock.</returns>
+        /// <returns><see langword="true" /> if the lock holder (also) holds the specified kind of lock.</returns>
         private bool LockStackContains(LockKind kind, Awaiter? awaiter)
         {
             if (awaiter is object)
@@ -963,7 +963,7 @@ namespace Microsoft.VisualStudio.Threading
         /// which has actually be upgraded.
         /// </summary>
         /// <param name="awaiter">The lock to test.</param>
-        /// <returns><c>true</c> if the test succeeds; <c>false</c> otherwise.</returns>
+        /// <returns><see langword="true" /> if the test succeeds; <see langword="false" /> otherwise.</returns>
         private bool IsStickyWriteUpgradedLock(Awaiter awaiter)
         {
             if (awaiter.Kind == LockKind.UpgradeableRead && (awaiter.Options & LockFlags.StickyWrite) == LockFlags.StickyWrite)
@@ -979,13 +979,13 @@ namespace Microsoft.VisualStudio.Threading
 
         /// <summary>
         /// Checks whether the caller's held locks (or the specified lock stack) includes an active lock of the specified type.
-        /// Always <c>false</c> when called on an STA thread.
+        /// Always <see langword="false" /> when called on an STA thread.
         /// </summary>
         /// <param name="kind">The type of lock to check for.</param>
         /// <param name="awaiter">The most nested lock of the caller, or null to look up the caller's lock in the CallContext.</param>
-        /// <param name="checkSyncContextCompatibility"><c>true</c> to throw an exception if the caller has an exclusive lock but not an associated SynchronizationContext.</param>
-        /// <param name="allowNonLockSupportingContext"><c>true</c> to return true when a lock is held but unusable because of the context of the caller.</param>
-        /// <returns><c>true</c> if the caller holds active locks of the given type; <c>false</c> otherwise.</returns>
+        /// <param name="checkSyncContextCompatibility"><see langword="true" /> to throw an exception if the caller has an exclusive lock but not an associated SynchronizationContext.</param>
+        /// <param name="allowNonLockSupportingContext"><see langword="true" /> to return true when a lock is held but unusable because of the context of the caller.</param>
+        /// <returns><see langword="true" /> if the caller holds active locks of the given type; <see langword="false" /> otherwise.</returns>
         private bool IsLockHeld(LockKind kind, Awaiter? awaiter = null, bool checkSyncContextCompatibility = true, bool allowNonLockSupportingContext = false)
         {
             if (allowNonLockSupportingContext || this.IsLockSupportingContext(awaiter))
@@ -1007,12 +1007,12 @@ namespace Microsoft.VisualStudio.Threading
 
         /// <summary>
         /// Checks whether a given lock is active.
-        /// Always <c>false</c> when called on an STA thread.
+        /// Always <see langword="false" /> when called on an STA thread.
         /// </summary>
         /// <param name="awaiter">The lock to check.</param>
-        /// <param name="considerStaActive">if <c>false</c> the return value will always be <c>false</c> if called on an STA thread.</param>
-        /// <param name="checkSyncContextCompatibility"><c>true</c> to throw an exception if the caller has an exclusive lock but not an associated SynchronizationContext.</param>
-        /// <returns><c>true</c> if the lock is currently issued and the caller is not on an STA thread.</returns>
+        /// <param name="considerStaActive">if <see langword="false" /> the return value will always be <see langword="false" /> if called on an STA thread.</param>
+        /// <param name="checkSyncContextCompatibility"><see langword="true" /> to throw an exception if the caller has an exclusive lock but not an associated SynchronizationContext.</param>
+        /// <returns><see langword="true" /> if the lock is currently issued and the caller is not on an STA thread.</returns>
         private bool IsLockActive(Awaiter awaiter, bool considerStaActive, bool checkSyncContextCompatibility = false)
         {
             Requires.NotNull(awaiter, nameof(awaiter));
@@ -1054,7 +1054,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="awaiter">The awaiter to issue a lock to.</param>
         /// <param name="previouslyQueued">
-        /// A value indicating whether this lock was previously queued.  <c>false</c> if this is a new just received request.
+        /// A value indicating whether this lock was previously queued.  <see langword="false" /> if this is a new just received request.
         /// The value is used to determine whether to reject it if <see cref="Complete"/> has already been called and this
         /// is a new top-level request.
         /// </param>
@@ -1187,7 +1187,7 @@ namespace Microsoft.VisualStudio.Threading
         /// to the top-level lock request held by the given lock holder.
         /// </summary>
         /// <param name="headAwaiter">The awaiter to start the search down the stack from.</param>
-        /// <returns>The least nested upgradeable reader lock with sticky write flag; or <c>null</c> if none was found.</returns>
+        /// <returns>The least nested upgradeable reader lock with sticky write flag; or <see langword="null" /> if none was found.</returns>
         private Awaiter? FindRootUpgradeableReadWithStickyWrite(Awaiter? headAwaiter)
         {
             if (headAwaiter is null)
@@ -1259,7 +1259,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Walks the nested lock stack until it finds an active one.
         /// </summary>
         /// <param name="awaiter">The most nested lock to consider.  May be null.</param>
-        /// <returns>The first active lock encountered, or <c>null</c> if none.</returns>
+        /// <returns>The first active lock encountered, or <see langword="null" /> if none.</returns>
         private Awaiter? GetFirstActiveSelfOrAncestor(Awaiter? awaiter)
         {
             while (awaiter is object)
@@ -1295,7 +1295,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns>
         /// A task that should complete before the releasing thread accesses any resource protected by
         /// a lock wrapping the lock being released.
-        /// The task will always be complete if <paramref name="lockConsumerCanceled"/> is <c>true</c>.
+        /// The task will always be complete if <paramref name="lockConsumerCanceled"/> is <see langword="true" />.
         /// This method guarantees that the lock is effectively released from the caller, and the <paramref name="awaiter"/>
         /// can be safely recycled, before the synchronous portion of this method completes.
         /// </returns>
@@ -1521,7 +1521,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="awaiter">The awaiter being released.</param>
         /// <param name="upgradedStickyWrite">A flag indicating whether the lock being released was an upgraded read lock with the sticky write flag set.</param>
-        /// <param name="searchAllWaiters"><c>true</c> to scan the entire queue for pending lock requests that might qualify; used when qualifying locks were delayed for some reason besides lock contention.</param>
+        /// <param name="searchAllWaiters"><see langword="true" /> to scan the entire queue for pending lock requests that might qualify; used when qualifying locks were delayed for some reason besides lock contention.</param>
         private void OnReleaseReenterConcurrencyComplete(Awaiter awaiter, bool upgradedStickyWrite, bool searchAllWaiters)
         {
             Requires.NotNull(awaiter, nameof(awaiter));
@@ -1544,8 +1544,8 @@ namespace Microsoft.VisualStudio.Threading
         /// Issues locks to one or more queued lock requests and executes their continuations
         /// based on lock availability and policy-based prioritization (writer-friendly, etc.)
         /// </summary>
-        /// <param name="searchAllWaiters"><c>true</c> to scan the entire queue for pending lock requests that might qualify; used when qualifying locks were delayed for some reason besides lock contention.</param>
-        /// <returns><c>true</c> if any locks were issued; <c>false</c> otherwise.</returns>
+        /// <param name="searchAllWaiters"><see langword="true" /> to scan the entire queue for pending lock requests that might qualify; used when qualifying locks were delayed for some reason besides lock contention.</param>
+        /// <returns><see langword="true" /> if any locks were issued; <see langword="false" /> otherwise.</returns>
         private bool TryInvokeLockConsumer(bool searchAllWaiters)
         {
             return this.TryInvokeOneWriterIfAppropriate(searchAllWaiters)
@@ -1630,7 +1630,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Issues locks to all queued reader lock requests if there are no issued write locks.
         /// </summary>
-        /// <param name="searchAllWaiters"><c>true</c> to scan the entire queue for pending lock requests that might qualify; used when qualifying locks were delayed for some reason besides lock contention.</param>
+        /// <param name="searchAllWaiters"><see langword="true" /> to scan the entire queue for pending lock requests that might qualify; used when qualifying locks were delayed for some reason besides lock contention.</param>
         /// <returns>A value indicating whether any readers were issued locks.</returns>
         private bool TryInvokeAllReadersIfAppropriate(bool searchAllWaiters)
         {
@@ -1690,7 +1690,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Issues a lock to the next queued upgradeable reader, if no upgradeable read or write locks are currently issued.
         /// </summary>
-        /// <param name="searchAllWaiters"><c>true</c> to scan the entire queue for pending lock requests that might qualify; used when qualifying locks were delayed for some reason besides lock contention.</param>
+        /// <param name="searchAllWaiters"><see langword="true" /> to scan the entire queue for pending lock requests that might qualify; used when qualifying locks were delayed for some reason besides lock contention.</param>
         /// <returns>A value indicating whether any upgradeable readers were issued locks.</returns>
         private bool TryInvokeOneUpgradeableReaderIfAppropriate(bool searchAllWaiters)
         {
@@ -1719,7 +1719,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Issues a lock to the next queued writer, if no other locks are currently issued
         /// or the last contending read lock was removed allowing a waiting upgradeable reader to upgrade.
         /// </summary>
-        /// <param name="searchAllWaiters"><c>true</c> to scan the entire queue for pending lock requests that might qualify; used when qualifying locks were delayed for some reason besides lock contention.</param>
+        /// <param name="searchAllWaiters"><see langword="true" /> to scan the entire queue for pending lock requests that might qualify; used when qualifying locks were delayed for some reason besides lock contention.</param>
         /// <returns>A value indicating whether a writer was issued a lock.</returns>
         private bool TryInvokeOneWriterIfAppropriate(bool searchAllWaiters)
         {
@@ -1753,8 +1753,8 @@ namespace Microsoft.VisualStudio.Threading
         /// Scans a lock awaiter queue for any that can be issued locks now.
         /// </summary>
         /// <param name="waiters">The queue to scan.</param>
-        /// <param name="breakOnFirstIssue"><c>true</c> to break out immediately after issuing the first lock.</param>
-        /// <returns><c>true</c> if any lock was issued; <c>false</c> otherwise.</returns>
+        /// <param name="breakOnFirstIssue"><see langword="true" /> to break out immediately after issuing the first lock.</param>
+        /// <returns><see langword="true" /> if any lock was issued; <see langword="false" /> otherwise.</returns>
         private bool TryInvokeAnyWaitersInQueue(Queue<Awaiter> waiters, bool breakOnFirstIssue)
         {
             Requires.NotNull(waiters, nameof(waiters));
@@ -1886,7 +1886,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <param name="kind">The type of lock being requested.</param>
             /// <param name="options">Any flags applied to the lock request.</param>
             /// <param name="cancellationToken">The cancellation token.</param>
-            /// <param name="checkSyncContextCompatibility"><c>true</c> to throw an exception if the caller has an exclusive lock but not an associated SynchronizationContext.</param>
+            /// <param name="checkSyncContextCompatibility"><see langword="true" /> to throw an exception if the caller has an exclusive lock but not an associated SynchronizationContext.</param>
             internal Awaitable(AsyncReaderWriterLock lck, LockKind kind, LockFlags options, CancellationToken cancellationToken, bool checkSyncContextCompatibility = true)
             {
                 if (checkSyncContextCompatibility)
@@ -2259,7 +2259,7 @@ namespace Microsoft.VisualStudio.Threading
             /// </summary>
             /// <remarks>
             /// This field is initialized only when <see cref="AsyncReaderWriterLock"/> is constructed with
-            /// the captureDiagnostics parameter set to <c>true</c>.
+            /// the captureDiagnostics parameter set to <see langword="true" />.
             /// </remarks>
             private StackTrace? requestingStackTrace;
 
@@ -2398,7 +2398,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Gets a value indicating whether the lock is active.
             /// </summary>
-            /// <value><c>true</c> iff the lock has bee issued, has not yet been released, and the caller is on an MTA thread.</value>
+            /// <value><see langword="true" /> iff the lock has bee issued, has not yet been released, and the caller is on an MTA thread.</value>
             private bool LockIssued
             {
                 get { return this.lck.IsLockActive(this, considerStaActive: false); }
@@ -2510,7 +2510,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Executes the code that requires the lock.
             /// </summary>
-            /// <returns><c>true</c> if the continuation was (asynchronously) invoked; <c>false</c> if there was no continuation available to invoke.</returns>
+            /// <returns><see langword="true" /> if the continuation was (asynchronously) invoked; <see langword="false" /> if there was no continuation available to invoke.</returns>
             internal bool TryScheduleContinuationExecution()
             {
                 Action? continuation = Interlocked.Exchange(ref this.continuation, null);

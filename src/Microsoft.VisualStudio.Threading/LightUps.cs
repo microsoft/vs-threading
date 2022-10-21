@@ -1,10 +1,10 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-
     /// <summary>
     /// A non-generic class used to store statics that do not vary by generic type argument.
     /// </summary>

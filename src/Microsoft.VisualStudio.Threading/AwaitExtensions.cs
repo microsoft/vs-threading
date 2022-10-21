@@ -1,23 +1,23 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
+using global::Windows.Win32;
+using global::Windows.Win32.Foundation;
+using global::Windows.Win32.System.Registry;
+using Microsoft.Win32;
+using Microsoft.Win32.SafeHandles;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Diagnostics;
-    using System.Runtime.CompilerServices;
-    using System.Runtime.ExceptionServices;
-    using System.Runtime.InteropServices;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using global::Windows.Win32;
-    using global::Windows.Win32.Foundation;
-    using global::Windows.Win32.System.Registry;
-    using Microsoft.Win32;
-    using Microsoft.Win32.SafeHandles;
-
     /// <summary>
     /// Extension methods and awaitables for .NET 4.5.
     /// </summary>
@@ -117,7 +117,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Returns a Task that completes when the specified registry key changes.
         /// </summary>
         /// <param name="registryKey">The registry key to watch for changes.</param>
-        /// <param name="watchSubtree"><c>true</c> to watch the keys descendent keys as well; <c>false</c> to watch only this key without descendents.</param>
+        /// <param name="watchSubtree"><see langword="true" /> to watch the keys descendent keys as well; <see langword="false" /> to watch only this key without descendents.</param>
         /// <param name="change">Indicates the kinds of changes to watch for.</param>
         /// <param name="cancellationToken">A token that may be canceled to release the resources from watching for changes and complete the returned Task as canceled.</param>
         /// <returns>
@@ -198,7 +198,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Returns a Task that completes when the specified registry key changes.
         /// </summary>
         /// <param name="registryKeyHandle">The handle to the open registry key to watch for changes.</param>
-        /// <param name="watchSubtree"><c>true</c> to watch the keys descendent keys as well; <c>false</c> to watch only this key without descendents.</param>
+        /// <param name="watchSubtree"><see langword="true" /> to watch the keys descendent keys as well; <see langword="false" /> to watch only this key without descendents.</param>
         /// <param name="change">Indicates the kinds of changes to watch for.</param>
         /// <param name="cancellationToken">A token that may be canceled to release the resources from watching for changes and complete the returned Task as canceled.</param>
         /// <returns>
@@ -397,7 +397,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Gets a value indicating whether no yield is necessary.
             /// </summary>
-            /// <value><c>true</c> if the caller is already running on that TaskScheduler.</value>
+            /// <value><see langword="true" /> if the caller is already running on that TaskScheduler.</value>
             public bool IsCompleted
             {
                 get

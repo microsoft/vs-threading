@@ -1,10 +1,10 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Diagnostics
 {
-    using System.Diagnostics.CodeAnalysis;
-
     internal static class RoslynDebug
     {
         /// <inheritdoc cref="Debug.Assert(bool)"/>

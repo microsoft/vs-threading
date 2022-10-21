@@ -1,11 +1,11 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Generic;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using System.Collections.Generic;
-
     /// <summary>
     /// A collection optimized for usually small number of elements, and items are rarely removed.
     /// Note: this implementation is not thread-safe. It must be protected to prevent race conditions.

@@ -1,11 +1,11 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using global::Windows.Win32.System.Registry;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using global::Windows.Win32.System.Registry;
-
     /// <summary>
     /// The various types of data within a registry key that generate notifications
     /// when changed.

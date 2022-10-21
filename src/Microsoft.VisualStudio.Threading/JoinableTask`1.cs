@@ -1,18 +1,18 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Linq;
-    using System.Reflection;
-    using System.Runtime.CompilerServices;
-    using System.Text;
-    using System.Threading;
-    using System.Threading.Tasks;
-
     /// <summary>
     /// Tracks asynchronous operations and provides the ability to Join those operations to avoid
     /// deadlocks while synchronously blocking the Main thread for the operation's completion.

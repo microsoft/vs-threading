@@ -1,14 +1,14 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.Diagnostics.Runtime;
+using Microsoft.Diagnostics.Runtime.Interop;
+
 namespace CpsDbg
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using Microsoft.Diagnostics.Runtime;
-    using Microsoft.Diagnostics.Runtime.Interop;
-
     internal class DumpAsyncCommand : ICommandHandler
     {
         public void Execute(DebuggerContext context, string args)

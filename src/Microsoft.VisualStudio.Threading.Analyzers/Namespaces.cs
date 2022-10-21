@@ -1,10 +1,10 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
+
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
-    using System.Collections.Generic;
-
     internal static class Namespaces
     {
         internal static readonly IReadOnlyList<string> System = new[]

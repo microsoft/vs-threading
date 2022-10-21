@@ -1,15 +1,15 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Buffers;
+using System.Runtime.InteropServices;
+using System.Threading;
+using global::Windows.Win32;
+using global::Windows.Win32.Foundation;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using System.Buffers;
-    using System.Runtime.InteropServices;
-    using System.Threading;
-    using global::Windows.Win32;
-    using global::Windows.Win32.Foundation;
-
     /// <summary>
     /// A SynchronizationContext whose synchronously blocking Wait method does not allow
     /// any reentrancy via the message pump.

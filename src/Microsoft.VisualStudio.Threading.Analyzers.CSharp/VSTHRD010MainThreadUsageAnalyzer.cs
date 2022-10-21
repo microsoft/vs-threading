@@ -1,20 +1,20 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
+using System.Threading;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Operations;
+using Microsoft.CodeAnalysis.Text;
+
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Collections.Immutable;
-    using System.Linq;
-    using System.Threading;
-    using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CSharp;
-    using Microsoft.CodeAnalysis.CSharp.Syntax;
-    using Microsoft.CodeAnalysis.Diagnostics;
-    using Microsoft.CodeAnalysis.Operations;
-    using Microsoft.CodeAnalysis.Text;
-
     /// <summary>
     /// Flag usage of objects that must only be invoked while on the main thread (e.g. STA COM objects)
     /// without having first verified that the current thread is main thread either by throwing if on
@@ -440,7 +440,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             /// <summary>
             /// Determines whether a given type is likely to be (or implemented by) a COM object.
             /// </summary>
-            /// <returns><c>true</c> if the type appears to be a COM object; <c>false</c> if a managed object.</returns>
+            /// <returns><see langword="true" /> if the type appears to be a COM object; <see langword="false" /> if a managed object.</returns>
             /// <remarks>
             /// Type casts and type checks are thread-affinitized for (STA) COM objects, and free-threaded for managed ones.
             /// </remarks>

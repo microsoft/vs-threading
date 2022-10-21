@@ -1,15 +1,15 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Security;
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Runtime.CompilerServices;
-    using System.Security;
-    using System.Threading;
-    using System.Threading.Tasks;
-
     /// <summary>
     /// Extensions to the Task Parallel Library.
     /// </summary>
@@ -28,12 +28,12 @@ namespace Microsoft.VisualStudio.Threading
         public static readonly Task CanceledTask = Task.FromCanceled(new CancellationToken(canceled: true));
 
         /// <summary>
-        /// A completed task with a <c>true</c> result.
+        /// A completed task with a <see langword="true" /> result.
         /// </summary>
         public static readonly Task<bool> TrueTask = Task.FromResult(true);
 
         /// <summary>
-        /// A completed task with a <c>false</c> result.
+        /// A completed task with a <see langword="false" /> result.
         /// </summary>
         public static readonly Task<bool> FalseTask = Task.FromResult(false);
 
@@ -195,7 +195,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <typeparam name="T">The type of value returned by the task.</typeparam>
         /// <param name="taskToFollow">The task whose result should be returned by the following task.</param>
         /// <param name="ultimateCancellation">A token whose cancellation signals that the following task should be cancelled.</param>
-        /// <param name="taskThatFollows">The TaskCompletionSource whose task is to follow.  Leave at <c>null</c> for a new task to be created.</param>
+        /// <param name="taskThatFollows">The TaskCompletionSource whose task is to follow.  Leave at <see langword="null" /> for a new task to be created.</param>
         /// <returns>The following task.</returns>
         public static Task<T> FollowCancelableTaskToCompletion<T>(Func<Task<T>> taskToFollow, CancellationToken ultimateCancellation, TaskCompletionSource<T>? taskThatFollows = null)
         {
@@ -234,7 +234,7 @@ namespace Microsoft.VisualStudio.Threading
         /// faults or is canceled.
         /// </summary>
         /// <param name="task">The task whose completion should signal the completion of the returned awaitable.</param>
-        /// <param name="captureContext">if set to <c>true</c> the continuation will be scheduled on the caller's context; <c>false</c> to always execute the continuation on the threadpool.</param>
+        /// <param name="captureContext">if set to <see langword="true" /> the continuation will be scheduled on the caller's context; <see langword="false" /> to always execute the continuation on the threadpool.</param>
         /// <returns>An awaitable.</returns>
         public static NoThrowTaskAwaitable NoThrowAwaitable(this Task task, bool captureContext = true)
         {
@@ -268,7 +268,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Invokes asynchronous event handlers, returning a task that completes when all event handlers have been invoked.
         /// Each handler is fully executed (including continuations) before the next handler in the list is invoked.
         /// </summary>
-        /// <param name="handlers">The event handlers.  May be <c>null</c>.</param>
+        /// <param name="handlers">The event handlers.  May be <see langword="null" />.</param>
         /// <param name="sender">The event source.</param>
         /// <param name="args">The event argument.</param>
         /// <returns>The task that completes when all handlers have completed.</returns>
@@ -308,7 +308,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Each handler is fully executed (including continuations) before the next handler in the list is invoked.
         /// </summary>
         /// <typeparam name="TEventArgs">The type of argument passed to each handler.</typeparam>
-        /// <param name="handlers">The event handlers.  May be <c>null</c>.</param>
+        /// <param name="handlers">The event handlers.  May be <see langword="null" />.</param>
         /// <param name="sender">The event source.</param>
         /// <param name="args">The event argument.</param>
         /// <returns>The task that completes when all handlers have completed.  The task is faulted if any handlers throw an exception.</returns>
@@ -427,15 +427,15 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Creates a TPL Task that returns <c>true</c> when a <see cref="WaitHandle"/> is signaled or returns <c>false</c> if a timeout occurs first.
+        /// Creates a TPL Task that returns <see langword="true" /> when a <see cref="WaitHandle"/> is signaled or returns <see langword="false" /> if a timeout occurs first.
         /// </summary>
         /// <param name="handle">The handle whose signal triggers the task to be completed.  Do not use a <see cref="Mutex"/> here.</param>
-        /// <param name="timeout">The timeout (in milliseconds) after which the task will return <c>false</c> if the handle is not signaled by that time.</param>
+        /// <param name="timeout">The timeout (in milliseconds) after which the task will return <see langword="false" /> if the handle is not signaled by that time.</param>
         /// <param name="cancellationToken">A token whose cancellation will cause the returned Task to immediately complete in a canceled state.</param>
         /// <returns>
         /// A Task that completes when the handle is signaled or times out, or when the caller's cancellation token is canceled.
-        /// If the task completes because the handle is signaled, the task's result is <c>true</c>.
-        /// If the task completes because the handle is not signaled prior to the timeout, the task's result is <c>false</c>.
+        /// If the task completes because the handle is signaled, the task's result is <see langword="true" />.
+        /// If the task completes because the handle is not signaled prior to the timeout, the task's result is <see langword="false" />.
         /// </returns>
         /// <remarks>
         /// The completion of the returned task is asynchronous with respect to the code that actually signals the wait handle.
@@ -519,8 +519,8 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="task">The task whose completion should be applied to another.</param>
         /// <param name="tcs">The task that should receive the completion status.</param>
         /// <param name="inlineSubsequentCompletion">
-        /// <c>true</c> to complete the supplied <paramref name="tcs"/> as efficiently as possible (inline with the completion of <paramref name="task"/>);
-        /// <c>false</c> to complete the <paramref name="tcs"/> asynchronously.
+        /// <see langword="true" /> to complete the supplied <paramref name="tcs"/> as efficiently as possible (inline with the completion of <paramref name="task"/>);
+        /// <see langword="false" /> to complete the <paramref name="tcs"/> asynchronously.
         /// Note if <paramref name="task"/> is completed when this method is invoked, then <paramref name="tcs"/> is always completed synchronously.
         /// </param>
         internal static void ApplyResultTo<T>(this Task<T> task, TaskCompletionSource<T> tcs, bool inlineSubsequentCompletion)
@@ -720,7 +720,7 @@ namespace Microsoft.VisualStudio.Threading
             /// Initializes a new instance of the <see cref="NoThrowTaskAwaiter"/> struct.
             /// </summary>
             /// <param name="task">The task.</param>
-            /// <param name="captureContext">if set to <c>true</c> [capture context].</param>
+            /// <param name="captureContext">if set to <see langword="true" /> [capture context].</param>
             public NoThrowTaskAwaiter(Task task, bool captureContext)
             {
                 Requires.NotNull(task, nameof(task));

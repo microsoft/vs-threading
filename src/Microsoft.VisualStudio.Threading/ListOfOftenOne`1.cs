@@ -1,16 +1,16 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Linq;
-    using System.Text;
-    using System.Threading;
-    using System.Threading.Tasks;
-
     /// <summary>
     /// A thread-safe collection optimized for very small number of non-null elements.
     /// </summary>
@@ -87,7 +87,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Checks for reference equality between the specified value and an element of this collection.
         /// </summary>
         /// <param name="value">The value to check for.</param>
-        /// <returns><c>true</c> if a match is found; <c>false</c> otherwise.</returns>
+        /// <returns><see langword="true" /> if a match is found; <see langword="false" /> otherwise.</returns>
         /// <remarks>
         /// This method is intended to hide the Linq Contains extension method to avoid
         /// the boxing of this struct and its Enumerator.

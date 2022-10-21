@@ -1,11 +1,11 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Globalization;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using System.Globalization;
-
     /// <summary>
     /// Exception which is thrown when the contract of a <see cref="ReentrantSemaphore"/> is violated.
     /// </summary>

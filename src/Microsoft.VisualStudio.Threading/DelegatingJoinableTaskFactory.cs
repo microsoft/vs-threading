@@ -1,15 +1,15 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Threading;
-    using System.Threading.Tasks;
-
     /// <summary>
     /// A JoinableTaskFactory base class for derived types that delegate some of their work to an existing instance.
     /// </summary>
@@ -73,7 +73,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="joinableTask">The task whose request to transition to the main thread has completed.</param>
         /// <param name="canceled">A value indicating whether the transition was cancelled before it was fulfilled.</param>
         /// <remarks>
-        /// This event is usually raised on the main thread, but can be on another thread when <paramref name="canceled"/> is <c>true</c>.
+        /// This event is usually raised on the main thread, but can be on another thread when <paramref name="canceled"/> is <see langword="true" />.
         /// </remarks>
         protected internal override void OnTransitionedToMainThread(JoinableTask joinableTask, bool canceled)
         {

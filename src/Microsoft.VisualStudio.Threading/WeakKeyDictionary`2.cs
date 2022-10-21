@@ -1,13 +1,13 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-
     /// <summary>
     /// Dictionary that does not prevent keys from being garbage collected.
     /// </summary>
@@ -40,7 +40,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Initializes a new instance of the <see cref="WeakKeyDictionary{TKey, TValue}"/> class.
         /// </summary>
-        /// <param name="keyComparer">The key comparer to use. A <c>null</c> value indicates the default comparer will be used.</param>
+        /// <param name="keyComparer">The key comparer to use. A <see langword="null" /> value indicates the default comparer will be used.</param>
         /// <param name="capacity">The initial capacity of the dictionary. Growth beyond this capacity will first induce a scavenge operation.</param>
         public WeakKeyDictionary(IEqualityComparer<TKey?>? keyComparer = null, int capacity = 10)
         {

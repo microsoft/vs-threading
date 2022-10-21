@@ -1,19 +1,19 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
+using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.Testing;
+using Xunit;
+using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.VSTHRD111UseConfigureAwaitAnalyzer, Microsoft.VisualStudio.Threading.Analyzers.VSTHRD111UseConfigureAwaitCodeFix>;
+
+namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
+
+public class VSTHRD111UseConfigureAwaitAnalyzerTests
 {
-    using System.Threading.Tasks;
-    using Microsoft.CodeAnalysis.Testing;
-    using Xunit;
-    using Verify = CSharpCodeFixVerifier<VSTHRD111UseConfigureAwaitAnalyzer, VSTHRD111UseConfigureAwaitCodeFix>;
-
-    public class VSTHRD111UseConfigureAwaitAnalyzerTests
+    [Fact]
+    public async Task AwaitOnTask_NoSuffix_GeneratesDiagnostic()
     {
-        [Fact]
-        public async Task AwaitOnTask_NoSuffix_GeneratesDiagnostic()
-        {
-            var test = @"
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -25,7 +25,7 @@ class Test {
     Task BarAsync() => default;
 }
 ";
-            var fixFalse = @"
+        var fixFalse = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -37,7 +37,7 @@ class Test {
     Task BarAsync() => default;
 }
 ";
-            var fixTrue = @"
+        var fixTrue = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -50,24 +50,24 @@ class Test {
 }
 ";
 
-            await new Verify.Test
-            {
-                TestCode = test,
-                FixedCode = fixFalse,
-                CodeActionEquivalenceKey = false.ToString(),
-            }.RunAsync();
-            await new Verify.Test
-            {
-                TestCode = test,
-                FixedCode = fixTrue,
-                CodeActionEquivalenceKey = true.ToString(),
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task AwaitOnValueTask_NoSuffix_GeneratesDiagnostic()
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+            FixedCode = fixFalse,
+            CodeActionEquivalenceKey = false.ToString(),
+        }.RunAsync();
+        await new CSVerify.Test
+        {
+            TestCode = test,
+            FixedCode = fixTrue,
+            CodeActionEquivalenceKey = true.ToString(),
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task AwaitOnValueTask_NoSuffix_GeneratesDiagnostic()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -79,7 +79,7 @@ class Test {
     ValueTask BarAsync() => default;
 }
 ";
-            var fixFalse = @"
+        var fixFalse = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -91,7 +91,7 @@ class Test {
     ValueTask BarAsync() => default;
 }
 ";
-            var fixTrue = @"
+        var fixTrue = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -104,24 +104,24 @@ class Test {
 }
 ";
 
-            await new Verify.Test
-            {
-                TestCode = test,
-                FixedCode = fixFalse,
-                CodeActionEquivalenceKey = false.ToString(),
-            }.RunAsync();
-            await new Verify.Test
-            {
-                TestCode = test,
-                FixedCode = fixTrue,
-                CodeActionEquivalenceKey = true.ToString(),
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task AwaitOnTaskOfT_NoSuffix_GeneratesDiagnostic()
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+            FixedCode = fixFalse,
+            CodeActionEquivalenceKey = false.ToString(),
+        }.RunAsync();
+        await new CSVerify.Test
+        {
+            TestCode = test,
+            FixedCode = fixTrue,
+            CodeActionEquivalenceKey = true.ToString(),
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task AwaitOnTaskOfT_NoSuffix_GeneratesDiagnostic()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -133,7 +133,7 @@ class Test {
     Task<int> BarAsync() => default;
 }
 ";
-            var fixFalse = @"
+        var fixFalse = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -145,7 +145,7 @@ class Test {
     Task<int> BarAsync() => default;
 }
 ";
-            var fixTrue = @"
+        var fixTrue = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -158,18 +158,17 @@ class Test {
 }
 ";
 
-            await new Verify.Test
-            {
-                TestCode = test,
-                FixedCode = fixFalse,
-                CodeActionEquivalenceKey = false.ToString(),
-            }.RunAsync();
-            await new Verify.Test
-            {
-                TestCode = test,
-                FixedCode = fixTrue,
-                CodeActionEquivalenceKey = true.ToString(),
-            }.RunAsync();
-        }
+        await new CSVerify.Test
+        {
+            TestCode = test,
+            FixedCode = fixFalse,
+            CodeActionEquivalenceKey = false.ToString(),
+        }.RunAsync();
+        await new CSVerify.Test
+        {
+            TestCode = test,
+            FixedCode = fixTrue,
+            CodeActionEquivalenceKey = true.ToString(),
+        }.RunAsync();
     }
 }

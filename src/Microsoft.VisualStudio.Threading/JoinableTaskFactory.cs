@@ -1,23 +1,23 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Security;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using JoinableTaskSynchronizationContext = Microsoft.VisualStudio.Threading.JoinableTask.JoinableTaskSynchronizationContext;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Globalization;
-    using System.Linq;
-    using System.Reflection;
-    using System.Runtime.CompilerServices;
-    using System.Security;
-    using System.Text;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using JoinableTaskSynchronizationContext = Microsoft.VisualStudio.Threading.JoinableTask.JoinableTaskSynchronizationContext;
-
     /// <summary>
     /// A factory for starting asynchronous tasks that can mitigate deadlocks
     /// when the tasks require the Main thread of an application and the Main
@@ -36,7 +36,7 @@ namespace Microsoft.VisualStudio.Threading
         private readonly SynchronizationContext mainThreadJobSyncContext;
 
         /// <summary>
-        /// The collection to add all created tasks to. May be <c>null</c>.
+        /// The collection to add all created tasks to. May be <see langword="null" />.
         /// </summary>
         private readonly JoinableTaskCollection? jobCollection;
 
@@ -500,7 +500,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="joinableTask">The task whose request to transition to the main thread has completed.</param>
         /// <param name="canceled">A value indicating whether the transition was cancelled before it was fulfilled.</param>
         /// <remarks>
-        /// This event is usually raised on the main thread, but can be on another thread when <paramref name="canceled"/> is <c>true</c>.
+        /// This event is usually raised on the main thread, but can be on another thread when <paramref name="canceled"/> is <see langword="true" />.
         /// </remarks>
         protected internal virtual void OnTransitionedToMainThread(JoinableTask joinableTask, bool canceled)
         {
@@ -1085,7 +1085,7 @@ namespace Microsoft.VisualStudio.Threading
             private bool raiseTransitionComplete;
 
             /// <summary>
-            /// The delegate to invoke.  <c>null</c> if it has already been invoked.
+            /// The delegate to invoke.  <see langword="null" /> if it has already been invoked.
             /// </summary>
             /// <value>May be of type <see cref="Action"/> or <see cref="SendOrPostCallback"/>.</value>
             private object? invokeDelegate;

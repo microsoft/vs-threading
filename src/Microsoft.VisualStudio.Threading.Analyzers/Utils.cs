@@ -1,20 +1,20 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Operations;
+
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Linq;
-    using System.Reflection;
-    using System.Text;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.Diagnostics;
-    using Microsoft.CodeAnalysis.Operations;
-
     internal static class Utils
     {
         internal static Action<SyntaxNodeAnalysisContext> DebuggableWrapper(Action<SyntaxNodeAnalysisContext> handler)
@@ -169,7 +169,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// For instance, if the symbol represents a property in a class, this method will return the type of that property.
         /// </summary>
         /// <param name="symbol">The input symbol.</param>
-        /// <returns>The type represented by the input symbol; or <c>null</c> if could not figure out the type.</returns>
+        /// <returns>The type represented by the input symbol; or <see langword="null" /> if could not figure out the type.</returns>
         internal static ITypeSymbol? ResolveTypeFromSymbol(ISymbol symbol)
         {
             ITypeSymbol? type = null;
@@ -209,7 +209,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// </summary>
         /// <param name="symbol">The symbol whose namespace membership is being tested.</param>
         /// <param name="namespaces">A sequence of namespaces from global to most precise. For example: [System, Threading, Tasks].</param>
-        /// <returns><c>true</c> if the symbol belongs to the given namespace; otherwise <c>false</c>.</returns>
+        /// <returns><see langword="true" /> if the symbol belongs to the given namespace; otherwise <see langword="false" />.</returns>
         internal static bool BelongsToNamespace(this ISymbol symbol, IReadOnlyList<string> namespaces)
         {
             if (namespaces is null)
@@ -278,7 +278,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// Determines whether a type could be used with the async modifier as a method return type.
         /// </summary>
         /// <param name="typeSymbol">The type returned from a method.</param>
-        /// <returns><c>true</c> if the type can be returned from an async method.</returns>
+        /// <returns><see langword="true" /> if the type can be returned from an async method.</returns>
         /// <remarks>
         /// This is not the same thing as being an *awaitable* type, which is a much lower bar. Any type can be made awaitable by offering a GetAwaiter method
         /// that follows the proper pattern. But being an async-compatible type in this sense is a type that can be returned from a method carrying the async keyword modifier,
@@ -358,10 +358,10 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// </summary>
         /// <param name="symbol">The symbol to be tested.</param>
         /// <returns>
-        /// <c>true</c> if the symbol is a public type or member,
+        /// <see langword="true" /> if the symbol is a public type or member,
         /// or a protected member inside a public type,
         /// or an explicit interface implementation of a public interface;
-        /// otherwise <c>false</c>.
+        /// otherwise <see langword="false" />.
         /// </returns>
         internal static bool IsPublic([NotNullWhen(true)] ISymbol? symbol)
         {
@@ -656,7 +656,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
         /// Determines whether a given parameter accepts a <see cref="CancellationToken"/>.
         /// </summary>
         /// <param name="parameterSymbol">The parameter.</param>
-        /// <returns><c>true</c> if the parameter takes a <see cref="CancellationToken"/>; <c>false</c> otherwise.</returns>
+        /// <returns><see langword="true" /> if the parameter takes a <see cref="CancellationToken"/>; <see langword="false" /> otherwise.</returns>
         internal static bool IsCancellationTokenParameter(IParameterSymbol parameterSymbol) => parameterSymbol?.Type.Name == nameof(CancellationToken) && parameterSymbol.Type.BelongsToNamespace(Namespaces.SystemThreading);
 
         internal static ISymbol? GetUnderlyingSymbol(IOperation? operation)

@@ -1,12 +1,12 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Immutable;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Diagnostics;
+
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
-    using System.Collections.Immutable;
-    using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.Diagnostics;
-
     /// <summary>
     /// Verifies that types that implement vs-threading's IAsyncDisposable interface also implement System.IAsyncDisposable.
     /// </summary>

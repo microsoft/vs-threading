@@ -1,10 +1,10 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System.Collections.Generic;
+
 namespace Microsoft.VisualStudio.Threading.Analyzers
 {
-    using System.Collections.Generic;
-
     /// <summary>
     /// Identifiers used to identify various types so that we can avoid adding dependency only if absolutely needed.
     /// <devremarks>For each predefine value here, please update the unit test to detect if values go out of sync with the real types they represent.</devremarks>

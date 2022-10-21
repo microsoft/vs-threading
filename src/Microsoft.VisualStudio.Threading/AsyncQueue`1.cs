@@ -1,17 +1,17 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Linq;
-    using System.Text;
-    using System.Threading;
-    using System.Threading.Tasks;
-
     /// <summary>
     /// A thread-safe, asynchronously dequeuable queue.
     /// </summary>
@@ -168,7 +168,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Adds an element to the tail of the queue if it has not yet completed.
         /// </summary>
         /// <param name="value">The value to add.</param>
-        /// <returns><c>true</c> if the value was added to the queue; <c>false</c> if the queue is already completed.</returns>
+        /// <returns><see langword="true" /> if the value was added to the queue; <see langword="false" /> if the queue is already completed.</returns>
         public bool TryEnqueue(T value)
         {
             bool alreadyDispatched = false;
@@ -212,7 +212,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Gets the value at the head of the queue without removing it from the queue, if it is non-empty.
         /// </summary>
         /// <param name="value">Receives the value at the head of the queue; or the default value for the element type if the queue is empty.</param>
-        /// <returns><c>true</c> if the queue was non-empty; <c>false</c> otherwise.</returns>
+        /// <returns><see langword="true" /> if the queue was non-empty; <see langword="false" /> otherwise.</returns>
         public bool TryPeek([MaybeNullWhen(false)] out T value)
         {
             lock (this.SyncRoot)
@@ -308,7 +308,7 @@ namespace Microsoft.VisualStudio.Threading
         /// otherwise returns without an element.
         /// </summary>
         /// <param name="value">Receives the element from the head of the queue; or <c>default(T)</c> if the queue is empty.</param>
-        /// <returns><c>true</c> if an element was dequeued; <c>false</c> if the queue was empty.</returns>
+        /// <returns><see langword="true" /> if an element was dequeued; <see langword="false" /> if the queue was empty.</returns>
         public bool TryDequeue([MaybeNullWhen(false)] out T value)
         {
 #pragma warning disable CS8717 // A member returning a [MaybeNull] value introduces a null value for a type parameter.
@@ -339,7 +339,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="valueCheck">The test on the head element that must succeed to dequeue.</param>
         /// <param name="value">Receives the element from the head of the queue; or <c>default(T)</c> if the queue is empty.</param>
-        /// <returns><c>true</c> if an element was dequeued; <c>false</c> if the queue was empty.</returns>
+        /// <returns><see langword="true" /> if an element was dequeued; <see langword="false" /> if the queue was empty.</returns>
         protected bool TryDequeue(Predicate<T> valueCheck, [MaybeNullWhen(false)] out T value)
         {
             Requires.NotNull(valueCheck, nameof(valueCheck));
@@ -356,8 +356,8 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="value">The enqueued value.</param>
         /// <param name="alreadyDispatched">
-        /// <c>true</c> if the item will skip the queue because a dequeuer was already waiting for an item;
-        /// <c>false</c> if the item was actually added to the queue.
+        /// <see langword="true" /> if the item will skip the queue because a dequeuer was already waiting for an item;
+        /// <see langword="false" /> if the item was actually added to the queue.
         /// </param>
         protected virtual void OnEnqueued(T value, bool alreadyDispatched)
         {
@@ -384,7 +384,7 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="valueCheck">The test on the head element that must succeed to dequeue.</param>
         /// <param name="value">Receives the element from the head of the queue; or <c>default(T)</c> if the queue is empty.</param>
-        /// <returns><c>true</c> if an element was dequeued; <c>false</c> if the queue was empty.</returns>
+        /// <returns><c><see langword="true"/></c> if an element was dequeued; <see langword="false" /> if the queue was empty.</returns>
         private bool TryDequeueInternal(Predicate<T>? valueCheck, [MaybeNullWhen(false)] out T value)
         {
             bool dequeued;

@@ -1,21 +1,21 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
+using JoinableTaskSynchronizationContext = Microsoft.VisualStudio.Threading.JoinableTask.JoinableTaskSynchronizationContext;
+using SingleExecuteProtector = Microsoft.VisualStudio.Threading.JoinableTaskFactory.SingleExecuteProtector;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using System.Collections.Concurrent;
-    using System.Collections.Generic;
-    using System.Collections.Specialized;
-    using System.Diagnostics;
-    using System.Linq;
-    using System.Reflection;
-    using System.Runtime.CompilerServices;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using JoinableTaskSynchronizationContext = Microsoft.VisualStudio.Threading.JoinableTask.JoinableTaskSynchronizationContext;
-    using SingleExecuteProtector = Microsoft.VisualStudio.Threading.JoinableTaskFactory.SingleExecuteProtector;
-
     /// <summary>
     /// A common context within which joinable tasks may be created and interact to avoid deadlocks.
     /// </summary>
@@ -585,7 +585,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Disposes managed and unmanaged resources held by this instance.
         /// </summary>
-        /// <param name="disposing"><c>true</c> if <see cref="Dispose()"/> was called; <c>false</c> if the object is being finalized.</param>
+        /// <param name="disposing"><see langword="true" /> if <see cref="Dispose()"/> was called; <see langword="false" /> if the object is being finalized.</param>
         protected virtual void Dispose(bool disposing)
         {
         }
@@ -699,7 +699,7 @@ namespace Microsoft.VisualStudio.Threading
         private class HangNotificationRegistration : IDisposable
         {
             /// <summary>
-            /// The node to receive notifications. May be <c>null</c> if <see cref="Dispose"/> has already been called.
+            /// The node to receive notifications. May be <see langword="null" /> if <see cref="Dispose"/> has already been called.
             /// </summary>
             private JoinableTaskContextNode? node;
 

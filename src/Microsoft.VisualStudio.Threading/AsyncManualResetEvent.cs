@@ -1,18 +1,18 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Diagnostics;
-    using System.Linq;
-    using System.Runtime.CompilerServices;
-    using System.Text;
-    using System.Threading;
-    using System.Threading.Tasks;
-
     /// <summary>
     /// A flavor of <see cref="ManualResetEvent"/> that can be asynchronously awaited on.
     /// </summary>
@@ -59,8 +59,8 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="allowInliningAwaiters">
         /// A value indicating whether to allow <see cref="WaitAsync()"/> callers' continuations to execute
         /// on the thread that calls <see cref="SetAsync()"/> before the call returns.
-        /// <see cref="SetAsync()"/> callers should not hold private locks if this value is <c>true</c> to avoid deadlocks.
-        /// When <c>false</c>, the task returned from <see cref="WaitAsync()"/> may not have fully transitioned to
+        /// <see cref="SetAsync()"/> callers should not hold private locks if this value is <see langword="true" /> to avoid deadlocks.
+        /// When <see langword="false" />, the task returned from <see cref="WaitAsync()"/> may not have fully transitioned to
         /// its completed state by the time <see cref="SetAsync()"/> returns to its caller.
         /// </param>
         public AsyncManualResetEvent(bool initialState = false, bool allowInliningAwaiters = false)
@@ -114,7 +114,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <remarks>
         /// <para>
         /// On .NET versions prior to 4.6:
-        /// This method may return before the signal set has propagated (so <see cref="IsSet"/> may return <c>false</c> for a bit more if called immediately).
+        /// This method may return before the signal set has propagated (so <see cref="IsSet"/> may return <see langword="false" /> for a bit more if called immediately).
         /// The returned task completes when the signal has definitely been set.
         /// </para>
         /// <para>
@@ -180,7 +180,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <remarks>
         /// <para>
         /// On .NET versions prior to 4.6:
-        /// This method may return before the signal set has propagated (so <see cref="IsSet"/> may return <c>false</c> for a bit more if called immediately).
+        /// This method may return before the signal set has propagated (so <see cref="IsSet"/> may return <see langword="false" /> for a bit more if called immediately).
         /// The returned task completes when the signal has definitely been set.
         /// </para>
         /// <para>

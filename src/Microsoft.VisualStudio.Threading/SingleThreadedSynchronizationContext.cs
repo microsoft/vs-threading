@@ -1,13 +1,13 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Threading;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Reflection;
-    using System.Threading;
-
     /// <summary>
     /// A single-threaded synchronization context, akin to the DispatcherSynchronizationContext
     /// and WindowsFormsSynchronizationContext.

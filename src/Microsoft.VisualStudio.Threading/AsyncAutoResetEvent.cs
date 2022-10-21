@@ -1,16 +1,16 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Linq;
-    using System.Text;
-    using System.Threading;
-    using System.Threading.Tasks;
-
     /// <summary>
     /// An asynchronous implementation of an AutoResetEvent.
     /// </summary>
@@ -56,8 +56,8 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="allowInliningAwaiters">
         /// A value indicating whether to complete the task synchronously in the <see cref="Set"/> method,
-        /// as opposed to asynchronously. <c>false</c> better simulates the behavior of the
-        /// <see cref="AutoResetEvent"/> class, but <c>true</c> can result in slightly better performance.
+        /// as opposed to asynchronously. <see langword="false" /> better simulates the behavior of the
+        /// <see cref="AutoResetEvent"/> class, but <see langword="true" /> can result in slightly better performance.
         /// </param>
         public AsyncAutoResetEvent(bool allowInliningAwaiters)
         {
@@ -168,7 +168,7 @@ namespace Microsoft.VisualStudio.Threading
             /// Initializes a new instance of the <see cref="WaiterCompletionSource"/> class.
             /// </summary>
             /// <param name="owner">The event that is initializing this value.</param>
-            /// <param name="allowInliningContinuations"><c>true</c> to allow continuations to be inlined upon the completer's callstack.</param>
+            /// <param name="allowInliningContinuations"><see langword="true" /> to allow continuations to be inlined upon the completer's callstack.</param>
             /// <param name="cancellationToken">The cancellation token associated with the waiter.</param>
             internal WaiterCompletionSource(AsyncAutoResetEvent owner, bool allowInliningContinuations, CancellationToken cancellationToken)
                 : base(allowInliningContinuations)

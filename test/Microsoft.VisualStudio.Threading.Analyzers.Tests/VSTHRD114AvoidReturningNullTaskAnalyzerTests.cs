@@ -1,19 +1,19 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
-{
-    using System.Threading.Tasks;
-    using Xunit;
-    using VerifyCS = CSharpCodeFixVerifier<CSharpVSTHRD114AvoidReturningNullTaskAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
-    using VerifyVB = VisualBasicCodeFixVerifier<VisualBasicVSTHRD114AvoidReturningNullTaskAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
+using System.Threading.Tasks;
+using Xunit;
+using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.CSharpVSTHRD114AvoidReturningNullTaskAnalyzer, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
+using VerifyVB = Microsoft.VisualStudio.Threading.Analyzers.Tests.VisualBasicCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.VisualBasicVSTHRD114AvoidReturningNullTaskAnalyzer, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
-    public class VSTHRD114AvoidReturningNullTaskAnalyzerTests
+namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
+
+public class VSTHRD114AvoidReturningNullTaskAnalyzerTests
+{
+    [Fact]
+    public async Task TaskOfTReturnsNull_Diagnostic()
     {
-        [Fact]
-        public async Task TaskOfTReturnsNull_Diagnostic()
-        {
-            var csharpTest = @"
+        var csharpTest = @"
 using System.Threading.Tasks;
 
 class Test
@@ -24,12 +24,12 @@ class Test
     }
 }
 ";
-            await new VerifyCS.Test
-            {
-                TestCode = csharpTest,
-            }.RunAsync();
+        await new CSVerify.Test
+        {
+            TestCode = csharpTest,
+        }.RunAsync();
 
-            var vbTest = @"
+        var vbTest = @"
 Imports System.Threading.Tasks
 
 Friend Class Test
@@ -38,16 +38,16 @@ Friend Class Test
     End Function
 End Class
 ";
-            await new VerifyVB.Test
-            {
-                TestCode = vbTest,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task TaskReturnsNull_Diagnostic()
+        await new VerifyVB.Test
         {
-            var csharpTest = @"
+            TestCode = vbTest,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task TaskReturnsNull_Diagnostic()
+    {
+        var csharpTest = @"
 using System.Threading.Tasks;
 
 class Test
@@ -58,12 +58,12 @@ class Test
     }
 }
 ";
-            await new VerifyCS.Test
-            {
-                TestCode = csharpTest,
-            }.RunAsync();
+        await new CSVerify.Test
+        {
+            TestCode = csharpTest,
+        }.RunAsync();
 
-            var vbTest = @"
+        var vbTest = @"
 Imports System.Threading.Tasks
 
 Friend Class Test
@@ -72,16 +72,16 @@ Friend Class Test
     End Function
 End Class
 ";
-            await new VerifyVB.Test
-            {
-                TestCode = vbTest,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task TaskArrowReturnsNull_Diagnostic()
+        await new VerifyVB.Test
         {
-            var test = @"
+            TestCode = vbTest,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task TaskArrowReturnsNull_Diagnostic()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test
@@ -89,16 +89,16 @@ class Test
     public Task GetTask() => [|null|];
 }
 ";
-            await new VerifyCS.Test
-            {
-                TestCode = test,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task AsyncReturnsNull_NoDiagnostic()
+        await new CSVerify.Test
         {
-            var csharpTest = @"
+            TestCode = test,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task AsyncReturnsNull_NoDiagnostic()
+    {
+        var csharpTest = @"
 using System.Threading.Tasks;
 
 class Test
@@ -109,12 +109,12 @@ class Test
     }
 }
 ";
-            await new VerifyCS.Test
-            {
-                TestCode = csharpTest,
-            }.RunAsync();
+        await new CSVerify.Test
+        {
+            TestCode = csharpTest,
+        }.RunAsync();
 
-            var vbTest = @"
+        var vbTest = @"
 Imports System.Threading.Tasks
 
 Friend Class Test
@@ -123,16 +123,16 @@ Friend Class Test
     End Function
 End Class
 ";
-            await new VerifyVB.Test
-            {
-                TestCode = vbTest,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task VariableIsNullAndReturned_NoDiagnostic_FalseNegative()
+        await new VerifyVB.Test
         {
-            var test = @"
+            TestCode = vbTest,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task VariableIsNullAndReturned_NoDiagnostic_FalseNegative()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test
@@ -144,16 +144,16 @@ class Test
     }
 }
 ";
-            await new VerifyCS.Test
-            {
-                TestCode = test,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task NullInTernary_NoDiagnostic_FalseNegative()
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task NullInTernary_NoDiagnostic_FalseNegative()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test
@@ -164,16 +164,16 @@ class Test
     }
 }
 ";
-            await new VerifyCS.Test
-            {
-                TestCode = test,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task MultipleFaultyReturns_MultipleDiagnostics()
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task MultipleFaultyReturns_MultipleDiagnostics()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test
@@ -189,16 +189,16 @@ class Test
     }
 }
 ";
-            await new VerifyCS.Test
-            {
-                TestCode = test,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task AsyncAnonymousDelegateReturnsNull_NoDiagnostic()
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task AsyncAnonymousDelegateReturnsNull_NoDiagnostic()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test
@@ -212,16 +212,16 @@ class Test
     }
 }
 ";
-            await new VerifyCS.Test
-            {
-                TestCode = test,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task NonAsyncAnonymousDelegateReturnsNull_Diagnostic()
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task NonAsyncAnonymousDelegateReturnsNull_Diagnostic()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test
@@ -235,16 +235,16 @@ class Test
     }
 }
 ";
-            await new VerifyCS.Test
-            {
-                TestCode = test,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task LocalFunctionNonAsyncReturnsNull_Diagnostic()
+        await new CSVerify.Test
         {
-            var csharpTest = @"
+            TestCode = test,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task LocalFunctionNonAsyncReturnsNull_Diagnostic()
+    {
+        var csharpTest = @"
 using System.Threading.Tasks;
 
 class Test
@@ -258,16 +258,16 @@ class Test
     }
 }
 ";
-            await new VerifyCS.Test
-            {
-                TestCode = csharpTest,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task LocalFunctionAsyncReturnsNull_NoDiagnostic()
+        await new CSVerify.Test
         {
-            var csharpTest = @"
+            TestCode = csharpTest,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task LocalFunctionAsyncReturnsNull_NoDiagnostic()
+    {
+        var csharpTest = @"
 using System.Threading.Tasks;
 
 class Test
@@ -281,16 +281,16 @@ class Test
     }
 }
 ";
-            await new VerifyCS.Test
-            {
-                TestCode = csharpTest,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task ReturnNullableTask_NoDiagnostic()
+        await new CSVerify.Test
         {
-            var csharpTest = @"
+            TestCode = csharpTest,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task ReturnNullableTask_NoDiagnostic()
+    {
+        var csharpTest = @"
 using System;
 using System.Threading.Tasks;
 
@@ -320,10 +320,9 @@ class Test
     }
 }
 ";
-            await new VerifyCS.Test
-            {
-                TestCode = csharpTest,
-            }.RunAsync();
-        }
+        await new CSVerify.Test
+        {
+            TestCode = csharpTest,
+        }.RunAsync();
     }
 }

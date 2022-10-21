@@ -1,13 +1,13 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Threading;
-    using System.Threading.Tasks;
-
     /// <summary>
     /// A <see cref="TaskCompletionSource{TResult}"/>-derivative that
     /// does not inline continuations if so configured.
@@ -24,7 +24,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Initializes a new instance of the <see cref="TaskCompletionSourceWithoutInlining{T}"/> class.
         /// </summary>
         /// <param name="allowInliningContinuations">
-        /// <c>true</c> to allow continuations to be inlined; otherwise <c>false</c>.
+        /// <see langword="true" /> to allow continuations to be inlined; otherwise <see langword="false" />.
         /// </param>
         /// <param name="options">
         /// TaskCreationOptions to pass on to the base constructor.
@@ -52,7 +52,7 @@ namespace Microsoft.VisualStudio.Threading
         /// if wanted by the caller and supported by the platform.
         /// </summary>
         /// <param name="options">The base options supplied by the caller.</param>
-        /// <param name="allowInliningContinuations"><c>true</c> to allow inlining continuations.</param>
+        /// <param name="allowInliningContinuations"><see langword="true" /> to allow inlining continuations.</param>
         /// <returns>The possibly modified flags.</returns>
         private static TaskCreationOptions AdjustFlags(TaskCreationOptions options, bool allowInliningContinuations)
         {

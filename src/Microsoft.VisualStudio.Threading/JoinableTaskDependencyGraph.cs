@@ -1,15 +1,15 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Threading;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Linq;
-    using System.Threading;
-
     /// <summary>
     /// Methods to maintain dependencies between <see cref="JoinableTask"/>.
     /// Those methods are expected to be called by <see cref="JoinableTask"/> or <see cref="JoinableTaskCollection"/> only to maintain relationship between them, and should not be called directly by other code.

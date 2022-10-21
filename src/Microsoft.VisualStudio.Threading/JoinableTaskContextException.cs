@@ -1,10 +1,10 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-
     /// <summary>
     /// An exception thrown when the configuration provided to the <see cref="JoinableTaskContext"/>
     /// are incorrect or a virtual method is overridden such that it violates a contract.

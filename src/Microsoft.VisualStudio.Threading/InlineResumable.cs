@@ -1,12 +1,12 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Runtime.CompilerServices;
+using System.Threading;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using System.Runtime.CompilerServices;
-    using System.Threading;
-
     /// <summary>
     /// An awaiter that can be pre-created, and later immediately execute its one scheduled continuation.
     /// </summary>
@@ -30,7 +30,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets a value indicating whether an awaiting expression should yield.
         /// </summary>
-        /// <value>Always <c>false</c>.</value>
+        /// <value>Always <see langword="false" />.</value>
         public bool IsCompleted => this.resumed;
 
         /// <summary>

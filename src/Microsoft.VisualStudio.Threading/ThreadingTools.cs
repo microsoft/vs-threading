@@ -1,12 +1,12 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using System.Threading;
-    using System.Threading.Tasks;
-
     /// <summary>
     /// Utility methods for working across threads.
     /// </summary>
@@ -25,8 +25,8 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="hotLocation">The field that may be manipulated by multiple threads.</param>
         /// <param name="applyChange">A function that receives the unchanged value and returns the changed value.</param>
         /// <returns>
-        /// <c>true</c> if the location's value is changed by applying the result of the <paramref name="applyChange"/> function;
-        /// <c>false</c> if the location's value remained the same because the last invocation of <paramref name="applyChange"/> returned the existing value.
+        /// <see langword="true" /> if the location's value is changed by applying the result of the <paramref name="applyChange"/> function;
+        /// <see langword="false" /> if the location's value remained the same because the last invocation of <paramref name="applyChange"/> returned the existing value.
         /// </returns>
         public static bool ApplyChangeOptimistically<T>(ref T hotLocation, Func<T, T> applyChange)
             where T : class?
@@ -67,8 +67,8 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="applyChangeArgument">An argument to pass to <paramref name="applyChange"/>.</param>
         /// <param name="applyChange">A function that receives both the unchanged value and <paramref name="applyChangeArgument"/>, then returns the changed value.</param>
         /// <returns>
-        /// <c>true</c> if the location's value is changed by applying the result of the <paramref name="applyChange"/> function;
-        /// <c>false</c> if the location's value remained the same because the last invocation of <paramref name="applyChange"/> returned the existing value.
+        /// <see langword="true" /> if the location's value is changed by applying the result of the <paramref name="applyChange"/> function;
+        /// <see langword="false" /> if the location's value remained the same because the last invocation of <paramref name="applyChange"/> returned the existing value.
         /// </returns>
         public static bool ApplyChangeOptimistically<T, TArg>(ref T hotLocation, TArg applyChangeArgument, Func<T, TArg, T> applyChange)
             where T : class?

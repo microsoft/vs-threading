@@ -1,14 +1,14 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Threading;
-    using System.Threading.Tasks;
-
     /// <summary>
     /// A collection of incomplete <see cref="JoinableTask" /> objects.
     /// </summary>
@@ -45,9 +45,9 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="context">The <see cref="JoinableTaskContext"/> instance to which this collection applies.</param>
         /// <param name="refCountAddedJobs">
-        /// <c>true</c> if JoinableTask instances added to the collection multiple times should remain in the collection until they are
+        /// <see langword="true" /> if JoinableTask instances added to the collection multiple times should remain in the collection until they are
         /// either removed the same number of times or until they are completed;
-        /// <c>false</c> causes the first Remove call for a JoinableTask to remove it from this collection regardless
+        /// <see langword="false" /> causes the first Remove call for a JoinableTask to remove it from this collection regardless
         /// how many times it had been added.</param>
         public JoinableTaskCollection(JoinableTaskContext context, bool refCountAddedJobs = false)
         {

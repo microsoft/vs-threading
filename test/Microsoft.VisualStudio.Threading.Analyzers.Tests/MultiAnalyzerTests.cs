@@ -1,25 +1,25 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
-{
-    using System;
-    using System.Collections.Generic;
-    using System.Collections.Immutable;
-    using System.Linq;
-    using System.Threading.Tasks;
-    using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.Diagnostics;
-    using Microsoft.CodeAnalysis.Testing;
-    using Xunit;
-    using Verify = MultiAnalyzerTests.Verifier;
+using System;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Testing;
+using Xunit;
+using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.MultiAnalyzerTests.Verifier;
 
-    public class MultiAnalyzerTests
+namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
+
+public class MultiAnalyzerTests
+{
+    [Fact]
+    public async Task JustOneDiagnosticPerLine()
     {
-        [Fact]
-        public async Task JustOneDiagnosticPerLine()
-        {
-            var test = @"
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
@@ -42,39 +42,39 @@ class Test {
     }
 }";
 
-            DiagnosticResult[] expected =
-            {
-                Verify.Diagnostic(VSTHRD103UseAsyncOptionAnalyzer.DescriptorNoAlternativeMethod).WithSpan(10, 24, 10, 33).WithArguments("GetResult"),
-                Verify.Diagnostic(VSTHRD103UseAsyncOptionAnalyzer.Descriptor).WithSpan(11, 13, 11, 16).WithArguments("Run", "RunAsync"),
-                Verify.Diagnostic(VSTHRD002UseJtfRunAnalyzer.Descriptor).WithSpan(19, 32, 19, 38),
-            };
-
-            // All expected diagnostics should include a location
-            Assert.All(expected, item => Assert.True(item.HasLocation));
-
-            // All diagnostics should fit on one line
-            Assert.All(expected, item => Assert.Equal(item.Spans[0].Span.EndLinePosition.Line, item.Spans[0].Span.StartLinePosition.Line));
-
-            // At most one diagnostic appears on any given line
-            Assert.Equal(expected.Length, expected.Select(d => d.Spans[0].Span.StartLinePosition.Line).Distinct().Count());
-
-            var verifyTest = new Verify.Test
-            {
-                TestCode = test,
-                TestState = { MarkupHandling = MarkupMode.None },
-            };
-
-            verifyTest.ExpectedDiagnostics.AddRange(expected);
-            await verifyTest.RunAsync();
-        }
-
-        /// <summary>
-        /// Verifies that no analyzer throws due to a missing interface member.
-        /// </summary>
-        [Fact]
-        public async Task MissingInterfaceImplementationMember()
+        DiagnosticResult[] expected =
         {
-            var test = @"
+            CSVerify.Diagnostic(VSTHRD103UseAsyncOptionAnalyzer.DescriptorNoAlternativeMethod).WithSpan(10, 24, 10, 33).WithArguments("GetResult"),
+            CSVerify.Diagnostic(VSTHRD103UseAsyncOptionAnalyzer.Descriptor).WithSpan(11, 13, 11, 16).WithArguments("Run", "RunAsync"),
+            CSVerify.Diagnostic(VSTHRD002UseJtfRunAnalyzer.Descriptor).WithSpan(19, 32, 19, 38),
+        };
+
+        // All expected diagnostics should include a location
+        Assert.All(expected, item => Assert.True(item.HasLocation));
+
+        // All diagnostics should fit on one line
+        Assert.All(expected, item => Assert.Equal(item.Spans[0].Span.EndLinePosition.Line, item.Spans[0].Span.StartLinePosition.Line));
+
+        // At most one diagnostic appears on any given line
+        Assert.Equal(expected.Length, expected.Select(d => d.Spans[0].Span.StartLinePosition.Line).Distinct().Count());
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            TestState = { MarkupHandling = MarkupMode.None },
+        };
+
+        verifyTest.ExpectedDiagnostics.AddRange(expected);
+        await verifyTest.RunAsync();
+    }
+
+    /// <summary>
+    /// Verifies that no analyzer throws due to a missing interface member.
+    /// </summary>
+    [Fact]
+    public async Task MissingInterfaceImplementationMember()
+    {
+        var test = @"
 public interface A {
     void Foo();
 }
@@ -88,14 +88,14 @@ internal class Child : Parent {
 }
 ";
 
-            DiagnosticResult expected = Verify.CompilerError("CS0535").WithLocation(6, 23).WithArguments("Parent", "A.Foo()");
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.CompilerError("CS0535").WithLocation(6, 23).WithArguments("Parent", "A.Foo()");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task AnonymousTypeObjectCreationSyntax()
-        {
-            var test = @"
+    [Fact]
+    public async Task AnonymousTypeObjectCreationSyntax()
+    {
+        var test = @"
 using System;
 
 public class A {
@@ -109,13 +109,13 @@ public class A {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task MissingTypeObjectCreationSyntax()
-        {
-            var test = @"
+    [Fact]
+    public async Task MissingTypeObjectCreationSyntax()
+    {
+        var test = @"
 using System;
 
 public class A {
@@ -129,18 +129,18 @@ public class A {
 }
 ";
 
-            DiagnosticResult[] expected =
-            {
-                Verify.CompilerError("CS0246").WithLocation(6, 21).WithArguments("C"),
-                Verify.CompilerError("CS0246").WithLocation(10, 21).WithArguments("C"),
-            };
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
-
-        [Fact]
-        public async Task ManyMethodInvocationStyles()
+        DiagnosticResult[] expected =
         {
-            var test = @"
+            CSVerify.CompilerError("CS0246").WithLocation(6, 21).WithArguments("C"),
+            CSVerify.CompilerError("CS0246").WithLocation(10, 21).WithArguments("C"),
+        };
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task ManyMethodInvocationStyles()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 
@@ -191,13 +191,13 @@ public class A {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task UseOf_XmlDocRefs_DoesNotProduceWarnings()
-        {
-            var test = @"
+    [Fact]
+    public async Task UseOf_XmlDocRefs_DoesNotProduceWarnings()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 
@@ -213,13 +213,13 @@ public class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task UseOf_nameof_DoesNotProduceWarnings()
-        {
-            var test = @"
+    [Fact]
+    public async Task UseOf_nameof_DoesNotProduceWarnings()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 
@@ -241,13 +241,13 @@ public class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task UseOf_Delegate_DoesNotProduceWarnings()
-        {
-            var test = @"
+    [Fact]
+    public async Task UseOf_Delegate_DoesNotProduceWarnings()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 
@@ -263,82 +263,81 @@ public class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        /// <summary>
-        /// Verifies that no reference to System.ValueTuple exists,
-        /// so we know the analyzers will work on VS2015.
-        /// </summary>
-        /// <remarks>
-        /// We have to reference the assembly during compilation due to
-        /// https://github.com/dotnet/roslyn/issues/18629
-        /// So this unit test guards that we don't accidentally require the assembly
-        /// at runtime.
-        /// </remarks>
-        [Fact]
-        public void NoValueTupleReference()
-        {
-            System.Reflection.AssemblyName[]? refAssemblies = typeof(CSharpVSTHRD001UseSwitchToMainThreadAsyncAnalyzer)
-                .Assembly.GetReferencedAssemblies();
-            Assert.DoesNotContain(refAssemblies, a => a.Name!.Equals("System.ValueTuple", StringComparison.OrdinalIgnoreCase));
-        }
+    /// <summary>
+    /// Verifies that no reference to System.ValueTuple exists,
+    /// so we know the analyzers will work on VS2015.
+    /// </summary>
+    /// <remarks>
+    /// We have to reference the assembly during compilation due to
+    /// https://github.com/dotnet/roslyn/issues/18629
+    /// So this unit test guards that we don't accidentally require the assembly
+    /// at runtime.
+    /// </remarks>
+    [Fact]
+    public void NoValueTupleReference()
+    {
+        System.Reflection.AssemblyName[]? refAssemblies = typeof(CSharpVSTHRD001UseSwitchToMainThreadAsyncAnalyzer)
+            .Assembly.GetReferencedAssemblies();
+        Assert.DoesNotContain(refAssemblies, a => a.Name!.Equals("System.ValueTuple", StringComparison.OrdinalIgnoreCase));
+    }
 
-        /// <summary>
-        /// Verifies that no reference to <see cref="ValueTask"/> exists,
-        /// so we know the analyzers will work on .NET Framework versions that did not include it.
-        /// </summary>
-        /// <remarks>
-        /// We reference the assembly during compilation for convenient use of nameof.
-        /// This unit test guards that we don't accidentally require the assembly
-        /// at runtime.
-        /// </remarks>
-        [Fact]
-        public void NoValueTaskReference()
-        {
-            System.Reflection.AssemblyName[]? refAssemblies = typeof(CSharpVSTHRD001UseSwitchToMainThreadAsyncAnalyzer)
-                .Assembly.GetReferencedAssemblies();
-            Assert.DoesNotContain(refAssemblies, a => a.Name!.Equals("System.Threading.Tasks.Extensions", StringComparison.OrdinalIgnoreCase));
-        }
+    /// <summary>
+    /// Verifies that no reference to <see cref="ValueTask"/> exists,
+    /// so we know the analyzers will work on .NET Framework versions that did not include it.
+    /// </summary>
+    /// <remarks>
+    /// We reference the assembly during compilation for convenient use of nameof.
+    /// This unit test guards that we don't accidentally require the assembly
+    /// at runtime.
+    /// </remarks>
+    [Fact]
+    public void NoValueTaskReference()
+    {
+        System.Reflection.AssemblyName[]? refAssemblies = typeof(CSharpVSTHRD001UseSwitchToMainThreadAsyncAnalyzer)
+            .Assembly.GetReferencedAssemblies();
+        Assert.DoesNotContain(refAssemblies, a => a.Name!.Equals("System.Threading.Tasks.Extensions", StringComparison.OrdinalIgnoreCase));
+    }
 
-        [Fact]
-        public async Task NameOfUsedInAttributeArgument()
-        {
-            var test = @"
+    [Fact]
+    public async Task NameOfUsedInAttributeArgument()
+    {
+        var test = @"
 [System.Diagnostics.DebuggerDisplay(""hi"", Name = nameof(System.Console))]
 class Foo { }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    public static class Verifier
+    {
+        public static DiagnosticResult Diagnostic(DiagnosticDescriptor descriptor)
+            => new DiagnosticResult(descriptor);
+
+        public static DiagnosticResult CompilerError(string errorIdentifier)
+            => new DiagnosticResult(errorIdentifier, DiagnosticSeverity.Error);
+
+        public static Task VerifyAnalyzerAsync(string source, params DiagnosticResult[] expected)
+        {
+            var test = new Test
+            {
+                TestCode = source,
+            };
+
+            test.ExpectedDiagnostics.AddRange(expected);
+            return test.RunAsync();
         }
 
-        public static class Verifier
+        public class Test : CSharpCodeFixVerifier<VSTHRD002UseJtfRunAnalyzer, EmptyCodeFixProvider>.Test
         {
-            public static DiagnosticResult Diagnostic(DiagnosticDescriptor descriptor)
-                => new DiagnosticResult(descriptor);
-
-            public static DiagnosticResult CompilerError(string errorIdentifier)
-                => new DiagnosticResult(errorIdentifier, DiagnosticSeverity.Error);
-
-            public static Task VerifyAnalyzerAsync(string source, params DiagnosticResult[] expected)
+            protected override IEnumerable<DiagnosticAnalyzer> GetDiagnosticAnalyzers()
             {
-                var test = new Test
-                {
-                    TestCode = source,
-                };
-
-                test.ExpectedDiagnostics.AddRange(expected);
-                return test.RunAsync();
-            }
-
-            public class Test : CSharpCodeFixVerifier<VSTHRD002UseJtfRunAnalyzer, EmptyCodeFixProvider>.Test
-            {
-                protected override IEnumerable<DiagnosticAnalyzer> GetDiagnosticAnalyzers()
-                {
-                    IEnumerable<DiagnosticAnalyzer>? analyzers = from type in typeof(VSTHRD002UseJtfRunAnalyzer).Assembly.GetTypes()
-                                    where type.GetCustomAttributes(typeof(DiagnosticAnalyzerAttribute), true).Any()
-                                    select (DiagnosticAnalyzer?)Activator.CreateInstance(type) ?? throw Assumes.Fail("Unable to instantiate the analyzer");
-                    return analyzers.ToImmutableArray();
-                }
+                IEnumerable<DiagnosticAnalyzer>? analyzers = from type in typeof(VSTHRD002UseJtfRunAnalyzer).Assembly.GetTypes()
+                                where type.GetCustomAttributes(typeof(DiagnosticAnalyzerAttribute), true).Any()
+                                select (DiagnosticAnalyzer?)Activator.CreateInstance(type) ?? throw Assumes.Fail("Unable to instantiate the analyzer");
+                return analyzers.ToImmutableArray();
             }
         }
     }

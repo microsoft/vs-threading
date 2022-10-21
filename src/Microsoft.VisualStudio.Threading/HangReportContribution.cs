@@ -1,15 +1,15 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
-
     /// <summary>
     /// A contribution to an aggregate hang report.
     /// </summary>
@@ -60,7 +60,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Gets the nested hang reports, if any.
         /// </summary>
-        /// <value>A read only collection, or <c>null</c>.</value>
+        /// <value>A read only collection, or <see langword="null" />.</value>
         public IReadOnlyCollection<HangReportContribution>? NestedReports { get; private set; }
     }
 }

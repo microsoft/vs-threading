@@ -1,19 +1,19 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
-{
-    using System.Threading.Tasks;
-    using Xunit;
-    using VerifyCS = CSharpCodeFixVerifier<CSharpVSTHRD114AvoidReturningNullTaskAnalyzer, VSTHRD114AvoidReturningNullTaskCodeFix>;
-    using VerifyVB = VisualBasicCodeFixVerifier<VisualBasicVSTHRD114AvoidReturningNullTaskAnalyzer, VSTHRD114AvoidReturningNullTaskCodeFix>;
+using System.Threading.Tasks;
+using Xunit;
+using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.CSharpVSTHRD114AvoidReturningNullTaskAnalyzer, Microsoft.VisualStudio.Threading.Analyzers.VSTHRD114AvoidReturningNullTaskCodeFix>;
+using VerifyVB = Microsoft.VisualStudio.Threading.Analyzers.Tests.VisualBasicCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.VisualBasicVSTHRD114AvoidReturningNullTaskAnalyzer, Microsoft.VisualStudio.Threading.Analyzers.VSTHRD114AvoidReturningNullTaskCodeFix>;
 
-    public class VSTHRD114AvoidReturningNullTaskCodeFixTests
+namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
+
+public class VSTHRD114AvoidReturningNullTaskCodeFixTests
+{
+    [Fact]
+    public async Task MethodTaskOfTReturnsNull()
     {
-        [Fact]
-        public async Task MethodTaskOfTReturnsNull()
-        {
-            var test = @"
+        var test = @"
 class Test
 {
     public System.Threading.Tasks.Task<object> GetTaskObj()
@@ -22,7 +22,7 @@ class Test
     }
 }";
 
-            var withFix = @"
+        var withFix = @"
 class Test
 {
     public System.Threading.Tasks.Task<object> GetTaskObj()
@@ -31,33 +31,33 @@ class Test
     }
 }";
 
-            await VerifyCS.VerifyCodeFixAsync(test, withFix);
-        }
+        await CSVerify.VerifyCodeFixAsync(test, withFix);
+    }
 
-        [Fact]
-        public async Task MethodTaskOfTReturnsNothing_VB()
-        {
-            var test = @"
+    [Fact]
+    public async Task MethodTaskOfTReturnsNothing_VB()
+    {
+        var test = @"
 Class Test
     Function GetTaskObj As System.Threading.Tasks.Task(Of object)
         Return [|Nothing|]
     End Function
 End Class";
 
-            var withFix = @"
+        var withFix = @"
 Class Test
     Function GetTaskObj As System.Threading.Tasks.Task(Of object)
         Return System.Threading.Tasks.Task.FromResult(Of Object)(Nothing)
     End Function
 End Class";
 
-            await VerifyVB.VerifyCodeFixAsync(test, withFix);
-        }
+        await VerifyVB.VerifyCodeFixAsync(test, withFix);
+    }
 
-        [Fact]
-        public async Task MethodTaskReturnsNull()
-        {
-            var test = @"
+    [Fact]
+    public async Task MethodTaskReturnsNull()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test
@@ -68,7 +68,7 @@ class Test
     }
 }
 ";
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 class Test
@@ -80,13 +80,13 @@ class Test
 }
 ";
 
-            await VerifyCS.VerifyCodeFixAsync(test, withFix);
-        }
+        await CSVerify.VerifyCodeFixAsync(test, withFix);
+    }
 
-        [Fact]
-        public async Task ArrowedMethodTaskReturnsNull()
-        {
-            var test = @"
+    [Fact]
+    public async Task ArrowedMethodTaskReturnsNull()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test
@@ -94,7 +94,7 @@ class Test
     public Task GetTask() => [|null|];
 }
 ";
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 class Test
@@ -103,13 +103,13 @@ class Test
 }
 ";
 
-            await VerifyCS.VerifyCodeFixAsync(test, withFix);
-        }
+        await CSVerify.VerifyCodeFixAsync(test, withFix);
+    }
 
-        [Fact]
-        public async Task ArrowedMethodTaskOfTReturnsNull()
-        {
-            var test = @"
+    [Fact]
+    public async Task ArrowedMethodTaskOfTReturnsNull()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test
@@ -117,7 +117,7 @@ class Test
     public Task<object> GetTaskObj() => [|null|];
 }
 ";
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 class Test
@@ -126,13 +126,13 @@ class Test
 }
 ";
 
-            await VerifyCS.VerifyCodeFixAsync(test, withFix);
-        }
+        await CSVerify.VerifyCodeFixAsync(test, withFix);
+    }
 
-        [Fact]
-        public async Task MultipleFaultyReturns()
-        {
-            var test = @"
+    [Fact]
+    public async Task MultipleFaultyReturns()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test
@@ -148,7 +148,7 @@ class Test
     }
 }
 ";
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 class Test
@@ -165,13 +165,13 @@ class Test
 }
 ";
 
-            await VerifyCS.VerifyCodeFixAsync(test, withFix);
-        }
+        await CSVerify.VerifyCodeFixAsync(test, withFix);
+    }
 
-        [Fact]
-        public async Task MethodComplexTaskOfTReturnsNull()
-        {
-            var test = @"
+    [Fact]
+    public async Task MethodComplexTaskOfTReturnsNull()
+    {
+        var test = @"
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -183,7 +183,7 @@ class Test
     }
 }";
 
-            var withFix = @"
+        var withFix = @"
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -195,13 +195,13 @@ class Test
     }
 }";
 
-            await VerifyCS.VerifyCodeFixAsync(test, withFix);
-        }
+        await CSVerify.VerifyCodeFixAsync(test, withFix);
+    }
 
-        [Fact]
-        public async Task AnonymousDelegateTaskOfTReturnsNull()
-        {
-            var test = @"
+    [Fact]
+    public async Task AnonymousDelegateTaskOfTReturnsNull()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test
@@ -216,7 +216,7 @@ class Test
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 class Test
@@ -230,13 +230,13 @@ class Test
     }
 }
 ";
-            await VerifyCS.VerifyCodeFixAsync(test, withFix);
-        }
+        await CSVerify.VerifyCodeFixAsync(test, withFix);
+    }
 
-        [Fact]
-        public async Task LambdaTaskOfTReturnsNull()
-        {
-            var test = @"
+    [Fact]
+    public async Task LambdaTaskOfTReturnsNull()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test
@@ -251,7 +251,7 @@ class Test
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 class Test
@@ -265,12 +265,13 @@ class Test
     }
 }
 ";
-            await VerifyCS.VerifyCodeFixAsync(test, withFix);
-        }
+        await CSVerify.VerifyCodeFixAsync(test, withFix);
+    }
 
-        public async Task AnonymousDelegateTaskReturnsNull()
-        {
-            var test = @"
+    [Fact]
+    public async Task AnonymousDelegateTaskReturnsNull()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test
@@ -285,7 +286,7 @@ class Test
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 class Test
@@ -299,12 +300,13 @@ class Test
     }
 }
 ";
-            await VerifyCS.VerifyCodeFixAsync(test, withFix);
-        }
+        await CSVerify.VerifyCodeFixAsync(test, withFix);
+    }
 
-        public async Task LambdaTaskReturnsNull()
-        {
-            var test = @"
+    [Fact]
+    public async Task LambdaTaskReturnsNull()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test
@@ -319,7 +321,7 @@ class Test
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 class Test
@@ -333,7 +335,6 @@ class Test
     }
 }
 ";
-            await VerifyCS.VerifyCodeFixAsync(test, withFix);
-        }
+        await CSVerify.VerifyCodeFixAsync(test, withFix);
     }
 }

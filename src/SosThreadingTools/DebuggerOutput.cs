@@ -1,10 +1,10 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using Microsoft.Diagnostics.Runtime.Interop;
+
 namespace CpsDbg
 {
-    using Microsoft.Diagnostics.Runtime.Interop;
-
     internal class DebuggerOutput
     {
         private IDebugClient client;

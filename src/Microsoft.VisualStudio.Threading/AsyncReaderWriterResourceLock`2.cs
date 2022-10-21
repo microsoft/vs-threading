@@ -1,17 +1,17 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Linq;
-    using System.Runtime.CompilerServices;
-    using System.Threading;
-    using System.Threading.Tasks;
-
     /// <summary>
     /// A non-blocking lock that allows concurrent access, exclusive access, or concurrent with upgradeability to exclusive access,
     /// making special allowances for resources that must be prepared for concurrent or exclusive access.
@@ -38,7 +38,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Initializes a new instance of the <see cref="AsyncReaderWriterResourceLock{TMoniker, TResource}"/> class.
         /// </summary>
         /// <param name="captureDiagnostics">
-        /// <c>true</c> to spend additional resources capturing diagnostic details that can be used
+        /// <see langword="true" /> to spend additional resources capturing diagnostic details that can be used
         /// to analyze deadlocks or other issues.</param>
         protected AsyncReaderWriterResourceLock(bool captureDiagnostics)
             : base(captureDiagnostics)
@@ -53,7 +53,7 @@ namespace Microsoft.VisualStudio.Threading
         /// A JoinableTaskContext to help resolve dead locks caused by interdependency between top read lock tasks when there is a pending write lock blocking one of them.
         /// </param>
         /// <param name="captureDiagnostics">
-        /// <c>true</c> to spend additional resources capturing diagnostic details that can be used
+        /// <see langword="true" /> to spend additional resources capturing diagnostic details that can be used
         /// to analyze deadlocks or other issues.</param>
         protected AsyncReaderWriterResourceLock(JoinableTaskContext? joinableTaskContext, bool captureDiagnostics)
             : base(joinableTaskContext, captureDiagnostics)
@@ -188,9 +188,9 @@ namespace Microsoft.VisualStudio.Threading
         /// Marks any loaded resources as having been retrieved under a lock if they
         /// satisfy some predicate.
         /// </summary>
-        /// <param name="resourceCheck">A function that returns <c>true</c> if the provided resource should be considered retrieved.</param>
+        /// <param name="resourceCheck">A function that returns <see langword="true" /> if the provided resource should be considered retrieved.</param>
         /// <param name="state">The state object to pass as a second parameter to <paramref name="resourceCheck"/>.</param>
-        /// <returns><c>true</c> if the delegate returned <c>true</c> on any of the invocations.</returns>
+        /// <returns><see langword="true" /> if the delegate returned <see langword="true" /> on any of the invocations.</returns>
         protected bool SetResourceAsAccessed(Func<TResource, object?, bool> resourceCheck, object? state)
         {
             return this.helper.SetResourceAsAccessed(resourceCheck, state);
@@ -610,9 +610,9 @@ namespace Microsoft.VisualStudio.Threading
             /// Marks any loaded resources as having been retrieved under a lock if they
             /// satisfy some predicate.
             /// </summary>
-            /// <param name="resourceCheck">A function that returns <c>true</c> if the provided resource should be considered retrieved.</param>
+            /// <param name="resourceCheck">A function that returns <see langword="true" /> if the provided resource should be considered retrieved.</param>
             /// <param name="state">The state object to pass as a second parameter to <paramref name="resourceCheck"/>.</param>
-            /// <returns><c>true</c> if the delegate returned <c>true</c> on any of the invocations.</returns>
+            /// <returns><see langword="true" /> if the delegate returned <see langword="true" /> on any of the invocations.</returns>
             internal bool SetResourceAsAccessed(Func<TResource, object?, bool> resourceCheck, object? state)
             {
                 Requires.NotNull(resourceCheck, nameof(resourceCheck));

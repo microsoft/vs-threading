@@ -3,12 +3,12 @@
 
 #if NETFRAMEWORK || WINDOWS
 
+using System;
+using System.Threading;
+using System.Windows.Threading;
+
 namespace Microsoft.VisualStudio.Threading
 {
-    using System;
-    using System.Threading;
-    using System.Windows.Threading;
-
     /// <summary>
     /// Extension methods for the WPF <see cref="Dispatcher"/> for better
     /// interop with the <see cref="JoinableTaskFactory"/>.
@@ -24,7 +24,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <param name="priority">
         /// The priority with which to schedule any work on the UI thread,
         /// when and if <see cref="JoinableTaskFactory.SwitchToMainThreadAsync(CancellationToken)"/> is called
-        /// and for each asynchronous return to the main thread after an <c>await</c>.
+        /// and for each asynchronous return to the main thread after an <see langword="await"/>.
         /// </param>
         /// <returns>A <see cref="JoinableTaskFactory"/> that may be used for scheduling async work with the specified priority.</returns>
         public static JoinableTaskFactory WithPriority(this JoinableTaskFactory joinableTaskFactory, Dispatcher dispatcher, DispatcherPriority priority)
