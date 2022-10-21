@@ -1,20 +1,20 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
-{
-    using System.Threading.Tasks;
-    using Microsoft.CodeAnalysis.Testing;
-    using Xunit;
-    using static Microsoft.VisualStudio.Threading.Analyzers.VSTHRD103UseAsyncOptionAnalyzer;
-    using Verify = CSharpCodeFixVerifier<VSTHRD103UseAsyncOptionAnalyzer, VSTHRD103UseAsyncOptionCodeFix>;
+using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.Testing;
+using Xunit;
+using static Microsoft.VisualStudio.Threading.Analyzers.VSTHRD103UseAsyncOptionAnalyzer;
+using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.VSTHRD103UseAsyncOptionAnalyzer, Microsoft.VisualStudio.Threading.Analyzers.VSTHRD103UseAsyncOptionCodeFix>;
 
-    public class VSTHRD103UseAsyncOptionAnalyzerTests
+namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
+
+public class VSTHRD103UseAsyncOptionAnalyzerTests
+{
+    [Fact]
+    public async Task JTFRunInTaskReturningMethodGeneratesWarning()
     {
-        [Fact]
-        public async Task JTFRunInTaskReturningMethodGeneratesWarning()
-        {
-            var test = @"
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
@@ -30,7 +30,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
@@ -44,14 +44,14 @@ class Test {
     void Run() { }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(Descriptor).WithLocation(8, 13).WithArguments("Run", "RunAsync");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(Descriptor).WithLocation(8, 13).WithArguments("Run", "RunAsync");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task JTFRunInTaskReturningMethod_WithExtraReturn_GeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task JTFRunInTaskReturningMethod_WithExtraReturn_GeneratesWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
@@ -71,7 +71,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
@@ -89,14 +89,14 @@ class Test {
     void Run() { }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(Descriptor).WithLocation(8, 13).WithArguments("Run", "RunAsync");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(Descriptor).WithLocation(8, 13).WithArguments("Run", "RunAsync");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task JTFRunInAsyncMethodGeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task JTFRunInAsyncMethodGeneratesWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
@@ -111,7 +111,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
@@ -125,14 +125,14 @@ class Test {
     void Run() { }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(Descriptor).WithLocation(8, 13).WithArguments("Run", "RunAsync");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(Descriptor).WithLocation(8, 13).WithArguments("Run", "RunAsync");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task JTFRunOfTInTaskReturningMethodGeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task JTFRunOfTInTaskReturningMethodGeneratesWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
@@ -148,7 +148,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
@@ -163,14 +163,14 @@ class Test {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(Descriptor).WithLocation(8, 26).WithArguments("Run", "RunAsync");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(Descriptor).WithLocation(8, 26).WithArguments("Run", "RunAsync");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task JTJoinOfTInTaskReturningMethodGeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task JTJoinOfTInTaskReturningMethodGeneratesWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
@@ -187,7 +187,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
@@ -203,14 +203,14 @@ class Test {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(Descriptor).WithLocation(9, 12).WithArguments("Join", "JoinAsync");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(Descriptor).WithLocation(9, 12).WithArguments("Join", "JoinAsync");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task TaskWaitInTaskReturningMethodGeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task TaskWaitInTaskReturningMethodGeneratesWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -222,7 +222,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -232,14 +232,14 @@ class Test {
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(7, 11).WithArguments("Wait");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(7, 11).WithArguments("Wait");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task TaskWaitInValueTaskReturningMethodGeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task TaskWaitInValueTaskReturningMethodGeneratesWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -251,7 +251,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -261,13 +261,13 @@ class Test {
     }
 }
 ";
-            await Verify.VerifyCodeFixAsync(test, Verify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Wait"), withFix);
-        }
+        await CSVerify.VerifyCodeFixAsync(test, CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Wait"), withFix);
+    }
 
-        [Fact]
-        public async Task TaskWait_InIAsyncEnumerableAsyncMethod_ShouldReportWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task TaskWait_InIAsyncEnumerableAsyncMethod_ShouldReportWarning()
+    {
+        var test = @"
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -281,7 +281,7 @@ class Test {
     }
 }
 ";
-            var withFix = @"
+        var withFix = @"
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -295,13 +295,13 @@ class Test {
     }
 }
 ";
-            await Verify.VerifyCodeFixAsync(test, Verify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Wait"), withFix);
-        }
+        await CSVerify.VerifyCodeFixAsync(test, CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Wait"), withFix);
+    }
 
-        [Fact]
-        public async Task IVsTaskWaitInTaskReturningMethodGeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task IVsTaskWaitInTaskReturningMethodGeneratesWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -316,7 +316,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -329,14 +329,14 @@ class Test {
     }
 }
 ";
-            DiagnosticResult expected = this.CreateDiagnostic(10, 11, 4, "Wait");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = this.CreateDiagnostic(10, 11, 4, "Wait");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task IVsTaskGetResultInTaskReturningMethodGeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task IVsTaskGetResultInTaskReturningMethodGeneratesWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -351,7 +351,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -364,17 +364,17 @@ class Test {
     }
 }
 ";
-            DiagnosticResult expected = this.CreateDiagnostic(10, 27, 9, "GetResult");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = this.CreateDiagnostic(10, 27, 9, "GetResult");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        /// <summary>
-        /// Ensures we don't offer a code fix when the required using directive is not already present.
-        /// </summary>
-        [Fact]
-        public async Task IVsTaskGetResultInTaskReturningMethod_WithoutUsing_OffersNoFix()
-        {
-            var test = @"
+    /// <summary>
+    /// Ensures we don't offer a code fix when the required using directive is not already present.
+    /// </summary>
+    [Fact]
+    public async Task IVsTaskGetResultInTaskReturningMethod_WithoutUsing_OffersNoFix()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -387,28 +387,28 @@ class Test {
 }
 ";
 
-            string withFix = test;
-            ////             var withFix = @"
-            //// using System.Threading.Tasks;
-            //// using Microsoft.VisualStudio.Shell;
-            //// using Microsoft.VisualStudio.Shell.Interop;
-            //// using Task = System.Threading.Tasks.Task;
-            ////
-            //// class Test {
-            ////     async Task T() {
-            ////         IVsTask t = null;
-            ////         object result = await t;
-            ////     }
-            //// }
-            //// ";
-            DiagnosticResult expected = this.CreateDiagnostic(8, 27, 9, "GetResult");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        string withFix = test;
+        ////             var withFix = @"
+        //// using System.Threading.Tasks;
+        //// using Microsoft.VisualStudio.Shell;
+        //// using Microsoft.VisualStudio.Shell.Interop;
+        //// using Task = System.Threading.Tasks.Task;
+        ////
+        //// class Test {
+        ////     async Task T() {
+        ////         IVsTask t = null;
+        ////         object result = await t;
+        ////     }
+        //// }
+        //// ";
+        DiagnosticResult expected = this.CreateDiagnostic(8, 27, 9, "GetResult");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task TaskOfTResultInTaskReturningMethodGeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task TaskOfTResultInTaskReturningMethodGeneratesWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -420,7 +420,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -432,14 +432,14 @@ class Test {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(7, 24).WithArguments("Result");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(7, 24).WithArguments("Result");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task TaskOfTResultInTaskReturningMethodGeneratesWarning_FixPreservesCall()
-        {
-            var test = @"
+    [Fact]
+    public async Task TaskOfTResultInTaskReturningMethodGeneratesWarning_FixPreservesCall()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -455,7 +455,7 @@ static class Assert {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -470,14 +470,14 @@ static class Assert {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(7, 26).WithArguments("Result");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(7, 26).WithArguments("Result");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task TaskOfTResultInTaskReturningMethodGeneratesWarning_FixRewritesCorrectExpression()
-        {
-            var test = @"
+    [Fact]
+    public async Task TaskOfTResultInTaskReturningMethodGeneratesWarning_FixRewritesCorrectExpression()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 
@@ -488,7 +488,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System;
 using System.Threading.Tasks;
 
@@ -499,14 +499,14 @@ class Test {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(7, 45).WithArguments("Result");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(7, 45).WithArguments("Result");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task TaskOfTResultInTaskReturningAnonymousMethodWithinSyncMethod_GeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task TaskOfTResultInTaskReturningAnonymousMethodWithinSyncMethod_GeneratesWarning()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 
@@ -521,7 +521,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System;
 using System.Threading.Tasks;
 
@@ -536,14 +536,14 @@ class Test {
 }
 ";
 
-            DiagnosticResult expected = this.CreateDiagnostic(9, 28, 6, "Result");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = this.CreateDiagnostic(9, 28, 6, "Result");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task TaskOfTResultInTaskReturningSimpleLambdaWithinSyncMethod_GeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task TaskOfTResultInTaskReturningSimpleLambdaWithinSyncMethod_GeneratesWarning()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 
@@ -558,7 +558,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System;
 using System.Threading.Tasks;
 
@@ -573,14 +573,14 @@ class Test {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorNoAlternativeMethod).WithSpan(9, 28, 9, 34).WithArguments("Result");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithSpan(9, 28, 9, 34).WithArguments("Result");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task TaskOfTResultInTaskReturningSimpleLambdaExpressionWithinSyncMethod_GeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task TaskOfTResultInTaskReturningSimpleLambdaExpressionWithinSyncMethod_GeneratesWarning()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 
@@ -592,7 +592,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System;
 using System.Threading.Tasks;
 
@@ -604,14 +604,14 @@ class Test {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorNoAlternativeMethod).WithSpan(8, 57, 8, 63).WithArguments("Result");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithSpan(8, 57, 8, 63).WithArguments("Result");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task TaskOfTResultInTaskReturningParentheticalLambdaWithinSyncMethod_GeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task TaskOfTResultInTaskReturningParentheticalLambdaWithinSyncMethod_GeneratesWarning()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 
@@ -626,7 +626,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System;
 using System.Threading.Tasks;
 
@@ -641,14 +641,14 @@ class Test {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorNoAlternativeMethod).WithSpan(9, 28, 9, 34).WithArguments("Result");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithSpan(9, 28, 9, 34).WithArguments("Result");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task TaskOfTResultInTaskReturningMethodAnonymousDelegate_GeneratesNoWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task TaskOfTResultInTaskReturningMethodAnonymousDelegate_GeneratesNoWarning()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 
@@ -661,13 +661,13 @@ class Test {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task TaskGetAwaiterGetResultInTaskReturningMethodGeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task TaskGetAwaiterGetResultInTaskReturningMethodGeneratesWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -679,7 +679,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -690,14 +690,14 @@ class Test {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(7, 24).WithArguments("GetResult");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(7, 24).WithArguments("GetResult");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task SyncInvocationWhereAsyncOptionExistsInSameTypeGeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task SyncInvocationWhereAsyncOptionExistsInSameTypeGeneratesWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -711,7 +711,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -724,14 +724,14 @@ class Test {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(Descriptor).WithSpan(6, 9, 6, 12).WithArguments("Foo", "FooAsync");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(Descriptor).WithSpan(6, 9, 6, 12).WithArguments("Foo", "FooAsync");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task SyncInvocationWhereAsyncOptionIsObsolete_GeneratesNoWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task SyncInvocationWhereAsyncOptionIsObsolete_GeneratesNoWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -746,13 +746,13 @@ class Test {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task SyncInvocationWhereAsyncOptionIsPartlyObsolete_GeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task SyncInvocationWhereAsyncOptionIsPartlyObsolete_GeneratesWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -769,7 +769,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -785,14 +785,14 @@ class Test {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(Descriptor).WithSpan(6, 9, 6, 12).WithArguments("Foo", "FooAsync");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(Descriptor).WithSpan(6, 9, 6, 12).WithArguments("Foo", "FooAsync");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task SyncInvocationWhereAsyncOptionExistsInSubExpressionGeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task SyncInvocationWhereAsyncOptionExistsInSubExpressionGeneratesWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -806,7 +806,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -819,14 +819,14 @@ class Test {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(Descriptor).WithSpan(6, 17, 6, 20).WithArguments("Foo", "FooAsync");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(Descriptor).WithSpan(6, 17, 6, 20).WithArguments("Foo", "FooAsync");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task SyncInvocationWhereAsyncOptionExistsInOtherTypeGeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task SyncInvocationWhereAsyncOptionExistsInOtherTypeGeneratesWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -842,7 +842,7 @@ class Util {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -857,14 +857,14 @@ class Util {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(Descriptor).WithSpan(6, 14, 6, 17).WithArguments("Foo", "FooAsync");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(Descriptor).WithSpan(6, 14, 6, 17).WithArguments("Foo", "FooAsync");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task SyncInvocationWhereAsyncOptionExistsAsPrivateInOtherTypeGeneratesNoWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task SyncInvocationWhereAsyncOptionExistsAsPrivateInOtherTypeGeneratesNoWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -880,13 +880,13 @@ class Util {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task SyncInvocationWhereAsyncOptionExistsInOtherBaseTypeGeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task SyncInvocationWhereAsyncOptionExistsInOtherBaseTypeGeneratesWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -906,7 +906,7 @@ class Apple : Fruit {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -925,14 +925,14 @@ class Apple : Fruit {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(Descriptor).WithSpan(7, 11, 7, 14).WithArguments("Foo", "FooAsync");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(Descriptor).WithSpan(7, 11, 7, 14).WithArguments("Foo", "FooAsync");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task SyncInvocationWhereAsyncOptionExistsInExtensionMethodGeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task SyncInvocationWhereAsyncOptionExistsInExtensionMethodGeneratesWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -952,7 +952,7 @@ static class FruitUtils {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -971,14 +971,14 @@ static class FruitUtils {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(Descriptor).WithSpan(7, 11, 7, 14).WithArguments("Foo", "FooAsync");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(Descriptor).WithSpan(7, 11, 7, 14).WithArguments("Foo", "FooAsync");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task SyncInvocationUsingStaticGeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task SyncInvocationUsingStaticGeneratesWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using static FruitUtils;
 
@@ -995,7 +995,7 @@ static class FruitUtils {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 using static FruitUtils;
 
@@ -1011,14 +1011,14 @@ static class FruitUtils {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(Descriptor).WithSpan(7, 9, 7, 12).WithArguments("Foo", "FooAsync");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(Descriptor).WithSpan(7, 9, 7, 12).WithArguments("Foo", "FooAsync");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task SyncInvocationUsingStaticGeneratesNoWarningAcrossTypes()
-        {
-            var test = @"
+    [Fact]
+    public async Task SyncInvocationUsingStaticGeneratesNoWarningAcrossTypes()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using static FruitUtils;
 using static PlateUtils;
@@ -1042,13 +1042,13 @@ static class PlateUtils {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task AwaitingAsyncMethodWithoutSuffixProducesNoWarningWhereSuffixVersionExists()
-        {
-            var test = @"
+    [Fact]
+    public async Task AwaitingAsyncMethodWithoutSuffixProducesNoWarningWhereSuffixVersionExists()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -1061,20 +1061,20 @@ class Test {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        /// <summary>
-        /// Verifies that when method invocations and member access happens in properties
-        /// (which can never be async), nothing bad happens.
-        /// </summary>
-        /// <remarks>
-        /// This may like a trivially simple case. But guess why we had to add a test for it? (it failed).
-        /// </remarks>
-        [Fact]
-        public async Task NoDiagnosticAndNoExceptionForProperties()
-        {
-            var test = @"
+    /// <summary>
+    /// Verifies that when method invocations and member access happens in properties
+    /// (which can never be async), nothing bad happens.
+    /// </summary>
+    /// <remarks>
+    /// This may like a trivially simple case. But guess why we had to add a test for it? (it failed).
+    /// </remarks>
+    [Fact]
+    public async Task NoDiagnosticAndNoExceptionForProperties()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -1083,13 +1083,13 @@ class Test {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task GenericMethodName()
-        {
-            var test = @"
+    [Fact]
+    public async Task GenericMethodName()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using static FruitUtils;
 
@@ -1106,7 +1106,7 @@ static class FruitUtils {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 using static FruitUtils;
 
@@ -1122,14 +1122,14 @@ static class FruitUtils {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(Descriptor).WithSpan(7, 9, 7, 17).WithArguments("Foo<int>", "FooAsync");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(Descriptor).WithSpan(7, 9, 7, 17).WithArguments("Foo<int>", "FooAsync");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task AsyncAlternative_CodeFixRespectsTrivia()
-        {
-            var test = @"
+    [Fact]
+    public async Task AsyncAlternative_CodeFixRespectsTrivia()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 
@@ -1147,7 +1147,7 @@ class Test {
     }
 }
 ";
-            var withFix = @"
+        var withFix = @"
 using System;
 using System.Threading.Tasks;
 
@@ -1165,14 +1165,14 @@ class Test {
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(Descriptor).WithSpan(15, 9, 15, 12).WithArguments("Foo", "FooAsync");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(Descriptor).WithSpan(15, 9, 15, 12).WithArguments("Foo", "FooAsync");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task AwaitRatherThanWait_CodeFixRespectsTrivia()
-        {
-            var test = @"
+    [Fact]
+    public async Task AwaitRatherThanWait_CodeFixRespectsTrivia()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 
@@ -1190,7 +1190,7 @@ class Test {
     }
 }
 ";
-            var withFix = @"
+        var withFix = @"
 using System;
 using System.Threading.Tasks;
 
@@ -1208,14 +1208,14 @@ class Test {
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorNoAlternativeMethod).WithSpan(15, 34, 15, 38).WithArguments("Wait");
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithSpan(15, 34, 15, 38).WithArguments("Wait");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task XunitThrowAsyncNotSuggestedInAsyncTestMethod()
-        {
-            var test = @"
+    [Fact]
+    public async Task XunitThrowAsyncNotSuggestedInAsyncTestMethod()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
@@ -1231,13 +1231,13 @@ class Test {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task DoNotSuggestAsyncAlternativeWhenItIsSelf()
-        {
-            var test = @"
+    [Fact]
+    public async Task DoNotSuggestAsyncAlternativeWhenItIsSelf()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 
@@ -1256,13 +1256,13 @@ class Test {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task DoNotSuggestAsyncAlternativeWhenItReturnsVoid()
-        {
-            var test = @"
+    [Fact]
+    public async Task DoNotSuggestAsyncAlternativeWhenItReturnsVoid()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 
@@ -1278,13 +1278,12 @@ class Test {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
-
-        private DiagnosticResult CreateDiagnostic(int line, int column, int length, string methodName)
-            => Verify.Diagnostic(DescriptorNoAlternativeMethod).WithSpan(line, column, line, column + length).WithArguments(methodName);
-
-        private DiagnosticResult CreateDiagnostic(int line, int column, int length, string methodName, string alternativeMethodName)
-            => Verify.Diagnostic(Descriptor).WithSpan(line, column, line, column + length).WithArguments(methodName, alternativeMethodName);
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
+
+    private DiagnosticResult CreateDiagnostic(int line, int column, int length, string methodName)
+        => CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithSpan(line, column, line, column + length).WithArguments(methodName);
+
+    private DiagnosticResult CreateDiagnostic(int line, int column, int length, string methodName, string alternativeMethodName)
+        => CSVerify.Diagnostic(Descriptor).WithSpan(line, column, line, column + length).WithArguments(methodName, alternativeMethodName);
 }

@@ -1,31 +1,31 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
-{
-    using System.Threading.Tasks;
-    using Xunit;
-    using VBVerify = VisualBasicCodeFixVerifier<VisualBasicVSTHRD112ImplementSystemIAsyncDisposableAnalyzer, VSTHRD112ImplementSystemIAsyncDisposableCodeFix>;
-    using Verify = CSharpCodeFixVerifier<CSharpVSTHRD112ImplementSystemIAsyncDisposableAnalyzer, VSTHRD112ImplementSystemIAsyncDisposableCodeFix>;
+using System.Threading.Tasks;
+using Xunit;
+using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.CSharpVSTHRD112ImplementSystemIAsyncDisposableAnalyzer, Microsoft.VisualStudio.Threading.Analyzers.VSTHRD112ImplementSystemIAsyncDisposableCodeFix>;
+using VBVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.VisualBasicCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.VisualBasicVSTHRD112ImplementSystemIAsyncDisposableAnalyzer, Microsoft.VisualStudio.Threading.Analyzers.VSTHRD112ImplementSystemIAsyncDisposableCodeFix>;
 
-    public class VSTHRD112ImplementSystemIAsyncDisposableAnalyzerTests
-    {
-        private const string Preamble = @"
+namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
+
+public class VSTHRD112ImplementSystemIAsyncDisposableAnalyzerTests
+{
+    private const string Preamble = @"
 using System.Threading.Tasks;
 using BclAsyncDisposable = System.IAsyncDisposable;
 using VsThreadingAsyncDisposable = Microsoft.VisualStudio.Threading.IAsyncDisposable;
 ";
 
-        private const string VBPreamble = @"
+    private const string VBPreamble = @"
 Imports System.Threading.Tasks
 Imports BclAsyncDisposable = System.IAsyncDisposable
 Imports VsThreadingAsyncDisposable = Microsoft.VisualStudio.Threading.IAsyncDisposable
 ";
 
-        [Fact]
-        public async Task ClassImplementsBoth()
-        {
-            var test = Preamble + @"
+    [Fact]
+    public async Task ClassImplementsBoth()
+    {
+        var test = Preamble + @"
 class Test : BclAsyncDisposable, VsThreadingAsyncDisposable
 {
     Task Microsoft.VisualStudio.Threading.IAsyncDisposable.DisposeAsync()
@@ -38,25 +38,25 @@ class Test : BclAsyncDisposable, VsThreadingAsyncDisposable
     ValueTask System.IAsyncDisposable.DisposeAsync() => default;
 }";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task ClassImplementsOnlyBclType()
-        {
-            var test = Preamble + @"
+    [Fact]
+    public async Task ClassImplementsOnlyBclType()
+    {
+        var test = Preamble + @"
 class Test : BclAsyncDisposable
 {
     ValueTask System.IAsyncDisposable.DisposeAsync() => default;
 }";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task ClassImplementsOnlyVsThreadingType()
-        {
-            var test = Preamble + @"
+    [Fact]
+    public async Task ClassImplementsOnlyVsThreadingType()
+    {
+        var test = Preamble + @"
 class Test : [|VsThreadingAsyncDisposable|]
 {
     public async Task DisposeAsync()
@@ -65,7 +65,7 @@ class Test : [|VsThreadingAsyncDisposable|]
     }
 }";
 
-            var fix = Preamble + @"
+        var fix = Preamble + @"
 class Test : VsThreadingAsyncDisposable, BclAsyncDisposable
 {
     public async Task DisposeAsync()
@@ -79,13 +79,13 @@ class Test : VsThreadingAsyncDisposable, BclAsyncDisposable
     }
 }";
 
-            await Verify.VerifyCodeFixAsync(test, fix);
-        }
+        await CSVerify.VerifyCodeFixAsync(test, fix);
+    }
 
-        [Fact]
-        public async Task ClassImplementsOnlyVsThreadingType_WithBaseClassToo()
-        {
-            var test = Preamble + @"
+    [Fact]
+    public async Task ClassImplementsOnlyVsThreadingType_WithBaseClassToo()
+    {
+        var test = Preamble + @"
 class Test : object, [|VsThreadingAsyncDisposable|]
 {
     public async Task DisposeAsync()
@@ -94,7 +94,7 @@ class Test : object, [|VsThreadingAsyncDisposable|]
     }
 }";
 
-            var fix = Preamble + @"
+        var fix = Preamble + @"
 class Test : object, VsThreadingAsyncDisposable, BclAsyncDisposable
 {
     public async Task DisposeAsync()
@@ -108,18 +108,18 @@ class Test : object, VsThreadingAsyncDisposable, BclAsyncDisposable
     }
 }";
 
-            await Verify.VerifyCodeFixAsync(test, fix);
-        }
+        await CSVerify.VerifyCodeFixAsync(test, fix);
+    }
 
-        [Fact]
-        public async Task ClassImplementsOnlyVsThreadingType_WithBaseClassToo_PartialClass()
-        {
-            var source1 = Preamble + @"
+    [Fact]
+    public async Task ClassImplementsOnlyVsThreadingType_WithBaseClassToo_PartialClass()
+    {
+        var source1 = Preamble + @"
 partial class Test
 {
 }";
 
-            var source2 = Preamble + @"
+        var source2 = Preamble + @"
 partial class Test : [|VsThreadingAsyncDisposable|]
 {
     public async Task DisposeAsync()
@@ -128,12 +128,12 @@ partial class Test : [|VsThreadingAsyncDisposable|]
     }
 }";
 
-            var fix1 = Preamble + @"
+        var fix1 = Preamble + @"
 partial class Test
 {
 }";
 
-            var fix2 = Preamble + @"
+        var fix2 = Preamble + @"
 partial class Test : VsThreadingAsyncDisposable, BclAsyncDisposable
 {
     public async Task DisposeAsync()
@@ -147,19 +147,19 @@ partial class Test : VsThreadingAsyncDisposable, BclAsyncDisposable
     }
 }";
 
-            var test = new Verify.Test
-            {
-                TestState = { Sources = { source1, source2 } },
-                FixedState = { Sources = { fix1, fix2 } },
-            };
-
-            await test.RunAsync();
-        }
-
-        [Fact]
-        public async Task ClassImplementsOnlyVsThreadingType_WithBaseClassToo_VB()
+        var test = new CSVerify.Test
         {
-            var test = VBPreamble + @"
+            TestState = { Sources = { source1, source2 } },
+            FixedState = { Sources = { fix1, fix2 } },
+        };
+
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task ClassImplementsOnlyVsThreadingType_WithBaseClassToo_VB()
+    {
+        var test = VBPreamble + @"
 Class Test
     Inherits Object
     Implements [|VsThreadingAsyncDisposable|]
@@ -169,7 +169,7 @@ Class Test
     End Function
 End Class";
 
-            var fix = VBPreamble + @"
+        var fix = VBPreamble + @"
 Class Test
     Inherits Object
     Implements VsThreadingAsyncDisposable, BclAsyncDisposable
@@ -183,17 +183,17 @@ Class Test
     End Function
 End Class";
 
-            await VBVerify.VerifyCodeFixAsync(test, fix);
-        }
+        await VBVerify.VerifyCodeFixAsync(test, fix);
+    }
 
-        [Fact]
-        public async Task ClassImplementsOnlyVsThreadingType_WithBaseClassToo_PartialClass_VB()
-        {
-            var source1 = VBPreamble + @"
+    [Fact]
+    public async Task ClassImplementsOnlyVsThreadingType_WithBaseClassToo_PartialClass_VB()
+    {
+        var source1 = VBPreamble + @"
 Partial Class Test
 End Class";
 
-            var source2 = VBPreamble + @"
+        var source2 = VBPreamble + @"
 Partial Class Test
     Inherits Object
     Implements [|VsThreadingAsyncDisposable|]
@@ -203,11 +203,11 @@ Partial Class Test
     End Function
 End Class";
 
-            var fix1 = VBPreamble + @"
+        var fix1 = VBPreamble + @"
 Partial Class Test
 End Class";
 
-            var fix2 = VBPreamble + @"
+        var fix2 = VBPreamble + @"
 Partial Class Test
     Inherits Object
     Implements VsThreadingAsyncDisposable, BclAsyncDisposable
@@ -221,19 +221,19 @@ Partial Class Test
     End Function
 End Class";
 
-            var test = new VBVerify.Test
-            {
-                TestState = { Sources = { source1, source2 } },
-                FixedState = { Sources = { fix1, fix2 } },
-            };
-
-            await test.RunAsync();
-        }
-
-        [Fact]
-        public async Task StructImplementsBoth()
+        var test = new VBVerify.Test
         {
-            var test = Preamble + @"
+            TestState = { Sources = { source1, source2 } },
+            FixedState = { Sources = { fix1, fix2 } },
+        };
+
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task StructImplementsBoth()
+    {
+        var test = Preamble + @"
 struct Test : BclAsyncDisposable, VsThreadingAsyncDisposable
 {
     public Task DisposeAsync()
@@ -249,25 +249,25 @@ struct Test : BclAsyncDisposable, VsThreadingAsyncDisposable
     }
 }";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task StructImplementsOnlyBclType()
-        {
-            var test = Preamble + @"
+    [Fact]
+    public async Task StructImplementsOnlyBclType()
+    {
+        var test = Preamble + @"
 struct Test : BclAsyncDisposable
 {
     ValueTask System.IAsyncDisposable.DisposeAsync() => default;
 }";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task StructImplementsOnlyVsThreadingType()
-        {
-            var test = Preamble + @"
+    [Fact]
+    public async Task StructImplementsOnlyVsThreadingType()
+    {
+        var test = Preamble + @"
 struct Test : [|VsThreadingAsyncDisposable|]
 {
     public async Task DisposeAsync()
@@ -276,7 +276,7 @@ struct Test : [|VsThreadingAsyncDisposable|]
     }
 }";
 
-            var fix = Preamble + @"
+        var fix = Preamble + @"
 struct Test : VsThreadingAsyncDisposable, BclAsyncDisposable
 {
     public async Task DisposeAsync()
@@ -290,13 +290,13 @@ struct Test : VsThreadingAsyncDisposable, BclAsyncDisposable
     }
 }";
 
-            await Verify.VerifyCodeFixAsync(test, fix);
-        }
+        await CSVerify.VerifyCodeFixAsync(test, fix);
+    }
 
-        [Fact]
-        public async Task StructImplementsOnlyVsThreadingType_VB()
-        {
-            var test = VBPreamble + @"
+    [Fact]
+    public async Task StructImplementsOnlyVsThreadingType_VB()
+    {
+        var test = VBPreamble + @"
 Public Structure Test
     Implements [|VsThreadingAsyncDisposable|]
 
@@ -305,7 +305,7 @@ Public Structure Test
     End Function
 End Structure";
 
-            var fix = VBPreamble + @"
+        var fix = VBPreamble + @"
 Public Structure Test
     Implements VsThreadingAsyncDisposable, BclAsyncDisposable
 
@@ -318,24 +318,24 @@ Public Structure Test
     End Function
 End Structure";
 
-            await VBVerify.VerifyCodeFixAsync(test, fix);
-        }
+        await VBVerify.VerifyCodeFixAsync(test, fix);
+    }
 
-        [Fact]
-        public async Task InterfaceImplementsBoth()
-        {
-            var test = Preamble + @"
+    [Fact]
+    public async Task InterfaceImplementsBoth()
+    {
+        var test = Preamble + @"
 interface Test : BclAsyncDisposable, VsThreadingAsyncDisposable
 {
 }";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task InterfaceImplementsBoth_AcrossTypeHierarchy()
-        {
-            var test = Preamble + @"
+    [Fact]
+    public async Task InterfaceImplementsBoth_AcrossTypeHierarchy()
+    {
+        var test = Preamble + @"
 interface Test1 : BclAsyncDisposable
 {
 }
@@ -345,50 +345,49 @@ interface Test2 : Test1, VsThreadingAsyncDisposable
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task InterfaceImplementsOnlyBclType()
-        {
-            var test = Preamble + @"
+    [Fact]
+    public async Task InterfaceImplementsOnlyBclType()
+    {
+        var test = Preamble + @"
 interface Test : BclAsyncDisposable
 {
 }";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task InterfaceImplementsOnlyVsThreadingType()
-        {
-            var test = Preamble + @"
+    [Fact]
+    public async Task InterfaceImplementsOnlyVsThreadingType()
+    {
+        var test = Preamble + @"
 interface Test : [|VsThreadingAsyncDisposable|]
 {
 }";
 
-            var fix = Preamble + @"
+        var fix = Preamble + @"
 interface Test : VsThreadingAsyncDisposable, BclAsyncDisposable
 {
 }";
 
-            await Verify.VerifyCodeFixAsync(test, fix);
-        }
+        await CSVerify.VerifyCodeFixAsync(test, fix);
+    }
 
-        [Fact]
-        public async Task InterfaceImplementsOnlyVsThreadingType_VB()
-        {
-            var test = VBPreamble + @"
+    [Fact]
+    public async Task InterfaceImplementsOnlyVsThreadingType_VB()
+    {
+        var test = VBPreamble + @"
 Interface ITest
     Inherits [|VsThreadingAsyncDisposable|]
 End Interface";
 
-            var fix = VBPreamble + @"
+        var fix = VBPreamble + @"
 Interface ITest
     Inherits VsThreadingAsyncDisposable, BclAsyncDisposable
 End Interface";
 
-            await VBVerify.VerifyCodeFixAsync(test, fix);
-        }
+        await VBVerify.VerifyCodeFixAsync(test, fix);
     }
 }

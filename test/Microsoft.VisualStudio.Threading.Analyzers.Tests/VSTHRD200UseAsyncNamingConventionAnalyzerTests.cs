@@ -1,24 +1,24 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
+using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Testing;
+using Xunit;
+using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.VSTHRD200UseAsyncNamingConventionAnalyzer, Microsoft.VisualStudio.Threading.Analyzers.VSTHRD200UseAsyncNamingConventionCodeFix>;
+
+namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
+
+public class VSTHRD200UseAsyncNamingConventionAnalyzerTests
 {
-    using System.Threading.Tasks;
-    using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.Testing;
-    using Xunit;
-    using Verify = CSharpCodeFixVerifier<VSTHRD200UseAsyncNamingConventionAnalyzer, VSTHRD200UseAsyncNamingConventionCodeFix>;
+    private static readonly DiagnosticDescriptor AddSuffixDescriptor = VSTHRD200UseAsyncNamingConventionAnalyzer.AddAsyncDescriptor;
 
-    public class VSTHRD200UseAsyncNamingConventionAnalyzerTests
+    private static readonly DiagnosticDescriptor RemoveSuffixDescriptor = VSTHRD200UseAsyncNamingConventionAnalyzer.RemoveAsyncDescriptor;
+
+    [Fact]
+    public async Task TaskReturningMethodWithoutSuffix_GeneratesWarning()
     {
-        private static readonly DiagnosticDescriptor AddSuffixDescriptor = VSTHRD200UseAsyncNamingConventionAnalyzer.AddAsyncDescriptor;
-
-        private static readonly DiagnosticDescriptor RemoveSuffixDescriptor = VSTHRD200UseAsyncNamingConventionAnalyzer.RemoveAsyncDescriptor;
-
-        [Fact]
-        public async Task TaskReturningMethodWithoutSuffix_GeneratesWarning()
-        {
-            var test = @"
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -26,7 +26,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -34,18 +34,18 @@ class Test {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(AddSuffixDescriptor).WithSpan(5, 10, 5, 13);
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(AddSuffixDescriptor).WithSpan(5, 10, 5, 13);
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        /// <summary>
-        /// Verifies that methods that return awaitable types (but without associated async method builders)
-        /// are allowed to include or omit the Async suffix.
-        /// </summary>
-        [Fact]
-        public async Task IVsTaskReturningMethod_WithGetAwaiter_GeneratesNoWarning()
-        {
-            var test = @"
+    /// <summary>
+    /// Verifies that methods that return awaitable types (but without associated async method builders)
+    /// are allowed to include or omit the Async suffix.
+    /// </summary>
+    [Fact]
+    public async Task IVsTaskReturningMethod_WithGetAwaiter_GeneratesNoWarning()
+    {
+        var test = @"
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -55,13 +55,13 @@ class Test {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task IVsTaskReturningMethodWithSuffix_NoGetAwaiter_GeneratesNoWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task IVsTaskReturningMethodWithSuffix_NoGetAwaiter_GeneratesNoWarning()
+    {
+        var test = @"
 using Microsoft.VisualStudio.Shell.Interop;
 
 class Test {
@@ -70,13 +70,13 @@ class Test {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task HomemadeAwaitableReturningMethodWithSuffix_GeneratesNoWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task HomemadeAwaitableReturningMethodWithSuffix_GeneratesNoWarning()
+    {
+        var test = @"
 using System;
 
 class Test {
@@ -95,13 +95,13 @@ struct MyAwaiter {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task BadAwaitableReturningMethodWithSuffix_GeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task BadAwaitableReturningMethodWithSuffix_GeneratesWarning()
+    {
+        var test = @"
 class Test {
     string T() => null;
     string T2Async() => null;
@@ -112,7 +112,7 @@ static class AwaitExtensions {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 class Test {
     string T() => null;
     string T2() => null;
@@ -123,14 +123,14 @@ static class AwaitExtensions {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(RemoveSuffixDescriptor).WithSpan(4, 12, 4, 19);
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(RemoveSuffixDescriptor).WithSpan(4, 12, 4, 19);
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task ValueTaskReturningMethodWithoutSuffix_GeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task ValueTaskReturningMethodWithoutSuffix_GeneratesWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -138,7 +138,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -146,14 +146,14 @@ class Test {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(AddSuffixDescriptor).WithSpan(5, 15, 5, 18);
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(AddSuffixDescriptor).WithSpan(5, 15, 5, 18);
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task ValueTaskOfTReturningMethodWithoutSuffix_GeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task ValueTaskOfTReturningMethodWithoutSuffix_GeneratesWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -161,7 +161,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -169,14 +169,14 @@ class Test {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(AddSuffixDescriptor).WithSpan(5, 20, 5, 23);
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(AddSuffixDescriptor).WithSpan(5, 20, 5, 23);
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task IAsyncEnumerableOfTReturningMethodWithoutSuffix_GeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task IAsyncEnumerableOfTReturningMethodWithoutSuffix_GeneratesWarning()
+    {
+        var test = @"
 using System.Collections.Generic;
 
 class Test {
@@ -184,7 +184,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Collections.Generic;
 
 class Test {
@@ -192,14 +192,14 @@ class Test {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(AddSuffixDescriptor).WithSpan(5, 27, 5, 30);
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(AddSuffixDescriptor).WithSpan(5, 27, 5, 30);
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task HomemadeIAsyncEnumerableOfTReturningMethodWithoutSuffix_GeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task HomemadeIAsyncEnumerableOfTReturningMethodWithoutSuffix_GeneratesWarning()
+    {
+        var test = @"
 using System.Collections.Generic;
 using System.Threading;
 
@@ -212,7 +212,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Collections.Generic;
 using System.Threading;
 
@@ -225,14 +225,14 @@ class Test {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(AddSuffixDescriptor).WithSpan(10, 28, 10, 31);
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(AddSuffixDescriptor).WithSpan(10, 28, 10, 31);
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task TaskReturningMainMethodWithoutSuffix_GeneratesNoWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task TaskReturningMainMethodWithoutSuffix_GeneratesNoWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -243,20 +243,20 @@ class Test {
 }
 ";
 
-            await new Verify.Test
-            {
-                TestState =
-                {
-                    Sources = { test },
-                    OutputKind = OutputKind.ConsoleApplication,
-                },
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task TaskReturningMainMethodWithArgsWithoutSuffix_GeneratesNoWarning()
+        await new CSVerify.Test
         {
-            var test = @"
+            TestState =
+            {
+                Sources = { test },
+                OutputKind = OutputKind.ConsoleApplication,
+            },
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task TaskReturningMainMethodWithArgsWithoutSuffix_GeneratesNoWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -267,20 +267,20 @@ class Test {
 }
 ";
 
-            await new Verify.Test
-            {
-                TestState =
-                {
-                    Sources = { test },
-                    OutputKind = OutputKind.ConsoleApplication,
-                },
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task TaskOfIntReturningMainMethodWithoutSuffix_GeneratesNoWarning()
+        await new CSVerify.Test
         {
-            var test = @"
+            TestState =
+            {
+                Sources = { test },
+                OutputKind = OutputKind.ConsoleApplication,
+            },
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task TaskOfIntReturningMainMethodWithoutSuffix_GeneratesNoWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -292,20 +292,20 @@ class Test {
 }
 ";
 
-            await new Verify.Test
-            {
-                TestState =
-                {
-                    Sources = { test },
-                    OutputKind = OutputKind.ConsoleApplication,
-                },
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task TaskReturningMethodWithoutSuffix_CodeFixUpdatesCallers()
+        await new CSVerify.Test
         {
-            var test = @"
+            TestState =
+            {
+                Sources = { test },
+                OutputKind = OutputKind.ConsoleApplication,
+            },
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task TaskReturningMethodWithoutSuffix_CodeFixUpdatesCallers()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -317,7 +317,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -329,14 +329,14 @@ class Test {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(AddSuffixDescriptor).WithSpan(5, 10, 5, 13);
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(AddSuffixDescriptor).WithSpan(5, 10, 5, 13);
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task TaskReturningMethodWithoutSuffixWithMultipleOverloads_CodeFixUpdatesCallers()
-        {
-            var test = @"
+    [Fact]
+    public async Task TaskReturningMethodWithoutSuffixWithMultipleOverloads_CodeFixUpdatesCallers()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -350,7 +350,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -364,44 +364,44 @@ class Test {
 }
 ";
 
-            DiagnosticResult[] expected =
-            {
-                Verify.Diagnostic(AddSuffixDescriptor).WithSpan(5, 10, 5, 13),
-                Verify.Diagnostic(AddSuffixDescriptor).WithSpan(6, 10, 6, 13),
-            };
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
-
-        [Fact]
-        public async Task TaskReturningMethodWithSuffix_GeneratesNoWarning()
+        DiagnosticResult[] expected =
         {
-            var test = @"
+            CSVerify.Diagnostic(AddSuffixDescriptor).WithSpan(5, 10, 5, 13),
+            CSVerify.Diagnostic(AddSuffixDescriptor).WithSpan(6, 10, 6, 13),
+        };
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
+
+    [Fact]
+    public async Task TaskReturningMethodWithSuffix_GeneratesNoWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
     Task FooAsync() => null;
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task IAsyncEnumerableOfTReturningMethodWithSuffix_GeneratesNoWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task IAsyncEnumerableOfTReturningMethodWithSuffix_GeneratesNoWarning()
+    {
+        var test = @"
 using System.Collections.Generic;
 
 class Test {
     IAsyncEnumerable<int> FooAsync() => null;
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task HomemadeIAsyncEnumerableOfTReturningMethodWithSuffix_GeneratesNoWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task HomemadeIAsyncEnumerableOfTReturningMethodWithSuffix_GeneratesNoWarning()
+    {
+        var test = @"
 using System.Collections.Generic;
 using System.Threading;
 
@@ -413,13 +413,13 @@ class Test {
     MyAsyncEnumerable<int> FooAsync() => default;
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task VoidReturningMethodWithSuffix_GeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task VoidReturningMethodWithSuffix_GeneratesWarning()
+    {
+        var test = @"
 class Test {
     void FooAsync() { }
 
@@ -427,7 +427,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 class Test {
     void Foo() { }
 
@@ -435,14 +435,14 @@ class Test {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(RemoveSuffixDescriptor).WithSpan(3, 10, 3, 18);
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(RemoveSuffixDescriptor).WithSpan(3, 10, 3, 18);
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task BoolReturningMethodWithSuffix_GeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task BoolReturningMethodWithSuffix_GeneratesWarning()
+    {
+        var test = @"
 class Test {
     bool FooAsync() => false;
 
@@ -450,7 +450,7 @@ class Test {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 class Test {
     bool Foo() => false;
 
@@ -458,14 +458,14 @@ class Test {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(RemoveSuffixDescriptor).WithSpan(3, 10, 3, 18);
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(RemoveSuffixDescriptor).WithSpan(3, 10, 3, 18);
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task TaskReturningMethodWithoutSuffix_ImplementsInterface_GeneratesWarningOnlyOnInterface()
-        {
-            var test = @"
+    [Fact]
+    public async Task TaskReturningMethodWithoutSuffix_ImplementsInterface_GeneratesWarningOnlyOnInterface()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 interface IFoo {
@@ -477,7 +477,7 @@ class Test : IFoo {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 interface IFoo {
@@ -489,14 +489,14 @@ class Test : IFoo {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(AddSuffixDescriptor).WithSpan(5, 10, 5, 13);
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(AddSuffixDescriptor).WithSpan(5, 10, 5, 13);
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task TaskReturningMethodWithoutSuffix_ImplementsInterfaceExplicitly_GeneratesWarningOnlyOnInterface()
-        {
-            var test = @"
+    [Fact]
+    public async Task TaskReturningMethodWithoutSuffix_ImplementsInterfaceExplicitly_GeneratesWarningOnlyOnInterface()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 interface IFoo {
@@ -508,7 +508,7 @@ class Test : IFoo {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 interface IFoo {
@@ -520,14 +520,14 @@ class Test : IFoo {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(AddSuffixDescriptor).WithSpan(5, 10, 5, 13);
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(AddSuffixDescriptor).WithSpan(5, 10, 5, 13);
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task TaskReturningMethodWithoutSuffix_OverridesAbstract_GeneratesWarningOnlyOnInterface()
-        {
-            var test = @"
+    [Fact]
+    public async Task TaskReturningMethodWithoutSuffix_OverridesAbstract_GeneratesWarningOnlyOnInterface()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 abstract class MyBase {
@@ -539,7 +539,7 @@ class Test : MyBase {
 }
 ";
 
-            var withFix = @"
+        var withFix = @"
 using System.Threading.Tasks;
 
 abstract class MyBase {
@@ -551,21 +551,20 @@ class Test : MyBase {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(AddSuffixDescriptor).WithSpan(5, 26, 5, 29);
-            await Verify.VerifyCodeFixAsync(test, expected, withFix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(AddSuffixDescriptor).WithSpan(5, 26, 5, 29);
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
 
-        [Fact]
-        public async Task TaskReturningPropertyWithoutSuffix_GeneratesNoWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task TaskReturningPropertyWithoutSuffix_GeneratesNoWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
     Task Foo => null;
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 }

@@ -108,13 +108,13 @@ public class JoinableTaskTests : JoinableTaskTestBase
 
         // Verify here that pendingTasks includes one task.
         Assert.Equal(1, this.GetPendingTasksCount());
-        Assert.Single(this.joinableCollection);
+        Assert.Single(this.joinableCollection!);
 
         // Now let the request proceed through.
         this.PushFrame();
 
         Assert.Equal(0, this.GetPendingTasksCount());
-        Assert.Empty(this.joinableCollection);
+        Assert.Empty(this.joinableCollection!);
 
         if (delegateFailure is object)
         {
@@ -4425,7 +4425,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
     /// <summary>
     /// Writes out a DGML graph of pending tasks and collections to the test context.
     /// </summary>
-    /// <param name="context">A specific context to collect data from; <c>null</c> will use this.context.</param>
+    /// <param name="context">A specific context to collect data from; <see langword="null" /> will use this.context.</param>
     private void PrintActiveTasksReport(JoinableTaskContext? context = null)
     {
         context = context ?? this.context;

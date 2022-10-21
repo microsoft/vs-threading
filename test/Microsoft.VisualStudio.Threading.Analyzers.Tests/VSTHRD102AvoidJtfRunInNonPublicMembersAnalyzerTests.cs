@@ -1,19 +1,19 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
-{
-    using System.Threading.Tasks;
-    using Microsoft.CodeAnalysis;
-    using Xunit;
-    using Verify = CSharpCodeFixVerifier<VSTHRD102AvoidJtfRunInNonPublicMembersAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
+using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Xunit;
+using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.VSTHRD102AvoidJtfRunInNonPublicMembersAnalyzer, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
-    public class VSTHRD102AvoidJtfRunInNonPublicMembersAnalyzerTests
+namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
+
+public class VSTHRD102AvoidJtfRunInNonPublicMembersAnalyzerTests
+{
+    [Fact]
+    public async Task JtfRunInPublicMethodsOfInternalType_ProducesDiagnostic()
     {
-        [Fact]
-        public async Task JtfRunInPublicMethodsOfInternalType_ProducesDiagnostic()
-        {
-            var test = @"
+        var test = @"
 using Microsoft.VisualStudio.Threading;
 
 class Test {
@@ -24,14 +24,14 @@ class Test {
     }
 }
 ";
-            CodeAnalysis.Testing.DiagnosticResult expected = Verify.Diagnostic().WithLocation(8, 13);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(8, 13);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task JtfRunInPublicMethodsOfPublicType_DoesNotProduceDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task JtfRunInPublicMethodsOfPublicType_DoesNotProduceDiagnostic()
+    {
+        var test = @"
 using Microsoft.VisualStudio.Threading;
 
 public class Test {
@@ -42,13 +42,13 @@ public class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task JtfRunInTaskReturningMethod_DoesNotProduceDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task JtfRunInTaskReturningMethod_DoesNotProduceDiagnostic()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
@@ -61,13 +61,13 @@ class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task JtfRunInProtectedMethodsOfInternalType_ProducesDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task JtfRunInProtectedMethodsOfInternalType_ProducesDiagnostic()
+    {
+        var test = @"
 using Microsoft.VisualStudio.Threading;
 
 class Test {
@@ -78,14 +78,14 @@ class Test {
     }
 }
 ";
-            CodeAnalysis.Testing.DiagnosticResult expected = Verify.Diagnostic().WithLocation(8, 13);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(8, 13);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task JtfRunInProtectedMethodsOfPublicType_DoesNotProduceDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task JtfRunInProtectedMethodsOfPublicType_DoesNotProduceDiagnostic()
+    {
+        var test = @"
 using Microsoft.VisualStudio.Threading;
 
 public class Test {
@@ -96,13 +96,13 @@ public class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task JtfRunInExplicitlyInternalMethods_ProducesDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task JtfRunInExplicitlyInternalMethods_ProducesDiagnostic()
+    {
+        var test = @"
 using Microsoft.VisualStudio.Threading;
 
 class Test {
@@ -113,14 +113,14 @@ class Test {
     }
 }
 ";
-            CodeAnalysis.Testing.DiagnosticResult expected = Verify.Diagnostic().WithLocation(8, 13);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(8, 13);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task JtfRunInImplicitlyInternalMethods_ProducesDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task JtfRunInImplicitlyInternalMethods_ProducesDiagnostic()
+    {
+        var test = @"
 using Microsoft.VisualStudio.Threading;
 
 class Test {
@@ -131,14 +131,14 @@ class Test {
     }
 }
 ";
-            CodeAnalysis.Testing.DiagnosticResult expected = Verify.Diagnostic().WithLocation(8, 13);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(8, 13);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task JtfRunAllowedInMainMethod_DoesNotProduceDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task JtfRunAllowedInMainMethod_DoesNotProduceDiagnostic()
+    {
+        var test = @"
 using Microsoft.VisualStudio.Threading;
 
 class Program {
@@ -149,20 +149,20 @@ class Program {
     }
 }
 ";
-            await new Verify.Test
+        await new CSVerify.Test
+        {
+            TestState =
             {
-                TestState =
-                {
-                    Sources = { test },
-                    OutputKind = OutputKind.ConsoleApplication,
-                },
-            }.RunAsync();
-        }
+                Sources = { test },
+                OutputKind = OutputKind.ConsoleApplication,
+            },
+        }.RunAsync();
+    }
 
-        [Fact]
-        public async Task JtfRunInExplicitInterfaceImplementationOfInternalInterface_ProducesDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task JtfRunInExplicitInterfaceImplementationOfInternalInterface_ProducesDiagnostic()
+    {
+        var test = @"
 using Microsoft.VisualStudio.Threading;
 
 interface IFoo
@@ -178,14 +178,14 @@ class Test : IFoo {
     }
 }
 ";
-            CodeAnalysis.Testing.DiagnosticResult expected = Verify.Diagnostic().WithLocation(13, 13);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(13, 13);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task JtfRunInImplicitInterfaceImplementationOfInternalInterface_ProducesDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task JtfRunInImplicitInterfaceImplementationOfInternalInterface_ProducesDiagnostic()
+    {
+        var test = @"
 using Microsoft.VisualStudio.Threading;
 
 interface IFoo
@@ -201,14 +201,14 @@ class Test : IFoo {
     }
 }
 ";
-            CodeAnalysis.Testing.DiagnosticResult expected = Verify.Diagnostic().WithLocation(13, 13);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(13, 13);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task JtfRunInExplicitInterfaceImplementationOfPublicInterface_ProducesNoDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task JtfRunInExplicitInterfaceImplementationOfPublicInterface_ProducesNoDiagnostic()
+    {
+        var test = @"
 using Microsoft.VisualStudio.Threading;
 
 public interface IFoo
@@ -224,13 +224,13 @@ class Test : IFoo {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task JtfRunInImplicitInterfaceImplementationOfPublicInterface_ProducesNoDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task JtfRunInImplicitInterfaceImplementationOfPublicInterface_ProducesNoDiagnostic()
+    {
+        var test = @"
 using Microsoft.VisualStudio.Threading;
 
 public interface IFoo
@@ -246,13 +246,13 @@ class Test : IFoo {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task JtfRunInPublicConstructorOfInternalType_ProducesDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task JtfRunInPublicConstructorOfInternalType_ProducesDiagnostic()
+    {
+        var test = @"
 using Microsoft.VisualStudio.Threading;
 
 class Test {
@@ -263,14 +263,14 @@ class Test {
     }
 }
 ";
-            CodeAnalysis.Testing.DiagnosticResult expected = Verify.Diagnostic().WithLocation(8, 13);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(8, 13);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task JtfRunInPublicConstructorOfPublicType_DoesNotProduceDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task JtfRunInPublicConstructorOfPublicType_DoesNotProduceDiagnostic()
+    {
+        var test = @"
 using Microsoft.VisualStudio.Threading;
 
 public class Test {
@@ -281,13 +281,13 @@ public class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task JtfRunAndPropertyGetterInLambda_ProducesNoDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task JtfRunAndPropertyGetterInLambda_ProducesNoDiagnostic()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
@@ -304,13 +304,13 @@ class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task JtfRunAndPropertyGetterInAnonymousDelegate_ProducesNoDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task JtfRunAndPropertyGetterInAnonymousDelegate_ProducesNoDiagnostic()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
@@ -327,13 +327,13 @@ class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact(Skip = "Unattainable given Roslyn analyzers are sync and find all references is async")]
-        public async Task JtfRunAndPropertyGetterPrivateMethodUsedAsDelegate_ProducesNoDiagnostic()
-        {
-            var test = @"
+    [Fact(Skip = "Unattainable given Roslyn analyzers are sync and find all references is async")]
+    public async Task JtfRunAndPropertyGetterPrivateMethodUsedAsDelegate_ProducesNoDiagnostic()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
@@ -354,13 +354,13 @@ public class Test {
     public void Advise(Action<int> foo) { }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task JtfRunInPrivateMethod__WithMultiMemberAccessExpression_ProducesDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task JtfRunInPrivateMethod__WithMultiMemberAccessExpression_ProducesDiagnostic()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
@@ -384,7 +384,6 @@ class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 }

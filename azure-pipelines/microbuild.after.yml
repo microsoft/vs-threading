@@ -1,17 +1,17 @@
 parameters:
-- name: EnableAPIScan
-  type: boolean
+  EnableCompliance:
+  EnableAPIScan:
 
 steps:
 - task: MicroBuildCodesignVerify@3
-  displayName: Verify Signed Files
+  displayName: 🔍 Verify Signed Files
   inputs:
     TargetFolders: |
       $(Build.SourcesDirectory)/bin/Packages/$(BuildConfiguration)/NuGet
 
 - task: MicroBuildCleanup@1
   condition: succeededOrFailed()
-  displayName: MicroBuild Cleanup
+  displayName: ⚙️ MicroBuild Cleanup
 
 - task: ms-vscs-artifact.build-tasks.artifactDropTask-1.artifactDropTask@0
   inputs:
@@ -20,7 +20,7 @@ steps:
     sourcePath: $(Build.ArtifactStagingDirectory)\OptProf\ProfilingInputs
     toLowerCase: false
     usePat: true
-  displayName: Publish to Artifact Services - ProfilingInputs
+  displayName: 🔧 Publish to Artifact Services - ProfilingInputs
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
   continueOnError: true
 
@@ -29,20 +29,11 @@ steps:
     PathtoPublish: $(Build.ArtifactStagingDirectory)/InsertionOutputs
     ArtifactName: InsertionOutputs
     ArtifactType: Container
-  displayName: Publish InsertionOutputs as Azure DevOps artifacts
+  displayName: 🔧 Publish InsertionOutputs as Azure DevOps artifacts
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
-- task: ManifestGeneratorTask@0
-  displayName: Software Bill of Materials generation
-  inputs:
-    BuildDropPath: $(System.DefaultWorkingDirectory)/bin/Microsoft.VisualStudio.Threading/$(BuildConfiguration)
-    BuildComponentPath: $(System.DefaultWorkingDirectory)/obj/src/Microsoft.VisualStudio.Threading
-
-- powershell: Copy-Item -Recurse -Verbose "$(System.DefaultWorkingDirectory)/bin/Microsoft.VisualStudio.Threading/$(BuildConfiguration)/_manifest" "$(System.DefaultWorkingDirectory)/bin/Packages/$(BuildConfiguration)/NuGet"
-  displayName: Publish Software Bill of Materials
-
 - task: Ref12Analyze@0
-  displayName: Ref12 (Codex) Analyze
+  displayName: 📑 Ref12 (Codex) Analyze
   inputs:
     codexoutputroot: $(Build.ArtifactStagingDirectory)\Codex
     workflowArguments: |
@@ -54,6 +45,7 @@ steps:
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'), ne(variables['Build.Reason'], 'PullRequest'))
   continueOnError: true
 
-- template: secure-development-tools.yml
-  parameters:
-    EnableAPIScan: ${{ parameters.EnableAPIScan }}
+- ${{ if eq(parameters.EnableCompliance, 'true') }}:
+  - template: secure-development-tools.yml
+    parameters:
+      EnableAPIScan: ${{ parameters.EnableAPIScan }}

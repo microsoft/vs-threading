@@ -1,10 +1,9 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace CpsDbg
+namespace CpsDbg;
+
+internal interface ICommandHandler
 {
-    internal interface ICommandHandler
-    {
-        void Execute(DebuggerContext context, string args);
-    }
+    void Execute(DebuggerContext context, string args);
 }

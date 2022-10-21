@@ -1,18 +1,18 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
-{
-    using System.Threading.Tasks;
-    using Xunit;
-    using Verify = CSharpCodeFixVerifier<CSharpVSTHRD109AvoidAssertInAsyncMethodsAnalyzer, VSTHRD109AvoidAssertInAsyncMethodsCodeFix>;
+using System.Threading.Tasks;
+using Xunit;
+using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.CSharpVSTHRD109AvoidAssertInAsyncMethodsAnalyzer, Microsoft.VisualStudio.Threading.Analyzers.VSTHRD109AvoidAssertInAsyncMethodsCodeFix>;
 
-    public class VSTHRD109AvoidAssertInAsyncMethodsAnalyzerTests
+namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
+
+public class VSTHRD109AvoidAssertInAsyncMethodsAnalyzerTests
+{
+    [Fact]
+    public async Task AsyncMethodAsserts_GeneratesDiagnostic()
     {
-        [Fact]
-        public async Task AsyncMethodAsserts_GeneratesDiagnostic()
-        {
-            var test = @"
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Task = System.Threading.Tasks.Task;
@@ -25,7 +25,7 @@ class Test {
 }
 ";
 
-            var fix = @"
+        var fix = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Task = System.Threading.Tasks.Task;
@@ -38,13 +38,13 @@ class Test {
 }
 ";
 
-            await Verify.VerifyCodeFixAsync(test, fix);
-        }
+        await CSVerify.VerifyCodeFixAsync(test, fix);
+    }
 
-        [Fact]
-        public async Task AsyncMethodAsserts_CodeFixReusesCancellationToken()
-        {
-            var test = @"
+    [Fact]
+    public async Task AsyncMethodAsserts_CodeFixReusesCancellationToken()
+    {
+        var test = @"
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
@@ -58,7 +58,7 @@ class Test {
 }
 ";
 
-            var fix = @"
+        var fix = @"
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
@@ -72,13 +72,13 @@ class Test {
 }
 ";
 
-            await Verify.VerifyCodeFixAsync(test, fix);
-        }
+        await CSVerify.VerifyCodeFixAsync(test, fix);
+    }
 
-        [Fact]
-        public async Task TaskReturningNonAsyncMethodAsserts_GeneratesDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task TaskReturningNonAsyncMethodAsserts_GeneratesDiagnostic()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Task = System.Threading.Tasks.Task;
@@ -91,7 +91,7 @@ class Test {
 }
 ";
 
-            var fix = @"
+        var fix = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Task = System.Threading.Tasks.Task;
@@ -104,13 +104,13 @@ class Test {
 }
 ";
 
-            await Verify.VerifyCodeFixAsync(test, fix);
-        }
+        await CSVerify.VerifyCodeFixAsync(test, fix);
+    }
 
-        [Fact]
-        public async Task VoidNonAsyncMethodAsserts_GeneratesNoDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task VoidNonAsyncMethodAsserts_GeneratesNoDiagnostic()
+    {
+        var test = @"
 using Microsoft.VisualStudio.Shell;
 
 class Test {
@@ -120,13 +120,13 @@ class Test {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task VoidAnonymousFunctionInsideAsyncMethod_GeneratesNoDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task VoidAnonymousFunctionInsideAsyncMethod_GeneratesNoDiagnostic()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Task = System.Threading.Tasks.Task;
@@ -140,13 +140,13 @@ class Test {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task AsyncAnonymousFunctionInsideVoidMethod_GeneratesDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task AsyncAnonymousFunctionInsideVoidMethod_GeneratesDiagnostic()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Task = System.Threading.Tasks.Task;
@@ -161,7 +161,7 @@ class Test {
 }
 ";
 
-            var fix = @"
+        var fix = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Task = System.Threading.Tasks.Task;
@@ -176,13 +176,13 @@ class Test {
 }
 ";
 
-            await Verify.VerifyCodeFixAsync(test, fix);
-        }
+        await CSVerify.VerifyCodeFixAsync(test, fix);
+    }
 
-        [Fact]
-        public async Task AsyncAnonymousFunctionInsideVoidMethod_CodeFixReusesCancellationToken()
-        {
-            var test = @"
+    [Fact]
+    public async Task AsyncAnonymousFunctionInsideVoidMethod_CodeFixReusesCancellationToken()
+    {
+        var test = @"
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
@@ -198,7 +198,7 @@ class Test {
 }
 ";
 
-            var fix = @"
+        var fix = @"
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
@@ -214,13 +214,13 @@ class Test {
 }
 ";
 
-            await Verify.VerifyCodeFixAsync(test, fix);
-        }
+        await CSVerify.VerifyCodeFixAsync(test, fix);
+    }
 
-        [Fact]
-        public async Task TaskReturningLambdaInsideVoidMethod_GeneratesDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task TaskReturningLambdaInsideVoidMethod_GeneratesDiagnostic()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Task = System.Threading.Tasks.Task;
@@ -235,7 +235,7 @@ class Test {
 }
 ";
 
-            var fix = @"
+        var fix = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Task = System.Threading.Tasks.Task;
@@ -250,13 +250,13 @@ class Test {
 }
 ";
 
-            await Verify.VerifyCodeFixAsync(test, fix);
-        }
+        await CSVerify.VerifyCodeFixAsync(test, fix);
+    }
 
-        [Fact]
-        public async Task TaskReturningLambdaInsideVoidMethod_NoTypeArg_GeneratesDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task TaskReturningLambdaInsideVoidMethod_NoTypeArg_GeneratesDiagnostic()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Task = System.Threading.Tasks.Task;
@@ -271,7 +271,7 @@ class Test {
 }
 ";
 
-            var fix = @"
+        var fix = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Task = System.Threading.Tasks.Task;
@@ -286,13 +286,13 @@ class Test {
 }
 ";
 
-            await Verify.VerifyCodeFixAsync(test, fix);
-        }
+        await CSVerify.VerifyCodeFixAsync(test, fix);
+    }
 
-        [Fact]
-        public async Task IntReturningLambdaInsideVoidMethod_GeneratesNoDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task IntReturningLambdaInsideVoidMethod_GeneratesNoDiagnostic()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Task = System.Threading.Tasks.Task;
@@ -307,7 +307,6 @@ class Test {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 }

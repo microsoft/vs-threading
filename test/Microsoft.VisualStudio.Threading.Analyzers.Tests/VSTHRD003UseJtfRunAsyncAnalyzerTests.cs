@@ -1,23 +1,23 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
-{
-    using System.Diagnostics.Tracing;
-    using System.Linq;
-    using System.Threading.Tasks;
-    using Microsoft.CodeAnalysis;
-    using Microsoft.CodeAnalysis.CSharp;
-    using Microsoft.CodeAnalysis.Testing;
-    using Xunit;
-    using Verify = CSharpCodeFixVerifier<VSTHRD003UseJtfRunAsyncAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
+using System.Diagnostics.Tracing;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Testing;
+using Xunit;
+using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.VSTHRD003UseJtfRunAsyncAnalyzer, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
-    public class VSTHRD003UseJtfRunAsyncAnalyzerTests
+namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
+
+public class VSTHRD003UseJtfRunAsyncAnalyzerTests
+{
+    [Fact]
+    public async Task ReportWarningWhenTaskIsDefinedOutsideDelegate()
     {
-        [Fact]
-        public async Task ReportWarningWhenTaskIsDefinedOutsideDelegate()
-        {
-            var test = @"
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
@@ -44,18 +44,18 @@ class Tests
     }
 }
 ";
-            DiagnosticResult[] expected =
-            {
-                Verify.Diagnostic().WithLocation(15, 19),
-                Verify.Diagnostic().WithLocation(16, 19),
-            };
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
-
-        [Fact]
-        public async Task ReportWarningWhenTaskTIsDefinedOutsideDelegate()
+        DiagnosticResult[] expected =
         {
-            var test = @"
+            CSVerify.Diagnostic().WithLocation(15, 19),
+            CSVerify.Diagnostic().WithLocation(16, 19),
+        };
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task ReportWarningWhenTaskTIsDefinedOutsideDelegate()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
@@ -80,14 +80,14 @@ class Tests
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic().WithLocation(14, 19);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(14, 19);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task ReportWarningWhenTaskTIsReturnedDirectlyFromLambda()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningWhenTaskTIsReturnedDirectlyFromLambda()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
@@ -100,14 +100,14 @@ class Tests
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic().WithLocation(10, 59);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(10, 59);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task ReportWarningWhenTaskTIsReturnedDirectlyFromDelegate()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningWhenTaskTIsReturnedDirectlyFromDelegate()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
@@ -120,14 +120,14 @@ class Tests
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic().WithLocation(10, 68);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(10, 68);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task ReportWarningWhenTaskIsReturnedDirectlyFromMethod()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningWhenTaskIsReturnedDirectlyFromMethod()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Tests
@@ -140,14 +140,14 @@ class Tests
     }
 }
 ";
-            DiagnosticResult expected = this.CreateDiagnostic(10, 16, 4);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = this.CreateDiagnostic(10, 16, 4);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task ReportWarningWhenTaskIsReturnedDirectlyFromMethodViaExpressionBody()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningWhenTaskIsReturnedDirectlyFromMethodViaExpressionBody()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Tests
@@ -157,14 +157,14 @@ class Tests
     public Task GetTask() => task;
 }
 ";
-            DiagnosticResult expected = this.CreateDiagnostic(8, 30, 4);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = this.CreateDiagnostic(8, 30, 4);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task ReportWarningWhenTaskParameterIsReturnedDirectlyFromMethodViaExpressionBody()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningWhenTaskParameterIsReturnedDirectlyFromMethodViaExpressionBody()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Tests
@@ -172,14 +172,14 @@ class Tests
     public Task GetTask(Task task) => task;
 }
 ";
-            DiagnosticResult expected = this.CreateDiagnostic(6, 39, 4);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = this.CreateDiagnostic(6, 39, 4);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task ReportWarningWhenTaskIsReturnedAwaitedFromMethod()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningWhenTaskIsReturnedAwaitedFromMethod()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Tests
@@ -192,16 +192,16 @@ class Tests
     }
 }
 ";
-            DiagnosticResult expected = this.CreateDiagnostic(10, 22, 4);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = this.CreateDiagnostic(10, 22, 4);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task ReportWarningWhenConfiguredTaskIsReturnedAwaitedFromMethod(bool continueOnCapturedContext)
-        {
-            var test = $@"
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ReportWarningWhenConfiguredTaskIsReturnedAwaitedFromMethod(bool continueOnCapturedContext)
+    {
+        var test = $@"
 using System.Threading.Tasks;
 
 class Tests
@@ -214,16 +214,16 @@ class Tests
     }}
 }}
 ";
-            DiagnosticResult expected = this.CreateDiagnostic(10, 15, 21 + continueOnCapturedContext.ToString().Length);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = this.CreateDiagnostic(10, 15, 21 + continueOnCapturedContext.ToString().Length);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task ReportWarningWhenConfiguredTaskTIsReturnedAwaitedFromMethod(bool continueOnCapturedContext)
-        {
-            var test = $@"
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ReportWarningWhenConfiguredTaskTIsReturnedAwaitedFromMethod(bool continueOnCapturedContext)
+    {
+        var test = $@"
 using System.Threading.Tasks;
 
 class Tests
@@ -236,14 +236,14 @@ class Tests
     }}
 }}
 ";
-            DiagnosticResult expected = this.CreateDiagnostic(10, 22, 21 + continueOnCapturedContext.ToString().Length);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = this.CreateDiagnostic(10, 22, 21 + continueOnCapturedContext.ToString().Length);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task ReportWarningWhenConfiguredInlineTaskReturnedAwaitedFromMethod()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningWhenConfiguredInlineTaskReturnedAwaitedFromMethod()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
@@ -257,14 +257,14 @@ class Tests
     }
 }
 ";
-            DiagnosticResult expected = this.CreateDiagnostic(11, 15, 30);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = this.CreateDiagnostic(11, 15, 30);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task ReportWarningWhenConfiguredInlineTaskTReturnedAwaitedFromMethod()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningWhenConfiguredInlineTaskTReturnedAwaitedFromMethod()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
@@ -278,14 +278,14 @@ class Tests
     }
 }
 ";
-            DiagnosticResult expected = this.CreateDiagnostic(11, 22, 30);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = this.CreateDiagnostic(11, 22, 30);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task ReportWarningWhenTaskFromFieldIsAwaitedInJtfRunDelegate()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningWhenTaskFromFieldIsAwaitedInJtfRunDelegate()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
@@ -303,14 +303,14 @@ class Program
     }
 }
 ";
-            DiagnosticResult expected = this.CreateDiagnostic(14, 19, 1);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = this.CreateDiagnostic(14, 19, 1);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task ReportWarningWhenTaskTIsReturnedDirectlyWithCancellation()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningWhenTaskTIsReturnedDirectlyWithCancellation()
+    {
+        var test = @"
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
@@ -324,14 +324,14 @@ class Tests
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic().WithLocation(11, 59);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(11, 59);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task DoNotReportWarningWhenTaskTIsPassedAsArgumentAndNoTaskIsReturned()
-        {
-            var test = @"
+    [Fact]
+    public async Task DoNotReportWarningWhenTaskTIsPassedAsArgumentAndNoTaskIsReturned()
+    {
+        var test = @"
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
@@ -348,13 +348,13 @@ class Tests
     private static int DoSomethingWith(Task t) => 3;
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task ReportWarningWhenTaskTIsPassedAsArgumentAndTaskIsReturned()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningWhenTaskTIsPassedAsArgumentAndTaskIsReturned()
+    {
+        var test = @"
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
@@ -371,14 +371,14 @@ class Tests
     private static Task DoSomethingWith(Task t) => null;
 }
 ";
-            DiagnosticResult expected = this.CreateDiagnostic(12, 68, 4);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = this.CreateDiagnostic(12, 68, 4);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task ReportWarningWhenTaskIsDefinedOutsideDelegateUsingRunAsync()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningWhenTaskIsDefinedOutsideDelegateUsingRunAsync()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
@@ -403,14 +403,14 @@ class Tests
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic().WithLocation(14, 19);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(14, 19);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task ReportWarningWhenTaskIsDefinedOutsideParanthesizedLambdaExpression()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningWhenTaskIsDefinedOutsideParanthesizedLambdaExpression()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
@@ -436,14 +436,14 @@ class Tests
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic().WithLocation(14, 19);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(14, 19);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task DoNotReportWarningWhenTaskIsDefinedWithinDelegate()
-        {
-            var test = @"
+    [Fact]
+    public async Task DoNotReportWarningWhenTaskIsDefinedWithinDelegate()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
@@ -470,13 +470,13 @@ class Tests
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task DoNotReportWarningWhenReturnedTaskIsDirectlyReturnedFromInvocation()
-        {
-            var test = @"
+    [Fact]
+    public async Task DoNotReportWarningWhenReturnedTaskIsDirectlyReturnedFromInvocation()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Tests
@@ -489,13 +489,13 @@ class Tests
     public Task SomeOperationAsync() => Task.CompletedTask;
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task DoNotReportWarningWhenReturnedTaskIsAwaitedReturnedFromInvocation()
-        {
-            var test = @"
+    [Fact]
+    public async Task DoNotReportWarningWhenReturnedTaskIsAwaitedReturnedFromInvocation()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Tests
@@ -508,13 +508,13 @@ class Tests
     public Task<int> SomeOperationAsync() => Task.FromResult(3);
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task DoNotReportWarningWhenTaskIsDefinedWithinDelegateInSubblock()
-        {
-            var test = @"
+    [Fact]
+    public async Task DoNotReportWarningWhenTaskIsDefinedWithinDelegateInSubblock()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
@@ -544,13 +544,13 @@ class Tests
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task DoNotReportWarningWhenTaskIsDefinedOutsideButInitializedWithinDelegate()
-        {
-            var test = @"
+    [Fact]
+    public async Task DoNotReportWarningWhenTaskIsDefinedOutsideButInitializedWithinDelegate()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
@@ -576,13 +576,13 @@ class Tests
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task DoNotReportWarningWhenTaskIsInitializedBothOutsideAndInsideDelegate()
-        {
-            var test = @"
+    [Fact]
+    public async Task DoNotReportWarningWhenTaskIsInitializedBothOutsideAndInsideDelegate()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
@@ -608,13 +608,13 @@ class Tests
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task DoNotReportWarningWhenTaskIsInitializedInsideDelegateConditionalStatement()
-        {
-            var test = @"
+    [Fact]
+    public async Task DoNotReportWarningWhenTaskIsInitializedInsideDelegateConditionalStatement()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
@@ -644,13 +644,13 @@ class Tests
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task ReportWarningWhenTaskIsDefinedOutsideAndInitializedAfterAwait()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningWhenTaskIsDefinedOutsideAndInitializedAfterAwait()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
@@ -676,14 +676,14 @@ class Tests
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic().WithLocation(14, 19);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(14, 19);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task ReportWarningWhenTaskIsDefinedOutsideAndInitializationIsCommentedOut()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningWhenTaskIsDefinedOutsideAndInitializationIsCommentedOut()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
@@ -710,14 +710,14 @@ class Tests
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic().WithLocation(16, 19);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(16, 19);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task ReportWarningWhenAwaitIsInsideForLoop()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningWhenAwaitIsInsideForLoop()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
@@ -745,14 +745,14 @@ class Tests
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic().WithLocation(16, 23);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(16, 23);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task ReportWarningsForMultipleAwaits()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningsForMultipleAwaits()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
@@ -779,20 +779,20 @@ class Tests
     }
 }
 ";
-            DiagnosticResult[] expected =
-            {
-                Verify.Diagnostic().WithLocation(14, 19),
-                Verify.Diagnostic().WithLocation(15, 19),
-                Verify.Diagnostic().WithLocation(16, 19),
-            };
-
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
-
-        [Fact]
-        public async Task DoNotReportWarningWhenAwaitingAsyncMethod()
+        DiagnosticResult[] expected =
         {
-            var test = @"
+            CSVerify.Diagnostic().WithLocation(14, 19),
+            CSVerify.Diagnostic().WithLocation(15, 19),
+            CSVerify.Diagnostic().WithLocation(16, 19),
+        };
+
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningWhenAwaitingAsyncMethod()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
@@ -816,13 +816,13 @@ class Tests
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task DoNotReportWarningWhenAwaitingJoinableTaskDefinedInsideDelegate()
-        {
-            var test = @"
+    [Fact]
+    public async Task DoNotReportWarningWhenAwaitingJoinableTaskDefinedInsideDelegate()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
@@ -844,13 +844,13 @@ class Tests
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task DoNotReportWarningWhenAwaitingJoinableTaskDefinedOutsideDelegate()
-        {
-            var test = @"
+    [Fact]
+    public async Task DoNotReportWarningWhenAwaitingJoinableTaskDefinedOutsideDelegate()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
@@ -873,13 +873,13 @@ class Tests
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task ReportWarningWhenHavingNestedLambdaExpressions()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningWhenHavingNestedLambdaExpressions()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
@@ -909,14 +909,14 @@ class Tests
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic().WithLocation(17, 23);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(17, 23);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task ReportWarningForDerivedJoinableTaskFactory()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningForDerivedJoinableTaskFactory()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
@@ -951,14 +951,14 @@ class Tests
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic().WithLocation(24, 19);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(24, 19);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task ReportWarningWhenAwaitingTaskInField()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningWhenAwaitingTaskInField()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
@@ -974,14 +974,14 @@ class Tests {
     }
 }
 ";
-            DiagnosticResult expected = this.CreateDiagnostic(12, 19, 4);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = this.CreateDiagnostic(12, 19, 4);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task ReportWarningWhenAwaitingTaskInField_WithThisQualifier()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningWhenAwaitingTaskInField_WithThisQualifier()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
@@ -997,14 +997,14 @@ class Tests {
     }
 }
 ";
-            DiagnosticResult expected = this.CreateDiagnostic(12, 19, 9);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = this.CreateDiagnostic(12, 19, 9);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task DoNotReportWarningWhenAwaitingTaskInFieldThatIsAssignedLocally()
-        {
-            var test = @"
+    [Fact]
+    public async Task DoNotReportWarningWhenAwaitingTaskInFieldThatIsAssignedLocally()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
@@ -1023,13 +1023,13 @@ class Tests {
     Task SomeOperationAsync() => Task.CompletedTask;
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task DoNotReportWarningWhenCompletedTaskIsReturnedDirectlyFromMethod()
-        {
-            var test = @"
+    [Fact]
+    public async Task DoNotReportWarningWhenCompletedTaskIsReturnedDirectlyFromMethod()
+    {
+        var test = @"
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1068,13 +1068,13 @@ class Tests
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task DoNotReportWarningWhenTaskFromResultIsReturnedDirectlyFromMethod()
-        {
-            var test = @"
+    [Fact]
+    public async Task DoNotReportWarningWhenTaskFromResultIsReturnedDirectlyFromMethod()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Tests
@@ -1085,13 +1085,13 @@ class Tests
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task DoNotReportWarningWhenTaskFromResultIsReturnedDirectlyFromMethod_FromField()
-        {
-            var test = @"
+    [Fact]
+    public async Task DoNotReportWarningWhenTaskFromResultIsReturnedDirectlyFromMethod_FromField()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Tests
@@ -1104,13 +1104,13 @@ class Tests
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task ReportWarningWhenTaskFromResultIsReturnedDirectlyFromMethod_FromField_NotReadOnly()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningWhenTaskFromResultIsReturnedDirectlyFromMethod_FromField_NotReadOnly()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Tests
@@ -1123,14 +1123,14 @@ class Tests
     }
 }
 ";
-            DiagnosticResult expected = this.CreateDiagnostic(10, 16, 13);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = this.CreateDiagnostic(10, 16, 13);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task ReportWarningWhenTaskRunIsReturnedDirectlyFromMethod_FromField()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningWhenTaskRunIsReturnedDirectlyFromMethod_FromField()
+    {
+        var test = @"
 using System.Threading.Tasks;
 
 class Tests
@@ -1143,16 +1143,16 @@ class Tests
     }
 }
 ";
-            DiagnosticResult expected = this.CreateDiagnostic(10, 16, 8);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = this.CreateDiagnostic(10, 16, 8);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task TaskReturningMethodIncludeArgumentFromOtherSyntaxTree()
-        {
-            // This is a regression test for a bug that only repro'd when the field was defined in a different document from where it was used
-            // as input to a return value from a Task-returning method.
-            var source1 = @"
+    [Fact]
+    public async Task TaskReturningMethodIncludeArgumentFromOtherSyntaxTree()
+    {
+        // This is a regression test for a bug that only repro'd when the field was defined in a different document from where it was used
+        // as input to a return value from a Task-returning method.
+        var source1 = @"
 using System.Collections.Immutable;
 using System.Threading.Tasks;
 
@@ -1164,7 +1164,7 @@ internal class Test
     }
 }
 ";
-            var source2 = @"
+        var source2 = @"
 using System.Collections.Immutable;
 
 class OtherClass
@@ -1177,14 +1177,14 @@ class OtherClass
 }
 ";
 
-            var test = new Verify.Test { TestState = { Sources = { source1, source2 } } };
-            await test.RunAsync();
-        }
+        var test = new CSVerify.Test { TestState = { Sources = { source1, source2 } } };
+        await test.RunAsync();
+    }
 
-        [Fact]
-        public async Task CachedTaskReturnedFromExternalToCompilation()
-        {
-            string specialTasksCs = @"
+    [Fact]
+    public async Task CachedTaskReturnedFromExternalToCompilation()
+    {
+        string specialTasksCs = @"
 using System.Threading.Tasks;
 
 public static class SpecialTasks {
@@ -1192,14 +1192,14 @@ public static class SpecialTasks {
 }
 ";
 
-            Verify.Test? test = null;
-            test = new Verify.Test
+        CSVerify.Test? test = null;
+        test = new CSVerify.Test
+        {
+            TestState =
             {
-                TestState =
+                Sources =
                 {
-                    Sources =
-                    {
-                        @"
+                    @"
 using System.Threading.Tasks;
 
 public static class Boom {
@@ -1209,32 +1209,32 @@ public static class Boom {
   }
 }
 ",
-                    },
-                    AdditionalProjects =
+                },
+                AdditionalProjects =
+                {
+                    ["ProjectA"] =
                     {
-                        ["ProjectA"] =
+                        Sources =
                         {
-                            Sources =
-                            {
-                                ("SpecialTasks.cs", specialTasksCs),
-                            },
+                            ("SpecialTasks.cs", specialTasksCs),
                         },
                     },
-                    AdditionalProjectReferences =
-                    {
-                        "ProjectA",
-                    },
                 },
-            };
+                AdditionalProjectReferences =
+                {
+                    "ProjectA",
+                },
+            },
+        };
 
-            await test.RunAsync();
-        }
+        await test.RunAsync();
+    }
 
-        [Fact]
-        public async Task DoNotReportWarningWithParenthesizedAwaitExpressions()
-        {
-            // This is a test for bug 849. Parenthesized expressions caused an InvalidCastException.
-            var test = @"
+    [Fact]
+    public async Task DoNotReportWarningWithParenthesizedAwaitExpressions()
+    {
+        // This is a test for bug 849. Parenthesized expressions caused an InvalidCastException.
+        var test = @"
 using System.Threading.Tasks;
 
 class Test {
@@ -1249,10 +1249,9 @@ class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
-
-        private DiagnosticResult CreateDiagnostic(int line, int column, int length) =>
-            Verify.Diagnostic().WithSpan(line, column, line, column + length);
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
+
+    private DiagnosticResult CreateDiagnostic(int line, int column, int length) =>
+        CSVerify.Diagnostic().WithSpan(line, column, line, column + length);
 }

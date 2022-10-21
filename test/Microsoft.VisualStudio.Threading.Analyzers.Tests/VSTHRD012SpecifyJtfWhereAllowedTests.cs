@@ -1,19 +1,19 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
-{
-    using System.Threading.Tasks;
-    using Microsoft.CodeAnalysis.Testing;
-    using Xunit;
-    using Verify = CSharpCodeFixVerifier<CSharpVSTHRD012SpecifyJtfWhereAllowed, CodeAnalysis.Testing.EmptyCodeFixProvider>;
+using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.Testing;
+using Xunit;
+using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.CSharpVSTHRD012SpecifyJtfWhereAllowed, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
-    public class VSTHRD012SpecifyJtfWhereAllowedTests
+namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
+
+public class VSTHRD012SpecifyJtfWhereAllowedTests
+{
+    [Fact]
+    public async Task SiblingMethodOverloads_WithoutJTF_GeneratesWarning()
     {
-        [Fact]
-        public async Task SiblingMethodOverloads_WithoutJTF_GeneratesWarning()
-        {
-            var test = @"
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
@@ -27,19 +27,19 @@ class Test {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic().WithLocation(0);
-            await new Verify.Test
-            {
-                TestCode = test,
-                ExpectedDiagnostics = { expected },
-                TestBehaviors = TestBehaviors.SkipGeneratedCodeCheck,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task SiblingMethodOverloads_WithoutJTC_GeneratesWarning()
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(0);
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+            ExpectedDiagnostics = { expected },
+            TestBehaviors = TestBehaviors.SkipGeneratedCodeCheck,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task SiblingMethodOverloads_WithoutJTC_GeneratesWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
@@ -53,19 +53,19 @@ class Test {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic().WithLocation(0);
-            await new Verify.Test
-            {
-                TestCode = test,
-                ExpectedDiagnostics = { expected },
-                TestBehaviors = TestBehaviors.SkipGeneratedCodeCheck,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task SiblingMethodOverloadsWithOptionalAttribute_WithoutJTC_GeneratesNoWarning()
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(0);
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+            ExpectedDiagnostics = { expected },
+            TestBehaviors = TestBehaviors.SkipGeneratedCodeCheck,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task SiblingMethodOverloadsWithOptionalAttribute_WithoutJTC_GeneratesNoWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using Microsoft.VisualStudio.Threading;
@@ -80,13 +80,13 @@ class Test {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task SiblingMethodOverloadsWithObsoleteAttribute_WithoutJTC_GeneratesNoWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task SiblingMethodOverloadsWithObsoleteAttribute_WithoutJTC_GeneratesNoWarning()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Threading;
 
@@ -101,13 +101,13 @@ class Test {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task SiblingCtorOverloads_WithoutJTF_GeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task SiblingCtorOverloads_WithoutJTF_GeneratesWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
@@ -123,19 +123,19 @@ class Apple {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic().WithLocation(0);
-            await new Verify.Test
-            {
-                TestCode = test,
-                ExpectedDiagnostics = { expected },
-                TestBehaviors = TestBehaviors.SkipGeneratedCodeCheck,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task SiblingMethodOverloads_WithJTF_GeneratesNoWarning()
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(0);
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+            ExpectedDiagnostics = { expected },
+            TestBehaviors = TestBehaviors.SkipGeneratedCodeCheck,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task SiblingMethodOverloads_WithJTF_GeneratesNoWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
@@ -152,13 +152,13 @@ class Test {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task AsyncLazy_WithoutJTF_GeneratesWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task AsyncLazy_WithoutJTF_GeneratesWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
@@ -169,19 +169,19 @@ class Test {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic().WithLocation(0);
-            await new Verify.Test
-            {
-                TestCode = test,
-                ExpectedDiagnostics = { expected },
-                TestBehaviors = TestBehaviors.SkipGeneratedCodeCheck,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task AsyncLazy_WithNullJTF_GeneratesNoWarning()
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(0);
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+            ExpectedDiagnostics = { expected },
+            TestBehaviors = TestBehaviors.SkipGeneratedCodeCheck,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task AsyncLazy_WithNullJTF_GeneratesNoWarning()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
@@ -192,13 +192,13 @@ class Test {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task AsyncLazy_WithJTF_GeneratesNoWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task AsyncLazy_WithJTF_GeneratesNoWarning()
+    {
+        var test = @"
 using Microsoft.VisualStudio.Threading;
 using System.Threading.Tasks;
 
@@ -211,13 +211,13 @@ class Test {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task JTF_RunAsync_GeneratesNoWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task JTF_RunAsync_GeneratesNoWarning()
+    {
+        var test = @"
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
 using System.Threading.Tasks;
@@ -236,13 +236,13 @@ class Test {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task JTF_Ctor_GeneratesNoWarning()
-        {
-            var test = @"
+    [Fact]
+    public async Task JTF_Ctor_GeneratesNoWarning()
+    {
+        var test = @"
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
 using System.Threading.Tasks;
@@ -257,7 +257,6 @@ class Test {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 }

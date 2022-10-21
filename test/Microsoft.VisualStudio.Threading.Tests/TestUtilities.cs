@@ -167,8 +167,8 @@ internal static class TestUtilities
     /// <param name="testMethodName">The name of the test method.</param>
     /// <param name="logger">An optional logger to forward any <see cref="ITestOutputHelper"/> output to from the isolated test runner.</param>
     /// <returns>
-    /// A task whose result is <c>true</c> if test execution is already isolated and should therefore proceed with the body of the test,
-    /// or <c>false</c> after the isolated instance of the test has completed execution.
+    /// A task whose result is <see langword="true" /> if test execution is already isolated and should therefore proceed with the body of the test,
+    /// or <see langword="false" /> after the isolated instance of the test has completed execution.
     /// </returns>
     /// <exception cref="Xunit.Sdk.XunitException">Thrown if the isolated test result is a Failure.</exception>
     /// <exception cref="SkipException">Thrown if on a platform that we do not yet support test isolation on.</exception>
@@ -186,8 +186,8 @@ internal static class TestUtilities
     /// <param name="testMethodName">The name of the test method.</param>
     /// <param name="logger">An optional logger to forward any <see cref="ITestOutputHelper"/> output to from the isolated test runner.</param>
     /// <returns>
-    /// A task whose result is <c>true</c> if test execution is already isolated and should therefore proceed with the body of the test,
-    /// or <c>false</c> after the isolated instance of the test has completed execution.
+    /// A task whose result is <see langword="true" /> if test execution is already isolated and should therefore proceed with the body of the test,
+    /// or <see langword="false" /> after the isolated instance of the test has completed execution.
     /// </returns>
     /// <exception cref="Xunit.Sdk.XunitException">Thrown if the isolated test result is a Failure.</exception>
     /// <exception cref="SkipException">Thrown if on a platform that we do not yet support test isolation on.</exception>
@@ -267,8 +267,8 @@ internal static class TestUtilities
     /// Wait on a task without possibly inlining it to the current thread.
     /// </summary>
     /// <param name="task">The task to wait on.</param>
-    /// <param name="throwOriginalException"><c>true</c> to throw the original (inner) exception when the <paramref name="task"/> faults; <c>false</c> to throw <see cref="AggregateException"/>.</param>
-    /// <exception cref="AggregateException">Thrown if <paramref name="task"/> completes in a faulted state if <paramref name="throwOriginalException"/> is <c>false</c>.</exception>
+    /// <param name="throwOriginalException"><see langword="true" /> to throw the original (inner) exception when the <paramref name="task"/> faults; <see langword="false" /> to throw <see cref="AggregateException"/>.</param>
+    /// <exception cref="AggregateException">Thrown if <paramref name="task"/> completes in a faulted state if <paramref name="throwOriginalException"/> is <see langword="false" />.</exception>
     internal static void WaitWithoutInlining(this Task task, bool throwOriginalException)
     {
         Requires.NotNull(task, nameof(task));
@@ -295,9 +295,9 @@ internal static class TestUtilities
     /// </summary>
     /// <typeparam name="T">The type of result returned from the <paramref name="task"/>.</typeparam>
     /// <param name="task">The task to wait on.</param>
-    /// <param name="throwOriginalException"><c>true</c> to throw the original (inner) exception when the <paramref name="task"/> faults; <c>false</c> to throw <see cref="AggregateException"/>.</param>
+    /// <param name="throwOriginalException"><see langword="true" /> to throw the original (inner) exception when the <paramref name="task"/> faults; <see langword="false" /> to throw <see cref="AggregateException"/>.</param>
     /// <returns>The result of the <see cref="Task{T}"/>.</returns>
-    /// <exception cref="AggregateException">Thrown if <paramref name="task"/> completes in a faulted state if <paramref name="throwOriginalException"/> is <c>false</c>.</exception>
+    /// <exception cref="AggregateException">Thrown if <paramref name="task"/> completes in a faulted state if <paramref name="throwOriginalException"/> is <see langword="false" />.</exception>
     internal static T GetResultWithoutInlining<T>(this Task<T> task, bool throwOriginalException = true)
     {
         WaitWithoutInlining(task, throwOriginalException);

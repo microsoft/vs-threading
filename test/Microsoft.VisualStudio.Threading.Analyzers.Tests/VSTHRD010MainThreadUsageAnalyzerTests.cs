@@ -1,20 +1,20 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
-{
-    using System.Threading.Tasks;
-    using Microsoft.CodeAnalysis.Testing;
-    using Xunit;
-    using static Microsoft.VisualStudio.Threading.Analyzers.VSTHRD010MainThreadUsageAnalyzer;
-    using Verify = CSharpCodeFixVerifier<VSTHRD010MainThreadUsageAnalyzer, VSTHRD010MainThreadUsageCodeFix>;
+using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.Testing;
+using Xunit;
+using static Microsoft.VisualStudio.Threading.Analyzers.VSTHRD010MainThreadUsageAnalyzer;
+using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.VSTHRD010MainThreadUsageAnalyzer, Microsoft.VisualStudio.Threading.Analyzers.VSTHRD010MainThreadUsageCodeFix>;
 
-    public class VSTHRD010MainThreadUsageAnalyzerTests
+namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
+
+public class VSTHRD010MainThreadUsageAnalyzerTests
+{
+    [Fact]
+    public async Task InvokeVsReferenceOutsideMethod()
     {
-        [Fact]
-        public async Task InvokeVsReferenceOutsideMethod()
-        {
-            var test = @"
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -26,14 +26,14 @@ class Test {
     string name = G.Ref1.Name;
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorSync).WithSpan(10, 26, 10, 30).WithArguments("IVsReference", "Test.VerifyOnUIThread");
-            await Verify.VerifyCodeFixAsync(test, expected, test);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorSync).WithSpan(10, 26, 10, 30).WithArguments("IVsReference", "Test.VerifyOnUIThread");
+        await CSVerify.VerifyCodeFixAsync(test, expected, test);
+    }
 
-        [Fact]
-        public async Task InvokeVsSolutionComplexStyle()
-        {
-            var test = @"
+    [Fact]
+    public async Task InvokeVsSolutionComplexStyle()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -45,7 +45,7 @@ class Test {
     IVsSolution Method() { return null; }
 }
 ";
-            var fix = @"
+        var fix = @"
 using System;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -58,19 +58,19 @@ class Test {
     IVsSolution Method() { return null; }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorSync).WithSpan(7, 23, 7, 34).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
-            await new Verify.Test
-            {
-                TestCode = test,
-                ExpectedDiagnostics = { expected },
-                FixedCode = fix,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task InvokeVsSolutionNoCheck()
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorSync).WithSpan(7, 23, 7, 34).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+            ExpectedDiagnostics = { expected },
+            FixedCode = fix,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task InvokeVsSolutionNoCheck()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -81,7 +81,7 @@ class Test {
     }
 }
 ";
-            var fix = @"
+        var fix = @"
 using System;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -93,26 +93,26 @@ class Test {
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorSync).WithSpan(8, 13, 8, 24).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
-            await new Verify.Test
-            {
-                TestCode = test,
-                ExpectedDiagnostics = { expected },
-                FixedCode = fix,
-            }.RunAsync();
-        }
-
-        /// <summary>
-        /// Describes an idea for how another code fix can offer to wrap a method in a JTF.Run delegate to switch to the main thread.
-        /// </summary>
-        /// <remarks>
-        /// This will need much more thorough testing than just this method, when the feature is implemented.
-        /// There are ref and out parameters, and return values to consider, for example.
-        /// </remarks>
-        [Fact(Skip = "Feature is not yet implemented.")]
-        public async Task InvokeVsSolutionNoCheck_FixByJTFRunAndSwitch()
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorSync).WithSpan(8, 13, 8, 24).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+            ExpectedDiagnostics = { expected },
+            FixedCode = fix,
+        }.RunAsync();
+    }
+
+    /// <summary>
+    /// Describes an idea for how another code fix can offer to wrap a method in a JTF.Run delegate to switch to the main thread.
+    /// </summary>
+    /// <remarks>
+    /// This will need much more thorough testing than just this method, when the feature is implemented.
+    /// There are ref and out parameters, and return values to consider, for example.
+    /// </remarks>
+    [Fact(Skip = "Feature is not yet implemented.")]
+    public async Task InvokeVsSolutionNoCheck_FixByJTFRunAndSwitch()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -123,7 +123,7 @@ class Test {
     }
 }
 ";
-            var fix = @"
+        var fix = @"
 using System;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -137,19 +137,19 @@ class Test {
     }
 }
 ";
-            await new Verify.Test
-            {
-                TestCode = test,
-                ExpectedDiagnostics = { Verify.Diagnostic(DescriptorSync).WithSpan(8, 13, 8, 24).WithArguments("IVsSolution", "Test.VerifyOnUIThread") },
-                FixedCode = fix,
-                CodeActionIndex = CodeFixIndex.SwitchToMainThreadAsync,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task InvokeVsSolutionNoCheck_InProperty()
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+            ExpectedDiagnostics = { CSVerify.Diagnostic(DescriptorSync).WithSpan(8, 13, 8, 24).WithArguments("IVsSolution", "Test.VerifyOnUIThread") },
+            FixedCode = fix,
+            CodeActionIndex = CodeFixIndex.SwitchToMainThreadAsync,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task InvokeVsSolutionNoCheck_InProperty()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -163,7 +163,7 @@ class Test {
     }
 }
 ";
-            var fix = @"
+        var fix = @"
 using System;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -178,19 +178,19 @@ class Test {
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorSync).WithSpan(9, 17, 9, 28).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
-            await new Verify.Test
-            {
-                TestCode = test,
-                ExpectedDiagnostics = { expected },
-                FixedCode = fix,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task InvokeVsSolutionNoCheck_InCtor()
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorSync).WithSpan(9, 17, 9, 28).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+            ExpectedDiagnostics = { expected },
+            FixedCode = fix,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task InvokeVsSolutionNoCheck_InCtor()
+    {
+        var test = @"
 using Microsoft.VisualStudio.Shell.Interop;
 
 class Test {
@@ -200,7 +200,7 @@ class Test {
     }
 }
 ";
-            var fix = @"
+        var fix = @"
 using Microsoft.VisualStudio.Shell.Interop;
 
 class Test {
@@ -211,19 +211,19 @@ class Test {
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorSync).WithSpan(7, 13, 7, 24).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
-            await new Verify.Test
-            {
-                TestCode = test,
-                ExpectedDiagnostics = { expected },
-                FixedCode = fix,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task TransitiveNoCheck_InCtor()
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorSync).WithSpan(7, 13, 7, 24).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+            ExpectedDiagnostics = { expected },
+            FixedCode = fix,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task TransitiveNoCheck_InCtor()
+    {
+        var test = @"
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -242,7 +242,7 @@ class Test {
     }
 }
 ";
-            var fix1 = @"
+        var fix1 = @"
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -262,7 +262,7 @@ class Test {
     }
 }
 ";
-            var fix2 = @"
+        var fix2 = @"
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -283,28 +283,28 @@ class Test {
 }
 ";
 
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorSync).WithSpan(7, 9, 7, 12).WithArguments("Test.Foo", "Test.VerifyOnUIThread");
-            await new Verify.Test
-            {
-                TestCode = test,
-                ExpectedDiagnostics = { expected },
-                FixedCode = fix1,
-                CodeActionIndex = CodeFixIndex.VerifyOnUIThread,
-            }.RunAsync();
-
-            await new Verify.Test
-            {
-                TestCode = test,
-                ExpectedDiagnostics = { expected },
-                FixedCode = fix2,
-                CodeActionIndex = CodeFixIndex.ThrowIfNotOnUIThreadIndex1,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task InvokeVsSolutionWithCheck_InCtor()
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorSync).WithSpan(7, 9, 7, 12).WithArguments("Test.Foo", "Test.VerifyOnUIThread");
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+            ExpectedDiagnostics = { expected },
+            FixedCode = fix1,
+            CodeActionIndex = CodeFixIndex.VerifyOnUIThread,
+        }.RunAsync();
+
+        await new CSVerify.Test
+        {
+            TestCode = test,
+            ExpectedDiagnostics = { expected },
+            FixedCode = fix2,
+            CodeActionIndex = CodeFixIndex.ThrowIfNotOnUIThreadIndex1,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task InvokeVsSolutionWithCheck_InCtor()
+    {
+        var test = @"
 using Microsoft.VisualStudio.Shell.Interop;
 
 class Test {
@@ -318,13 +318,13 @@ class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task InvokeVsSolutionBeforeAndAfterVerifyOnUIThread()
-        {
-            var test = @"
+    [Fact]
+    public async Task InvokeVsSolutionBeforeAndAfterVerifyOnUIThread()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -340,7 +340,7 @@ class Test {
     }
 }
 ";
-            var fix = @"
+        var fix = @"
 using System;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -357,19 +357,19 @@ class Test {
     }
 }
 ";
-            await new Verify.Test
-            {
-                TestCode = test,
-                ExpectedDiagnostics = { Verify.Diagnostic(DescriptorSync).WithSpan(8, 13, 8, 24).WithArguments("IVsSolution", "Test.VerifyOnUIThread") },
-                FixedCode = fix,
-                CodeActionIndex = CodeFixIndex.ThrowIfNotOnUIThreadIndex0,
-            }.RunAsync();
-        }
-
-        [Fact(Skip = "Not yet supported. See https://github.com/Microsoft/vs-threading/issues/38")]
-        public async Task InvokeVsSolutionAfterConditionedVerifyOnUIThread()
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+            ExpectedDiagnostics = { CSVerify.Diagnostic(DescriptorSync).WithSpan(8, 13, 8, 24).WithArguments("IVsSolution", "Test.VerifyOnUIThread") },
+            FixedCode = fix,
+            CodeActionIndex = CodeFixIndex.ThrowIfNotOnUIThreadIndex0,
+        }.RunAsync();
+    }
+
+    [Fact(Skip = "Not yet supported. See https://github.com/Microsoft/vs-threading/issues/38")]
+    public async Task InvokeVsSolutionAfterConditionedVerifyOnUIThread()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -387,14 +387,14 @@ class Test {
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorSync).WithSpan(12, 13, 12, 24).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorSync).WithSpan(12, 13, 12, 24).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact(Skip = "Not yet supported. See https://github.com/Microsoft/vs-threading/issues/38")]
-        public async Task InvokeVsSolutionInBlockWithoutVerifyOnUIThread()
-        {
-            var test = @"
+    [Fact(Skip = "Not yet supported. See https://github.com/Microsoft/vs-threading/issues/38")]
+    public async Task InvokeVsSolutionInBlockWithoutVerifyOnUIThread()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -412,14 +412,14 @@ class Test {
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorSync).WithSpan(11, 17, 11, 28).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorSync).WithSpan(11, 17, 11, 28).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact(Skip = "Not yet supported. See https://github.com/Microsoft/vs-threading/issues/38")]
-        public async Task InvokeVsSolutionAfterSwallowingCatchBlockWhereVerifyOnUIThreadWasInTry()
-        {
-            var test = @"
+    [Fact(Skip = "Not yet supported. See https://github.com/Microsoft/vs-threading/issues/38")]
+    public async Task InvokeVsSolutionAfterSwallowingCatchBlockWhereVerifyOnUIThreadWasInTry()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -437,14 +437,14 @@ class Test {
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorSync).WithSpan(12, 13, 12, 24).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorSync).WithSpan(12, 13, 12, 24).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact(Skip = "Not yet supported. See https://github.com/microsoft/vs-threading/issues/542")]
-        public async Task InvokeVsSolutionAfterUIThreadAssertionAndSwitchToThreadPool()
-        {
-            var test = @"
+    [Fact(Skip = "Not yet supported. See https://github.com/microsoft/vs-threading/issues/542")]
+    public async Task InvokeVsSolutionAfterUIThreadAssertionAndSwitchToThreadPool()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -464,14 +464,14 @@ class Test {
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorAsync).WithSpan(14, 13, 14, 24).WithArguments("IVsSolution", "JoinableTaskFactory.SwitchToMainThreadAsync");
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorAsync).WithSpan(14, 13, 14, 24).WithArguments("IVsSolution", "JoinableTaskFactory.SwitchToMainThreadAsync");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact(Skip = "Not yet supported. See https://github.com/microsoft/vs-threading/issues/542")]
-        public async Task InvokeVsSolutionAfterUIThreadAssertionAndConfigureAwaitFalse()
-        {
-            var test = @"
+    [Fact(Skip = "Not yet supported. See https://github.com/microsoft/vs-threading/issues/542")]
+    public async Task InvokeVsSolutionAfterUIThreadAssertionAndConfigureAwaitFalse()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -493,14 +493,14 @@ class Test {
     async Task SomeAsync() => await Task.Yield();
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorAsync).WithSpan(14, 13, 14, 24).WithArguments("IVsSolution", "JoinableTaskFactory.SwitchToMainThreadAsync");
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorAsync).WithSpan(14, 13, 14, 24).WithArguments("IVsSolution", "JoinableTaskFactory.SwitchToMainThreadAsync");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact(Skip = "Not yet supported. See https://github.com/Microsoft/vs-threading/issues/38")]
-        public async Task InvokeVsSolutionAfterUIThreadAssertionAndConditionalSwitchToThreadPool()
-        {
-            var test = @"
+    [Fact(Skip = "Not yet supported. See https://github.com/Microsoft/vs-threading/issues/38")]
+    public async Task InvokeVsSolutionAfterUIThreadAssertionAndConditionalSwitchToThreadPool()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -523,82 +523,82 @@ class Test {
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorAsync).WithSpan(16, 13, 16, 24).WithArguments("IVsSolution", "JoinableTaskFactory.SwitchToMainThreadAsync");
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorAsync).WithSpan(16, 13, 16, 24).WithArguments("IVsSolution", "JoinableTaskFactory.SwitchToMainThreadAsync");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task RequiresUIThreadTransitive_MultipleInMember()
+    [Fact]
+    public async Task RequiresUIThreadTransitive_MultipleInMember()
+    {
+        var test = @"
+using System;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    void F() {
+        VerifyOnUIThread();
+        IVsSolution sln = null;
+        sln.SetProperty(1000, null);
+    }
+
+    void G() {
+        VerifyOnUIThread();
+        IVsSolution sln = null;
+        sln.SetProperty(1000, null);
+    }
+
+    void H() {
+        F();
+        G();
+    }
+
+    static void VerifyOnUIThread() { }
+}
+";
+        var fix = @"
+using System;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    void F() {
+        VerifyOnUIThread();
+        IVsSolution sln = null;
+        sln.SetProperty(1000, null);
+    }
+
+    void G() {
+        VerifyOnUIThread();
+        IVsSolution sln = null;
+        sln.SetProperty(1000, null);
+    }
+
+    void H() {
+        VerifyOnUIThread();
+        F();
+        G();
+    }
+
+    static void VerifyOnUIThread() { }
+}
+";
+
+        await new CSVerify.Test
         {
-            var test = @"
-using System;
-using Microsoft.VisualStudio.Shell.Interop;
-
-class Test {
-    void F() {
-        VerifyOnUIThread();
-        IVsSolution sln = null;
-        sln.SetProperty(1000, null);
-    }
-
-    void G() {
-        VerifyOnUIThread();
-        IVsSolution sln = null;
-        sln.SetProperty(1000, null);
-    }
-
-    void H() {
-        F();
-        G();
-    }
-
-    static void VerifyOnUIThread() { }
-}
-";
-            var fix = @"
-using System;
-using Microsoft.VisualStudio.Shell.Interop;
-
-class Test {
-    void F() {
-        VerifyOnUIThread();
-        IVsSolution sln = null;
-        sln.SetProperty(1000, null);
-    }
-
-    void G() {
-        VerifyOnUIThread();
-        IVsSolution sln = null;
-        sln.SetProperty(1000, null);
-    }
-
-    void H() {
-        VerifyOnUIThread();
-        F();
-        G();
-    }
-
-    static void VerifyOnUIThread() { }
-}
-";
-
-            await new Verify.Test
+            TestCode = test,
+            ExpectedDiagnostics =
             {
-                TestCode = test,
-                ExpectedDiagnostics =
-                {
-                    Verify.Diagnostic(DescriptorSync).WithSpan(19, 9, 19, 10).WithArguments("Test.F", "Test.VerifyOnUIThread"),
-                    Verify.Diagnostic(DescriptorSync).WithSpan(20, 9, 20, 10).WithArguments("Test.G", "Test.VerifyOnUIThread"),
-                },
-                FixedCode = fix,
-                CodeActionIndex = CodeFixIndex.VerifyOnUIThread,
-            }.RunAsync();
-        }
+                CSVerify.Diagnostic(DescriptorSync).WithSpan(19, 9, 19, 10).WithArguments("Test.F", "Test.VerifyOnUIThread"),
+                CSVerify.Diagnostic(DescriptorSync).WithSpan(20, 9, 20, 10).WithArguments("Test.G", "Test.VerifyOnUIThread"),
+            },
+            FixedCode = fix,
+            CodeActionIndex = CodeFixIndex.VerifyOnUIThread,
+        }.RunAsync();
+    }
 
-        [Fact]
-        public async Task RequiresUIThreadTransitive()
-        {
-            var test = @"
+    [Fact]
+    public async Task RequiresUIThreadTransitive()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -656,27 +656,27 @@ class Test {
     }
 }
 ";
-            var expected = new DiagnosticResult[]
-            {
-                Verify.Diagnostic(DescriptorSync).WithSpan(13, 9, 13, 10).WithArguments("Test.F", "Test.VerifyOnUIThread"),
-                Verify.Diagnostic(DescriptorSync).WithSpan(17, 9, 17, 10).WithArguments("Test.G", "Test.VerifyOnUIThread"),
-                Verify.Diagnostic(DescriptorSync).WithSpan(22, 13, 22, 14).WithArguments("Test.H", "Test.VerifyOnUIThread"),
-                Verify.Diagnostic(DescriptorSync).WithSpan(32, 16, 32, 17).WithArguments("Test.H", "Test.VerifyOnUIThread"),
-                Verify.Diagnostic(DescriptorSync).WithSpan(35, 39, 35, 55).WithArguments("Test.get_MainThreadGetter", "Test.VerifyOnUIThread"),
-                Verify.Diagnostic(DescriptorSync).WithSpan(36, 40, 36, 61).WithArguments("Test.get_MainThreadGetter", "Test.VerifyOnUIThread"),
-                Verify.Diagnostic(DescriptorSync).WithSpan(37, 40, 37, 69).WithArguments("Test.get_MainThreadGetter", "Test.VerifyOnUIThread"),
-                Verify.Diagnostic(DescriptorSync).WithSpan(43, 39, 43, 55).WithArguments("Test.set_MainThreadSetter", "Test.VerifyOnUIThread"),
-                Verify.Diagnostic(DescriptorSync).WithSpan(44, 40, 44, 61).WithArguments("Test.set_MainThreadSetter", "Test.VerifyOnUIThread"),
-                Verify.Diagnostic(DescriptorSync).WithSpan(45, 40, 45, 69).WithArguments("Test.set_MainThreadSetter", "Test.VerifyOnUIThread"),
-            };
-
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
-
-        [Fact]
-        public async Task RequiresUIThreadNotTransitiveIfNotExplicit()
+        var expected = new DiagnosticResult[]
         {
-            var test = @"
+            CSVerify.Diagnostic(DescriptorSync).WithSpan(13, 9, 13, 10).WithArguments("Test.F", "Test.VerifyOnUIThread"),
+            CSVerify.Diagnostic(DescriptorSync).WithSpan(17, 9, 17, 10).WithArguments("Test.G", "Test.VerifyOnUIThread"),
+            CSVerify.Diagnostic(DescriptorSync).WithSpan(22, 13, 22, 14).WithArguments("Test.H", "Test.VerifyOnUIThread"),
+            CSVerify.Diagnostic(DescriptorSync).WithSpan(32, 16, 32, 17).WithArguments("Test.H", "Test.VerifyOnUIThread"),
+            CSVerify.Diagnostic(DescriptorSync).WithSpan(35, 39, 35, 55).WithArguments("Test.get_MainThreadGetter", "Test.VerifyOnUIThread"),
+            CSVerify.Diagnostic(DescriptorSync).WithSpan(36, 40, 36, 61).WithArguments("Test.get_MainThreadGetter", "Test.VerifyOnUIThread"),
+            CSVerify.Diagnostic(DescriptorSync).WithSpan(37, 40, 37, 69).WithArguments("Test.get_MainThreadGetter", "Test.VerifyOnUIThread"),
+            CSVerify.Diagnostic(DescriptorSync).WithSpan(43, 39, 43, 55).WithArguments("Test.set_MainThreadSetter", "Test.VerifyOnUIThread"),
+            CSVerify.Diagnostic(DescriptorSync).WithSpan(44, 40, 44, 61).WithArguments("Test.set_MainThreadSetter", "Test.VerifyOnUIThread"),
+            CSVerify.Diagnostic(DescriptorSync).WithSpan(45, 40, 45, 69).WithArguments("Test.set_MainThreadSetter", "Test.VerifyOnUIThread"),
+        };
+
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task RequiresUIThreadNotTransitiveIfNotExplicit()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -698,14 +698,14 @@ class Test {
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorSync).WithSpan(8, 13, 8, 24).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorSync).WithSpan(8, 13, 8, 24).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task RequiresUIThread_NotTransitiveThroughAsyncCalls()
-        {
-            var test = @"
+    [Fact]
+    public async Task RequiresUIThread_NotTransitiveThroughAsyncCalls()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
@@ -725,13 +725,13 @@ class Test {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task InvokeVsSolutionAfterSwitchedToMainThreadAsync()
-        {
-            var test = @"
+    [Fact]
+    public async Task InvokeVsSolutionAfterSwitchedToMainThreadAsync()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -747,13 +747,13 @@ class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task InvokeVsSolutionInLambda()
-        {
-            var test = @"
+    [Fact]
+    public async Task InvokeVsSolutionInLambda()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -771,7 +771,7 @@ class Test {
     }
 }
 ";
-            var fix = @"
+        var fix = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -790,19 +790,19 @@ class Test {
     }
 }
 ";
-            await new Verify.Test
-            {
-                TestCode = test,
-                ExpectedDiagnostics = { Verify.Diagnostic(DescriptorSync).WithSpan(11, 17, 11, 28).WithArguments("IVsSolution", "Test.VerifyOnUIThread") },
-                FixedCode = fix,
-                CodeActionIndex = CodeFixIndex.VerifyOnUIThread,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task InvokeVsSolutionInSimpleLambda()
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+            ExpectedDiagnostics = { CSVerify.Diagnostic(DescriptorSync).WithSpan(11, 17, 11, 28).WithArguments("IVsSolution", "Test.VerifyOnUIThread") },
+            FixedCode = fix,
+            CodeActionIndex = CodeFixIndex.VerifyOnUIThread,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task InvokeVsSolutionInSimpleLambda()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -821,7 +821,7 @@ class Test {
     }
 }
 ";
-            var fix = @"
+        var fix = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -841,19 +841,19 @@ class Test {
     }
 }
 ";
-            await new Verify.Test
-            {
-                TestCode = test,
-                ExpectedDiagnostics = { Verify.Diagnostic(DescriptorSync).WithSpan(12, 17, 12, 28).WithArguments("IVsSolution", "Test.VerifyOnUIThread") },
-                FixedCode = fix,
-                CodeActionIndex = CodeFixIndex.VerifyOnUIThread,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task InvokeVsSolutionInLambdaWithThreadValidation()
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+            ExpectedDiagnostics = { CSVerify.Diagnostic(DescriptorSync).WithSpan(12, 17, 12, 28).WithArguments("IVsSolution", "Test.VerifyOnUIThread") },
+            FixedCode = fix,
+            CodeActionIndex = CodeFixIndex.VerifyOnUIThread,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task InvokeVsSolutionInLambdaWithThreadValidation()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -871,13 +871,13 @@ class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task InvokeVsSolutionInAnonymous()
-        {
-            var test = @"
+    [Fact]
+    public async Task InvokeVsSolutionInAnonymous()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -895,7 +895,7 @@ class Test {
     }
 }
 ";
-            var fix = @"
+        var fix = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -914,19 +914,19 @@ class Test {
     }
 }
 ";
-            await new Verify.Test
-            {
-                TestCode = test,
-                ExpectedDiagnostics = { Verify.Diagnostic(DescriptorSync).WithSpan(11, 17, 11, 28).WithArguments("IVsSolution", "Test.VerifyOnUIThread") },
-                FixedCode = fix,
-                CodeActionIndex = CodeFixIndex.VerifyOnUIThread,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task GetPropertyFromVsReference()
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+            ExpectedDiagnostics = { CSVerify.Diagnostic(DescriptorSync).WithSpan(11, 17, 11, 28).WithArguments("IVsSolution", "Test.VerifyOnUIThread") },
+            FixedCode = fix,
+            CodeActionIndex = CodeFixIndex.VerifyOnUIThread,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task GetPropertyFromVsReference()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -937,14 +937,14 @@ class Test {
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorSync).WithSpan(8, 22, 8, 26).WithArguments("IVsReference", "Test.VerifyOnUIThread");
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorSync).WithSpan(8, 22, 8, 26).WithArguments("IVsReference", "Test.VerifyOnUIThread");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task CastToVsSolution()
-        {
-            var test = @"
+    [Fact]
+    public async Task CastToVsSolution()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -955,17 +955,17 @@ class Test {
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorSync).WithLocation(8, 19).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorSync).WithLocation(8, 19).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        /// <summary>
-        /// Verifies that the () cast operator does not produce a diagnostic when the type is to a managed type.
-        /// </summary>
-        [Fact]
-        public async Task CastToManagedType_ProducesNoDiagnostic()
-        {
-            var test = @"
+    /// <summary>
+    /// Verifies that the () cast operator does not produce a diagnostic when the type is to a managed type.
+    /// </summary>
+    [Fact]
+    public async Task CastToManagedType_ProducesNoDiagnostic()
+    {
+        var test = @"
 using System;
 
 namespace TestNS {
@@ -981,13 +981,13 @@ class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task CastToVsSolutionAfterVerifyOnUIThread()
-        {
-            var test = @"
+    [Fact]
+    public async Task CastToVsSolutionAfterVerifyOnUIThread()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -1002,13 +1002,13 @@ class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task CastToVsSolutionViaAs()
-        {
-            var test = @"
+    [Fact]
+    public async Task CastToVsSolutionViaAs()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -1019,14 +1019,14 @@ class Test {
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorSync).WithSpan(8, 24, 8, 38).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorSync).WithSpan(8, 24, 8, 38).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task CastToVsSolutionViaIsWithPatternMatching()
-        {
-            var test = @"
+    [Fact]
+    public async Task CastToVsSolutionViaIsWithPatternMatching()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -1038,17 +1038,17 @@ class Test {
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorSync).WithSpan(8, 18, 8, 32).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorSync).WithSpan(8, 18, 8, 32).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        /// <summary>
-        /// Verifies that the as cast operator does not produce a diagnostic when the type is to a managed type.
-        /// </summary>
-        [Fact]
-        public async Task CastToManagedTypeViaAs_ProducesNoDiagnostic()
-        {
-            var test = @"
+    /// <summary>
+    /// Verifies that the as cast operator does not produce a diagnostic when the type is to a managed type.
+    /// </summary>
+    [Fact]
+    public async Task CastToManagedTypeViaAs_ProducesNoDiagnostic()
+    {
+        var test = @"
 using System;
 
 namespace TestNS {
@@ -1064,13 +1064,13 @@ class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task TestVsSolutionViaIs()
-        {
-            var test = @"
+    [Fact]
+    public async Task TestVsSolutionViaIs()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -1081,17 +1081,17 @@ class Test {
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorSync).WithSpan(8, 27, 8, 41).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorSync).WithSpan(8, 27, 8, 41).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        /// <summary>
-        /// Verifies that the is type check operator does not produce a diagnostic when the type is to a managed type.
-        /// </summary>
-        [Fact]
-        public async Task CastToManagedTypeViaIs_ProducesNoDiagnostic()
-        {
-            var test = @"
+    /// <summary>
+    /// Verifies that the is type check operator does not produce a diagnostic when the type is to a managed type.
+    /// </summary>
+    [Fact]
+    public async Task CastToManagedTypeViaIs_ProducesNoDiagnostic()
+    {
+        var test = @"
 using System;
 
 namespace TestNS {
@@ -1107,13 +1107,13 @@ class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task CastToVsSolutionViaAsAfterVerifyOnUIThread()
-        {
-            var test = @"
+    [Fact]
+    public async Task CastToVsSolutionViaAsAfterVerifyOnUIThread()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -1128,13 +1128,13 @@ class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task InvokeVsSolutionNoCheck_InProperty_AfterThrowIfNotOnUIThread()
-        {
-            var test = @"
+    [Fact]
+    public async Task InvokeVsSolutionNoCheck_InProperty_AfterThrowIfNotOnUIThread()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -1150,13 +1150,13 @@ class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task ShouldNotThrowNullReferenceExceptionWhenCastToStringArray()
-        {
-            var test = @"
+    [Fact]
+    public async Task ShouldNotThrowNullReferenceExceptionWhenCastToStringArray()
+    {
+        var test = @"
 using System;
 
 class Test {
@@ -1167,13 +1167,13 @@ class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task ShouldNotReportWarningOnCastToEnum()
-        {
-            var test = @"
+    [Fact]
+    public async Task ShouldNotReportWarningOnCastToEnum()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -1184,13 +1184,13 @@ class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task OleServiceProviderCast_OffUIThread_ProducesDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task OleServiceProviderCast_OffUIThread_ProducesDiagnostic()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
@@ -1202,18 +1202,18 @@ class Test {
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorSync).WithSpan(9, 31, 9, 85).WithArguments("IServiceProvider", "Test.VerifyOnUIThread");
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorSync).WithSpan(9, 31, 9, 85).WithArguments("IServiceProvider", "Test.VerifyOnUIThread");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        /// <summary>
-        /// Verifies that calling a public method of a public class is still considered requiring
-        /// the UI thread because it implements the IServiceProvider interface.
-        /// </summary>
-        [Fact]
-        public async Task GlobalServiceProvider_GetService_OffUIThread_ProducesDiagnostic()
-        {
-            var test = @"
+    /// <summary>
+    /// Verifies that calling a public method of a public class is still considered requiring
+    /// the UI thread because it implements the IServiceProvider interface.
+    /// </summary>
+    [Fact]
+    public async Task GlobalServiceProvider_GetService_OffUIThread_ProducesDiagnostic()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
@@ -1226,18 +1226,18 @@ class Test {
 }
 ";
 
-            DiagnosticResult[] expected =
-            {
-                Verify.Diagnostic(DescriptorSync).WithSpan(9, 40, 9, 54).WithArguments("ServiceProvider", "Test.VerifyOnUIThread"),
-                Verify.Diagnostic(DescriptorSync).WithSpan(9, 55, 9, 65).WithArguments("ServiceProvider", "Test.VerifyOnUIThread"),
-            };
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
-
-        [Fact]
-        public async Task Package_GetService_OffUIThread_ProducesDiagnostic()
+        DiagnosticResult[] expected =
         {
-            var test = @"
+            CSVerify.Diagnostic(DescriptorSync).WithSpan(9, 40, 9, 54).WithArguments("ServiceProvider", "Test.VerifyOnUIThread"),
+            CSVerify.Diagnostic(DescriptorSync).WithSpan(9, 55, 9, 65).WithArguments("ServiceProvider", "Test.VerifyOnUIThread"),
+        };
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task Package_GetService_OffUIThread_ProducesDiagnostic()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
@@ -1249,14 +1249,14 @@ class Test : Package {
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorSync).WithSpan(8, 29, 8, 39).WithArguments("Package", "Test.VerifyOnUIThread");
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorSync).WithSpan(8, 29, 8, 39).WithArguments("Package", "Test.VerifyOnUIThread");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task Package_GetServiceAsync_OffUIThread_ProducesNoDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task Package_GetServiceAsync_OffUIThread_ProducesNoDiagnostic()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
@@ -1276,13 +1276,13 @@ class Test : AsyncPackage {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task Package_GetServiceAsync_ThenCast_OffUIThread_ProducesDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task Package_GetServiceAsync_ThenCast_OffUIThread_ProducesDiagnostic()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
@@ -1301,7 +1301,7 @@ class Test : AsyncPackage {
     }
 }
 ";
-            var fix = @"
+        var fix = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
@@ -1322,23 +1322,23 @@ class Test : AsyncPackage {
 }
 ";
 
-            await new Verify.Test
-            {
-                TestCode = test,
-                ExpectedDiagnostics =
-                {
-                    Verify.Diagnostic(DescriptorAsync).WithSpan(15, 61, 15, 72).WithArguments("IVsShell", "JoinableTaskFactory.SwitchToMainThreadAsync"),
-                    Verify.Diagnostic(DescriptorAsync).WithSpan(16, 56, 16, 67).WithArguments("IVsShell", "JoinableTaskFactory.SwitchToMainThreadAsync"),
-                },
-                FixedCode = fix,
-                CodeActionIndex = CodeFixIndex.NotThreadHelper,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task SwitchMethodFoundFromOtherStaticType()
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+            ExpectedDiagnostics =
+            {
+                CSVerify.Diagnostic(DescriptorAsync).WithSpan(15, 61, 15, 72).WithArguments("IVsShell", "JoinableTaskFactory.SwitchToMainThreadAsync"),
+                CSVerify.Diagnostic(DescriptorAsync).WithSpan(16, 56, 16, 67).WithArguments("IVsShell", "JoinableTaskFactory.SwitchToMainThreadAsync"),
+            },
+            FixedCode = fix,
+            CodeActionIndex = CodeFixIndex.NotThreadHelper,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task SwitchMethodFoundFromOtherStaticType()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
@@ -1353,7 +1353,7 @@ class Test : AsyncPackage {
     }
 }
 ";
-            var fix = @"
+        var fix = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
@@ -1369,19 +1369,19 @@ class Test : AsyncPackage {
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorAsync).WithSpan(12, 65, 12, 76).WithArguments("IVsShell", "JoinableTaskFactory.SwitchToMainThreadAsync");
-            await new Verify.Test
-            {
-                TestCode = test,
-                ExpectedDiagnostics = { expected },
-                FixedCode = fix,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task TaskReturningNonAsyncMethod()
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorAsync).WithSpan(12, 65, 12, 76).WithArguments("IVsShell", "JoinableTaskFactory.SwitchToMainThreadAsync");
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+            ExpectedDiagnostics = { expected },
+            FixedCode = fix,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task TaskReturningNonAsyncMethod()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
@@ -1399,7 +1399,7 @@ class Test : AsyncPackage {
 }
 ";
 #pragma warning disable CS0219 // Variable is assigned but its value is never used
-            var fix = @"
+        var fix = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
@@ -1418,15 +1418,15 @@ class Test : AsyncPackage {
 "
 #pragma warning restore CS0219 // Variable is assigned but its value is never used
 ;
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorSync).WithSpan(13, 59, 13, 70).WithArguments("IVsShell", "Test.VerifyOnUIThread");
-            await Verify.VerifyCodeFixAsync(test, expected, test); // till we have it implemented.
-            ////await Verify.VerifyCodeFixAsync(test, expected, fix);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorSync).WithSpan(13, 59, 13, 70).WithArguments("IVsShell", "Test.VerifyOnUIThread");
+        await CSVerify.VerifyCodeFixAsync(test, expected, test); // till we have it implemented.
+        ////await Verify.VerifyCodeFixAsync(test, expected, fix);
+    }
 
-        [Fact]
-        public async Task CodeFixAddsSwitchCallWithCancellationToken()
-        {
-            var test = @"
+    [Fact]
+    public async Task CodeFixAddsSwitchCallWithCancellationToken()
+    {
+        var test = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
@@ -1442,7 +1442,7 @@ class Test : AsyncPackage {
     }
 }
 ";
-            var fix = @"
+        var fix = @"
 using System;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
@@ -1459,19 +1459,19 @@ class Test : AsyncPackage {
     }
 }
 ";
-            await new Verify.Test
-            {
-                TestCode = test,
-                ExpectedDiagnostics = { Verify.Diagnostic(DescriptorAsync).WithSpan(13, 65, 13, 76).WithArguments("IVsShell", "JoinableTaskFactory.SwitchToMainThreadAsync") },
-                FixedCode = fix,
-                CodeActionIndex = CodeFixIndex.NotThreadHelper,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task CodeFixAddsSwitchCallWithCancellationTokenAsNamedParameter()
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+            ExpectedDiagnostics = { CSVerify.Diagnostic(DescriptorAsync).WithSpan(13, 65, 13, 76).WithArguments("IVsShell", "JoinableTaskFactory.SwitchToMainThreadAsync") },
+            FixedCode = fix,
+            CodeActionIndex = CodeFixIndex.NotThreadHelper,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task CodeFixAddsSwitchCallWithCancellationTokenAsNamedParameter()
+    {
+        var test = @"
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1491,7 +1491,7 @@ class Test : AsyncPackage {
     }
 }
 ";
-            var fix = @"
+        var fix = @"
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -1512,19 +1512,19 @@ class Test : AsyncPackage {
     }
 }
 ";
-            await new Verify.Test
-            {
-                TestCode = test,
-                ExpectedDiagnostics = { Verify.Diagnostic(DescriptorAsync).WithSpan(17, 65, 17, 76).WithArguments("IVsShell", "JoinableTaskFactory.SwitchToMainThreadAsync") },
-                FixedCode = fix,
-                CodeActionIndex = CodeFixIndex.MySwitchingMethodAsync,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task InterfaceAccessByClassMethod_OffUIThread_ProducesDiagnostic()
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+            ExpectedDiagnostics = { CSVerify.Diagnostic(DescriptorAsync).WithSpan(17, 65, 17, 76).WithArguments("IVsShell", "JoinableTaskFactory.SwitchToMainThreadAsync") },
+            FixedCode = fix,
+            CodeActionIndex = CodeFixIndex.MySwitchingMethodAsync,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task InterfaceAccessByClassMethod_OffUIThread_ProducesDiagnostic()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell;
 
@@ -1542,14 +1542,14 @@ class Test : Microsoft.VisualStudio.OLE.Interop.IServiceProvider {
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorSync).WithSpan(15, 14, 15, 26).WithArguments("IServiceProvider", "Test.VerifyOnUIThread");
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorSync).WithSpan(15, 14, 15, 26).WithArguments("IServiceProvider", "Test.VerifyOnUIThread");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task MainThreadRequiringTypes_SupportsExclusionFromWildcard()
-        {
-            var test = @"
+    [Fact]
+    public async Task MainThreadRequiringTypes_SupportsExclusionFromWildcard()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell;
 
@@ -1575,18 +1575,18 @@ namespace TestNS2 {
     interface FreeThreadedType { void Foo(); }
 }
 ";
-            DiagnosticResult[] expected =
-            {
-                Verify.Diagnostic(DescriptorSync).WithSpan(9, 41, 9, 44).WithArguments("SingleThreadedType", "Test.VerifyOnUIThread"),
-                Verify.Diagnostic(DescriptorSync).WithSpan(11, 42, 11, 45).WithArguments("SingleThreadedType", "Test.VerifyOnUIThread"),
-            };
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
-
-        [Fact]
-        public async Task NegatedMethodOverridesMatchingWildcardType()
+        DiagnosticResult[] expected =
         {
-            var test = @"
+            CSVerify.Diagnostic(DescriptorSync).WithSpan(9, 41, 9, 44).WithArguments("SingleThreadedType", "Test.VerifyOnUIThread"),
+            CSVerify.Diagnostic(DescriptorSync).WithSpan(11, 42, 11, 45).WithArguments("SingleThreadedType", "Test.VerifyOnUIThread"),
+        };
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task NegatedMethodOverridesMatchingWildcardType()
+    {
+        var test = @"
 namespace TestNS2
 {
     class A // this type inherits thread affinity from a wildcard match on TestNS2.*
@@ -1603,14 +1603,14 @@ namespace TestNS2
     }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorSync).WithSpan(13, 18, 13, 41).WithArguments("A", "Test.VerifyOnUIThread");
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorSync).WithSpan(13, 18, 13, 41).WithArguments("A", "Test.VerifyOnUIThread");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task Properties()
-        {
-            var test = @"
+    [Fact]
+    public async Task Properties()
+    {
+        var test = @"
 class A
 {
     string UIPropertyName { get; set; }
@@ -1622,18 +1622,18 @@ class A
     }
 }
 ";
-            DiagnosticResult[] expected =
-            {
-                Verify.Diagnostic(DescriptorSync).WithSpan(8, 25, 8, 39).WithArguments("A", "Test.VerifyOnUIThread"),
-                Verify.Diagnostic(DescriptorSync).WithSpan(9, 14, 9, 28).WithArguments("A", "Test.VerifyOnUIThread"),
-            };
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
-
-        [Fact]
-        public async Task Events()
+        DiagnosticResult[] expected =
         {
-            var test = @"
+            CSVerify.Diagnostic(DescriptorSync).WithSpan(8, 25, 8, 39).WithArguments("A", "Test.VerifyOnUIThread"),
+            CSVerify.Diagnostic(DescriptorSync).WithSpan(9, 14, 9, 28).WithArguments("A", "Test.VerifyOnUIThread"),
+        };
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task Events()
+    {
+        var test = @"
 namespace TestNS
 {
     interface SomeInterface
@@ -1655,22 +1655,22 @@ class A
     }
 }
 ";
-            DiagnosticResult[] expected =
-            {
-                Verify.Diagnostic(DescriptorSync).WithSpan(18, 11, 18, 22).WithArguments("SomeInterface", "Test.VerifyOnUIThread"),
-                Verify.Diagnostic(DescriptorSync).WithSpan(19, 11, 19, 22).WithArguments("SomeInterface", "Test.VerifyOnUIThread"),
-            };
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
-
-        /// <summary>
-        /// Field initializers should never have thread affinity since the thread cannot be enforced before the code is executed,
-        /// since initializers run before the user-defined constructor.
-        /// </summary>
-        [Fact]
-        public async Task FieldInitializers()
+        DiagnosticResult[] expected =
         {
-            var test = @"
+            CSVerify.Diagnostic(DescriptorSync).WithSpan(18, 11, 18, 22).WithArguments("SomeInterface", "Test.VerifyOnUIThread"),
+            CSVerify.Diagnostic(DescriptorSync).WithSpan(19, 11, 19, 22).WithArguments("SomeInterface", "Test.VerifyOnUIThread"),
+        };
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    /// <summary>
+    /// Field initializers should never have thread affinity since the thread cannot be enforced before the code is executed,
+    /// since initializers run before the user-defined constructor.
+    /// </summary>
+    [Fact]
+    public async Task FieldInitializers()
+    {
+        var test = @"
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -1679,14 +1679,14 @@ class A
     IVsSolution solution = Package.GetGlobalService(typeof(SVsSolution)) as IVsSolution;
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorSync).WithSpan(7, 74, 7, 88).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
-            await Verify.VerifyCodeFixAsync(test, expected, test); // the fix (if ever implemented) will be to move the initializer to a ctor, after a thread check.
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorSync).WithSpan(7, 74, 7, 88).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
+        await CSVerify.VerifyCodeFixAsync(test, expected, test); // the fix (if ever implemented) will be to move the initializer to a ctor, after a thread check.
+    }
 
-        [Fact]
-        public async Task StaticFieldInitializers()
-        {
-            var test = @"
+    [Fact]
+    public async Task StaticFieldInitializers()
+    {
+        var test = @"
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 
@@ -1695,14 +1695,14 @@ class A
     static IVsSolution solution = Package.GetGlobalService(typeof(SVsSolution)) as IVsSolution;
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorSync).WithSpan(7, 81, 7, 95).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
-            await Verify.VerifyCodeFixAsync(test, expected, test);
-        }
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorSync).WithSpan(7, 81, 7, 95).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
+        await CSVerify.VerifyCodeFixAsync(test, expected, test);
+    }
 
-        [Fact]
-        public async Task FieldAnonymousFunction()
-        {
-            var test = @"
+    [Fact]
+    public async Task FieldAnonymousFunction()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -1712,7 +1712,7 @@ class A
     Func<IVsSolution> solutionFunc = () => Package.GetGlobalService(typeof(SVsSolution)) as IVsSolution;
 }
 ";
-            var fix = @"
+        var fix = @"
 using System;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -1726,19 +1726,19 @@ class A
     };
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorSync).WithSpan(8, 90, 8, 104).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
-            await new Verify.Test
-            {
-                TestCode = test,
-                ExpectedDiagnostics = { expected },
-                FixedCode = fix,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task OperatorOverload()
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorSync).WithSpan(8, 90, 8, 104).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+            ExpectedDiagnostics = { expected },
+            FixedCode = fix,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task OperatorOverload()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -1754,7 +1754,7 @@ class A
     public static bool operator !=(A item1, A item2) => !(item1 == item2);
 }
 ";
-            var fix = @"
+        var fix = @"
 using System;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -1771,19 +1771,19 @@ class A
     public static bool operator !=(A item1, A item2) => !(item1 == item2);
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorSync).WithSpan(10, 63, 10, 77).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
-            await new Verify.Test
-            {
-                TestCode = test,
-                ExpectedDiagnostics = { expected },
-                FixedCode = fix,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task ArgumentExpressionEntirelyMadeOfViolatingCast()
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorSync).WithSpan(10, 63, 10, 77).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+            ExpectedDiagnostics = { expected },
+            FixedCode = fix,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task ArgumentExpressionEntirelyMadeOfViolatingCast()
+    {
+        var test = @"
 using Microsoft.VisualStudio.Shell.Interop;
 
 class A
@@ -1796,7 +1796,7 @@ class A
     void Bar(IVsSolution solution) { }
 }
 ";
-            var fix = @"
+        var fix = @"
 using Microsoft.VisualStudio.Shell.Interop;
 
 class A
@@ -1810,19 +1810,19 @@ class A
     void Bar(IVsSolution solution) { }
 }
 ";
-            DiagnosticResult expected = Verify.Diagnostic(DescriptorSync).WithSpan(8, 13, 8, 27).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
-            await new Verify.Test
-            {
-                TestCode = test,
-                ExpectedDiagnostics = { expected },
-                FixedCode = fix,
-            }.RunAsync();
-        }
-
-        [Fact]
-        public async Task AffinityPropagationExtendsToAllCallersOfSyncMethods()
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorSync).WithSpan(8, 13, 8, 27).WithArguments("IVsSolution", "Test.VerifyOnUIThread");
+        await new CSVerify.Test
         {
-            var test = @"
+            TestCode = test,
+            ExpectedDiagnostics = { expected },
+            FixedCode = fix,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task AffinityPropagationExtendsToAllCallersOfSyncMethods()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -1850,19 +1850,19 @@ class Test
     }
 }
 ";
-            var expected = new DiagnosticResult[]
-            {
-                Verify.Diagnostic(DescriptorSync).WithSpan(11, 9, 11, 12).WithArguments("Test.Foo", "Test.VerifyOnUIThread"),
-                Verify.Diagnostic(DescriptorAsync).WithSpan(21, 9, 21, 14).WithArguments("Test.Reset", "JoinableTaskFactory.SwitchToMainThreadAsync"),
-            };
-
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
-
-        [Fact]
-        public async Task AffinityPropagationDoesNotExtendBeyondProperAsyncSwitch()
+        var expected = new DiagnosticResult[]
         {
-            var test = @"
+            CSVerify.Diagnostic(DescriptorSync).WithSpan(11, 9, 11, 12).WithArguments("Test.Foo", "Test.VerifyOnUIThread"),
+            CSVerify.Diagnostic(DescriptorAsync).WithSpan(21, 9, 21, 14).WithArguments("Test.Reset", "JoinableTaskFactory.SwitchToMainThreadAsync"),
+        };
+
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task AffinityPropagationDoesNotExtendBeyondProperAsyncSwitch()
+    {
+        var test = @"
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -1890,17 +1890,17 @@ class Test
     }
 }
 ";
-            var expect = new DiagnosticResult[]
-            {
-                Verify.Diagnostic(DescriptorSync).WithSpan(11, 9, 11, 12).WithArguments("Test.Foo", "Test.VerifyOnUIThread"),
-            };
-            await Verify.VerifyAnalyzerAsync(test, expect);
-        }
-
-        [Fact]
-        public async Task StructMembers()
+        var expect = new DiagnosticResult[]
         {
-            var test = @"
+            CSVerify.Diagnostic(DescriptorSync).WithSpan(11, 9, 11, 12).WithArguments("Test.Foo", "Test.VerifyOnUIThread"),
+        };
+        await CSVerify.VerifyAnalyzerAsync(test, expect);
+    }
+
+    [Fact]
+    public async Task StructMembers()
+    {
+        var test = @"
 namespace TestNS
 {
     struct SomeStruct
@@ -1928,23 +1928,22 @@ namespace Foo
     }
 }
 ";
-            var expect = new DiagnosticResult[]
-            {
-                Verify.Diagnostic(DescriptorSync).WithSpan(20, 31, 20, 42).WithArguments("SomeStruct", "Test.VerifyOnUIThread"),
-                Verify.Diagnostic(DescriptorSync).WithSpan(23, 16, 23, 20).WithArguments("SomeStruct", "Test.VerifyOnUIThread"),
-                Verify.Diagnostic(DescriptorSync).WithSpan(24, 29, 24, 33).WithArguments("SomeStruct", "Test.VerifyOnUIThread"),
-            };
-            await Verify.VerifyAnalyzerAsync(test, expect);
-        }
-
-        private static class CodeFixIndex
+        var expect = new DiagnosticResult[]
         {
-            public const int SwitchToMainThreadAsync = 0;
-            public const int ThrowIfNotOnUIThreadIndex0 = 0;
-            public const int ThrowIfNotOnUIThreadIndex1 = 1;
-            public const int VerifyOnUIThread = 0;
-            public const int NotThreadHelper = 0;
-            public const int MySwitchingMethodAsync = 0;
-        }
+            CSVerify.Diagnostic(DescriptorSync).WithSpan(20, 31, 20, 42).WithArguments("SomeStruct", "Test.VerifyOnUIThread"),
+            CSVerify.Diagnostic(DescriptorSync).WithSpan(23, 16, 23, 20).WithArguments("SomeStruct", "Test.VerifyOnUIThread"),
+            CSVerify.Diagnostic(DescriptorSync).WithSpan(24, 29, 24, 33).WithArguments("SomeStruct", "Test.VerifyOnUIThread"),
+        };
+        await CSVerify.VerifyAnalyzerAsync(test, expect);
+    }
+
+    private static class CodeFixIndex
+    {
+        public const int SwitchToMainThreadAsync = 0;
+        public const int ThrowIfNotOnUIThreadIndex0 = 0;
+        public const int ThrowIfNotOnUIThreadIndex1 = 1;
+        public const int VerifyOnUIThread = 0;
+        public const int NotThreadHelper = 0;
+        public const int MySwitchingMethodAsync = 0;
     }
 }

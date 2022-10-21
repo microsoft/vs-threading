@@ -1,18 +1,18 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
-{
-    using System.Threading.Tasks;
-    using Xunit;
-    using Verify = CSharpCodeFixVerifier<CSharpVSTHRD108AssertThreadRequirementUnconditionally, CodeAnalysis.Testing.EmptyCodeFixProvider>;
+using System.Threading.Tasks;
+using Xunit;
+using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.CSharpVSTHRD108AssertThreadRequirementUnconditionally, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
-    public class VSTHRD108AssertThreadRequirementUnconditionallyTests
+namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
+
+public class VSTHRD108AssertThreadRequirementUnconditionallyTests
+{
+    [Fact]
+    public async Task AffinityAssertion_Unconditional_ProducesNoDiagnostic()
     {
-        [Fact]
-        public async Task AffinityAssertion_Unconditional_ProducesNoDiagnostic()
-        {
-            var test = @"
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell;
 
@@ -22,13 +22,13 @@ class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task AffinityAssertion_WithinIfBlock_ProducesDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task AffinityAssertion_WithinIfBlock_ProducesDiagnostic()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell;
 
@@ -43,14 +43,14 @@ class Test {
     }
 }
 ";
-            CodeAnalysis.Testing.DiagnosticResult expected = Verify.Diagnostic().WithLocation(0);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(0);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task AffinityAssertion_WithinDelegateHostedWithinIfBlock_ProducesNoDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task AffinityAssertion_WithinDelegateHostedWithinIfBlock_ProducesNoDiagnostic()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell;
 
@@ -65,13 +65,13 @@ class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task AffinityAssertion_WithinIfBlockWithinDelegate_ProducesDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task AffinityAssertion_WithinIfBlockWithinDelegate_ProducesDiagnostic()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell;
 
@@ -89,14 +89,14 @@ class Test {
     }
 }
 ";
-            CodeAnalysis.Testing.DiagnosticResult expected = Verify.Diagnostic().WithLocation(0);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(0);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task AffinityAssertion_WithinWhileBlock_ProducesDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task AffinityAssertion_WithinWhileBlock_ProducesDiagnostic()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell;
 
@@ -111,14 +111,14 @@ class Test {
     }
 }
 ";
-            CodeAnalysis.Testing.DiagnosticResult expected = Verify.Diagnostic().WithLocation(0);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(0);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task AffinityAssertion_WithinForBlock_ProducesDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task AffinityAssertion_WithinForBlock_ProducesDiagnostic()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell;
 
@@ -133,14 +133,14 @@ class Test {
     }
 }
 ";
-            CodeAnalysis.Testing.DiagnosticResult expected = Verify.Diagnostic().WithLocation(0);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(0);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task AffinityAssertion_WithinDoWhileBlock_ProducesNoDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task AffinityAssertion_WithinDoWhileBlock_ProducesNoDiagnostic()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell;
 
@@ -154,13 +154,13 @@ class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task AffinityAssertion_WithinDebugAssert_ProducesDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task AffinityAssertion_WithinDebugAssert_ProducesDiagnostic()
+    {
+        var test = @"
 using System;
 using System.Diagnostics;
 using Microsoft.VisualStudio.Shell;
@@ -171,14 +171,14 @@ class Test {
     }
 }
 ";
-            CodeAnalysis.Testing.DiagnosticResult expected = Verify.Diagnostic().WithLocation(0);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(0);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task AffinityAssertion_WithinAnyConditionalMethodArg_ProducesDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task AffinityAssertion_WithinAnyConditionalMethodArg_ProducesDiagnostic()
+    {
+        var test = @"
 using System;
 using System.Diagnostics;
 using Microsoft.VisualStudio.Shell;
@@ -195,14 +195,14 @@ class Test {
     }
 }
 ";
-            CodeAnalysis.Testing.DiagnosticResult expected = Verify.Diagnostic().WithLocation(0);
-            await Verify.VerifyAnalyzerAsync(test, expected);
-        }
+        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(0);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
 
-        [Fact]
-        public async Task ThreadCheckWithinIfExpression_ProducesNoDiagnostic()
-        {
-            var test = @"
+    [Fact]
+    public async Task ThreadCheckWithinIfExpression_ProducesNoDiagnostic()
+    {
+        var test = @"
 using System;
 using Microsoft.VisualStudio.Shell;
 
@@ -216,7 +216,6 @@ class Test {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 }

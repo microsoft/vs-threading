@@ -1,31 +1,31 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
-{
-    using System.Threading.Tasks;
-    using Xunit;
-    using VBVerify = VisualBasicCodeFixVerifier<VSTHRD113CheckForSystemIAsyncDisposableAnalyzer, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
-    using Verify = CSharpCodeFixVerifier<VSTHRD113CheckForSystemIAsyncDisposableAnalyzer, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
+using System.Threading.Tasks;
+using Xunit;
+using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.VSTHRD113CheckForSystemIAsyncDisposableAnalyzer, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
+using VBVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.VisualBasicCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.VSTHRD113CheckForSystemIAsyncDisposableAnalyzer, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
-    public class VSTHRD113CheckForSystemIAsyncDisposableAnalyzerTests
-    {
-        private const string Preamble = @"
+namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
+
+public class VSTHRD113CheckForSystemIAsyncDisposableAnalyzerTests
+{
+    private const string Preamble = @"
 using System.Threading.Tasks;
 using BclAsyncDisposable = System.IAsyncDisposable;
 using VsThreadingAsyncDisposable = Microsoft.VisualStudio.Threading.IAsyncDisposable;
 ";
 
-        private const string VBPreamble = @"
+    private const string VBPreamble = @"
 Imports System.Threading.Tasks
 Imports BclAsyncDisposable = System.IAsyncDisposable
 Imports VsThreadingAsyncDisposable = Microsoft.VisualStudio.Threading.IAsyncDisposable
 ";
 
-        [Fact]
-        public async Task MethodChecksBoth_WithIsCast()
-        {
-            var test = Preamble + @"
+    [Fact]
+    public async Task MethodChecksBoth_WithIsCast()
+    {
+        var test = Preamble + @"
 class Test {
     async Task CheckAndDispose(object o) {
         if (o is BclAsyncDisposable bcl) {
@@ -37,13 +37,13 @@ class Test {
     }
 }";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task MethodChecksBoth_WithIsCheck()
-        {
-            var test = Preamble + @"
+    [Fact]
+    public async Task MethodChecksBoth_WithIsCheck()
+    {
+        var test = Preamble + @"
 class Test {
     async Task CheckAndDispose(object o) {
         if (o is BclAsyncDisposable) {
@@ -55,13 +55,13 @@ class Test {
     }
 }";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task MethodChecksVsThreadingOnly_WithIsCheck()
-        {
-            var test = Preamble + @"
+    [Fact]
+    public async Task MethodChecksVsThreadingOnly_WithIsCheck()
+    {
+        var test = Preamble + @"
 class Test {
     async Task CheckAndDispose(object o) {
         if ([|o is VsThreadingAsyncDisposable|]) {
@@ -70,13 +70,13 @@ class Test {
     }
 }";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task MethodChecksVsThreadingOnly_WithIsCast()
-        {
-            var test = Preamble + @"
+    [Fact]
+    public async Task MethodChecksVsThreadingOnly_WithIsCast()
+    {
+        var test = Preamble + @"
 class Test {
     async Task CheckAndDispose(object o) {
         if ([|o is VsThreadingAsyncDisposable vs|]) {
@@ -85,13 +85,13 @@ class Test {
     }
 }";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact(Skip = "Too complex to support")]
-        public async Task MethodChecksVsThreadingOnly_WithIsCast_MultiBlock()
-        {
-            var test = Preamble + @"
+    [Fact(Skip = "Too complex to support")]
+    public async Task MethodChecksVsThreadingOnly_WithIsCast_MultiBlock()
+    {
+        var test = Preamble + @"
 class Test {
     async Task CheckAndDispose(object o, bool flag) {
         if (flag) {
@@ -109,13 +109,13 @@ class Test {
     }
 }";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task MethodChecksBclOnly_WithIsCast()
-        {
-            var test = Preamble + @"
+    [Fact]
+    public async Task MethodChecksBclOnly_WithIsCast()
+    {
+        var test = Preamble + @"
 class Test {
     async Task CheckAndDispose(object o) {
         if (o is BclAsyncDisposable bcl) {
@@ -124,13 +124,13 @@ class Test {
     }
 }";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task MethodChecksBoth_WithAsCast()
-        {
-            var test = Preamble + @"
+    [Fact]
+    public async Task MethodChecksBoth_WithAsCast()
+    {
+        var test = Preamble + @"
 class Test {
     async Task CheckAndDispose(object o) {
         await ((o as BclAsyncDisposable)?.DisposeAsync() ?? default);
@@ -138,26 +138,26 @@ class Test {
     }
 }";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task MethodChecksVsThreadingOnly_WithAsCast()
-        {
-            var test = Preamble + @"
+    [Fact]
+    public async Task MethodChecksVsThreadingOnly_WithAsCast()
+    {
+        var test = Preamble + @"
 class Test {
     async Task CheckAndDispose(object o) {
         await (([|o as VsThreadingAsyncDisposable|])?.DisposeAsync() ?? Task.CompletedTask);
     }
 }";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task MethodChecksBoth_WithTryCast_VB()
-        {
-            var test = VBPreamble + @"
+    [Fact]
+    public async Task MethodChecksBoth_WithTryCast_VB()
+    {
+        var test = VBPreamble + @"
 Class Test
     Async Function CheckAndDispose(o) As Task
         Dim bcl = TryCast(o, BclAsyncDisposable)
@@ -171,13 +171,13 @@ Class Test
     End Function
 End Class";
 
-            await VBVerify.VerifyAnalyzerAsync(test);
-        }
+        await VBVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task MethodChecksVsThreadingOnly_WithTypeOf_VB()
-        {
-            var test = VBPreamble + @"
+    [Fact]
+    public async Task MethodChecksVsThreadingOnly_WithTypeOf_VB()
+    {
+        var test = VBPreamble + @"
 Class Test
     Async Function CheckAndDispose(o) As Task
         If ([|TypeOf o Is VsThreadingAsyncDisposable|]) Then
@@ -185,13 +185,13 @@ Class Test
     End Function
 End Class";
 
-            await VBVerify.VerifyAnalyzerAsync(test);
-        }
+        await VBVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task MethodChecksVsThreadingOnly_WithTryCast_VB()
-        {
-            var test = VBPreamble + @"
+    [Fact]
+    public async Task MethodChecksVsThreadingOnly_WithTryCast_VB()
+    {
+        var test = VBPreamble + @"
 Class Test
     Async Function CheckAndDispose(o) As Task
         Dim vs = [|TryCast(o, VsThreadingAsyncDisposable)|]
@@ -201,13 +201,13 @@ Class Test
     End Function
 End Class";
 
-            await VBVerify.VerifyAnalyzerAsync(test);
-        }
+        await VBVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task MethodChecksVsThreadingOnly_WithCType_VB()
-        {
-            var test = VBPreamble + @"
+    [Fact]
+    public async Task MethodChecksVsThreadingOnly_WithCType_VB()
+    {
+        var test = VBPreamble + @"
 Class Test
     Async Function CheckAndDispose(o) As Task
         Dim vs = [|CType(o, VsThreadingAsyncDisposable)|]
@@ -215,13 +215,13 @@ Class Test
     End Function
 End Class";
 
-            await VBVerify.VerifyAnalyzerAsync(test);
-        }
+        await VBVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task MethodChecksBoth_WithCType_VB()
-        {
-            var test = VBPreamble + @"
+    [Fact]
+    public async Task MethodChecksBoth_WithCType_VB()
+    {
+        var test = VBPreamble + @"
 Class Test
     Async Function CheckAndDispose(o) As Task
         If (TypeOf o Is VsThreadingAsyncDisposable) Then
@@ -234,13 +234,13 @@ Class Test
     End Function
 End Class";
 
-            await VBVerify.VerifyAnalyzerAsync(test);
-        }
+        await VBVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task MethodChecksBoth_WithDirectCast_VB()
-        {
-            var test = VBPreamble + @"
+    [Fact]
+    public async Task MethodChecksBoth_WithDirectCast_VB()
+    {
+        var test = VBPreamble + @"
 Class Test
     Async Function CheckAndDispose(o) As Task
         If (TypeOf o Is VsThreadingAsyncDisposable) Then
@@ -253,20 +253,19 @@ Class Test
     End Function
 End Class";
 
-            await VBVerify.VerifyAnalyzerAsync(test);
-        }
+        await VBVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task MethodChecksBclOnly_WithAsCast()
-        {
-            var test = Preamble + @"
+    [Fact]
+    public async Task MethodChecksBclOnly_WithAsCast()
+    {
+        var test = Preamble + @"
 class Test {
     async Task CheckAndDispose(object o) {
         await ((o as BclAsyncDisposable)?.DisposeAsync() ?? default);
     }
 }";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 }
