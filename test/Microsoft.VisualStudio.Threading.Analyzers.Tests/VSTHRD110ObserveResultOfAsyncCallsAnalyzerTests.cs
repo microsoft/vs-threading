@@ -402,6 +402,30 @@ class Test {
             await Verify.VerifyAnalyzerAsync(test);
         }
 
+        [Fact]
+        public async Task TaskInFinalizer()
+        {
+            string test = @"
+using System;
+using System.Threading.Tasks;
+
+public class Test : IAsyncDisposable
+{
+    ~Test()
+    {
+        Task.[|Run|](async () => await DisposeAsync().ConfigureAwait(false));
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await Task.Delay(5000);
+    }
+}
+";
+
+            await Verify.VerifyAnalyzerAsync(test);
+        }
+
         private DiagnosticResult CreateDiagnostic(int line, int column, int length)
             => Verify.Diagnostic().WithSpan(line, column, line, column + length);
     }
