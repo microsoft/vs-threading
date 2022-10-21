@@ -92,6 +92,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                             BlockSyntax block => o.WithBody(block),
                             _ => throw new NotSupportedException(),
                         },
+                        DestructorDeclarationSyntax d => (CSharpSyntaxNode newBody) => newBody switch
+                        {
+                            ArrowExpressionClauseSyntax expr => d.WithExpressionBody(expr),
+                            BlockSyntax block => d.WithBody(block),
+                            _ => throw new NotSupportedException(),
+                        },
                         _ => throw new NotSupportedException(),
                     };
                     return new ContainingFunctionData(method, method.Modifiers.Any(SyntaxKind.AsyncKeyword), method.ParameterList, method.Body, bodyReplacement);
