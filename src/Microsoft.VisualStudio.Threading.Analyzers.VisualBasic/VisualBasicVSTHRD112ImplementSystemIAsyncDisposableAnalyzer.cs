@@ -4,11 +4,10 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 
-namespace Microsoft.VisualStudio.Threading.Analyzers
+namespace Microsoft.VisualStudio.Threading.Analyzers;
+
+[DiagnosticAnalyzer(LanguageNames.VisualBasic)]
+public sealed class VisualBasicVSTHRD112ImplementSystemIAsyncDisposableAnalyzer : AbstractVSTHRD112ImplementSystemIAsyncDisposableAnalyzer
 {
-    [DiagnosticAnalyzer(LanguageNames.VisualBasic)]
-    public sealed class VisualBasicVSTHRD112ImplementSystemIAsyncDisposableAnalyzer : AbstractVSTHRD112ImplementSystemIAsyncDisposableAnalyzer
-    {
-        private protected override LanguageUtils LanguageUtils => VisualBasicUtils.Instance;
-    }
+    private protected override LanguageUtils LanguageUtils => VisualBasicUtils.Instance;
 }

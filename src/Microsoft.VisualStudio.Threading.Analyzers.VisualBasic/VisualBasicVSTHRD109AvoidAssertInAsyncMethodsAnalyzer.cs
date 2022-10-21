@@ -4,11 +4,10 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 
-namespace Microsoft.VisualStudio.Threading.Analyzers
+namespace Microsoft.VisualStudio.Threading.Analyzers;
+
+[DiagnosticAnalyzer(LanguageNames.VisualBasic)]
+public sealed class VisualBasicVSTHRD109AvoidAssertInAsyncMethodsAnalyzer : AbstractVSTHRD109AvoidAssertInAsyncMethodsAnalyzer
 {
-    [DiagnosticAnalyzer(LanguageNames.VisualBasic)]
-    public sealed class VisualBasicVSTHRD109AvoidAssertInAsyncMethodsAnalyzer : AbstractVSTHRD109AvoidAssertInAsyncMethodsAnalyzer
-    {
-        private protected override LanguageUtils LanguageUtils => VisualBasicUtils.Instance;
-    }
+    private protected override LanguageUtils LanguageUtils => VisualBasicUtils.Instance;
 }

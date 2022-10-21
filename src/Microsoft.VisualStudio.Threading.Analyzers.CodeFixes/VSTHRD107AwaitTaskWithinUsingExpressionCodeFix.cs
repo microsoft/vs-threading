@@ -17,72 +17,71 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Simplification;
 using Microsoft.VisualStudio.Threading;
 
-namespace Microsoft.VisualStudio.Threading.Analyzers
+namespace Microsoft.VisualStudio.Threading.Analyzers;
+
+/// <summary>
+/// Offers a code fix for diagnostics produced by the
+/// <see cref="VSTHRD107AwaitTaskWithinUsingExpressionAnalyzer" />.
+/// </summary>
+/// <remarks>
+/// The code fix changes code like this as described:
+/// <code>
+/// <![CDATA[
+///   AsyncSemaphore semaphore;
+///   async Task FooAsync()
+///   {
+///     using (semaphore.EnterAsync()) // CODE FIX: add await to the using expression
+///     {
+///     }
+///   }
+/// ]]>
+/// </code>
+/// </remarks>
+[ExportCodeFixProvider(LanguageNames.CSharp)]
+public class VSTHRD107AwaitTaskWithinUsingExpressionCodeFix : CodeFixProvider
 {
-    /// <summary>
-    /// Offers a code fix for diagnostics produced by the
-    /// <see cref="VSTHRD107AwaitTaskWithinUsingExpressionAnalyzer" />.
-    /// </summary>
-    /// <remarks>
-    /// The code fix changes code like this as described:
-    /// <code>
-    /// <![CDATA[
-    ///   AsyncSemaphore semaphore;
-    ///   async Task FooAsync()
-    ///   {
-    ///     using (semaphore.EnterAsync()) // CODE FIX: add await to the using expression
-    ///     {
-    ///     }
-    ///   }
-    /// ]]>
-    /// </code>
-    /// </remarks>
-    [ExportCodeFixProvider(LanguageNames.CSharp)]
-    public class VSTHRD107AwaitTaskWithinUsingExpressionCodeFix : CodeFixProvider
+    private static readonly ImmutableArray<string> ReusableFixableDiagnosticIds = ImmutableArray.Create(
+        VSTHRD107AwaitTaskWithinUsingExpressionAnalyzer.Id);
+
+    public override ImmutableArray<string> FixableDiagnosticIds => ReusableFixableDiagnosticIds;
+
+    public override Task RegisterCodeFixesAsync(CodeFixContext context)
     {
-        private static readonly ImmutableArray<string> ReusableFixableDiagnosticIds = ImmutableArray.Create(
-            VSTHRD107AwaitTaskWithinUsingExpressionAnalyzer.Id);
+        Diagnostic? diagnostic = context.Diagnostics.First();
 
-        public override ImmutableArray<string> FixableDiagnosticIds => ReusableFixableDiagnosticIds;
+        context.RegisterCodeFix(
+            CodeAction.Create(
+                Strings.VSTHRD107_CodeFix_Title,
+                async ct =>
+                {
+                    Document? document = context.Document;
+                    SyntaxNode? root = await document.GetSyntaxRootAsync(ct).ConfigureAwait(false);
+                    MethodDeclarationSyntax? method = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<MethodDeclarationSyntax>();
 
-        public override Task RegisterCodeFixesAsync(CodeFixContext context)
-        {
-            Diagnostic? diagnostic = context.Diagnostics.First();
+                    (document, method, _) = await FixUtils.UpdateDocumentAsync(
+                        document,
+                        method,
+                        m =>
+                        {
+                            root = m.SyntaxTree.GetRoot(ct);
+                            UsingStatementSyntax usingStatement = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<UsingStatementSyntax>();
+                            AwaitExpressionSyntax awaitExpression = SyntaxFactory.AwaitExpression(
+                                SyntaxFactory.ParenthesizedExpression(usingStatement.Expression));
+                            UsingStatementSyntax modifiedUsingStatement = usingStatement.WithExpression(awaitExpression)
+                                .WithAdditionalAnnotations(Simplifier.Annotation);
+                            return m.ReplaceNode(usingStatement, modifiedUsingStatement);
+                        },
+                        ct).ConfigureAwait(false);
+                    (document, method) = await method.MakeMethodAsync(document, ct).ConfigureAwait(false);
 
-            context.RegisterCodeFix(
-                CodeAction.Create(
-                    Strings.VSTHRD107_CodeFix_Title,
-                    async ct =>
-                    {
-                        Document? document = context.Document;
-                        SyntaxNode? root = await document.GetSyntaxRootAsync(ct).ConfigureAwait(false);
-                        MethodDeclarationSyntax? method = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<MethodDeclarationSyntax>();
+                    return document.Project.Solution;
+                },
+                "only action"),
+            diagnostic);
 
-                        (document, method, _) = await FixUtils.UpdateDocumentAsync(
-                            document,
-                            method,
-                            m =>
-                            {
-                                root = m.SyntaxTree.GetRoot(ct);
-                                UsingStatementSyntax usingStatement = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<UsingStatementSyntax>();
-                                AwaitExpressionSyntax awaitExpression = SyntaxFactory.AwaitExpression(
-                                    SyntaxFactory.ParenthesizedExpression(usingStatement.Expression));
-                                UsingStatementSyntax modifiedUsingStatement = usingStatement.WithExpression(awaitExpression)
-                                    .WithAdditionalAnnotations(Simplifier.Annotation);
-                                return m.ReplaceNode(usingStatement, modifiedUsingStatement);
-                            },
-                            ct).ConfigureAwait(false);
-                        (document, method) = await method.MakeMethodAsync(document, ct).ConfigureAwait(false);
-
-                        return document.Project.Solution;
-                    },
-                    "only action"),
-                diagnostic);
-
-            return Task.FromResult<object?>(null);
-        }
-
-        /// <inheritdoc />
-        public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
+        return Task.FromResult<object?>(null);
     }
+
+    /// <inheritdoc />
+    public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
 }

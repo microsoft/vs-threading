@@ -4,11 +4,10 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 
-namespace Microsoft.VisualStudio.Threading.Analyzers
+namespace Microsoft.VisualStudio.Threading.Analyzers;
+
+[DiagnosticAnalyzer(LanguageNames.CSharp)]
+public sealed class CSharpVSTHRD001UseSwitchToMainThreadAsyncAnalyzer : AbstractVSTHRD001UseSwitchToMainThreadAsyncAnalyzer
 {
-    [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public sealed class CSharpVSTHRD001UseSwitchToMainThreadAsyncAnalyzer : AbstractVSTHRD001UseSwitchToMainThreadAsyncAnalyzer
-    {
-        private protected override LanguageUtils LanguageUtils => CSharpUtils.Instance;
-    }
+    private protected override LanguageUtils LanguageUtils => CSharpUtils.Instance;
 }

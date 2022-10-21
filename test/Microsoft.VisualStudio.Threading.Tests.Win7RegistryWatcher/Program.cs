@@ -3,17 +3,16 @@
 
 using Microsoft.Win32;
 
-namespace Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher
+namespace Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher;
+
+internal static class Program
 {
-    internal static class Program
+    private static void Main()
     {
-        private static void Main()
-        {
-            // Watch a registry key. Then try to exit the program.
-            // If in Win7 support mode we start a thread to monitor for registry changes,
-            // this verifies that the thread is a *background* thread that won't keep the process running.
-            RegistryKey? key = Registry.CurrentUser.OpenSubKey("SOFTWARE");
-            key.WaitForChangeAsync();
-        }
+        // Watch a registry key. Then try to exit the program.
+        // If in Win7 support mode we start a thread to monitor for registry changes,
+        // this verifies that the thread is a *background* thread that won't keep the process running.
+        RegistryKey? key = Registry.CurrentUser.OpenSubKey("SOFTWARE");
+        key.WaitForChangeAsync();
     }
 }

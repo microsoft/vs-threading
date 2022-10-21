@@ -12,96 +12,95 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
-namespace Microsoft.VisualStudio.Threading.Analyzers
+namespace Microsoft.VisualStudio.Threading.Analyzers;
+
+[DiagnosticAnalyzer(LanguageNames.CSharp)]
+public class VSTHRD104OfferAsyncOptionAnalyzer : DiagnosticAnalyzer
 {
-    [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public class VSTHRD104OfferAsyncOptionAnalyzer : DiagnosticAnalyzer
+    public const string Id = "VSTHRD104";
+
+    internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
+        id: Id,
+        title: new LocalizableResourceString(nameof(Strings.VSTHRD104_Title), Strings.ResourceManager, typeof(Strings)),
+        messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD104_MessageFormat), Strings.ResourceManager, typeof(Strings)),
+        helpLinkUri: Utils.GetHelpLink(Id),
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Info,
+        isEnabledByDefault: true);
+
+    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Descriptor);
+
+    public override void Initialize(AnalysisContext context)
     {
-        public const string Id = "VSTHRD104";
+        context.EnableConcurrentExecution();
+        context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
 
-        internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
-            id: Id,
-            title: new LocalizableResourceString(nameof(Strings.VSTHRD104_Title), Strings.ResourceManager, typeof(Strings)),
-            messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD104_MessageFormat), Strings.ResourceManager, typeof(Strings)),
-            helpLinkUri: Utils.GetHelpLink(Id),
-            category: "Usage",
-            defaultSeverity: DiagnosticSeverity.Info,
-            isEnabledByDefault: true);
-
-        public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Descriptor);
-
-        public override void Initialize(AnalysisContext context)
+        context.RegisterCodeBlockStartAction<SyntaxKind>(ctxt =>
         {
-            context.EnableConcurrentExecution();
-            context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze);
-
-            context.RegisterCodeBlockStartAction<SyntaxKind>(ctxt =>
+            // We want to scan invocations that occur inside internal, synchronous methods
+            // for calls to JTF.Run or JT.Join.
+            var methodSymbol = ctxt.OwningSymbol as IMethodSymbol;
+            if (!methodSymbol.HasAsyncCompatibleReturnType() && Utils.IsPublic(methodSymbol) && !Utils.IsEntrypointMethod(methodSymbol, ctxt.SemanticModel, ctxt.CancellationToken) && !methodSymbol.HasAsyncAlternative(ctxt.CancellationToken))
             {
-                // We want to scan invocations that occur inside internal, synchronous methods
-                // for calls to JTF.Run or JT.Join.
-                var methodSymbol = ctxt.OwningSymbol as IMethodSymbol;
-                if (!methodSymbol.HasAsyncCompatibleReturnType() && Utils.IsPublic(methodSymbol) && !Utils.IsEntrypointMethod(methodSymbol, ctxt.SemanticModel, ctxt.CancellationToken) && !methodSymbol.HasAsyncAlternative(ctxt.CancellationToken))
-                {
-                    var methodAnalyzer = new MethodAnalyzer();
-                    ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeInvocation), SyntaxKind.InvocationExpression);
-                    ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzePropertyGetter), SyntaxKind.SimpleMemberAccessExpression);
-                }
-            });
+                var methodAnalyzer = new MethodAnalyzer();
+                ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeInvocation), SyntaxKind.InvocationExpression);
+                ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzePropertyGetter), SyntaxKind.SimpleMemberAccessExpression);
+            }
+        });
+    }
+
+    private class MethodAnalyzer
+    {
+        private bool diagnosticReported;
+
+        internal void AnalyzePropertyGetter(SyntaxNodeAnalysisContext context)
+        {
+            var memberAccessSyntax = (MemberAccessExpressionSyntax)context.Node;
+            this.InspectMemberAccess(context, memberAccessSyntax, CommonInterest.SyncBlockingProperties);
         }
 
-        private class MethodAnalyzer
+        internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
         {
-            private bool diagnosticReported;
+            var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
+            this.InspectMemberAccess(context, invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax, CommonInterest.JTFSyncBlockers);
+        }
 
-            internal void AnalyzePropertyGetter(SyntaxNodeAnalysisContext context)
+        private void InspectMemberAccess(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax? memberAccessSyntax, IEnumerable<CommonInterest.SyncBlockingMethod> problematicMethods)
+        {
+            if (memberAccessSyntax is null)
             {
-                var memberAccessSyntax = (MemberAccessExpressionSyntax)context.Node;
-                this.InspectMemberAccess(context, memberAccessSyntax, CommonInterest.SyncBlockingProperties);
+                return;
             }
 
-            internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
+            if (this.diagnosticReported)
             {
-                var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
-                this.InspectMemberAccess(context, invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax, CommonInterest.JTFSyncBlockers);
+                // Don't report more than once per method.
+                return;
             }
 
-            private void InspectMemberAccess(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax? memberAccessSyntax, IEnumerable<CommonInterest.SyncBlockingMethod> problematicMethods)
+            if (context.Node.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>() is object)
             {
-                if (memberAccessSyntax is null)
-                {
-                    return;
-                }
+                // We do not analyze JTF.Run inside anonymous functions because
+                // they are so often used as callbacks where the signature is constrained.
+                return;
+            }
 
-                if (this.diagnosticReported)
-                {
-                    // Don't report more than once per method.
-                    return;
-                }
+            if (CSharpUtils.IsWithinNameOf(context.Node as ExpressionSyntax))
+            {
+                // We do not consider arguments to nameof( ) because they do not represent invocations of code.
+                return;
+            }
 
-                if (context.Node.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>() is object)
+            ISymbol? invokedMember = context.SemanticModel.GetSymbolInfo(memberAccessSyntax, context.CancellationToken).Symbol;
+            if (invokedMember is object)
+            {
+                foreach (CommonInterest.SyncBlockingMethod item in problematicMethods)
                 {
-                    // We do not analyze JTF.Run inside anonymous functions because
-                    // they are so often used as callbacks where the signature is constrained.
-                    return;
-                }
-
-                if (CSharpUtils.IsWithinNameOf(context.Node as ExpressionSyntax))
-                {
-                    // We do not consider arguments to nameof( ) because they do not represent invocations of code.
-                    return;
-                }
-
-                ISymbol? invokedMember = context.SemanticModel.GetSymbolInfo(memberAccessSyntax, context.CancellationToken).Symbol;
-                if (invokedMember is object)
-                {
-                    foreach (CommonInterest.SyncBlockingMethod item in problematicMethods)
+                    if (item.Method.IsMatch(invokedMember))
                     {
-                        if (item.Method.IsMatch(invokedMember))
-                        {
-                            Location? location = memberAccessSyntax.Name.GetLocation();
-                            context.ReportDiagnostic(Diagnostic.Create(Descriptor, location));
-                            this.diagnosticReported = true;
-                        }
+                        Location? location = memberAccessSyntax.Name.GetLocation();
+                        context.ReportDiagnostic(Diagnostic.Create(Descriptor, location));
+                        this.diagnosticReported = true;
                     }
                 }
             }

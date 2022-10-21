@@ -3,19 +3,18 @@
 
 using System;
 
-namespace Microsoft.VisualStudio.Threading
+namespace Microsoft.VisualStudio.Threading;
+
+/// <summary>
+/// Exception thrown when a <see cref="ReentrantSemaphore"/> is in a faulted state.
+/// </summary>
+public class SemaphoreFaultedException : InvalidOperationException
 {
     /// <summary>
-    /// Exception thrown when a <see cref="ReentrantSemaphore"/> is in a faulted state.
+    /// Initializes a new instance of the <see cref="SemaphoreFaultedException"/> class.
     /// </summary>
-    public class SemaphoreFaultedException : InvalidOperationException
+    public SemaphoreFaultedException()
+        : base(Strings.SemaphoreMisused)
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SemaphoreFaultedException"/> class.
-        /// </summary>
-        public SemaphoreFaultedException()
-            : base(Strings.SemaphoreMisused)
-        {
-        }
     }
 }

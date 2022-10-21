@@ -4,11 +4,10 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 
-namespace Microsoft.VisualStudio.Threading.Analyzers
+namespace Microsoft.VisualStudio.Threading.Analyzers;
+
+[DiagnosticAnalyzer(LanguageNames.CSharp)]
+public sealed class CSharpVSTHRD114AvoidReturningNullTaskAnalyzer : AbstractVSTHRD114AvoidReturningNullTaskAnalyzer
 {
-    [DiagnosticAnalyzer(LanguageNames.CSharp)]
-    public sealed class CSharpVSTHRD114AvoidReturningNullTaskAnalyzer : AbstractVSTHRD114AvoidReturningNullTaskAnalyzer
-    {
-        private protected override LanguageUtils LanguageUtils => CSharpUtils.Instance;
-    }
+    private protected override LanguageUtils LanguageUtils => CSharpUtils.Instance;
 }

@@ -3,20 +3,19 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-namespace System.Diagnostics
+namespace System.Diagnostics;
+
+internal static class RoslynDebug
 {
-    internal static class RoslynDebug
-    {
-        /// <inheritdoc cref="Debug.Assert(bool)"/>
-        [Conditional("DEBUG")]
-        internal static void Assert([DoesNotReturnIf(false)] bool b)
+    /// <inheritdoc cref="Debug.Assert(bool)"/>
+    [Conditional("DEBUG")]
+    internal static void Assert([DoesNotReturnIf(false)] bool b)
 #pragma warning disable SA1405 // Debug.Assert should provide message text
-            => Debug.Assert(b);
+        => Debug.Assert(b);
 #pragma warning restore SA1405 // Debug.Assert should provide message text
 
-        /// <inheritdoc cref="Debug.Assert(bool, string)"/>
-        [Conditional("DEBUG")]
-        internal static void Assert([DoesNotReturnIf(false)] bool b, string message)
-            => Debug.Assert(b, message);
-    }
+    /// <inheritdoc cref="Debug.Assert(bool, string)"/>
+    [Conditional("DEBUG")]
+    internal static void Assert([DoesNotReturnIf(false)] bool b, string message)
+        => Debug.Assert(b, message);
 }

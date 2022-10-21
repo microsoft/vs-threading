@@ -19,45 +19,44 @@ using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 using static Microsoft.VisualStudio.Threading.Analyzers.CommonInterest;
 
-namespace Microsoft.VisualStudio.Threading.Analyzers
+namespace Microsoft.VisualStudio.Threading.Analyzers;
+
+internal static class CommonFixes
 {
-    internal static class CommonFixes
+    internal static async Task<ImmutableArray<QualifiedMember>> ReadMethodsAsync(CodeFixContext codeFixContext, Regex fileNamePattern, CancellationToken cancellationToken)
     {
-        internal static async Task<ImmutableArray<QualifiedMember>> ReadMethodsAsync(CodeFixContext codeFixContext, Regex fileNamePattern, CancellationToken cancellationToken)
+        ImmutableArray<QualifiedMember>.Builder? result = ImmutableArray.CreateBuilder<QualifiedMember>();
+        foreach (string line in await ReadAdditionalFilesAsync(codeFixContext.Document.Project.AdditionalDocuments, fileNamePattern, cancellationToken))
         {
-            ImmutableArray<QualifiedMember>.Builder? result = ImmutableArray.CreateBuilder<QualifiedMember>();
-            foreach (string line in await ReadAdditionalFilesAsync(codeFixContext.Document.Project.AdditionalDocuments, fileNamePattern, cancellationToken))
-            {
-                result.Add(ParseAdditionalFileMethodLine(line));
-            }
-
-            return result.ToImmutable();
+            result.Add(ParseAdditionalFileMethodLine(line));
         }
 
-        internal static async Task<ImmutableArray<string>> ReadAdditionalFilesAsync(IEnumerable<TextDocument> additionalFiles, Regex fileNamePattern, CancellationToken cancellationToken)
+        return result.ToImmutable();
+    }
+
+    internal static async Task<ImmutableArray<string>> ReadAdditionalFilesAsync(IEnumerable<TextDocument> additionalFiles, Regex fileNamePattern, CancellationToken cancellationToken)
+    {
+        if (additionalFiles is null)
         {
-            if (additionalFiles is null)
-            {
-                throw new ArgumentNullException(nameof(additionalFiles));
-            }
-
-            if (fileNamePattern is null)
-            {
-                throw new ArgumentNullException(nameof(fileNamePattern));
-            }
-
-            IEnumerable<TextDocument>? docs = from doc in additionalFiles.OrderBy(x => x.FilePath, StringComparer.Ordinal)
-                       let fileName = Path.GetFileName(doc.Name)
-                       where fileNamePattern.IsMatch(fileName)
-                       select doc;
-            ImmutableArray<string>.Builder? result = ImmutableArray.CreateBuilder<string>();
-            foreach (TextDocument? doc in docs)
-            {
-                SourceText? text = await doc.GetTextAsync(cancellationToken);
-                result.AddRange(ReadLinesFromAdditionalFile(text));
-            }
-
-            return result.ToImmutable();
+            throw new ArgumentNullException(nameof(additionalFiles));
         }
+
+        if (fileNamePattern is null)
+        {
+            throw new ArgumentNullException(nameof(fileNamePattern));
+        }
+
+        IEnumerable<TextDocument>? docs = from doc in additionalFiles.OrderBy(x => x.FilePath, StringComparer.Ordinal)
+                   let fileName = Path.GetFileName(doc.Name)
+                   where fileNamePattern.IsMatch(fileName)
+                   select doc;
+        ImmutableArray<string>.Builder? result = ImmutableArray.CreateBuilder<string>();
+        foreach (TextDocument? doc in docs)
+        {
+            SourceText? text = await doc.GetTextAsync(cancellationToken);
+            result.AddRange(ReadLinesFromAdditionalFile(text));
+        }
+
+        return result.ToImmutable();
     }
 }

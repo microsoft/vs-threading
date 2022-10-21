@@ -4,11 +4,10 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 
-namespace Microsoft.VisualStudio.Threading.Analyzers
+namespace Microsoft.VisualStudio.Threading.Analyzers;
+
+[DiagnosticAnalyzer(LanguageNames.VisualBasic)]
+public sealed class VisualBasicVSTHRD012SpecifyJtfWhereAllowed : AbstractVSTHRD012SpecifyJtfWhereAllowed
 {
-    [DiagnosticAnalyzer(LanguageNames.VisualBasic)]
-    public sealed class VisualBasicVSTHRD012SpecifyJtfWhereAllowed : AbstractVSTHRD012SpecifyJtfWhereAllowed
-    {
-        private protected override LanguageUtils LanguageUtils => VisualBasicUtils.Instance;
-    }
+    private protected override LanguageUtils LanguageUtils => VisualBasicUtils.Instance;
 }

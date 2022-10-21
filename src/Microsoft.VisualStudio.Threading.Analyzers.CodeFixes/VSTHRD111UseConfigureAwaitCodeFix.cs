@@ -17,45 +17,44 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Simplification;
 using Microsoft.VisualStudio.Threading;
 
-namespace Microsoft.VisualStudio.Threading.Analyzers
+namespace Microsoft.VisualStudio.Threading.Analyzers;
+
+[ExportCodeFixProvider(LanguageNames.CSharp)]
+public class VSTHRD111UseConfigureAwaitCodeFix : CodeFixProvider
 {
-    [ExportCodeFixProvider(LanguageNames.CSharp)]
-    public class VSTHRD111UseConfigureAwaitCodeFix : CodeFixProvider
+    private static readonly ImmutableArray<string> ReusableFixableDiagnosticIds = ImmutableArray.Create(
+        VSTHRD111UseConfigureAwaitAnalyzer.Id);
+
+    /// <inheritdoc />
+    public override ImmutableArray<string> FixableDiagnosticIds => ReusableFixableDiagnosticIds;
+
+    /// <inheritdoc />
+    public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
+
+    public override async Task RegisterCodeFixesAsync(CodeFixContext context)
     {
-        private static readonly ImmutableArray<string> ReusableFixableDiagnosticIds = ImmutableArray.Create(
-            VSTHRD111UseConfigureAwaitAnalyzer.Id);
-
-        /// <inheritdoc />
-        public override ImmutableArray<string> FixableDiagnosticIds => ReusableFixableDiagnosticIds;
-
-        /// <inheritdoc />
-        public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
-
-        public override async Task RegisterCodeFixesAsync(CodeFixContext context)
+        foreach (Diagnostic? diagnostic in context.Diagnostics)
         {
-            foreach (Diagnostic? diagnostic in context.Diagnostics)
+            SemanticModel? semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
+            SyntaxNode? syntaxRoot = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
+            var awaitedExpression = syntaxRoot.FindNode(diagnostic.Location.SourceSpan) as ExpressionSyntax;
+
+            Task<Document> ApplyFix(bool captureContext)
             {
-                SemanticModel? semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
-                SyntaxNode? syntaxRoot = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
-                var awaitedExpression = syntaxRoot.FindNode(diagnostic.Location.SourceSpan) as ExpressionSyntax;
+                ExpressionSyntax configuredAwaitExpression = SyntaxFactory.ParenthesizedExpression(
+                    SyntaxFactory.InvocationExpression(
+                        SyntaxFactory.MemberAccessExpression(
+                            SyntaxKind.SimpleMemberAccessExpression,
+                            SyntaxFactory.ParenthesizedExpression(awaitedExpression).WithAdditionalAnnotations(Simplifier.Annotation),
+                            SyntaxFactory.IdentifierName("ConfigureAwait")))
+                    .AddArgumentListArguments(SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(captureContext ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression))))
+                    .WithAdditionalAnnotations(Simplifier.Annotation);
 
-                Task<Document> ApplyFix(bool captureContext)
-                {
-                    ExpressionSyntax configuredAwaitExpression = SyntaxFactory.ParenthesizedExpression(
-                        SyntaxFactory.InvocationExpression(
-                            SyntaxFactory.MemberAccessExpression(
-                                SyntaxKind.SimpleMemberAccessExpression,
-                                SyntaxFactory.ParenthesizedExpression(awaitedExpression).WithAdditionalAnnotations(Simplifier.Annotation),
-                                SyntaxFactory.IdentifierName("ConfigureAwait")))
-                        .AddArgumentListArguments(SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(captureContext ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression))))
-                        .WithAdditionalAnnotations(Simplifier.Annotation);
-
-                    return Task.FromResult(context.Document.WithSyntaxRoot(syntaxRoot.ReplaceNode(awaitedExpression, configuredAwaitExpression)));
-                }
-
-                context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD111_CodeFix_True_Title, ct => ApplyFix(true), true.ToString()), diagnostic);
-                context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD111_CodeFix_False_Title, ct => ApplyFix(false), false.ToString()), diagnostic);
+                return Task.FromResult(context.Document.WithSyntaxRoot(syntaxRoot.ReplaceNode(awaitedExpression, configuredAwaitExpression)));
             }
+
+            context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD111_CodeFix_True_Title, ct => ApplyFix(true), true.ToString()), diagnostic);
+            context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD111_CodeFix_False_Title, ct => ApplyFix(false), false.ToString()), diagnostic);
         }
     }
 }

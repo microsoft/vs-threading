@@ -4,19 +4,18 @@
 using System;
 using System.Globalization;
 
-namespace Microsoft.VisualStudio.Threading
+namespace Microsoft.VisualStudio.Threading;
+
+/// <summary>
+/// Exception which is thrown when the contract of a <see cref="ReentrantSemaphore"/> is violated.
+/// </summary>
+public class IllegalSemaphoreUsageException : InvalidOperationException
 {
     /// <summary>
-    /// Exception which is thrown when the contract of a <see cref="ReentrantSemaphore"/> is violated.
+    /// Initializes a new instance of the <see cref="IllegalSemaphoreUsageException"/> class.
     /// </summary>
-    public class IllegalSemaphoreUsageException : InvalidOperationException
+    public IllegalSemaphoreUsageException(string message)
+        : base(message)
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="IllegalSemaphoreUsageException"/> class.
-        /// </summary>
-        public IllegalSemaphoreUsageException(string message)
-            : base(message)
-        {
-        }
     }
 }

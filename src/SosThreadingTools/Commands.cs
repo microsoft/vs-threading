@@ -5,48 +5,47 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-namespace CpsDbg
+namespace CpsDbg;
+
+internal static class Commands
 {
-    internal static class Commands
+    private const string DumpAsyncCommand = "dumpasync";
+
+    private static readonly Dictionary<string, ICommandHandler> CommandHandlers = new Dictionary<string, ICommandHandler>(StringComparer.OrdinalIgnoreCase)
     {
-        private const string DumpAsyncCommand = "dumpasync";
+        { "dumpasync", new DumpAsyncCommand() },
+    };
 
-        private static readonly Dictionary<string, ICommandHandler> CommandHandlers = new Dictionary<string, ICommandHandler>(StringComparer.OrdinalIgnoreCase)
-        {
-            { "dumpasync", new DumpAsyncCommand() },
-        };
+    [DllExport(DumpAsyncCommand, CallingConvention.StdCall)]
+    internal static void DumpAsync(IntPtr client, [MarshalAs(UnmanagedType.LPStr)] string args)
+    {
+        ExecuteCommand(client, DumpAsyncCommand, args);
+    }
 
-        [DllExport(DumpAsyncCommand, CallingConvention.StdCall)]
-        internal static void DumpAsync(IntPtr client, [MarshalAs(UnmanagedType.LPStr)] string args)
+    private static void ExecuteCommand(IntPtr client, string command, [MarshalAs(UnmanagedType.LPStr)] string args)
+    {
+        ICommandHandler handler;
+        if (!CommandHandlers.TryGetValue(command, out handler))
         {
-            ExecuteCommand(client, DumpAsyncCommand, args);
+            return;
         }
 
-        private static void ExecuteCommand(IntPtr client, string command, [MarshalAs(UnmanagedType.LPStr)] string args)
+        DebuggerContext? context = DebuggerContext.GetDebuggerContext(client);
+        if (context is null)
         {
-            ICommandHandler handler;
-            if (!CommandHandlers.TryGetValue(command, out handler))
-            {
-                return;
-            }
+            return;
+        }
 
-            DebuggerContext? context = DebuggerContext.GetDebuggerContext(client);
-            if (context is null)
-            {
-                return;
-            }
-
-            try
-            {
-                handler.Execute(context, args);
-            }
+        try
+        {
+            handler.Execute(context, args);
+        }
 #pragma warning disable CA1031 // Do not catch general exception types
-            catch (Exception ex)
+        catch (Exception ex)
 #pragma warning restore CA1031 // Do not catch general exception types
-            {
-                context.Output.WriteLine($"Encountered an unhandled exception running '{command}':");
-                context.Output.WriteLine(ex.ToString());
-            }
+        {
+            context.Output.WriteLine($"Encountered an unhandled exception running '{command}':");
+            context.Output.WriteLine(ex.ToString());
         }
     }
 }
