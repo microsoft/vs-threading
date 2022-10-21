@@ -9,6 +9,7 @@
 *.user
 *.userosscache
 *.sln.docstates
+*.lutconfig
 launchSettings.json
 
 # User-specific files (MonoDevelop/Xamarin Studio)
@@ -139,6 +140,7 @@ _TeamCity*
 # Visual Studio code coverage results
 *.coverage
 *.coveragexml
+/coveragereport/
 
 # NCrunch
 _NCrunch_*
