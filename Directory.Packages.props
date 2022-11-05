@@ -23,7 +23,7 @@
     <PackageVersion Include="Microsoft.Diagnostics.Runtime" Version="2.2.332302" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.3.2" />
     <PackageVersion Include="Microsoft.VisualStudio.Interop" Version="17.3.32630.470" />
-    <PackageVersion Include="Microsoft.VisualStudio.Shell.15.0" Version="17.2.32531.470" />
+    <PackageVersion Include="Microsoft.VisualStudio.Shell.15.0" Version="17.4.33103.184" />
     <PackageVersion Include="Microsoft.VisualStudio.Shell.Framework" Version="17.2.32531.470" />
     <PackageVersion Include="Microsoft.VisualStudio.Validation" Version="17.0.64" />
     <PackageVersion Include="Microsoft.Win32.Registry" Version="5.0.0" />
