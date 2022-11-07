@@ -187,7 +187,7 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
                                     return null;
                                 }
 
-                                // Whitelist Task.From*() methods.
+                                // Allow Task.From*() methods.
                                 if (!context.TryGetNewOrExistingSemanticModel(invocationSyntax.SyntaxTree, out SemanticModel? declarationSemanticModel))
                                 {
                                     return null;
@@ -211,7 +211,7 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
                                 ISymbol? definition = declarationSemanticModel.GetSymbolInfo(memberAccessSyntax, cancellationToken).Symbol;
                                 if (definition is IFieldSymbol field)
                                 {
-                                    // Whitelist the TplExtensions.CompletedTask and related fields.
+                                    // Allow the TplExtensions.CompletedTask and related fields.
                                     if (field.ContainingType.Name == Types.TplExtensions.TypeName && field.BelongsToNamespace(Types.TplExtensions.Namespace) &&
                                         (field.Name == Types.TplExtensions.CompletedTask || field.Name == Types.TplExtensions.CanceledTask || field.Name == Types.TplExtensions.TrueTask || field.Name == Types.TplExtensions.FalseTask))
                                     {
