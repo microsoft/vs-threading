@@ -122,9 +122,9 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
                 if (firstParameter is object)
                 {
                     // Are we accessing a member of the completed task?
-                    ISymbol invokedObjectSymbol = context.SemanticModel.GetSymbolInfo(memberAccessSyntax.Expression, context.CancellationToken).Symbol;
-                    IParameterSymbol completedTask = context.SemanticModel.GetDeclaredSymbol(firstParameter);
-                    if (EqualityComparer<ISymbol>.Default.Equals(invokedObjectSymbol, completedTask))
+                    ISymbol? invokedObjectSymbol = context.SemanticModel.GetSymbolInfo(memberAccessSyntax.Expression, context.CancellationToken).Symbol;
+                    IParameterSymbol? completedTask = context.SemanticModel.GetDeclaredSymbol(firstParameter);
+                    if (EqualityComparer<ISymbol?>.Default.Equals(invokedObjectSymbol, completedTask))
                     {
                         // Skip analysis since Task.Result (et. al) of a completed Task is fair game.
                         return;

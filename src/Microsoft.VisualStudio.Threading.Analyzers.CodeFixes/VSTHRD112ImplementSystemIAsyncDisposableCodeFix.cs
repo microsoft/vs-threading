@@ -39,7 +39,7 @@ public class VSTHRD112ImplementSystemIAsyncDisposableCodeFix : CodeFixProvider
                 continue;
             }
 
-            SyntaxNode? syntaxRoot = await context.Document.GetSyntaxRootAsync(context.CancellationToken);
+            SyntaxNode syntaxRoot = await context.Document.GetSyntaxRootOrThrowAsync(context.CancellationToken);
             var generator = SyntaxGenerator.GetGenerator(context.Document);
             SyntaxNode? originalTypeDeclaration = generator.TryGetContainingDeclaration(syntaxRoot.FindNode(diagnostic.Location.SourceSpan));
             if (originalTypeDeclaration is null)
@@ -57,7 +57,7 @@ public class VSTHRD112ImplementSystemIAsyncDisposableCodeFix : CodeFixProvider
                         SyntaxNode? typeDeclaration = generator.AddInterfaceType(originalTypeDeclaration, newBaseType);
 
                         // Implement the interface, if we're on a non-interface type.
-                        if (semanticModel.GetDeclaredSymbol(originalTypeDeclaration, ct) is ITypeSymbol changedSymbol && changedSymbol.TypeKind != TypeKind.Interface)
+                        if (semanticModel?.GetDeclaredSymbol(originalTypeDeclaration, ct) is ITypeSymbol changedSymbol && changedSymbol.TypeKind != TypeKind.Interface)
                         {
                             var disposeAsyncMethod = (IMethodSymbol)bclAsyncDisposableType.GetMembers().Single();
                             var statements = new SyntaxNode[]
@@ -68,15 +68,14 @@ public class VSTHRD112ImplementSystemIAsyncDisposableCodeFix : CodeFixProvider
                                         generator.InvocationExpression(
                                             generator.MemberAccessExpression(generator.ThisExpression(), "DisposeAsync")))),
                             };
-                            typeDeclaration = generator.AddMembers(
-                                typeDeclaration,
-                                generator.AsPrivateInterfaceImplementation(
-                                    generator.MethodDeclaration(
-                                        disposeAsyncMethod.Name,
-                                        returnType: generator.TypeExpression(disposeAsyncMethod.ReturnType),
-                                        accessibility: Accessibility.Public,
-                                        statements: statements),
-                                    generator.TypeExpression(bclAsyncDisposableType)));
+                            SyntaxNode privateInterfaceMember = generator.AsPrivateInterfaceImplementation(
+                                generator.MethodDeclaration(
+                                    disposeAsyncMethod.Name,
+                                    returnType: generator.TypeExpression(disposeAsyncMethod.ReturnType),
+                                    accessibility: Accessibility.Public,
+                                    statements: statements),
+                                generator.TypeExpression(bclAsyncDisposableType))!;
+                            typeDeclaration = generator.AddMembers(typeDeclaration, privateInterfaceMember);
                         }
 
                         return Task.FromResult(context.Document.WithSyntaxRoot(syntaxRoot.ReplaceNode(originalTypeDeclaration, typeDeclaration)));

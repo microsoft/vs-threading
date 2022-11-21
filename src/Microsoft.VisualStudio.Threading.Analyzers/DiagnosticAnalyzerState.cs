@@ -21,7 +21,7 @@ internal abstract class DiagnosticAnalyzerState
 {
     private const string GetAwaiterMethodName = nameof(Task.GetAwaiter);
 
-    private readonly ConcurrentDictionary<ITypeSymbol, bool> customAwaitableTypes = new ConcurrentDictionary<ITypeSymbol, bool>();
+    private readonly ConcurrentDictionary<ITypeSymbol, bool> customAwaitableTypes = new ConcurrentDictionary<ITypeSymbol, bool>(SymbolEqualityComparer.Default);
 
     internal bool IsAwaitableType(ITypeSymbol? typeSymbol, Compilation compilation, CancellationToken cancellationToken)
     {
@@ -46,7 +46,7 @@ internal abstract class DiagnosticAnalyzerState
                 IEnumerable<ITypeSymbol>? awaitableTypesPerAssembly = from assembly in compilation.Assembly.Modules.First().ReferencedAssemblySymbols
                                                 from awaitableType in GetAwaitableTypes(assembly)
                                                 select awaitableType;
-                isAwaitable = awaitableTypesFromThisAssembly.Concat(awaitableTypesPerAssembly).Contains(typeSymbol);
+                isAwaitable = awaitableTypesFromThisAssembly.Concat(awaitableTypesPerAssembly).Contains(typeSymbol, SymbolEqualityComparer.Default);
             }
 
             this.customAwaitableTypes.TryAdd(typeSymbol, isAwaitable);

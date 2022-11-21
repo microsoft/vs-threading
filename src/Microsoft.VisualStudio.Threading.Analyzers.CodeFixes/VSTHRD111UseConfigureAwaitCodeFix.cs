@@ -36,8 +36,12 @@ public class VSTHRD111UseConfigureAwaitCodeFix : CodeFixProvider
         foreach (Diagnostic? diagnostic in context.Diagnostics)
         {
             SemanticModel? semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
-            SyntaxNode? syntaxRoot = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
+            SyntaxNode syntaxRoot = await context.Document.GetSyntaxRootOrThrowAsync(context.CancellationToken).ConfigureAwait(false);
             var awaitedExpression = syntaxRoot.FindNode(diagnostic.Location.SourceSpan) as ExpressionSyntax;
+            if (awaitedExpression is null)
+            {
+                return;
+            }
 
             Task<Document> ApplyFix(bool captureContext)
             {

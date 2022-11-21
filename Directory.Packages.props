@@ -4,8 +4,8 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
 
     <MicroBuildVersion>2.0.87</MicroBuildVersion>
-    <CodeAnalysisVersion>2.10.0</CodeAnalysisVersion>
-    <CodeAnalysisVersion Condition="'$(IsTestProject)'=='true'">3.11.0</CodeAnalysisVersion>
+    <CodeAnalysisVersion>3.11.0</CodeAnalysisVersion>
+    <CodeAnalysisVersion Condition="'$(IsTestProject)'=='true'">4.4.0</CodeAnalysisVersion>
     <CodefixTestingVersion>1.1.1</CodefixTestingVersion>
   </PropertyGroup>
   <ItemGroup>

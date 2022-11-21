@@ -45,7 +45,7 @@ public abstract class AbstractVSTHRD112ImplementSystemIAsyncDisposableAnalyzer :
         });
     }
 
-    private void AnalyzeType(SymbolAnalysisContext context, INamedTypeSymbol vsThreadingAsyncDisposableType, INamedTypeSymbol bclAsyncDisposableType)
+    private void AnalyzeType(SymbolAnalysisContext context, INamedTypeSymbol vsThreadingAsyncDisposableType, INamedTypeSymbol? bclAsyncDisposableType)
     {
         var symbol = (INamedTypeSymbol)context.Symbol;
         if (symbol.Interfaces.Contains(vsThreadingAsyncDisposableType))

@@ -117,7 +117,7 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
         }
     }
 
-    private Diagnostic? AnalyzeAwaitedOrReturnedExpression(ExpressionSyntax expressionSyntax, SyntaxNodeAnalysisContext context, CancellationToken cancellationToken)
+    private Diagnostic? AnalyzeAwaitedOrReturnedExpression(ExpressionSyntax? expressionSyntax, SyntaxNodeAnalysisContext context, CancellationToken cancellationToken)
     {
         if (expressionSyntax is null)
         {
@@ -242,7 +242,7 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
                     // Consider the implicit first argument when this method is invoked as an extension method.
                     if (methodSymbol.IsExtensionMethod && invocationExpressionSyntax.Expression is MemberAccessExpressionSyntax invokedMember)
                     {
-                        if (!methodSymbol.ContainingType.Equals(semanticModel.GetSymbolInfo(invokedMember.Expression, cancellationToken).Symbol))
+                        if (!methodSymbol.ContainingType.Equals(semanticModel.GetSymbolInfo(invokedMember.Expression, cancellationToken).Symbol, SymbolEqualityComparer.Default))
                         {
                             expressionsToConsider = new ExpressionSyntax[] { invokedMember.Expression }.Concat(expressionsToConsider);
                         }
@@ -268,11 +268,11 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
             if (dataflowAnalysisCompatibleVariable)
             {
                 // Run data flow analysis to understand where the task was defined
-                DataFlowAnalysis dataFlowAnalysis;
+                DataFlowAnalysis? dataFlowAnalysis;
 
                 // When possible (await is direct child of the block and not a field), execute data flow analysis by passing first and last statement to capture only what happens before the await
                 // Check if the await is direct child of the code block (first parent is ExpressionStantement, second parent is the block itself)
-                if (delegateBlock.Equals(expressionSyntax.Parent.Parent?.Parent))
+                if (delegateBlock.Equals(expressionSyntax.Parent?.Parent?.Parent))
                 {
                     dataFlowAnalysis = semanticModel.AnalyzeDataFlow(delegateBlock.ChildNodes().First(), expressionSyntax.Parent.Parent);
                 }
@@ -282,7 +282,7 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
                     dataFlowAnalysis = semanticModel.AnalyzeDataFlow(delegateBlock);
                 }
 
-                if (!dataFlowAnalysis.WrittenInside.Contains(symbolToConsider.Symbol))
+                if (dataFlowAnalysis?.WrittenInside.Contains(symbolToConsider.Symbol) is false)
                 {
                     return Diagnostic.Create(Descriptor, expressionSyntax.GetLocation());
                 }

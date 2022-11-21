@@ -31,7 +31,7 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
     {
         Diagnostic? diagnostic = context.Diagnostics.First();
 
-        SyntaxNode? root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
+        SyntaxNode root = await context.Document.GetSyntaxRootOrThrowAsync(context.CancellationToken).ConfigureAwait(false);
 
         if (TryFindNodeAtSource(diagnostic, root, out _, out _))
         {
@@ -77,7 +77,7 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
             return false;
         }
 
-        SimpleNameSyntax? FindStaticWaitInvocation(ExpressionSyntax from)
+        SimpleNameSyntax? FindStaticWaitInvocation(ExpressionSyntax? from)
         {
             SimpleNameSyntax? name = ((from as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax)?.Name;
             return name?.Identifier.ValueText switch
@@ -101,11 +101,11 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
             return from.ReplaceToken(name.Identifier, SyntaxFactory.Identifier(newIdentifier)).WithoutAnnotations(FixUtils.BookmarkAnnotationName);
         }
 
-        ExpressionSyntax? FindTwoLevelDeepIdentifierInvocation(ExpressionSyntax from, CancellationToken cancellationToken = default(CancellationToken)) =>
+        ExpressionSyntax? FindTwoLevelDeepIdentifierInvocation(ExpressionSyntax? from, CancellationToken cancellationToken = default(CancellationToken)) =>
             ((((from as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax)?.Expression as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax)?.Expression;
-        ExpressionSyntax? FindOneLevelDeepIdentifierInvocation(ExpressionSyntax from, CancellationToken cancellationToken = default(CancellationToken)) =>
+        ExpressionSyntax? FindOneLevelDeepIdentifierInvocation(ExpressionSyntax? from, CancellationToken cancellationToken = default(CancellationToken)) =>
             ((from as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax)?.Expression;
-        ExpressionSyntax? FindParentMemberAccess(ExpressionSyntax from, CancellationToken cancellationToken = default(CancellationToken)) =>
+        ExpressionSyntax? FindParentMemberAccess(ExpressionSyntax? from, CancellationToken cancellationToken = default(CancellationToken)) =>
             (from as MemberAccessExpressionSyntax)?.Expression;
 
         InvocationExpressionSyntax? parentInvocation = syntaxNode.FirstAncestorOrSelf<InvocationExpressionSyntax>();
@@ -114,31 +114,33 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
         {
             // This method will not return null for the provided 'target' argument
             transform = NullableHelpers.AsNonNullReturnUnchecked<ExpressionSyntax, CancellationToken, ExpressionSyntax>(FindTwoLevelDeepIdentifierInvocation);
-            target = parentInvocation;
+            target = parentInvocation!;
+            return true;
         }
         else if (FindStaticWaitInvocation(parentInvocation) is object)
         {
             // This method will not return null for the provided 'target' argument
             transform = NullableHelpers.AsNonNullReturnUnchecked<ExpressionSyntax, CancellationToken, ExpressionSyntax>(TransformStaticWhatInvocation);
-            target = parentInvocation;
+            target = parentInvocation!;
+            return true;
         }
         else if (FindOneLevelDeepIdentifierInvocation(parentInvocation) is object)
         {
             // This method will not return null for the provided 'target' argument
             transform = NullableHelpers.AsNonNullReturnUnchecked<ExpressionSyntax, CancellationToken, ExpressionSyntax>(FindOneLevelDeepIdentifierInvocation);
-            target = parentInvocation;
+            target = parentInvocation!;
+            return true;
         }
         else if (FindParentMemberAccess(parentMemberAccess) is object)
         {
             // This method will not return null for the provided 'target' argument
             transform = NullableHelpers.AsNonNullReturnUnchecked<ExpressionSyntax, CancellationToken, ExpressionSyntax>(FindParentMemberAccess);
-            target = parentMemberAccess;
+            target = parentMemberAccess!;
+            return true;
         }
         else
         {
             return false;
         }
-
-        return true;
     }
 }

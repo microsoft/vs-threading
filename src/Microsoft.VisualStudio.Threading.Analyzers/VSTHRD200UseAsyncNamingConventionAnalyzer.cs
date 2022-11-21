@@ -84,7 +84,7 @@ public class VSTHRD200UseAsyncNamingConventionAnalyzer : DiagnosticAnalyzer
                 {
                     // We actively encourage folks to use the Async keyword only for clearly async-focused types.
                     // Not just any awaitable, since some stray extension method shouldn't change the world for everyone.
-                    ImmutableDictionary<string, string>? properties = ImmutableDictionary<string, string>.Empty
+                    ImmutableDictionary<string, string?>? properties = ImmutableDictionary<string, string?>.Empty
                         .Add(NewNameKey, methodSymbol.Name + MandatoryAsyncSuffix);
                     context.ReportDiagnostic(Diagnostic.Create(
                         AddAsyncDescriptor,
@@ -94,7 +94,7 @@ public class VSTHRD200UseAsyncNamingConventionAnalyzer : DiagnosticAnalyzer
                 else if (!this.IsAwaitableType(methodSymbol.ReturnType, context.Compilation, context.CancellationToken))
                 {
                     // Only warn about abusing the Async suffix if the return type is not awaitable.
-                    ImmutableDictionary<string, string>? properties = ImmutableDictionary<string, string>.Empty
+                    ImmutableDictionary<string, string?>? properties = ImmutableDictionary<string, string?>.Empty
                         .Add(NewNameKey, methodSymbol.Name.Substring(0, methodSymbol.Name.Length - MandatoryAsyncSuffix.Length));
                     context.ReportDiagnostic(Diagnostic.Create(
                         RemoveAsyncDescriptor,

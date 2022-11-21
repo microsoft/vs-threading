@@ -33,7 +33,7 @@ public abstract class AbstractVSTHRD012SpecifyJtfWhereAllowed : DiagnosticAnalyz
         context.ConfigureGeneratedCodeAnalysis(GeneratedCodeAnalysisFlags.Analyze | GeneratedCodeAnalysisFlags.ReportDiagnostics);
 
         context.RegisterOperationAction(Utils.DebuggableWrapper(this.AnalyzeInvocation), OperationKind.Invocation);
-        context.RegisterOperationAction(Utils.DebuggableWrapper(this.AnalyzerObjectCreation), OperationKind.ObjectCreation);
+        context.RegisterOperationAction(Utils.DebuggableWrapper(this.AnalyzeObjectCreation), OperationKind.ObjectCreation);
     }
 
     private static bool IsImportantJtfParameter(IParameterSymbol ps)
@@ -42,14 +42,14 @@ public abstract class AbstractVSTHRD012SpecifyJtfWhereAllowed : DiagnosticAnalyz
             || ps.Type.Name == Types.JoinableTaskFactory.TypeName
             || ps.Type.Name == Types.JoinableTaskCollection.TypeName)
             && ps.Type.BelongsToNamespace(Namespaces.MicrosoftVisualStudioThreading)
-            && !ps.GetAttributes().Any(a => a.AttributeClass.Name == "OptionalAttribute");
+            && !ps.GetAttributes().Any(a => a.AttributeClass?.Name == "OptionalAttribute");
     }
 
     private static IArgumentOperation? GetArgumentForParameter(ImmutableArray<IArgumentOperation> arguments, IParameterSymbol parameter)
     {
         foreach (IArgumentOperation? argument in arguments)
         {
-            if (Equals(argument.Parameter, parameter))
+            if (SymbolEqualityComparer.Default.Equals(argument.Parameter, parameter))
             {
                 return argument;
             }
@@ -104,10 +104,15 @@ public abstract class AbstractVSTHRD012SpecifyJtfWhereAllowed : DiagnosticAnalyz
         AnalyzeCall(context, invokedMethodName.GetLocation(), argList, methodSymbol, otherOverloads);
     }
 
-    private void AnalyzerObjectCreation(OperationAnalysisContext context)
+    private void AnalyzeObjectCreation(OperationAnalysisContext context)
     {
         var objectCreation = (IObjectCreationOperation)context.Operation;
         IMethodSymbol? methodSymbol = objectCreation.Constructor;
+        if (methodSymbol is null)
+        {
+            return;
+        }
+
         AnalyzeCall(
             context,
             this.LanguageUtils.IsolateMethodName(objectCreation).GetLocation(),

@@ -113,7 +113,7 @@ internal static class CSharpCommonInterest
         }
     }
 
-    private static SyntaxNode? GetEnclosingBlock(SyntaxNode node)
+    private static SyntaxNode? GetEnclosingBlock(SyntaxNode? node)
     {
         while (node is not null)
         {
@@ -186,7 +186,7 @@ internal static class CSharpCommonInterest
 
         // Is this `Task.WhenAll` invocation from the System.Threading.Tasks.Task type?
         ITypeSymbol? classType = context.SemanticModel.GetTypeInfo(memberAccess.Expression).Type;
-        var correctType = classType.Name == Types.Task.TypeName && classType.BelongsToNamespace(Types.Task.Namespace);
+        var correctType = classType?.Name == Types.Task.TypeName && classType.BelongsToNamespace(Types.Task.Namespace);
         if (!correctType)
         {
             return false;

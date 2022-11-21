@@ -29,9 +29,9 @@ public class VSTHRD114AvoidReturningNullTaskCodeFix : CodeFixProvider
         foreach (Diagnostic? diagnostic in context.Diagnostics)
         {
             SemanticModel? semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
-            SyntaxNode? syntaxRoot = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
+            SyntaxNode syntaxRoot = await context.Document.GetSyntaxRootOrThrowAsync(context.CancellationToken).ConfigureAwait(false);
             SyntaxNode? nullLiteral = syntaxRoot.FindNode(diagnostic.Location.SourceSpan);
-            if (semanticModel.GetOperation(nullLiteral, context.CancellationToken) is ILiteralOperation { ConstantValue: { HasValue: true, Value: null } })
+            if (semanticModel?.GetOperation(nullLiteral, context.CancellationToken) is ILiteralOperation { ConstantValue: { HasValue: true, Value: null } })
             {
                 TypeInfo typeInfo = semanticModel.GetTypeInfo(nullLiteral, context.CancellationToken);
                 if (typeInfo.ConvertedType is INamedTypeSymbol returnType)
@@ -61,7 +61,7 @@ public class VSTHRD114AvoidReturningNullTaskCodeFix : CodeFixProvider
                     var generator = SyntaxGenerator.GetGenerator(context.Document);
                     SyntaxNode taskFromResultExpression = generator.InvocationExpression(
                         generator.MemberAccessExpression(
-                            generator.TypeExpressionForStaticMemberAccess(returnType.BaseType),
+                            generator.TypeExpressionForStaticMemberAccess(returnType.BaseType!),
                             generator.GenericName(nameof(Task.FromResult), returnType.TypeArguments[0])),
                         generator.NullLiteralExpression());
 

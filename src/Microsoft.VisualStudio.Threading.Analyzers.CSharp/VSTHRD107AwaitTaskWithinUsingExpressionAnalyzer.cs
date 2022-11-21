@@ -63,7 +63,7 @@ public class VSTHRD107AwaitTaskWithinUsingExpressionAnalyzer : DiagnosticAnalyze
         if (usingStatement.Expression is object)
         {
             TypeInfo expressionTypeInfo = context.SemanticModel.GetTypeInfo(usingStatement.Expression, context.CancellationToken);
-            ITypeSymbol expressionType = expressionTypeInfo.Type;
+            ITypeSymbol? expressionType = expressionTypeInfo.Type;
             if (expressionType?.Name == nameof(Task) &&
                 expressionType.BelongsToNamespace(Namespaces.SystemThreadingTasks))
             {

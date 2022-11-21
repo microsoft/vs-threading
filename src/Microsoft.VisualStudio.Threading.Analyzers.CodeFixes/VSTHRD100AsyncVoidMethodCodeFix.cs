@@ -76,8 +76,8 @@ public class VSTHRD100AsyncVoidMethodCodeFix : CodeFixProvider
 
         protected override async Task<Document> GetChangedDocumentAsync(CancellationToken cancellationToken)
         {
-            SyntaxNode? root = await this.document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-            MethodDeclarationSyntax? methodDeclaration = root.FindNode(this.diagnostic.Location.SourceSpan).FirstAncestorOrSelf<MethodDeclarationSyntax>();
+            SyntaxNode? root = await this.document.GetSyntaxRootOrThrowAsync(cancellationToken).ConfigureAwait(false);
+            MethodDeclarationSyntax methodDeclaration = root.FindNode(this.diagnostic.Location.SourceSpan).FirstAncestorOrSelf<MethodDeclarationSyntax>() ?? throw new InvalidOperationException("Unable to find MethodDeclaration");
             TypeSyntax? taskType = SyntaxFactory.ParseTypeName(typeof(Task).FullName)
                 .WithAdditionalAnnotations(Simplifier.Annotation)
                 .WithTrailingTrivia(methodDeclaration.ReturnType.GetTrailingTrivia());
