@@ -64,7 +64,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             helpLinkUri: Utils.GetHelpLink(Id),
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Warning,
-            isEnabledByDefault: true);
+            isEnabledByDefault: true,
+            customTags: "CompilationEnd" /*WellKnownDiagnosticTags.CompilationEnd*/);
 
         /// <summary>
         /// The descriptor to use for diagnostics reported in async methods.
@@ -76,7 +77,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
             helpLinkUri: Utils.GetHelpLink(Id),
             category: "Usage",
             defaultSeverity: DiagnosticSeverity.Warning,
-            isEnabledByDefault: true);
+            isEnabledByDefault: true,
+            customTags: "CompilationEnd" /*WellKnownDiagnosticTags.CompilationEnd*/);
 
         /// <summary>
         /// A reusable value to return from <see cref="SupportedDiagnostics"/>.
