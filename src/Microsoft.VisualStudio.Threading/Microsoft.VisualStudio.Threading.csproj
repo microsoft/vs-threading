@@ -7,9 +7,6 @@
     <PackageTags>Threading Async Lock Synchronization Threadsafe</PackageTags>
 
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-
-    <!-- Version conflicts are reported because of our reference to the analyzers project, which we don't even use. -->
-    <NoWarn>$(NoWarn);MSB3277</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
     <TargetFrameworks>$(TargetFrameworks);net6.0-windows</TargetFrameworks>
@@ -54,7 +51,9 @@
   <ItemGroup>
     <!-- We don't consume the analyzers in this library itself,
          but we reference the project to add a package dependency so users of this library will automatically get the analyzers. -->
-    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.csproj" PrivateAssets="none" />
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.csproj"
+                      PrivateAssets="none"
+                      Condition="'$(ExcludeRestorePackageImports)' != ''"  />
   </ItemGroup>
   <Import Project="OptProf.targets" Condition=" '$(TargetFramework)' == 'net472' " />
 </Project>
