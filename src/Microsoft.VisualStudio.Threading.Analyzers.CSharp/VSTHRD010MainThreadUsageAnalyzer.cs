@@ -64,7 +64,8 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
         helpLinkUri: Utils.GetHelpLink(Id),
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Warning,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: WellKnownDiagnosticTags.CompilationEnd);
 
     /// <summary>
     /// The descriptor to use for diagnostics reported in async methods.
@@ -76,7 +77,8 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
         helpLinkUri: Utils.GetHelpLink(Id),
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Warning,
-        isEnabledByDefault: true);
+        isEnabledByDefault: true,
+        customTags: WellKnownDiagnosticTags.CompilationEnd);
 
     /// <summary>
     /// A reusable value to return from <see cref="SupportedDiagnostics"/>.
