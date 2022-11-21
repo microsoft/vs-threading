@@ -8,6 +8,9 @@
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
 
     <DefineConstants Condition=" '$(TargetFramework)' == 'net472' ">$(DefineConstants);ISOLATED_TEST_SUPPORT</DefineConstants>
+
+    <!-- Version conflicts are reported because of our reference to the analyzers project, which we don't even use. -->
+    <NoWarn>$(NoWarn);MSB3277</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
     <TargetFrameworks>$(TargetFrameworks);net472;net6.0-windows</TargetFrameworks>

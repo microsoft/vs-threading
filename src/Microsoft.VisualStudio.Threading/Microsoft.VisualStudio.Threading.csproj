@@ -7,6 +7,9 @@
     <PackageTags>Threading Async Lock Synchronization Threadsafe</PackageTags>
 
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- Version conflicts are reported because of our reference to the analyzers project, which we don't even use. -->
+    <NoWarn>$(NoWarn);MSB3277</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
     <TargetFrameworks>$(TargetFrameworks);net6.0-windows</TargetFrameworks>
