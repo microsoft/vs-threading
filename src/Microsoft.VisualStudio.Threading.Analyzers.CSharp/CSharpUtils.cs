@@ -40,7 +40,7 @@ internal sealed class CSharpUtils : LanguageUtils
     /// </summary>
     /// <param name="syntaxNode">The syntax node to begin the search from.</param>
     /// <returns>The containing function, and metadata for it.</returns>
-    internal static ContainingFunctionData GetContainingFunction(CSharpSyntaxNode syntaxNode)
+    internal static ContainingFunctionData GetContainingFunction(CSharpSyntaxNode? syntaxNode)
     {
         while (syntaxNode is object)
         {
@@ -103,7 +103,7 @@ internal sealed class CSharpUtils : LanguageUtils
                 return new ContainingFunctionData(method, method.Modifiers.Any(SyntaxKind.AsyncKeyword), method.ParameterList, method.Body, bodyReplacement);
             }
 
-            syntaxNode = (CSharpSyntaxNode)syntaxNode.Parent;
+            syntaxNode = (CSharpSyntaxNode?)syntaxNode.Parent;
         }
 
         return default(ContainingFunctionData);
@@ -147,7 +147,7 @@ internal sealed class CSharpUtils : LanguageUtils
             if (node is AssignmentExpressionSyntax assignment)
             {
                 ISymbol? assignedSymbol = semanticModel.GetSymbolInfo(assignment.Left, cancellationToken).Symbol;
-                if (variable.Equals(assignedSymbol))
+                if (variable.Equals(assignedSymbol, SymbolEqualityComparer.Default))
                 {
                     return true;
                 }
@@ -207,7 +207,7 @@ internal sealed class CSharpUtils : LanguageUtils
                     foreach (BaseTypeSyntax? baseTypeSyntax in typeDeclarationSyntax.BaseList.Types)
                     {
                         SymbolInfo baseTypeSymbolInfo = semanticModel.GetSymbolInfo(baseTypeSyntax.Type, cancellationToken);
-                        if (Equals(baseTypeSymbolInfo.Symbol, baseType))
+                        if (SymbolEqualityComparer.Default.Equals(baseTypeSymbolInfo.Symbol, baseType))
                         {
                             return baseTypeSyntax.GetLocation();
                         }
@@ -264,7 +264,7 @@ internal sealed class CSharpUtils : LanguageUtils
 
     internal readonly struct ContainingFunctionData
     {
-        internal ContainingFunctionData(CSharpSyntaxNode function, bool isAsync, ParameterListSyntax parameterList, CSharpSyntaxNode blockOrExpression, Func<CSharpSyntaxNode, CSharpSyntaxNode> bodyReplacement)
+        internal ContainingFunctionData(CSharpSyntaxNode function, bool isAsync, ParameterListSyntax? parameterList, CSharpSyntaxNode? blockOrExpression, Func<CSharpSyntaxNode, CSharpSyntaxNode> bodyReplacement)
         {
             this.Function = function;
             this.IsAsync = isAsync;
@@ -277,9 +277,9 @@ internal sealed class CSharpUtils : LanguageUtils
 
         internal bool IsAsync { get; }
 
-        internal ParameterListSyntax ParameterList { get; }
+        internal ParameterListSyntax? ParameterList { get; }
 
-        internal CSharpSyntaxNode BlockOrExpression { get; }
+        internal CSharpSyntaxNode? BlockOrExpression { get; }
 
         internal Func<CSharpSyntaxNode, CSharpSyntaxNode> BodyReplacement { get; }
     }

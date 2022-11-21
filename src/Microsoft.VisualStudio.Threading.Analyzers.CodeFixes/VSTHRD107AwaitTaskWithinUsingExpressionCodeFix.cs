@@ -55,8 +55,8 @@ public class VSTHRD107AwaitTaskWithinUsingExpressionCodeFix : CodeFixProvider
                 async ct =>
                 {
                     Document? document = context.Document;
-                    SyntaxNode? root = await document.GetSyntaxRootAsync(ct).ConfigureAwait(false);
-                    MethodDeclarationSyntax? method = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<MethodDeclarationSyntax>();
+                    SyntaxNode? root = await document.GetSyntaxRootOrThrowAsync(ct).ConfigureAwait(false);
+                    MethodDeclarationSyntax method = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<MethodDeclarationSyntax>() ?? throw new InvalidOperationException("Unable to find MethodDeclaration.");
 
                     (document, method, _) = await FixUtils.UpdateDocumentAsync(
                         document,
@@ -64,9 +64,9 @@ public class VSTHRD107AwaitTaskWithinUsingExpressionCodeFix : CodeFixProvider
                         m =>
                         {
                             root = m.SyntaxTree.GetRoot(ct);
-                            UsingStatementSyntax usingStatement = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<UsingStatementSyntax>();
+                            UsingStatementSyntax? usingStatement = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<UsingStatementSyntax>() ?? throw new InvalidOperationException("Unable to find using statement.");
                             AwaitExpressionSyntax awaitExpression = SyntaxFactory.AwaitExpression(
-                                SyntaxFactory.ParenthesizedExpression(usingStatement.Expression));
+                                SyntaxFactory.ParenthesizedExpression(usingStatement.Expression!));
                             UsingStatementSyntax modifiedUsingStatement = usingStatement.WithExpression(awaitExpression)
                                 .WithAdditionalAnnotations(Simplifier.Annotation);
                             return m.ReplaceNode(usingStatement, modifiedUsingStatement);

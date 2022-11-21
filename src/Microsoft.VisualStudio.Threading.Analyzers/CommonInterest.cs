@@ -314,7 +314,7 @@ internal static class CommonInterest
 
         public string Name { get; }
 
-        public bool IsMatch(ISymbol symbol)
+        public bool IsMatch(ISymbol? symbol)
         {
             return symbol?.Name == this.Name
                 && this.ContainingType.IsMatch(symbol.ContainingType);

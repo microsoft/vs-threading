@@ -19,7 +19,7 @@ internal static class FixUtils
 {
     internal const string BookmarkAnnotationName = "Bookmark";
 
-    internal static AnonymousFunctionExpressionSyntax MakeMethodAsync(this AnonymousFunctionExpressionSyntax method, bool hasReturnValue, SemanticModel semanticModel, CancellationToken cancellationToken)
+    internal static AnonymousFunctionExpressionSyntax MakeMethodAsync(this AnonymousFunctionExpressionSyntax method, bool hasReturnValue, SemanticModel? semanticModel, CancellationToken cancellationToken)
     {
         if (method.AsyncKeyword.IsKind(SyntaxKind.AsyncKeyword))
         {
@@ -127,12 +127,7 @@ internal static class FixUtils
 
         // Fix up any return statements to await on the Task it would have returned.
         bool returnTypeChanged = method.ReturnType != returnType;
-        BlockSyntax updatedBody = UpdateStatementsForAsyncMethod(
-            method.Body,
-            semanticModel,
-            hasReturnValue,
-            returnTypeChanged,
-            cancellationToken);
+        BlockSyntax? updatedBody = method.Body is null ? null : UpdateStatementsForAsyncMethod(method.Body, semanticModel, hasReturnValue, returnTypeChanged, cancellationToken);
 
         // Apply the changes to the document, and null out stale data.
         SyntaxAnnotation methodBookmark;
@@ -154,7 +149,7 @@ internal static class FixUtils
             string newName = method.Identifier.ValueText + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix;
 
             semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
-            methodSymbol = semanticModel.GetDeclaredSymbol(method, cancellationToken);
+            methodSymbol = semanticModel.GetDeclaredSymbol(method, cancellationToken) ?? throw new InvalidOperationException("Unable to find method symbol.");
 
             // Don't rename entrypoint (i.e. "Main") methods.
             if (!Utils.IsEntrypointMethod(methodSymbol, semanticModel, cancellationToken))
@@ -162,13 +157,14 @@ internal static class FixUtils
                 Solution? solution = await Renamer.RenameSymbolAsync(
                     document.Project.Solution,
                     methodSymbol,
+                    ////new SymbolRenameOptions { RenameInComments = true }, // Required by later compiler version
                     newName,
                     document.Project.Solution.Workspace.Options,
                     cancellationToken).ConfigureAwait(false);
-                document = solution.GetDocument(document.Id);
+                document = solution.GetDocumentOrThrow(document.Id);
                 semanticModel = null;
                 methodSymbol = null;
-                SyntaxNode? root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+                SyntaxNode? root = await document.GetSyntaxRootOrThrowAsync(cancellationToken).ConfigureAwait(false);
                 method = (MethodDeclarationSyntax)root.GetAnnotatedNodes(methodBookmark).Single();
             }
         }
@@ -177,26 +173,26 @@ internal static class FixUtils
         if (returnTypeChanged)
         {
             semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
-            methodSymbol = semanticModel.GetDeclaredSymbol(method, cancellationToken);
+            methodSymbol = semanticModel.GetDeclaredSymbol(method, cancellationToken) ?? throw new InvalidOperationException("Unable to find method symbol.");
             SyntaxAnnotation callerAnnotation;
             Solution solution = document.Project.Solution;
             List<DocumentId> annotatedDocumentIds;
             (solution, callerAnnotation, annotatedDocumentIds) = await AnnotateAllCallersAsync(solution, methodSymbol, cancellationToken).ConfigureAwait(false);
             foreach (DocumentId docId in annotatedDocumentIds)
             {
-                document = solution.GetDocument(docId);
-                SyntaxTree? tree = await document.GetSyntaxTreeAsync(cancellationToken).ConfigureAwait(false);
-                SyntaxNode? root = await tree.GetRootAsync(cancellationToken).ConfigureAwait(false);
+                document = solution.GetDocumentOrThrow(docId);
+                SyntaxTree tree = await document.GetSyntaxTreeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+                SyntaxNode root = await tree.GetRootAsync(cancellationToken).ConfigureAwait(false);
                 var rewriter = new AwaitCallRewriter(callerAnnotation);
                 root = rewriter.Visit(root);
-                solution = solution.GetDocument(tree).WithSyntaxRoot(root).Project.Solution;
+                solution = solution.GetDocumentOrThrow(tree).WithSyntaxRoot(root).Project.Solution;
             }
 
             foreach (DocumentId docId in annotatedDocumentIds)
             {
-                document = solution.GetDocument(docId);
-                SyntaxTree? tree = await document.GetSyntaxTreeAsync(cancellationToken).ConfigureAwait(false);
-                SyntaxNode? root = await tree.GetRootAsync(cancellationToken).ConfigureAwait(false);
+                document = solution.GetDocumentOrThrow(docId);
+                SyntaxTree tree = await document.GetSyntaxTreeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+                SyntaxNode root = await tree.GetRootAsync(cancellationToken).ConfigureAwait(false);
                 for (SyntaxNode? node = root.GetAnnotatedNodes(callerAnnotation).FirstOrDefault(); node is object; node = root.GetAnnotatedNodes(callerAnnotation).FirstOrDefault())
                 {
                     MethodDeclarationSyntax? callingMethod = node.FirstAncestorOrSelf<MethodDeclarationSyntax>();
@@ -207,9 +203,9 @@ internal static class FixUtils
                         // Clear all annotations of callers from this method so we don't revisit it.
                         root = await callingMethod.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
                         var annotationRemover = new RemoveAnnotationRewriter(callerAnnotation);
-                        root = root.ReplaceNode(callingMethod, annotationRemover.Visit(callingMethod));
+                        root = root.ReplaceNode(callingMethod, annotationRemover.Visit(callingMethod)!);
                         document = document.WithSyntaxRoot(root);
-                        root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+                        root = await document.GetSyntaxRootOrThrowAsync(cancellationToken).ConfigureAwait(false);
                     }
                     else
                     {
@@ -217,7 +213,7 @@ internal static class FixUtils
                         root = await node.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
                         root = root.ReplaceNode(node, node.WithoutAnnotations(callerAnnotation));
                         document = document.WithSyntaxRoot(root);
-                        root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+                        root = await document.GetSyntaxRootOrThrowAsync(cancellationToken).ConfigureAwait(false);
                     }
                 }
 
@@ -225,9 +221,9 @@ internal static class FixUtils
             }
 
             // Make sure we return the latest of everything.
-            document = solution.GetDocument(documentId);
-            SyntaxTree? finalTree = await document.GetSyntaxTreeAsync(cancellationToken).ConfigureAwait(false);
-            SyntaxNode? finalRoot = await finalTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
+            document = solution.GetDocumentOrThrow(documentId);
+            SyntaxTree finalTree = await document.GetSyntaxTreeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+            SyntaxNode finalRoot = await finalTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
             method = (MethodDeclarationSyntax)finalRoot.GetAnnotatedNodes(methodBookmark).Single();
         }
 
@@ -239,9 +235,9 @@ internal static class FixUtils
         var bookmark = new SyntaxAnnotation();
         IEnumerable<SymbolCallerInfo>? callers = await SymbolFinder.FindCallersAsync(symbol, solution, cancellationToken).ConfigureAwait(false);
         IEnumerable<IGrouping<SyntaxTree, Location>>? callersByFile = from caller in callers
-                            from location in caller.Locations
-                            group location by location.SourceTree into file
-                            select file;
+                                                                      from location in caller.Locations
+                                                                      group location by location.SourceTree into file
+                                                                      select file;
         var updatedDocs = new List<DocumentId>();
         foreach (IGrouping<SyntaxTree, Location>? callerByFile in callersByFile)
         {
@@ -256,7 +252,7 @@ internal static class FixUtils
                 }
             }
 
-            Document updatedDocument = solution.GetDocument(callerByFile.Key)
+            Document updatedDocument = solution.GetDocumentOrThrow(callerByFile.Key)
                 .WithSyntaxRoot(root);
             updatedDocs.Add(updatedDocument.Id);
             solution = updatedDocument.Project.Solution;
@@ -275,12 +271,12 @@ internal static class FixUtils
         T? newSyntaxNode = syntaxNodeTransform(syntaxNode);
         if (!newSyntaxNode.HasAnnotation(bookmark))
         {
-            newSyntaxNode = syntaxNode.CopyAnnotationsTo(newSyntaxNode);
+            newSyntaxNode = syntaxNode.CopyAnnotationsTo(newSyntaxNode)!;
         }
 
         root = root.ReplaceNode(syntaxNode, newSyntaxNode);
         document = document.WithSyntaxRoot(root);
-        root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+        root = await document.GetSyntaxRootOrThrowAsync(cancellationToken).ConfigureAwait(false);
         newSyntaxNode = (T)root.GetAnnotatedNodes(bookmark).Single();
 
         return Tuple.Create(document, newSyntaxNode, bookmark);
@@ -290,10 +286,10 @@ internal static class FixUtils
         where T : SyntaxNode
     {
         var bookmark = new SyntaxAnnotation(BookmarkAnnotationName);
-        SyntaxNode? root = await syntaxNode.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
+        SyntaxNode root = await syntaxNode.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
         root = root.ReplaceNode(syntaxNode, syntaxNode.WithAdditionalAnnotations(bookmark));
         document = document.WithSyntaxRoot(root);
-        root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+        root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false) ?? throw new InvalidOperationException("Unable to find syntax root");
         syntaxNode = (T)root.GetAnnotatedNodes(bookmark).Single();
 
         return Tuple.Create(bookmark, document, syntaxNode, root);
@@ -326,7 +322,15 @@ internal static class FixUtils
         return SyntaxFactory.QualifiedName(result, simpleName);
     }
 
-    private static CSharpSyntaxNode UpdateStatementsForAsyncMethod(CSharpSyntaxNode body, SemanticModel semanticModel, bool hasResultValue, CancellationToken cancellationToken)
+    internal static Document GetDocumentOrThrow(this Solution solution, DocumentId documentId) => solution.GetDocument(documentId) ?? throw new InvalidOperationException("No document by the ID found.");
+
+    internal static Document GetDocumentOrThrow(this Solution solution, SyntaxTree syntaxTree) => solution.GetDocument(syntaxTree) ?? throw new InvalidOperationException("No document with the given syntax tree found.");
+
+    internal static async Task<SyntaxTree> GetSyntaxTreeOrThrowAsync(this Document document, CancellationToken cancellationToken) => await document.GetSyntaxTreeAsync(cancellationToken) ?? throw new InvalidOperationException("No syntax tree could be obtained from the document.");
+
+    internal static async Task<SyntaxNode> GetSyntaxRootOrThrowAsync(this Document document, CancellationToken cancellationToken) => await document.GetSyntaxRootAsync(cancellationToken) ?? throw new InvalidOperationException("No syntax root could be obtained from the document.");
+
+    private static CSharpSyntaxNode UpdateStatementsForAsyncMethod(CSharpSyntaxNode body, SemanticModel? semanticModel, bool hasResultValue, CancellationToken cancellationToken)
     {
         var blockBody = body as BlockSyntax;
         if (blockBody is object)
@@ -344,15 +348,15 @@ internal static class FixUtils
         throw new NotSupportedException();
     }
 
-    private static BlockSyntax UpdateStatementsForAsyncMethod(BlockSyntax body, SemanticModel semanticModel, bool hasResultValue, bool returnTypeChanged, CancellationToken cancellationToken)
+    private static BlockSyntax UpdateStatementsForAsyncMethod(BlockSyntax body, SemanticModel? semanticModel, bool hasResultValue, bool returnTypeChanged, CancellationToken cancellationToken)
     {
-        BlockSyntax? fixedUpBlock = body.ReplaceNodes(
+        BlockSyntax fixedUpBlock = body.ReplaceNodes(
             body.DescendantNodes().OfType<ReturnStatementSyntax>(),
             (f, n) =>
             {
                 if (hasResultValue)
                 {
-                    return returnTypeChanged
+                    return returnTypeChanged || n.Expression is null || f.Expression is null
                         ? n
                         : n.WithExpression(SyntaxFactory.AwaitExpression(n.Expression).TrySimplify(f.Expression, semanticModel, cancellationToken));
                 }
@@ -360,7 +364,9 @@ internal static class FixUtils
                 if (body.Statements.Last() == f)
                 {
                     // If it is the last statement in the method, we can remove it since a return is implied.
+#pragma warning disable CS8603 // Possible null reference return. - https://github.com/dotnet/roslyn/issues/65537
                     return null;
+#pragma warning restore CS8603 // Possible null reference return.
                 }
 
                 return n
@@ -371,7 +377,7 @@ internal static class FixUtils
         return fixedUpBlock;
     }
 
-    private static ExpressionSyntax TrySimplify(this AwaitExpressionSyntax awaitExpression, ExpressionSyntax originalSyntax, SemanticModel semanticModel, CancellationToken cancellationToken)
+    private static ExpressionSyntax TrySimplify(this AwaitExpressionSyntax awaitExpression, ExpressionSyntax originalSyntax, SemanticModel? semanticModel, CancellationToken cancellationToken)
     {
         if (awaitExpression is null)
         {
@@ -408,7 +414,7 @@ internal static class FixUtils
             this.callAnnotation = callAnnotation ?? throw new ArgumentNullException(nameof(callAnnotation));
         }
 
-        public override SyntaxNode VisitInvocationExpression(InvocationExpressionSyntax node)
+        public override SyntaxNode? VisitInvocationExpression(InvocationExpressionSyntax node)
         {
             if (node.HasAnnotation(this.callAnnotation))
             {
@@ -431,7 +437,7 @@ internal static class FixUtils
             this.annotationToRemove = annotationToRemove ?? throw new ArgumentNullException(nameof(annotationToRemove));
         }
 
-        public override SyntaxNode Visit(SyntaxNode node)
+        public override SyntaxNode? Visit(SyntaxNode? node)
         {
             return base.Visit(
                 (node?.HasAnnotation(this.annotationToRemove) ?? false)

@@ -31,7 +31,7 @@ internal sealed class VisualBasicUtils : LanguageUtils
                         foreach (TypeSyntax? typeSyntax in inheritStatement.Types)
                         {
                             SymbolInfo baseTypeSymbolInfo = semanticModel.GetSymbolInfo(typeSyntax, cancellationToken);
-                            if (Equals(baseTypeSymbolInfo.Symbol, baseType))
+                            if (SymbolEqualityComparer.Default.Equals(baseTypeSymbolInfo.Symbol, baseType))
                             {
                                 return typeSyntax.GetLocation();
                             }
@@ -48,7 +48,7 @@ internal sealed class VisualBasicUtils : LanguageUtils
                         foreach (TypeSyntax? typeSyntax in implementStatement.Types)
                         {
                             SymbolInfo baseTypeSymbolInfo = semanticModel.GetSymbolInfo(typeSyntax, cancellationToken);
-                            if (Equals(baseTypeSymbolInfo.Symbol, baseType))
+                            if (SymbolEqualityComparer.Default.Equals(baseTypeSymbolInfo.Symbol, baseType))
                             {
                                 return typeSyntax.GetLocation();
                             }
@@ -65,7 +65,7 @@ internal sealed class VisualBasicUtils : LanguageUtils
                         foreach (TypeSyntax? typeSyntax in implementStatement.Types)
                         {
                             SymbolInfo baseTypeSymbolInfo = semanticModel.GetSymbolInfo(typeSyntax, cancellationToken);
-                            if (Equals(baseTypeSymbolInfo.Symbol, baseType))
+                            if (SymbolEqualityComparer.Default.Equals(baseTypeSymbolInfo.Symbol, baseType))
                             {
                                 return typeSyntax.GetLocation();
                             }

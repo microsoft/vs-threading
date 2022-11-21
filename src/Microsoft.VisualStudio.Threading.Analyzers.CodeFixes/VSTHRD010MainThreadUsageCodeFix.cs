@@ -35,8 +35,8 @@ public class VSTHRD010MainThreadUsageCodeFix : CodeFixProvider
     {
         Diagnostic? diagnostic = context.Diagnostics.First();
 
-        SyntaxNode? root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
-        var syntaxNode = (ExpressionSyntax)root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: true);
+        SyntaxNode root = await context.Document.GetSyntaxRootOrThrowAsync(context.CancellationToken).ConfigureAwait(false);
+        var syntaxNode = (ExpressionSyntax?)root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: true);
 
         CSharpUtils.ContainingFunctionData container = CSharpUtils.GetContainingFunction(syntaxNode);
         if (container.BlockOrExpression is null)
@@ -45,7 +45,7 @@ public class VSTHRD010MainThreadUsageCodeFix : CodeFixProvider
         }
 
         SemanticModel? semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
-        ISymbol? enclosingSymbol = semanticModel.GetEnclosingSymbol(diagnostic.Location.SourceSpan.Start, context.CancellationToken);
+        ISymbol? enclosingSymbol = semanticModel?.GetEnclosingSymbol(diagnostic.Location.SourceSpan.Start, context.CancellationToken);
         if (enclosingSymbol is null)
         {
             return;
@@ -62,8 +62,8 @@ public class VSTHRD010MainThreadUsageCodeFix : CodeFixProvider
         Regex lookupKey = (container.IsAsync || convertToAsync)
             ? CommonInterest.FileNamePatternForMethodsThatSwitchToMainThread
             : CommonInterest.FileNamePatternForMethodsThatAssertMainThread;
-        string[] options = diagnostic.Properties[lookupKey.ToString()].Split('\n');
-        if (options.Length > 0)
+        string[]? options = diagnostic.Properties[lookupKey.ToString()]?.Split('\n');
+        if (options?.Length > 0)
         {
             // For any symbol lookups, we want to consider the position of the very first statement in the block.
             int positionForLookup = container.BlockOrExpression.GetLocation().SourceSpan.Start + 1;
@@ -86,7 +86,7 @@ public class VSTHRD010MainThreadUsageCodeFix : CodeFixProvider
                 {
                     OfferFix(option);
                 }
-                else
+                else if (semanticModel is not null)
                 {
                     foreach (Tuple<bool, ISymbol>? candidate in Utils.FindInstanceOf(proposedMethod.ContainingType, semanticModel, positionForLookup, context.CancellationToken))
                     {
@@ -140,7 +140,7 @@ public class VSTHRD010MainThreadUsageCodeFix : CodeFixProvider
             }
 
             BlockSyntax? newBlock = initialBlockSyntax.WithStatements(initialBlockSyntax.Statements.Insert(0, addedStatement));
-            return Task.FromResult(context.Document.WithSyntaxRoot(root.ReplaceNode(container.BlockOrExpression.Parent, container.BodyReplacement(newBlock))));
+            return Task.FromResult(context.Document.WithSyntaxRoot(root.ReplaceNode(container.BlockOrExpression.Parent!, container.BodyReplacement(newBlock))!));
         }
     }
 }

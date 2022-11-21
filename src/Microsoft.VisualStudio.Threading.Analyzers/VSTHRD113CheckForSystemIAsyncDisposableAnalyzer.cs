@@ -52,7 +52,7 @@ public class VSTHRD113CheckForSystemIAsyncDisposableAnalyzer : DiagnosticAnalyze
         });
     }
 
-    private static void AnalyzeTypeCheck(OperationAnalysisContext context, INamedTypeSymbol vsThreadingAsyncDisposableType, INamedTypeSymbol bclAsyncDisposableType)
+    private static void AnalyzeTypeCheck(OperationAnalysisContext context, INamedTypeSymbol vsThreadingAsyncDisposableType, INamedTypeSymbol? bclAsyncDisposableType)
     {
         switch (context.Operation)
         {
@@ -67,9 +67,9 @@ public class VSTHRD113CheckForSystemIAsyncDisposableAnalyzer : DiagnosticAnalyze
                 break;
         }
 
-        static void ConsiderTypeCheck(OperationAnalysisContext context, ITypeSymbol operand, INamedTypeSymbol vsThreadingAsyncDisposableType, INamedTypeSymbol bclAsyncDisposableType)
+        static void ConsiderTypeCheck(OperationAnalysisContext context, ITypeSymbol operand, INamedTypeSymbol vsThreadingAsyncDisposableType, INamedTypeSymbol? bclAsyncDisposableType)
         {
-            if (Equals(vsThreadingAsyncDisposableType, operand))
+            if (SymbolEqualityComparer.Default.Equals(vsThreadingAsyncDisposableType, operand))
             {
                 // If the System.IAsyncDisposable type is defined, search for a check for that type and skip the diagnostic if we find one.
                 if (bclAsyncDisposableType is object)
@@ -91,11 +91,11 @@ public class VSTHRD113CheckForSystemIAsyncDisposableAnalyzer : DiagnosticAnalyze
             switch (operation)
             {
                 case IIsTypeOperation { TypeOperand: { } operand }:
-                    return Equals(typeChecked, operand);
+                    return SymbolEqualityComparer.Default.Equals(typeChecked, operand);
                 case IDeclarationPatternOperation { DeclaredSymbol: ILocalSymbol { Type: { } operand } }:
-                    return Equals(typeChecked, operand);
+                    return SymbolEqualityComparer.Default.Equals(typeChecked, operand);
                 case IConversionOperation { Type: { } operand }:
-                    return Equals(typeChecked, operand);
+                    return SymbolEqualityComparer.Default.Equals(typeChecked, operand);
                 default:
                     return false;
             }

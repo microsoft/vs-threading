@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard1.3</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Microsoft.VisualStudio.Threading.Analyzers</RootNamespace>
 
     <Description>Static code analyzer to detect common mistakes or potential issues regarding threading and async coding.</Description>

@@ -110,7 +110,7 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
                         asyncMethodName,
                         includeReducedExtensionMethods: true);
 
-                    MethodDeclarationSyntax invocationDeclaringMethod = invocationExpressionSyntax.FirstAncestorOrSelf<MethodDeclarationSyntax>();
+                    MethodDeclarationSyntax? invocationDeclaringMethod = invocationExpressionSyntax.FirstAncestorOrSelf<MethodDeclarationSyntax>();
                     ExpressionSyntax invokedMethodName = CSharpUtils.IsolateMethodName(invocationExpressionSyntax);
                     foreach (IMethodSymbol m in symbols.OfType<IMethodSymbol>())
                     {
@@ -120,7 +120,7 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
                             && m.HasAsyncCompatibleReturnType())
                         {
                             // An async alternative exists.
-                            ImmutableDictionary<string, string>? properties = ImmutableDictionary<string, string>.Empty
+                            ImmutableDictionary<string, string?>? properties = ImmutableDictionary<string, string?>.Empty
                                 .Add(AsyncMethodKeyName, asyncMethodName);
 
                             Diagnostic diagnostic = Diagnostic.Create(
@@ -148,7 +148,7 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
         /// </returns>
         private static bool HasSupersetOfParameterTypes(IMethodSymbol candidateMethod, IMethodSymbol baselineMethod)
         {
-            return candidateMethod.Parameters.All(candidateParameter => baselineMethod.Parameters.Any(baselineParameter => baselineParameter.Type?.Equals(candidateParameter.Type) ?? false));
+            return candidateMethod.Parameters.All(candidateParameter => baselineMethod.Parameters.Any(baselineParameter => baselineParameter.Type?.Equals(candidateParameter.Type, SymbolEqualityComparer.Default) ?? false));
         }
 
         private static bool IsInTaskReturningMethodOrDelegate(SyntaxNodeAnalysisContext context)
@@ -189,7 +189,7 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
                     if (item.Method.IsMatch(memberSymbol))
                     {
                         Location? location = memberAccessSyntax.Name.GetLocation();
-                        ImmutableDictionary<string, string>? properties = ImmutableDictionary<string, string>.Empty
+                        ImmutableDictionary<string, string?>? properties = ImmutableDictionary<string, string?>.Empty
                             .Add(ExtensionMethodNamespaceKeyName, item.ExtensionMethodNamespace is object ? string.Join(".", item.ExtensionMethodNamespace) : string.Empty);
                         DiagnosticDescriptor descriptor;
                         var messageArgs = new List<object>(2);

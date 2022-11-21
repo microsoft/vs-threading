@@ -120,13 +120,13 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
             var mainThreadAssertingMethods = CommonInterest.ReadMethods(compilationStartContext.Options, CommonInterest.FileNamePatternForMethodsThatAssertMainThread, compilationStartContext.CancellationToken).ToImmutableArray();
             var mainThreadSwitchingMethods = CommonInterest.ReadMethods(compilationStartContext.Options, CommonInterest.FileNamePatternForMethodsThatSwitchToMainThread, compilationStartContext.CancellationToken).ToImmutableArray();
             var membersRequiringMainThread = CommonInterest.ReadTypesAndMembers(compilationStartContext.Options, CommonInterest.FileNamePatternForMembersRequiringMainThread, compilationStartContext.CancellationToken).ToImmutableArray();
-            ImmutableDictionary<string, string>? diagnosticProperties = ImmutableDictionary<string, string>.Empty
+            ImmutableDictionary<string, string?>? diagnosticProperties = ImmutableDictionary<string, string?>.Empty
                 .Add(CommonInterest.FileNamePatternForMethodsThatAssertMainThread.ToString(), string.Join("\n", mainThreadAssertingMethods))
                 .Add(CommonInterest.FileNamePatternForMethodsThatSwitchToMainThread.ToString(), string.Join("\n", mainThreadSwitchingMethods));
 
-            var methodsDeclaringUIThreadRequirement = new HashSet<IMethodSymbol>();
-            var methodsAssertingUIThreadRequirement = new HashSet<IMethodSymbol>();
-            var callerToCalleeMap = new Dictionary<IMethodSymbol, List<CallInfo>>();
+            var methodsDeclaringUIThreadRequirement = new HashSet<IMethodSymbol>(SymbolEqualityComparer.Default);
+            var methodsAssertingUIThreadRequirement = new HashSet<IMethodSymbol>(SymbolEqualityComparer.Default);
+            var callerToCalleeMap = new Dictionary<IMethodSymbol, List<CallInfo>>(SymbolEqualityComparer.Default);
 
             compilationStartContext.RegisterCodeBlockStartAction<SyntaxKind>(codeBlockStartContext =>
             {
@@ -157,10 +157,10 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
                 HashSet<IMethodSymbol>? transitiveClosureOfMainThreadRequiringMethods = GetTransitiveClosureOfMainThreadRequiringMethods(methodsAssertingUIThreadRequirement, calleeToCallerMap);
                 foreach (IMethodSymbol? implicitUserMethod in transitiveClosureOfMainThreadRequiringMethods.Except(methodsDeclaringUIThreadRequirement))
                 {
-                    var reportSites = from info in callerToCalleeMap[implicitUserMethod]
-                                      where transitiveClosureOfMainThreadRequiringMethods.Contains(info.MethodSymbol)
-                                      group info by info.MethodSymbol into bySymbol
-                                      select new { Location = bySymbol.First().InvocationSyntax.GetLocation(), CalleeMethod = bySymbol.Key };
+                    var reportSites = callerToCalleeMap[implicitUserMethod]
+                        .Where(info => transitiveClosureOfMainThreadRequiringMethods.Contains(info.MethodSymbol))
+                        .GroupBy<CallInfo, ISymbol>(info => info.MethodSymbol, SymbolEqualityComparer.Default)
+                        .Select(bySymbol => new { Location = bySymbol.First().InvocationSyntax.GetLocation(), CalleeMethod = bySymbol.Key });
                     foreach (var site in reportSites)
                     {
                         bool isAsync = Utils.IsAsyncReady(implicitUserMethod);
@@ -181,7 +181,7 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
 
     private static HashSet<IMethodSymbol> GetTransitiveClosureOfMainThreadRequiringMethods(HashSet<IMethodSymbol> methodsRequiringUIThread, Dictionary<IMethodSymbol, List<CallInfo>> calleeToCallerMap)
     {
-        var result = new HashSet<IMethodSymbol>();
+        var result = new HashSet<IMethodSymbol>(SymbolEqualityComparer.Default);
 
         void MarkMethod(IMethodSymbol method)
         {
@@ -208,7 +208,7 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
 
     private static Dictionary<IMethodSymbol, List<CallInfo>> CreateCalleeToCallerMap(Dictionary<IMethodSymbol, List<CallInfo>> callerToCalleeMap)
     {
-        var result = new Dictionary<IMethodSymbol, List<CallInfo>>();
+        var result = new Dictionary<IMethodSymbol, List<CallInfo>>(SymbolEqualityComparer.Default);
 
         foreach (KeyValuePair<IMethodSymbol, List<CallInfo>> item in callerToCalleeMap)
         {
@@ -307,7 +307,7 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
             ImmutableArray<CommonInterest.TypeMatchSpec> membersRequiringMainThread,
             HashSet<IMethodSymbol> methodsDeclaringUIThreadRequirement,
             HashSet<IMethodSymbol> methodsAssertingUIThreadRequirement,
-            ImmutableDictionary<string, string> diagnosticProperties)
+            ImmutableDictionary<string, string?> diagnosticProperties)
         {
             this.MainThreadAssertingMethods = mainThreadAssertingMethods;
             this.MainThreadSwitchingMethods = mainThreadSwitchingMethods;
@@ -327,7 +327,7 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
 
         internal HashSet<IMethodSymbol> MethodsAssertingUIThreadRequirement { get; }
 
-        internal ImmutableDictionary<string, string> DiagnosticProperties { get; }
+        internal ImmutableDictionary<string, string?> DiagnosticProperties { get; }
 
         internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
         {
@@ -452,10 +452,10 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
             }
 
             return typeSymbol.GetAttributes().Any(ad =>
-                (ad.AttributeClass.Name == Types.CoClassAttribute.TypeName && ad.AttributeClass.BelongsToNamespace(Types.CoClassAttribute.Namespace)) ||
-                (ad.AttributeClass.Name == Types.ComImportAttribute.TypeName && ad.AttributeClass.BelongsToNamespace(Types.ComImportAttribute.Namespace)) ||
-                (ad.AttributeClass.Name == Types.InterfaceTypeAttribute.TypeName && ad.AttributeClass.BelongsToNamespace(Types.InterfaceTypeAttribute.Namespace)) ||
-                (ad.AttributeClass.Name == Types.TypeLibTypeAttribute.TypeName && ad.AttributeClass.BelongsToNamespace(Types.TypeLibTypeAttribute.Namespace)));
+                (ad.AttributeClass?.Name == Types.CoClassAttribute.TypeName && ad.AttributeClass.BelongsToNamespace(Types.CoClassAttribute.Namespace)) ||
+                (ad.AttributeClass?.Name == Types.ComImportAttribute.TypeName && ad.AttributeClass.BelongsToNamespace(Types.ComImportAttribute.Namespace)) ||
+                (ad.AttributeClass?.Name == Types.InterfaceTypeAttribute.TypeName && ad.AttributeClass.BelongsToNamespace(Types.InterfaceTypeAttribute.Namespace)) ||
+                (ad.AttributeClass?.Name == Types.TypeLibTypeAttribute.TypeName && ad.AttributeClass.BelongsToNamespace(Types.TypeLibTypeAttribute.Namespace)));
         }
 
         private bool AnalyzeMemberWithinContext(ITypeSymbol type, ISymbol? symbol, SyntaxNodeAnalysisContext context, Location? focusDiagnosticOn = null)

@@ -80,7 +80,7 @@ public abstract class AbstractVSTHRD108AssertThreadRequirementUnconditionally : 
 
     private static IEnumerable<IOperation> GetAncestorsWithinMethod(IOperation operation)
     {
-        for (IOperation current = operation; current is object; current = current.Parent)
+        for (IOperation? current = operation; current is object; current = current.Parent)
         {
             if (current is ILocalFunctionOperation || current is IAnonymousFunctionOperation)
             {
@@ -99,7 +99,7 @@ public abstract class AbstractVSTHRD108AssertThreadRequirementUnconditionally : 
         {
             IMethodSymbol? symbolOfContainingMethodInvocation = containingInvocation.TargetMethod;
             return symbolOfContainingMethodInvocation?.GetAttributes().Any(a =>
-                a.AttributeClass.BelongsToNamespace(Namespaces.SystemDiagnostics) &&
+                a.AttributeClass?.BelongsToNamespace(Namespaces.SystemDiagnostics) is true &&
                 a.AttributeClass.Name == nameof(System.Diagnostics.ConditionalAttribute)) ?? false;
         }
 

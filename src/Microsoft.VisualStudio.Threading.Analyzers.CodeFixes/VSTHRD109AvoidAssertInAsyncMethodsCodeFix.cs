@@ -35,7 +35,7 @@ public class VSTHRD109AvoidAssertInAsyncMethodsCodeFix : CodeFixProvider
     {
         foreach (Diagnostic? diagnostic in context.Diagnostics)
         {
-            SyntaxNode? root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
+            SyntaxNode root = await context.Document.GetSyntaxRootOrThrowAsync(context.CancellationToken).ConfigureAwait(false);
             ExpressionSyntax? syntaxNode = root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: true) as ExpressionSyntax;
             if (syntaxNode is null)
             {
@@ -58,7 +58,7 @@ public class VSTHRD109AvoidAssertInAsyncMethodsCodeFix : CodeFixProvider
             }
 
             SemanticModel? semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
-            ISymbol? enclosingSymbol = semanticModel.GetEnclosingSymbol(diagnostic.Location.SourceSpan.Start, context.CancellationToken);
+            ISymbol? enclosingSymbol = semanticModel?.GetEnclosingSymbol(diagnostic.Location.SourceSpan.Start, context.CancellationToken);
             if (enclosingSymbol is null)
             {
                 return;
@@ -72,7 +72,7 @@ public class VSTHRD109AvoidAssertInAsyncMethodsCodeFix : CodeFixProvider
             {
                 // We're looking for methods that either require no parameters,
                 // or (if we have one to give) that have just one parameter that is a CancellationToken.
-                IMethodSymbol? proposedMethod = Utils.FindMethodGroup(semanticModel, option)
+                IMethodSymbol? proposedMethod = semanticModel is null ? null : Utils.FindMethodGroup(semanticModel, option)
                     .FirstOrDefault(m => !m.Parameters.Any(p => !p.HasExplicitDefaultValue) ||
                         (cancellationTokenSymbol is object && m.Parameters.Length == 1 && Utils.IsCancellationTokenParameter(m.Parameters[0])));
                 if (proposedMethod is null)
@@ -85,7 +85,7 @@ public class VSTHRD109AvoidAssertInAsyncMethodsCodeFix : CodeFixProvider
                 {
                     OfferFix(option.ToString());
                 }
-                else
+                else if (semanticModel is not null)
                 {
                     foreach (Tuple<bool, ISymbol>? candidate in Utils.FindInstanceOf(proposedMethod.ContainingType, semanticModel, positionForLookup, context.CancellationToken))
                     {
@@ -108,7 +108,7 @@ public class VSTHRD109AvoidAssertInAsyncMethodsCodeFix : CodeFixProvider
 
             async Task<Solution> Fix(string fullyQualifiedMethod, IMethodSymbol methodSymbol, bool hasReturnValue, CancellationToken cancellationToken)
             {
-                StatementSyntax? assertionStatementToRemove = syntaxNode!.FirstAncestorOrSelf<StatementSyntax>();
+                StatementSyntax assertionStatementToRemove = syntaxNode!.FirstAncestorOrSelf<StatementSyntax>() ?? throw new InvalidOperationException("Unable to find containing statement.");
 
                 int typeAndMethodDelimiterIndex = fullyQualifiedMethod.LastIndexOf('.');
                 IdentifierNameSyntax methodName = SyntaxFactory.IdentifierName(fullyQualifiedMethod.Substring(typeAndMethodDelimiterIndex + 1));
@@ -135,7 +135,7 @@ public class VSTHRD109AvoidAssertInAsyncMethodsCodeFix : CodeFixProvider
                 CSharpSyntaxNode methodSyntax = container.Function.ReplaceNode(assertionStatementToRemove, addedStatement)
                     .WithAdditionalAnnotations(methodAnnotation);
                 Document newDocument = context.Document.WithSyntaxRoot(root.ReplaceNode(container.Function, methodSyntax));
-                SyntaxNode? newSyntaxRoot = await newDocument.GetSyntaxRootAsync(cancellationToken);
+                SyntaxNode? newSyntaxRoot = await newDocument.GetSyntaxRootOrThrowAsync(cancellationToken);
                 methodSyntax = (CSharpSyntaxNode)newSyntaxRoot.GetAnnotatedNodes(methodAnnotation).Single();
                 if (!container.IsAsync)
                 {

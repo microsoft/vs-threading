@@ -30,8 +30,13 @@ public class VSTHRD200UseAsyncNamingConventionCodeFix : CodeFixProvider
     /// <inheritdoc />
     public override Task RegisterCodeFixesAsync(CodeFixContext context)
     {
-        Diagnostic? diagnostic = context.Diagnostics.First();
-        context.RegisterCodeFix(new AddAsyncSuffixCodeAction(context.Document, diagnostic), diagnostic);
+        Diagnostic diagnostic = context.Diagnostics.First();
+        string? newName = diagnostic.Properties[VSTHRD200UseAsyncNamingConventionAnalyzer.NewNameKey];
+        if (newName is not null)
+        {
+            context.RegisterCodeFix(new AddAsyncSuffixCodeAction(context.Document, diagnostic, newName), diagnostic);
+        }
+
         return Task.FromResult<object?>(null);
     }
 
@@ -42,36 +47,36 @@ public class VSTHRD200UseAsyncNamingConventionCodeFix : CodeFixProvider
     {
         private readonly Diagnostic diagnostic;
         private readonly Document document;
+        private readonly string newName;
 
-        public AddAsyncSuffixCodeAction(Document document, Diagnostic diagnostic)
+        public AddAsyncSuffixCodeAction(Document document, Diagnostic diagnostic, string newName)
         {
             this.document = document;
             this.diagnostic = diagnostic;
+            this.newName = newName;
         }
 
         public override string Title => string.Format(
             CultureInfo.CurrentCulture,
             Strings.VSTHRD200_CodeFix_Title,
-            this.NewName);
+            this.newName);
 
         /// <inheritdoc />
         public override string? EquivalenceKey => null;
 
-        private string NewName => this.diagnostic.Properties[VSTHRD200UseAsyncNamingConventionAnalyzer.NewNameKey];
-
-        protected override async Task<Solution> GetChangedSolutionAsync(CancellationToken cancellationToken)
+        protected override async Task<Solution?> GetChangedSolutionAsync(CancellationToken cancellationToken)
         {
-            SyntaxNode? root = await this.document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+            SyntaxNode root = await this.document.GetSyntaxRootOrThrowAsync(cancellationToken).ConfigureAwait(false);
             var methodDeclaration = (MethodDeclarationSyntax)root.FindNode(this.diagnostic.Location.SourceSpan);
 
             SemanticModel? semanticModel = await this.document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
-            IMethodSymbol? methodSymbol = semanticModel.GetDeclaredSymbol(methodDeclaration, cancellationToken);
+            IMethodSymbol methodSymbol = semanticModel.GetDeclaredSymbol(methodDeclaration, cancellationToken) ?? throw new InvalidOperationException("Unable to get method symbol.");
 
             Solution? solution = this.document.Project.Solution;
             Solution? updatedSolution = await Renamer.RenameSymbolAsync(
                 solution,
                 methodSymbol,
-                this.NewName,
+                this.newName,
                 solution.Workspace.Options,
                 cancellationToken).ConfigureAwait(false);
 

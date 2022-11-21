@@ -399,19 +399,19 @@ internal static class Utils
         }
     }
 
-    internal static bool IsEntrypointMethod([NotNullWhen(true)] ISymbol? symbol, SemanticModel semanticModel, CancellationToken cancellationToken)
+    internal static bool IsEntrypointMethod([NotNullWhen(true)] ISymbol? symbol, SemanticModel? semanticModel, CancellationToken cancellationToken)
     {
-        return semanticModel.Compilation is object && IsEntrypointMethod(symbol, semanticModel.Compilation, cancellationToken);
+        return semanticModel?.Compilation is object && IsEntrypointMethod(symbol, semanticModel.Compilation, cancellationToken);
     }
 
     internal static bool IsEntrypointMethod([NotNullWhen(true)] ISymbol? symbol, Compilation compilation, CancellationToken cancellationToken)
     {
-        return compilation.GetEntryPoint(cancellationToken)?.Equals(symbol) ?? false;
+        return compilation.GetEntryPoint(cancellationToken)?.Equals(symbol, SymbolEqualityComparer.Default) ?? false;
     }
 
     internal static bool IsObsolete(this ISymbol symbol)
     {
-        return symbol.GetAttributes().Any(a => a.AttributeClass.Name == nameof(ObsoleteAttribute) && a.AttributeClass.BelongsToNamespace(Namespaces.System));
+        return symbol.GetAttributes().Any(a => a.AttributeClass?.Name == nameof(ObsoleteAttribute) && a.AttributeClass.BelongsToNamespace(Namespaces.System));
     }
 
     internal static IEnumerable<ITypeSymbol> FindInterfacesImplemented(this ISymbol? symbol)
@@ -422,10 +422,10 @@ internal static class Utils
         }
 
         IEnumerable<INamedTypeSymbol>? interfaceImplementations = from iface in symbol.ContainingType.AllInterfaces
-                                       from member in iface.GetMembers()
-                                       let implementingMember = symbol.ContainingType.FindImplementationForInterfaceMember(member)
-                                       where implementingMember?.Equals(symbol) ?? false
-                                       select iface;
+                                                                  from member in iface.GetMembers()
+                                                                  let implementingMember = symbol.ContainingType.FindImplementationForInterfaceMember(member)
+                                                                  where implementingMember?.Equals(symbol, SymbolEqualityComparer.Default) ?? false
+                                                                  select iface;
 
         return interfaceImplementations;
     }
@@ -492,22 +492,22 @@ internal static class Utils
     /// <param name="positionForLookup">The position in the document that must have access to any candidate <see cref="CancellationToken"/>.</param>
     /// <param name="cancellationToken">A token that represents lost interest in this inquiry.</param>
     /// <returns>Candidate <see cref="CancellationToken"/> symbols.</returns>
-    internal static IEnumerable<ISymbol>? FindCancellationToken(SemanticModel semanticModel, int positionForLookup, CancellationToken cancellationToken)
+    internal static IEnumerable<ISymbol> FindCancellationToken(SemanticModel? semanticModel, int positionForLookup, CancellationToken cancellationToken)
     {
         if (semanticModel is null)
         {
-            throw new ArgumentNullException(nameof(semanticModel));
+            return Enumerable.Empty<ISymbol>();
         }
 
         ISymbol? enclosingSymbol = semanticModel.GetEnclosingSymbol(positionForLookup, cancellationToken);
         if (enclosingSymbol is null)
         {
-            return null;
+            return Enumerable.Empty<ISymbol>();
         }
 
         IOrderedEnumerable<ISymbol>? cancellationTokenSymbols = semanticModel.LookupSymbols(positionForLookup)
             .Where(s => (s.IsStatic || !enclosingSymbol.IsStatic) && s.CanBeReferencedByName && IsSymbolTheRightType(s, nameof(CancellationToken), Namespaces.SystemThreading))
-            .OrderBy(s => s.ContainingSymbol.Equals(enclosingSymbol) ? 1 : s.ContainingType.Equals(enclosingSymbol.ContainingType) ? 2 : 3); // prefer locality
+            .OrderBy(s => s.ContainingSymbol.Equals(enclosingSymbol, SymbolEqualityComparer.Default) ? 1 : s.ContainingType.Equals(enclosingSymbol.ContainingType, SymbolEqualityComparer.Default) ? 2 : 3); // prefer locality
         return cancellationTokenSymbols;
     }
 
@@ -517,11 +517,11 @@ internal static class Utils
     /// <param name="semanticModel">The semantic model of the document that must be able to access the methods.</param>
     /// <param name="methodAsString">The fully-qualified name of the method.</param>
     /// <returns>An enumeration of method symbols with a matching name.</returns>
-    internal static IEnumerable<IMethodSymbol> FindMethodGroup(SemanticModel semanticModel, string methodAsString)
+    internal static IEnumerable<IMethodSymbol> FindMethodGroup(SemanticModel? semanticModel, string methodAsString)
     {
         if (semanticModel is null)
         {
-            throw new ArgumentNullException(nameof(semanticModel));
+            return Enumerable.Empty<IMethodSymbol>();
         }
 
         if (string.IsNullOrEmpty(methodAsString))
@@ -530,8 +530,6 @@ internal static class Utils
         }
 
         (string? fullTypeName, string? methodName) = SplitOffLastElement(methodAsString);
-        (string? ns, string? leafTypeName) = SplitOffLastElement(fullTypeName);
-        string[]? namespaces = ns?.Split('.');
         if (fullTypeName is null)
         {
             return Enumerable.Empty<IMethodSymbol>();
@@ -539,7 +537,9 @@ internal static class Utils
 
         INamedTypeSymbol? proposedType = semanticModel.Compilation.GetTypeByMetadataName(fullTypeName);
 
-        return proposedType?.GetMembers(methodName).OfType<IMethodSymbol>() ?? Enumerable.Empty<IMethodSymbol>();
+        return methodName is not null && proposedType is not null
+            ? proposedType.GetMembers(methodName).OfType<IMethodSymbol>()
+            : Enumerable.Empty<IMethodSymbol>();
     }
 
     /// <summary>
@@ -585,13 +585,15 @@ internal static class Utils
         // Search fields on the declaring type.
         // Consider local variables too, if they're captured in a closure from some surrounding code block
         // such that they would presumably be initialized by the time the first statement in our own code block runs.
-        ITypeSymbol enclosingTypeSymbol = enclosingSymbol as ITypeSymbol ?? enclosingSymbol.ContainingType;
+#pragma warning disable CA1508 // Avoid dead conditional code -- compiler bug. It's not dead code.
+        ITypeSymbol? enclosingTypeSymbol = enclosingSymbol as ITypeSymbol ?? enclosingSymbol?.ContainingType;
+#pragma warning restore CA1508 // Avoid dead conditional code
         if (enclosingTypeSymbol is object)
         {
             IEnumerable<ISymbol>? candidateMembers = from symbol in semanticModel.LookupSymbols(positionForLookup, enclosingTypeSymbol)
-                                   where symbol.IsStatic || !enclosingSymbol.IsStatic
-                                   where IsSymbolTheRightType(symbol, typeSymbol.Name, typeSymbol.ContainingNamespace)
-                                   select symbol;
+                                                     where symbol.IsStatic || !enclosingSymbol!.IsStatic
+                                                     where IsSymbolTheRightType(symbol, typeSymbol.Name, typeSymbol.ContainingNamespace)
+                                                     select symbol;
             foreach (ISymbol? candidate in candidateMembers)
             {
                 yield return Tuple.Create(true, candidate);
@@ -600,9 +602,9 @@ internal static class Utils
 
         // Find static fields/properties that return the matching type from other public, non-generic types.
         IEnumerable<ISymbol>? candidateStatics = from offering in semanticModel.LookupStaticMembers(positionForLookup).OfType<ITypeSymbol>()
-                               from symbol in offering.GetMembers()
-                               where symbol.IsStatic && symbol.CanBeReferencedByName && IsSymbolTheRightType(symbol, typeSymbol.Name, typeSymbol.ContainingNamespace)
-                               select symbol;
+                                                 from symbol in offering.GetMembers()
+                                                 where symbol.IsStatic && symbol.CanBeReferencedByName && IsSymbolTheRightType(symbol, typeSymbol.Name, typeSymbol.ContainingNamespace)
+                                                 select symbol;
         foreach (ISymbol? candidate in candidateStatics)
         {
             yield return Tuple.Create(false, candidate);
@@ -670,7 +672,7 @@ internal static class Utils
         };
     }
 
-    internal static bool IsSameSymbol(IOperation? op1, IOperation? op2) => GetUnderlyingSymbol(op1)?.Equals(GetUnderlyingSymbol(op2)) ?? false;
+    internal static bool IsSameSymbol(IOperation? op1, IOperation? op2) => GetUnderlyingSymbol(op1)?.Equals(GetUnderlyingSymbol(op2), SymbolEqualityComparer.Default) ?? false;
 
     internal static IOperation FindFinalAncestor(IOperation operation)
     {
@@ -715,7 +717,7 @@ internal static class Utils
         var parameterSymbol = symbol as IParameterSymbol;
         var localSymbol = symbol as ILocalSymbol;
         ITypeSymbol? memberType = fieldSymbol?.Type ?? propertySymbol?.Type ?? parameterSymbol?.Type ?? localSymbol?.Type;
-        return memberType?.Name == typeName && memberType.ContainingNamespace.Equals(namespaces);
+        return memberType?.Name == typeName && memberType.ContainingNamespace.Equals(namespaces, SymbolEqualityComparer.Default);
     }
 
     private static bool LaunchDebuggerExceptionFilter()
