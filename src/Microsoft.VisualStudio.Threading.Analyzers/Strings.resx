@@ -271,7 +271,7 @@ Start the work within this context, or use JoinableTaskFactory.RunAsync to start
     <comment>Do not translate either of these. The first is a keyword, the second is a method name.</comment>
   </data>
   <data name="VSTHRD110_MessageFormat" xml:space="preserve">
-    <value>Observe the awaitable result of this method call by awaiting it, assigning to a variable, or passing it to another method.</value>
+    <value>Observe the awaitable result of this method call by awaiting it, assigning to a variable, or passing it to another method</value>
   </data>
   <data name="VSTHRD110_Title" xml:space="preserve">
     <value>Observe result of async calls</value>

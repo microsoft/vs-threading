@@ -16,4 +16,6 @@ internal abstract class LanguageUtils
     internal abstract SyntaxNode IsolateMethodName(IObjectCreationOperation objectCreation);
 
     internal abstract bool MethodReturnsNullableReferenceType(IMethodSymbol method);
+
+    internal abstract bool IsAsyncMethod(SyntaxNode syntaxNode);
 }
