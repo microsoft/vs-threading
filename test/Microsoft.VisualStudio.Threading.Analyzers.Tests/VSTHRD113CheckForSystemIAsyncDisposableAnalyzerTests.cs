@@ -1,12 +1,8 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Threading.Tasks;
-using Xunit;
 using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.VSTHRD113CheckForSystemIAsyncDisposableAnalyzer, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
 using VBVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.VisualBasicCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.VSTHRD113CheckForSystemIAsyncDisposableAnalyzer, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
-
-namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
 
 public class VSTHRD113CheckForSystemIAsyncDisposableAnalyzerTests
 {

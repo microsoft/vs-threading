@@ -5,14 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.CodeAnalysis.Testing;
-using Xunit;
-using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.MultiAnalyzerTests.Verifier;
-
-namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
+using Microsoft.VisualStudio.Threading.Analyzers.Tests;
+using CSVerify = MultiAnalyzerTests.Verifier;
 
 public class MultiAnalyzerTests
 {
