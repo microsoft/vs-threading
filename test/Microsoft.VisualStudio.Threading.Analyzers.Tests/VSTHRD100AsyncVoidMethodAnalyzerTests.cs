@@ -1,11 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Threading.Tasks;
-using Xunit;
 using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.VSTHRD100AsyncVoidMethodAnalyzer, Microsoft.VisualStudio.Threading.Analyzers.VSTHRD100AsyncVoidMethodCodeFix>;
-
-namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
 
 public class VSTHRD100AsyncVoidMethodAnalyzerTests
 {
@@ -20,7 +16,7 @@ class Test {
     }
 }
 ";
-        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(5, 16);
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(5, 16);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -38,7 +34,7 @@ class Test {
     }
 }
 ";
-        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(8, 20);
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(8, 20);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -53,7 +49,7 @@ class Test {
     }
 }
 ";
-        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(5, 16);
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(5, 16);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -68,7 +64,7 @@ class Test {
     }
 }
 ";
-        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(5, 16);
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(5, 16);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -91,7 +87,7 @@ class Test {
     }
 }
 ";
-        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(5, 16);
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(5, 16);
         await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
     }
 
@@ -118,7 +114,7 @@ class Test {
 
 class MyEventArgs : EventArgs {}
 ";
-        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(5, 16);
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(5, 16);
         await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
     }
 }

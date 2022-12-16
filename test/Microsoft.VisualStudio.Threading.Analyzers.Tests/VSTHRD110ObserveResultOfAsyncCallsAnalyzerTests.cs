@@ -1,12 +1,8 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Threading.Tasks;
-using Microsoft.CodeAnalysis.Testing;
-using Xunit;
-using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.VSTHRD110ObserveResultOfAsyncCallsAnalyzer, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
-
-namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
+using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.CSharpVSTHRD110ObserveResultOfAsyncCallsAnalyzer, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
+using VerifyVB = Microsoft.VisualStudio.Threading.Analyzers.Tests.VisualBasicCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.VisualBasicVSTHRD110ObserveResultOfAsyncCallsAnalyzer, Microsoft.VisualStudio.Threading.Analyzers.VSTHRD114AvoidReturningNullTaskCodeFix>;
 
 public class VSTHRD110ObserveResultOfAsyncCallsAnalyzerTests
 {
@@ -19,15 +15,34 @@ using System.Threading.Tasks;
 class Test {
     void Foo()
     {
-        BarAsync();
+        [|BarAsync()|];
     }
 
     Task BarAsync() => null;
 }
 ";
 
-        DiagnosticResult expected = this.CreateDiagnostic(7, 9, 8);
-        await CSVerify.VerifyAnalyzerAsync(test, expected);
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task SyncMethod_ProducesDiagnostic_VB()
+    {
+        var test = @"
+Imports System.Threading.Tasks
+
+Class Test
+    Sub Foo
+        [|BarAsync()|]
+    End Sub
+
+    Function BarAsync() As Task
+        Return Nothing
+    End Function
+End Class
+";
+
+        await VerifyVB.VerifyAnalyzerAsync(test);
     }
 
     [Fact]
@@ -40,7 +55,7 @@ class Test {
     async Task Foo()
     {
         await Task.Run(delegate {
-            BarAsync();
+            [|BarAsync()|];
         });
     }
 
@@ -48,8 +63,7 @@ class Test {
 }
 ";
 
-        DiagnosticResult expected = this.CreateDiagnostic(8, 13, 8);
-        await CSVerify.VerifyAnalyzerAsync(test, expected);
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 
     [Fact]
@@ -163,7 +177,7 @@ using System.Threading.Tasks;
 class Test {
     void Foo()
     {
-        BarAsync().ContinueWith(_ => { }); // ContinueWith returns the dropped task
+        [|BarAsync().ContinueWith(_ => { })|]; // ContinueWith returns the dropped task
     }
 
     Task BarAsync() => null;
@@ -172,8 +186,7 @@ class Test {
 }
 ";
 
-        DiagnosticResult expected = this.CreateDiagnostic(7, 20, 12);
-        await CSVerify.VerifyAnalyzerAsync(test, expected);
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 
     [Fact]
@@ -193,6 +206,26 @@ class Test {
 ";
 
         await CSVerify.VerifyAnalyzerAsync(test); // CS4014 should already take care of this case.
+    }
+
+    [Fact]
+    public async Task AsyncMethod_ProducesNoDiagnostic_VB()
+    {
+        var test = @"
+Imports System.Threading.Tasks
+
+Class Test
+    Async Function Foo() As Task
+        BarAsync()
+    End Function
+
+    Function BarAsync() As Task
+        Return Nothing
+    End Function
+End Class
+";
+
+        await VerifyVB.VerifyAnalyzerAsync(test); // CS4014 should already take care of this case.
     }
 
     [Fact]
@@ -223,15 +256,14 @@ using System.Threading.Tasks;
 class Test {
     void Foo()
     {
-        BarAsync().ConfigureAwait(false);
+        [|BarAsync().ConfigureAwait(false)|];
     }
 
     Task BarAsync() => Task.CompletedTask;
 }
 ";
 
-        DiagnosticResult expected = this.CreateDiagnostic(7, 20, nameof(Task.ConfigureAwait).Length);
-        await CSVerify.VerifyAnalyzerAsync(test, expected);
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 
     [Fact]
@@ -243,15 +275,14 @@ using System.Threading.Tasks;
 class Test {
     void Foo()
     {
-        BarAsync().ConfigureAwait(false);
+        [|BarAsync().ConfigureAwait(false)|];
     }
 
     Task<int> BarAsync() => Task.FromResult(0);
 }
 ";
 
-        DiagnosticResult expected = this.CreateDiagnostic(7, 20, nameof(Task.ConfigureAwait).Length);
-        await CSVerify.VerifyAnalyzerAsync(test, expected);
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 
     [Fact]
@@ -264,7 +295,7 @@ using System.Runtime.CompilerServices;
 class Test {
     void Foo()
     {
-        BarAsync();
+        [|BarAsync()|];
     }
 
     CustomTask BarAsync() => new CustomTask();
@@ -288,8 +319,7 @@ class CustomAwaitable : INotifyCompletion
 	}
 }
 ";
-        DiagnosticResult expected = this.CreateDiagnostic(8, 9, 8);
-        await CSVerify.VerifyAnalyzerAsync(test, expected);
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 
     [Fact]
@@ -332,15 +362,14 @@ using System.Threading.Tasks;
 class Test {
     void Foo()
     {
-        BarAsync();
+        [|BarAsync()|];
     }
 
     ValueTask BarAsync() => default;
 }
 ";
 
-        DiagnosticResult expected = this.CreateDiagnostic(7, 9, 8);
-        await CSVerify.VerifyAnalyzerAsync(test, expected);
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 
     [Fact]
@@ -352,15 +381,14 @@ using System.Threading.Tasks;
 class Test {
     void Foo()
     {
-        BarAsync().ConfigureAwait(false);
+        [|BarAsync().ConfigureAwait(false)|];
     }
 
     ValueTask BarAsync() => default;
 }
 ";
 
-        DiagnosticResult expected = this.CreateDiagnostic(7, 20, nameof(Task.ConfigureAwait).Length);
-        await CSVerify.VerifyAnalyzerAsync(test, expected);
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 
     [Fact]
@@ -372,15 +400,14 @@ using System.Threading.Tasks;
 class Test {
     void Foo(Test? tester)
     {
-        tester?.BarAsync();
+        tester?[|.BarAsync()|];
     }
 
     Task BarAsync() => null;
 }
 ";
 
-        DiagnosticResult expected = this.CreateDiagnostic(7, 17, 8);
-        await CSVerify.VerifyAnalyzerAsync(test, expected);
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 
     [Fact]
@@ -413,7 +440,7 @@ public class Test : IAsyncDisposable
 {
 ~Test()
 {
-    Task.[|Run|](async () => await DisposeAsync().ConfigureAwait(false));
+    [|Task.Run(async () => await DisposeAsync().ConfigureAwait(false))|];
 }
 
 public async ValueTask DisposeAsync()

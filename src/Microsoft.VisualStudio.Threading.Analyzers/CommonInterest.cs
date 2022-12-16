@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis.Text;
 
 namespace Microsoft.VisualStudio.Threading.Analyzers;
@@ -62,6 +63,8 @@ internal static class CommonInterest
         new QualifiedMember(new QualifiedType(Types.AwaitExtensions.Namespace, Types.AwaitExtensions.TypeName), Types.AwaitExtensions.ConfigureAwaitRunInline));
 
     private const RegexOptions FileNamePatternRegexOptions = RegexOptions.IgnoreCase | RegexOptions.Singleline;
+
+    private const string GetAwaiterMethodName = "GetAwaiter";
 
     private static readonly TimeSpan RegexMatchTimeout = TimeSpan.FromSeconds(5);  // Prevent expensive CPU hang in Regex.Match if backtracking occurs due to pathological input (see #485).
 
@@ -124,10 +127,10 @@ internal static class CommonInterest
         }
 
         IEnumerable<SourceText>? docs = from file in analyzerOptions.AdditionalFiles.OrderBy(x => x.Path, StringComparer.Ordinal)
-                    let fileName = Path.GetFileName(file.Path)
-                    where fileNamePattern.IsMatch(fileName)
-                    let text = file.GetText(cancellationToken)
-                    select text;
+                                        let fileName = Path.GetFileName(file.Path)
+                                        where fileNamePattern.IsMatch(fileName)
+                                        let text = file.GetText(cancellationToken)
+                                        select text;
         return docs.SelectMany(ReadLinesFromAdditionalFile);
     }
 
@@ -164,6 +167,159 @@ internal static class CommonInterest
         }
 
         return !matching.IsEmpty && !matching.InvertedLogic;
+    }
+
+    internal static CommonInterest.AwaitableTypeTester CollectAwaitableTypes(Compilation compilation, CancellationToken cancellationToken)
+    {
+        HashSet<ITypeSymbol> awaitableTypes = new(SymbolEqualityComparer.Default);
+        void AddAwaitableType(ITypeSymbol type)
+        {
+            if (type is INamedTypeSymbol { IsGenericType: true, IsUnboundGenericType: false } genericType)
+            {
+                awaitableTypes.Add(genericType.ConstructUnboundGenericType());
+            }
+            else
+            {
+                awaitableTypes.Add(type);
+            }
+        }
+
+        foreach (ISymbol getAwaiterMember in compilation.GetSymbolsWithName(GetAwaiterMethodName, SymbolFilter.Member, cancellationToken))
+        {
+            if (TryGetAwaitableType(getAwaiterMember, out ITypeSymbol? awaitableType))
+            {
+                AddAwaitableType(awaitableType);
+            }
+        }
+
+        foreach (IAssemblySymbol referenceAssembly in compilation.Assembly.Modules.First().ReferencedAssemblySymbols)
+        {
+            CollectNamespace(referenceAssembly.GlobalNamespace);
+
+            void CollectNamespace(INamespaceOrTypeSymbol nsOrType)
+            {
+                if (nsOrType is INamespaceSymbol ns)
+                {
+                    foreach (INamespaceSymbol nestedNs in ns.GetNamespaceMembers())
+                    {
+                        CollectNamespace(nestedNs);
+                    }
+                }
+
+                foreach (INamedTypeSymbol nestedType in nsOrType.GetTypeMembers())
+                {
+                    CollectNamespace(nestedType);
+                }
+
+                foreach (ISymbol getAwaiterMember in nsOrType.GetMembers(GetAwaiterMethodName))
+                {
+                    if (TryGetAwaitableType(getAwaiterMember, out ITypeSymbol? awaitableType))
+                    {
+                        AddAwaitableType(awaitableType);
+                    }
+                }
+            }
+        }
+
+        bool TryGetAwaitableType(ISymbol getAwaiterMember, [NotNullWhen(true)] out ITypeSymbol? awaitableType)
+        {
+            if (getAwaiterMember is IMethodSymbol getAwaiterMethod && compilation.IsSymbolAccessibleWithin(getAwaiterMember, compilation.Assembly) && TestGetAwaiterMethod(getAwaiterMethod))
+            {
+                awaitableType = getAwaiterMethod.IsExtensionMethod ? getAwaiterMethod.Parameters[0].Type : getAwaiterMethod.ContainingType;
+                return true;
+            }
+
+            awaitableType = null;
+            return false;
+        }
+
+        return new AwaitableTypeTester(awaitableTypes);
+    }
+
+    internal static bool IsAwaitable(this ITypeSymbol? typeSymbol)
+    {
+        if (typeSymbol is null)
+        {
+            return false;
+        }
+
+        foreach (ISymbol symbol in typeSymbol.GetMembers(GetAwaiterMethodName))
+        {
+            if (symbol is IMethodSymbol getAwaiterMethod && TestGetAwaiterMethod(getAwaiterMethod))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    internal static bool IsAwaitable(this ITypeSymbol? typeSymbol, SemanticModel semanticModel, int position)
+    {
+        if (typeSymbol is null)
+        {
+            return false;
+        }
+
+        // We're able to do a more comprehensive job by detecting extension methods as well when we have a semantic model.
+        foreach (ISymbol symbol in semanticModel.LookupSymbols(position, typeSymbol, name: GetAwaiterMethodName, includeReducedExtensionMethods: true))
+        {
+            if (symbol is IMethodSymbol getAwaiterMethod && TestGetAwaiterMethod(getAwaiterMethod))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    internal static IOperation? GetContainingFunction(this IOperation? operation)
+    {
+        while (operation?.Parent is not null)
+        {
+            if (operation.Parent is IAnonymousFunctionOperation or IMethodBodyOperation)
+            {
+                return operation.Parent;
+            }
+
+            if (operation.Language == LanguageNames.VisualBasic)
+            {
+                if (operation.Parent is IBlockOperation)
+                {
+                    return operation.Parent;
+                }
+            }
+
+            operation = operation.Parent;
+        }
+
+        return null;
+    }
+
+    internal static bool ConformsToAwaiterPattern(ITypeSymbol typeSymbol)
+    {
+        if (typeSymbol is null)
+        {
+            return false;
+        }
+
+        var hasGetResultMethod = false;
+        var hasOnCompletedMethod = false;
+        var hasIsCompletedProperty = false;
+
+        foreach (ISymbol? member in typeSymbol.GetMembers())
+        {
+            hasGetResultMethod |= member.Name == nameof(TaskAwaiter.GetResult) && member is IMethodSymbol m && m.Parameters.IsEmpty;
+            hasOnCompletedMethod |= member.Name == nameof(TaskAwaiter.OnCompleted) && member is IMethodSymbol;
+            hasIsCompletedProperty |= member.Name == nameof(TaskAwaiter.IsCompleted) && member is IPropertySymbol;
+
+            if (hasGetResultMethod && hasOnCompletedMethod && hasIsCompletedProperty)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     internal static IEnumerable<string> ReadLinesFromAdditionalFile(SourceText text)
@@ -206,6 +362,31 @@ internal static class CommonInterest
         string typeName = typeNameElements[typeNameElements.Length - 1];
         var containingType = new QualifiedType(typeNameElements.Take(typeNameElements.Length - 1).ToImmutableArray(), typeName);
         return new QualifiedMember(containingType, methodName);
+    }
+
+    private static bool TestGetAwaiterMethod(IMethodSymbol getAwaiterMethod)
+    {
+        if (getAwaiterMethod.IsExtensionMethod)
+        {
+            if (getAwaiterMethod.Parameters.Length != 1)
+            {
+                return false;
+            }
+        }
+        else
+        {
+            if (!getAwaiterMethod.Parameters.IsEmpty)
+            {
+                return false;
+            }
+        }
+
+        if (!CommonInterest.ConformsToAwaiterPattern(getAwaiterMethod.ReturnType))
+        {
+            return false;
+        }
+
+        return true;
     }
 
     internal readonly struct TypeMatchSpec
@@ -338,5 +519,33 @@ internal static class CommonInterest
         public string? AsyncAlternativeMethodName { get; }
 
         public IReadOnlyList<string>? ExtensionMethodNamespace { get; }
+    }
+
+    internal class AwaitableTypeTester
+    {
+        private readonly HashSet<ITypeSymbol> awaitableTypes;
+
+        internal AwaitableTypeTester(HashSet<ITypeSymbol> awaitableTypes)
+        {
+            this.awaitableTypes = awaitableTypes;
+        }
+
+        internal bool IsAwaitableType(ITypeSymbol typeSymbol)
+        {
+            if (this.awaitableTypes.Contains(typeSymbol))
+            {
+                return true;
+            }
+
+            if (typeSymbol is INamedTypeSymbol { IsGenericType: true } genericTypeSymbol)
+            {
+                if (this.awaitableTypes.Contains(genericTypeSymbol.ConstructUnboundGenericType()))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 }

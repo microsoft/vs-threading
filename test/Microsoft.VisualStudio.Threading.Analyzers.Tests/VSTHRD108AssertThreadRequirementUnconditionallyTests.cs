@@ -1,11 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Threading.Tasks;
-using Xunit;
 using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.CSharpVSTHRD108AssertThreadRequirementUnconditionally, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
-
-namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
 
 public class VSTHRD108AssertThreadRequirementUnconditionallyTests
 {
@@ -43,7 +39,7 @@ class Test {
     }
 }
 ";
-        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(0);
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(0);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -89,7 +85,7 @@ class Test {
     }
 }
 ";
-        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(0);
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(0);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -111,7 +107,7 @@ class Test {
     }
 }
 ";
-        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(0);
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(0);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -133,7 +129,7 @@ class Test {
     }
 }
 ";
-        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(0);
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(0);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -171,7 +167,7 @@ class Test {
     }
 }
 ";
-        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(0);
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(0);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -195,7 +191,7 @@ class Test {
     }
 }
 ";
-        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(0);
+        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(0);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 

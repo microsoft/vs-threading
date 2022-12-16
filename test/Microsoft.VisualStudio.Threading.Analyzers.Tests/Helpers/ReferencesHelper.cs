@@ -3,7 +3,6 @@
 
 using System.Collections.Immutable;
 using System.Net;
-using Microsoft.CodeAnalysis.Testing;
 
 namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
 

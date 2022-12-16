@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Operations;
+using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace Microsoft.VisualStudio.Threading.Analyzers;
@@ -93,4 +94,6 @@ internal sealed class VisualBasicUtils : LanguageUtils
         // VB.NET doesn't support nullable reference types
         return false;
     }
+
+    internal override bool IsAsyncMethod(SyntaxNode syntaxNode) => syntaxNode is MethodBlockSyntax methodDeclaration && methodDeclaration.BlockStatement.Modifiers.Any(SyntaxKind.AsyncKeyword);
 }
