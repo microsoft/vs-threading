@@ -20,7 +20,7 @@
     <PackageVersion Include="Microsoft.CodeAnalysis.VisualBasic" Version="$(CodeAnalysisVersion)" />
     <PackageVersion Include="Microsoft.CodeAnalysis" Version="$(CodeAnalysisVersion)" />
     <PackageVersion Include="Microsoft.Diagnostics.Runtime.Utilities" Version="2.1.327601" />
-    <PackageVersion Include="Microsoft.Diagnostics.Runtime" Version="2.2.343001" />
+    <PackageVersion Include="Microsoft.Diagnostics.Runtime" Version="2.3.363101" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.3.2" />
     <PackageVersion Include="Microsoft.VisualStudio.Interop" Version="17.4.33103.184" />
     <PackageVersion Include="Microsoft.VisualStudio.Shell.15.0" Version="17.4.33103.184" />
