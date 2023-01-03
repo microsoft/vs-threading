@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netcoreapp3.1;net6.0</TargetFrameworks>
     <IsTestProject>true</IsTestProject>
@@ -29,6 +29,7 @@
     <PackageReference Include="Microsoft.VisualStudio.Interop" />
     <PackageReference Include="Microsoft.VisualStudio.Shell.15.0" IncludeAssets="runtime" />
     <PackageReference Include="Microsoft.VisualStudio.Shell.Framework" IncludeAssets="runtime" />
+    <PackageReference Include="System.Drawing.Common" />
     <PackageReference Include="System.Threading.Tasks.Dataflow" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
