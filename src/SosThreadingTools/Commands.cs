@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace CpsDbg;
@@ -13,19 +14,19 @@ internal static class Commands
 
     private static readonly Dictionary<string, ICommandHandler> CommandHandlers = new Dictionary<string, ICommandHandler>(StringComparer.OrdinalIgnoreCase)
     {
-        { "dumpasync", new DumpAsyncCommand() },
+        { DumpAsyncCommand, new DumpAsyncCommand() },
     };
 
-    [DllExport(DumpAsyncCommand, CallingConvention.StdCall)]
-    internal static void DumpAsync(IntPtr client, [MarshalAs(UnmanagedType.LPStr)] string args)
+    [UnmanagedCallersOnly(EntryPoint = DumpAsyncCommand, CallConvs = new[] { typeof(CallConvStdcall) })]
+    public static unsafe void DumpAsync(IntPtr client, byte* pstrArgs)
     {
+        string? args = Marshal.PtrToStringUTF8((nint)pstrArgs);
         ExecuteCommand(client, DumpAsyncCommand, args);
     }
 
-    private static void ExecuteCommand(IntPtr client, string command, [MarshalAs(UnmanagedType.LPStr)] string args)
+    private static void ExecuteCommand(IntPtr client, string command, string? args)
     {
-        ICommandHandler handler;
-        if (!CommandHandlers.TryGetValue(command, out handler))
+        if (!CommandHandlers.TryGetValue(command, out ICommandHandler? handler))
         {
             return;
         }
@@ -38,11 +39,9 @@ internal static class Commands
 
         try
         {
-            handler.Execute(context, args);
+            handler.Execute(context, args!);
         }
-#pragma warning disable CA1031 // Do not catch general exception types
         catch (Exception ex)
-#pragma warning restore CA1031 // Do not catch general exception types
         {
             context.Output.WriteLine($"Encountered an unhandled exception running '{command}':");
             context.Output.WriteLine(ex.ToString());

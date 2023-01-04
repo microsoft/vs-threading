@@ -1,10 +1,17 @@
 ﻿<Project Sdk="MSBuild.Sdk.Extras">
   <PropertyGroup>
-    <TargetFrameworks>net472</TargetFrameworks>
+    <TargetFrameworks>net7.0-windows</TargetFrameworks>
     <RuntimeIdentifiers>win-x86;win-x64</RuntimeIdentifiers>
     <ExtrasBuildEachRuntimeIdentifier>true</ExtrasBuildEachRuntimeIdentifier>
+    <EnableDynamicLoading>true</EnableDynamicLoading>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
-    <AssemblyName>$(MSBuildProjectName)</AssemblyName>
+    <!-- This project's build is incomplete without DNNE, which only works on Windows when using a -windows TFM. -->
+    <IsPackable Condition=" '$(OS)' != 'Windows_NT' ">false</IsPackable>
+
+    <PackageId>$(MSBuildProjectName)</PackageId>
+    <AssemblyName>$(MSBuildProjectName)Managed</AssemblyName>
+    <DnneNativeBinaryName>$(MSBuildProjectName)</DnneNativeBinaryName>
     <DebugSymbols>true</DebugSymbols>
 
     <Description>A WinDBG extension that contains the !DumpAsync command for .NET Framework processes.</Description>
@@ -21,6 +28,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Runtime" />
     <PackageReference Include="Microsoft.Diagnostics.Runtime.Utilities" />
+    <PackageReference Include="DNNE" Condition=" '$(OS)' == 'Windows_NT' " />
   </ItemGroup>
   <Import Project="SosThreadingTools.targets" />
 </Project>
