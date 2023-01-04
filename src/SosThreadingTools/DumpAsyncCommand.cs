@@ -225,8 +225,7 @@ internal class DumpAsyncCommand : ICommandHandler
             ClrObject continuationTargetStateMachine = continuationTarget.TryGetObjectField("m_stateMachine");
             if (!continuationTargetStateMachine.IsNull)
             {
-                AsyncStateMachine targetAsyncState;
-                if (knownStateMachines.TryGetValue(continuationTargetStateMachine.Address, out targetAsyncState) && targetAsyncState != stateMachine)
+                if (knownStateMachines.TryGetValue(continuationTargetStateMachine.Address, out AsyncStateMachine? targetAsyncState) && targetAsyncState != stateMachine)
                 {
                     stateMachine.Next = targetAsyncState;
                     stateMachine.DependentCount++;

@@ -22,11 +22,6 @@ internal class DebuggerContext
     /// </summary>
     private static DebuggerContext? instance;
 
-    static DebuggerContext()
-    {
-        AppDomain.CurrentDomain.AssemblyResolve += ResolveAssembly;
-    }
-
     private DebuggerContext(IDebugClient debugClient, DataTarget dataTarget, ClrRuntime runtime, DebuggerOutput output)
     {
         this.DebugClient = debugClient;
@@ -102,24 +97,5 @@ internal class DebuggerContext
         }
 
         return instance;
-    }
-
-    private static Assembly? ResolveAssembly(object sender, ResolveEventArgs args)
-    {
-        if (args.Name.Contains(ClrMD))
-        {
-            string codebase = Assembly.GetExecutingAssembly().CodeBase;
-
-            if (codebase.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
-            {
-                codebase = codebase.Substring(8).Replace('/', '\\');
-            }
-
-            string directory = Path.GetDirectoryName(codebase);
-            string path = Path.Combine(directory, ClrMD) + ".dll";
-            return Assembly.LoadFile(path);
-        }
-
-        return null;
     }
 }

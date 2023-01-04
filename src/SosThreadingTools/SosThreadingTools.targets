@@ -1,5 +1,5 @@
 <Project>
-  <UsingTask TaskName="ReplaceFileText" TaskFactory="CodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.v4.0.dll">
+  <UsingTask TaskName="ReplaceFileText" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
     <ParameterGroup>
       <InputFilename ParameterType="System.String" Required="true" />
       <OutputFilename ParameterType="System.String" Required="true" />
@@ -7,7 +7,6 @@
       <ReplacementText ParameterType="System.String" Required="true" />
     </ParameterGroup>
     <Task>
-      <Reference Include="System.Core" />
       <Using Namespace="System" />
       <Using Namespace="System.IO" />
       <Using Namespace="System.Text.RegularExpressions" />
@@ -30,8 +29,9 @@
   <Target Name="PackBuildOutputs" DependsOnTargets="DebugSymbolsProjectOutputGroup">
     <ItemGroup>
       <TfmSpecificPackageFile Include="$(TargetPath)" PackagePath="tools\$(RuntimeIdentifier)\" />
+      <TfmSpecificPackageFile Include="$(TargetDir)$(TargetName).runtimeconfig.json" PackagePath="tools\$(RuntimeIdentifier)\" />
       <TfmSpecificPackageFile Include="@(DebugSymbolsProjectOutputGroupOutput->'%(FinalOutputPath)')" PackagePath="symbols\$(RuntimeIdentifier)\" />
-      <TfmSpecificPackageFile Include="$(TargetDir)*.dll" Exclude="$(TargetDir)DllExport.dll" PackagePath="tools\$(RuntimeIdentifier)\" />
+      <TfmSpecificPackageFile Include="$(TargetDir)*.dll" PackagePath="tools\$(RuntimeIdentifier)\" />
     </ItemGroup>
   </Target>
   <Target Name="StampAndIncludeGalleryManifest" DependsOnTargets="GetBuildVersion" BeforeTargets="_GetPackageFiles">
