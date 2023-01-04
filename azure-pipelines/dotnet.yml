@@ -2,18 +2,8 @@ parameters:
   RunTests:
 
 steps:
-# We use VSBuild instead of "dotnet build" on Windows because dllexport doesn't work on dotnet build.
-- task: VSBuild@1
-  displayName: 🛠️ Build Visual Studio solution
-  inputs:
-    msbuildArgs: /t:build,pack /m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/msbuild.binlog"
-    platform: Any CPU
-    configuration: $(BuildConfiguration)
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
-
-- script: dotnet build -t:build,pack --no-restore -c $(BuildConfiguration) /p:Platform=NonWindows /v:m /bl:"$(Build.ArtifactStagingDirectory)/build_logs/build.binlog"
-  displayName: 🛠 dotnet build & pack
-  condition: and(succeeded(), ne(variables['Agent.OS'], 'Windows_NT'))
+- script: dotnet build -t:build,pack --no-restore -c $(BuildConfiguration) /bl:"$(Build.ArtifactStagingDirectory)/build_logs/build.binlog"
+  displayName: 🛠 dotnet build
 
 - powershell: azure-pipelines/dotnet-test-cloud.ps1 -Configuration $(BuildConfiguration) -Agent $(Agent.JobName) -PublishResults
   displayName: 🧪 dotnet test

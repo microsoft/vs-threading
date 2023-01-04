@@ -17,7 +17,7 @@ if (Test-Path $SosThreadingToolsRoot) {
     $ArchiveLayout = "$RepoRoot\obj\SosThreadingTools\ArchiveLayout"
     if (Test-Path $ArchiveLayout) { Remove-Item -Force $ArchiveLayout -Recurse }
     New-Item -Path $ArchiveLayout -ItemType Directory | Out-Null
-    Copy-Item -Force -Path "$SosThreadingToolsRoot" -Recurse  -Exclude "DllExport.dll","*.xml" -Destination $ArchiveLayout
+    Copy-Item -Force -Path "$SosThreadingToolsRoot" -Recurse  -Exclude "*.xml" -Destination $ArchiveLayout
     Rename-Item -Path $ArchiveLayout\net472 $ArchiveLayout\SosThreadingTools
     Get-ChildItem -Path $ArchiveLayout\symstore -Recurse | Remove-Item
     Compress-Archive -Force -Path $ArchiveLayout\SosThreadingTools -DestinationPath $ArchivePath
