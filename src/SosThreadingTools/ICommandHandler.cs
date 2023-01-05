@@ -5,5 +5,5 @@ namespace CpsDbg;
 
 internal interface ICommandHandler
 {
-    void Execute(DebuggerContext context, string args);
+    void Execute(string args);
 }
