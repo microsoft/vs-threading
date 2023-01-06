@@ -1,6 +1,9 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
+using System.Net;
+using System.Xml.Linq;
 using DbgEngExtension;
 using Microsoft.Diagnostics.Runtime.Utilities.DbgEng;
 
@@ -8,10 +11,21 @@ namespace CpsDbg;
 
 internal class SOSLinkedCommand : DbgEngCommand
 {
-    protected SOSLinkedCommand(nint pUnknown, bool redirectConsoleOutput)
-        : base(pUnknown, redirectConsoleOutput)
+    private readonly bool isRunningAsExtension;
+
+    protected SOSLinkedCommand(nint pUnknown, bool isRunningAsExtension)
+        : base(pUnknown, redirectConsoleOutput: isRunningAsExtension)
     {
+        this.isRunningAsExtension = isRunningAsExtension;
     }
+
+
+    protected SOSLinkedCommand(IDisposable dbgEng, bool isRunningAsExtension)
+        : base(dbgEng, redirectConsoleOutput: isRunningAsExtension)
+    {
+        this.isRunningAsExtension = isRunningAsExtension;
+    }
+
 
     protected void WriteString(string message)
     {
@@ -25,22 +39,50 @@ internal class SOSLinkedCommand : DbgEngCommand
 
     protected void WriteObjectAddress(ulong address)
     {
-        this.WriteDml($"<link cmd=\"!do {address:x}\">{address:x8}</link>");
+        if (this.isRunningAsExtension)
+        {
+            this.WriteDml($"<link cmd=\"!do {address:x}\">{address:x8}</link>");
+        }
+        else
+        {
+            Console.WriteLine(address.ToString("x"));
+        }
     }
 
     protected void WriteThreadLink(uint threadId)
     {
-        this.WriteDml($"<link cmd=\"~~[{threadId:x}]kp\">Thread TID:[{threadId:x}]</link>");
+        if (this.isRunningAsExtension)
+        {
+            this.WriteDml($"<link cmd=\"~~[{threadId:x}]kp\">Thread TID:[{threadId:x}]</link>");
+        }
+        else
+        {
+            Console.WriteLine($"Thread TID:[{threadId:x}]");
+        }
     }
 
     protected void WriteMethodInfo(string name, ulong address)
     {
-        this.WriteDml($"<link cmd=\".open -a 0x{address:x}\" alt=\"Try to open source, you might need click more than once to get it work.\">{name}</link>");
+        if (this.isRunningAsExtension)
+        {
+            this.WriteDml($"<link cmd=\".open -a 0x{address:x}\" alt=\"Try to open source, you might need click more than once to get it work.\">{name}</link>");
+        }
+        else
+        {
+            Console.WriteLine(name);
+        }
     }
 
     protected void WriteStringWithLink(string message, string linkCommand)
     {
-        this.WriteDml($"<link cmd=\"{linkCommand}\">{message}</link>");
+        if (this.isRunningAsExtension)
+        {
+            this.WriteDml($"<link cmd=\"{linkCommand}\">{message}</link>");
+        }
+        else
+        {
+            Console.WriteLine(message);
+        }
     }
 
     protected void WriteDml(string dml)
