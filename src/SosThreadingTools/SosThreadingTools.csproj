@@ -1,16 +1,12 @@
 ﻿<Project Sdk="MSBuild.Sdk.Extras">
   <PropertyGroup>
-    <TargetFramework>net7.0-windows</TargetFramework>
+    <TargetFrameworks>net7.0-windows</TargetFrameworks>
     <RuntimeIdentifiers>win-x86;win-x64</RuntimeIdentifiers>
     <ExtrasBuildEachRuntimeIdentifier>true</ExtrasBuildEachRuntimeIdentifier>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PublishAot>true</PublishAot>
 
-    <AssemblyName>$(MSBuildProjectName)</AssemblyName>
     <DebugSymbols>true</DebugSymbols>
-    <DllExportOurILAsm>false</DllExportOurILAsm>
-
-    <!-- Workaround build timing break in the DllExport build extension. -->
-    <BuildInParallel>false</BuildInParallel>
 
     <Description>A WinDBG extension that contains the !DumpAsync command for .NET Framework processes.</Description>
 
@@ -22,12 +18,10 @@
     <DebugType>full</DebugType>
     <SymbolPackageFormat></SymbolPackageFormat>
     <IncludeSymbols>false</IncludeSymbols>
-    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Diagnostics.Runtime" />
     <PackageReference Include="Microsoft.Diagnostics.Runtime.Utilities" />
   </ItemGroup>
-  <Import Project="$(PkgDllExport)\tools\net.r_eg.DllExport.targets" Condition="Exists('$(PkgDllExport)\tools\net.r_eg.DllExport.targets')" />
   <Import Project="SosThreadingTools.targets" />
 </Project>

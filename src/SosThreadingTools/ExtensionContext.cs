@@ -5,10 +5,12 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
+namespace CpsDbg;
+
 internal static class ExtensionContext
 {
-    [UnmanagedCallersOnly(EntryPoint = nameof(DebugExtensionInitialize), CallConvs = new Type[] { typeof(CallConvStdcall) })]
-    internal unsafe static int DebugExtensionInitialize(uint *pVersion, uint *pFlags)
+    [UnmanagedCallersOnly(EntryPoint = nameof(DebugExtensionInitialize), CallConvs = new[] { typeof(CallConvStdcall) })]
+    private static unsafe int DebugExtensionInitialize(uint* pVersion, uint* pFlags)
     {
         // Set the extension version to 1, which expects exports with this signature:
         //      void _stdcall function(IDebugClient *client, const char *args)

@@ -11,7 +11,7 @@ namespace CpsDbg;
 
 internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
 {
-    internal DumpAsyncCommand(nint pUnknown)
+    internal DumpAsyncCommand(IntPtr pUnknown)
         : base(pUnknown, redirectConsoleOutput: true)
     {
     }
@@ -234,8 +234,7 @@ internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
             ClrObject continuationTargetStateMachine = continuationTarget.TryGetObjectField("m_stateMachine");
             if (!continuationTargetStateMachine.IsNull)
             {
-                AsyncStateMachine targetAsyncState;
-                if (knownStateMachines.TryGetValue(continuationTargetStateMachine.Address, out targetAsyncState) && targetAsyncState != stateMachine)
+                if (knownStateMachines.TryGetValue(continuationTargetStateMachine.Address, out AsyncStateMachine? targetAsyncState) && targetAsyncState != stateMachine)
                 {
                     stateMachine.Next = targetAsyncState;
                     stateMachine.DependentCount++;
@@ -304,6 +303,46 @@ internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
         }
     }
 
+    private static void MarkUIThreadDependingTasks(List<AsyncStateMachine> allStateMachines)
+    {
+        foreach (AsyncStateMachine? stateMachine in allStateMachines)
+        {
+            if (stateMachine.Previous is null && stateMachine.State >= 0)
+            {
+                try
+                {
+                    ClrInstanceField? awaitField = stateMachine.StateMachine.Type?.GetFieldByName($"<>u__{stateMachine.State + 1}");
+                    if (awaitField is object && awaitField.IsValueType && string.Equals(awaitField.Type?.Name, "Microsoft.VisualStudio.Threading.JoinableTaskFactory+MainThreadAwaiter", StringComparison.Ordinal))
+                    {
+                        ClrValueType? awaitObject = stateMachine.StateMachine.TryGetValueClassField($"<>u__{stateMachine.State + 1}");
+                        if (awaitObject.HasValue)
+                        {
+                            stateMachine.SwitchToMainThreadTask = awaitObject.TryGetObjectField("job");
+                        }
+                    }
+                }
+#pragma warning disable CA1031 // Do not catch general exception types
+                catch (Exception)
+#pragma warning restore CA1031 // Do not catch general exception types
+                {
+                }
+            }
+        }
+    }
+
+    private static void FixBrokenDependencies(List<AsyncStateMachine> allStateMachines)
+    {
+        foreach (AsyncStateMachine? stateMachine in allStateMachines)
+        {
+            if (stateMachine.Previous is object && stateMachine.Previous.Next != stateMachine)
+            {
+                // If the previous task actually has two continuations, we end up in a one way dependencies chain, we need fix it in the future.
+                stateMachine.AlterPrevious = stateMachine.Previous;
+                stateMachine.Previous = null;
+            }
+        }
+    }
+
     private void MarkThreadingBlockTasks(List<AsyncStateMachine> allStateMachines)
     {
         foreach (ClrRuntime runtime in this.Runtimes)
@@ -349,46 +388,6 @@ internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
                         }
                     }
                 }
-            }
-        }
-    }
-
-    private static void MarkUIThreadDependingTasks(List<AsyncStateMachine> allStateMachines)
-    {
-        foreach (AsyncStateMachine? stateMachine in allStateMachines)
-        {
-            if (stateMachine.Previous is null && stateMachine.State >= 0)
-            {
-                try
-                {
-                    ClrInstanceField? awaitField = stateMachine.StateMachine.Type?.GetFieldByName($"<>u__{stateMachine.State + 1}");
-                    if (awaitField is object && awaitField.IsValueType && string.Equals(awaitField.Type?.Name, "Microsoft.VisualStudio.Threading.JoinableTaskFactory+MainThreadAwaiter", StringComparison.Ordinal))
-                    {
-                        ClrValueType? awaitObject = stateMachine.StateMachine.TryGetValueClassField($"<>u__{stateMachine.State + 1}");
-                        if (awaitObject.HasValue)
-                        {
-                            stateMachine.SwitchToMainThreadTask = awaitObject.TryGetObjectField("job");
-                        }
-                    }
-                }
-#pragma warning disable CA1031 // Do not catch general exception types
-                catch (Exception)
-#pragma warning restore CA1031 // Do not catch general exception types
-                {
-                }
-            }
-        }
-    }
-
-    private static void FixBrokenDependencies(List<AsyncStateMachine> allStateMachines)
-    {
-        foreach (AsyncStateMachine? stateMachine in allStateMachines)
-        {
-            if (stateMachine.Previous is object && stateMachine.Previous.Next != stateMachine)
-            {
-                // If the previous task actually has two continuations, we end up in a one way dependencies chain, we need fix it in the future.
-                stateMachine.AlterPrevious = stateMachine.Previous;
-                stateMachine.Previous = null;
             }
         }
     }

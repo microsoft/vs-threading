@@ -9,24 +9,20 @@ namespace CpsDbg;
 
 internal static class Commands
 {
-    private const string DumpAsyncCommand = "dumpasync";
-
-    [UnmanagedCallersOnly(EntryPoint = nameof(DumpAsyncCommand), CallConvs = new Type[] { typeof(CallConvStdcall) })]
-    internal static void DumpAsync(IntPtr client, nint args)
+    [UnmanagedCallersOnly(EntryPoint = "dumpasync", CallConvs = new[] { typeof(CallConvStdcall) })]
+    private static unsafe void DumpAsync(IntPtr client, byte* args)
     {
         ExecuteCommand(new DumpAsyncCommand(client), args);
     }
 
-    private static void ExecuteCommand(ICommandHandler command, nint args)
+    private static unsafe void ExecuteCommand(ICommandHandler command, byte* args)
     {
         try
         {
-            string? strArgs = Marshal.PtrToStringAnsi(args);
-            command.Execute(strArgs ?? "");
+            string? strArgs = Marshal.PtrToStringAnsi((IntPtr)args);
+            command.Execute(strArgs ?? string.Empty);
         }
-#pragma warning disable CA1031 // Do not catch general exception types
         catch (Exception ex)
-#pragma warning restore CA1031 // Do not catch general exception types
         {
             Console.WriteLine($"Encountered an unhandled exception running '{command}':");
             Console.WriteLine(ex.ToString());
