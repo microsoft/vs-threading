@@ -19,13 +19,11 @@ internal class SOSLinkedCommand : DbgEngCommand
         this.isRunningAsExtension = isRunningAsExtension;
     }
 
-
     protected SOSLinkedCommand(IDisposable dbgEng, bool isRunningAsExtension)
         : base(dbgEng, redirectConsoleOutput: isRunningAsExtension)
     {
         this.isRunningAsExtension = isRunningAsExtension;
     }
-
 
     protected void WriteString(string message)
     {

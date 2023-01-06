@@ -16,7 +16,6 @@ internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
     {
     }
 
-
     internal DumpAsyncCommand(IDisposable dbgEng, bool isRunningAsExtension = false)
         : base(dbgEng, isRunningAsExtension)
     {

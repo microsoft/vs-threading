@@ -10,9 +10,9 @@ namespace CpsDbg;
 internal static class Commands
 {
     [UnmanagedCallersOnly(EntryPoint = "dumpasync", CallConvs = new[] { typeof(CallConvStdcall) })]
-    private static unsafe void DumpAsync(IntPtr client, byte* args)
+    public static unsafe void DumpAsync(IntPtr client, byte* args)
     {
-        ExecuteCommand(new DumpAsyncCommand(client), args);
+        ExecuteCommand(new DumpAsyncCommand(client, isRunningAsExtension: true), args);
     }
 
     private static unsafe void ExecuteCommand(ICommandHandler command, byte* args)

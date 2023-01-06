@@ -29,6 +29,7 @@
   <Target Name="PackBuildOutputs" DependsOnTargets="DebugSymbolsProjectOutputGroup">
     <ItemGroup>
       <TfmSpecificPackageFile Include="$(TargetPath)" PackagePath="tools\$(RuntimeIdentifier)\" />
+      <TfmSpecificPackageFile Include="$(TargetDir)$(TargetName).runtimeconfig.json" PackagePath="tools\$(RuntimeIdentifier)\" />
       <TfmSpecificPackageFile Include="@(DebugSymbolsProjectOutputGroupOutput->'%(FinalOutputPath)')" PackagePath="symbols\$(RuntimeIdentifier)\" />
       <TfmSpecificPackageFile Include="$(TargetDir)*.dll" PackagePath="tools\$(RuntimeIdentifier)\" />
     </ItemGroup>

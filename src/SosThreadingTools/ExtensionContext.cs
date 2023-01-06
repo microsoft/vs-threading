@@ -10,7 +10,7 @@ namespace CpsDbg;
 internal static class ExtensionContext
 {
     [UnmanagedCallersOnly(EntryPoint = nameof(DebugExtensionInitialize), CallConvs = new[] { typeof(CallConvStdcall) })]
-    private static unsafe int DebugExtensionInitialize(uint* pVersion, uint* pFlags)
+    public static unsafe int DebugExtensionInitialize(uint* pVersion, uint* pFlags)
     {
         // Set the extension version to 1, which expects exports with this signature:
         //      void _stdcall function(IDebugClient *client, const char *args)
