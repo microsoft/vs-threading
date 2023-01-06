@@ -6,6 +6,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PublishAot>true</PublishAot>
 
+    <!-- System.Net.Http is required by ClrMD, and produces a warning during AOT native code generation, although it works as required. -->
+    <NoWarn>$(NoWarn);IL3053</NoWarn>
+
     <DebugSymbols>true</DebugSymbols>
 
     <Description>A WinDBG extension that contains the !DumpAsync command for .NET Framework processes.</Description>
