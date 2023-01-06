@@ -17,7 +17,7 @@ internal static class Commands
         { DumpAsyncCommand, new DumpAsyncCommand() },
     };
 
-    [UnmanagedCallersOnly(EntryPoint = DumpAsyncCommand, CallConvs = new[] { typeof(CallConvStdcall) })]
+    [UnmanagedCallersOnly(EntryPoint = DumpAsyncCommand, CallConvs = new[] { typeof(CallConvCdecl) })]
     public static unsafe void DumpAsync(IntPtr client, byte* pstrArgs)
     {
         string? args = Marshal.PtrToStringUTF8((nint)pstrArgs);

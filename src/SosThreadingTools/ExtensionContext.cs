@@ -11,7 +11,7 @@ namespace CpsDbg;
 
 internal static class ExtensionContext
 {
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvStdcall) })]
+    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
     public static unsafe int DebugExtensionInitialize(uint* pVersion, uint* pFlags)
     {
         // Set the extension version to 1, which expects exports with this signature:
