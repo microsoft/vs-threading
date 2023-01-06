@@ -432,10 +432,13 @@
       </Item>
       <Item ItemId=";VSTHRD110_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Observe the awaitable result of this method call by awaiting it, assigning to a variable, or passing it to another method.]]></Val>
+          <Val><![CDATA[Observe the awaitable result of this method call by awaiting it, assigning to a variable, or passing it to another method]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[Überwachen Sie das zu erwartende Ergebnis dieses Methodenaufrufs mit "await", weisen Sie es einer Variablen zu, oder übergeben Sie es an eine andere Methode.]]></Val>
+            <Val><![CDATA[Überwachen Sie das „awaitable“-Ergebnis dieses Methodenaufrufs, indem Sie darauf warten, es einer Variable zuweisen oder es an eine andere Methode übergeben.]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Observe the awaitable result of this method call by awaiting it, assigning to a variable, or passing it to another method.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
