@@ -1,11 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Threading.Tasks;
-using Xunit;
 using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.VSTHRD104OfferAsyncOptionAnalyzer, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
-
-namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
 
 public class VSTHRD104OfferAsyncOptionAnalyzerTests
 {
@@ -27,7 +23,7 @@ public class Test {
 }
 ";
 
-        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(9, 13, 9, 16);
+        DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(9, 13, 9, 16);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -99,7 +95,7 @@ public class Test {
 }
 ";
 
-        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(9, 13, 9, 16);
+        DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(9, 13, 9, 16);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 }

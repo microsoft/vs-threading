@@ -297,7 +297,6 @@ internal static class JoinableTaskDependencyGraph
         /// <remarks>
         /// When the value in an entry is decremented to 0, the entry is removed from the map.
         /// </remarks>
-        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private Dictionary<IJoinableTaskDependent, int> childDependentNodes;
 
         /// <summary>

@@ -262,6 +262,19 @@ internal sealed class CSharpUtils : LanguageUtils
         return returnType is not null && returnType.IsKind(SyntaxKind.NullableType);
     }
 
+    internal override bool IsAsyncMethod(SyntaxNode syntaxNode)
+    {
+        SyntaxTokenList? modifiers = syntaxNode switch
+        {
+            MethodDeclarationSyntax methodDeclaration => methodDeclaration.Modifiers,
+            SimpleLambdaExpressionSyntax lambda => lambda.Modifiers,
+            AnonymousMethodExpressionSyntax anonMethod => anonMethod.Modifiers,
+            ParenthesizedLambdaExpressionSyntax lambda => lambda.Modifiers,
+            _ => null,
+        };
+        return modifiers?.Any(SyntaxKind.AsyncKeyword) is true;
+    }
+
     internal readonly struct ContainingFunctionData
     {
         internal ContainingFunctionData(CSharpSyntaxNode function, bool isAsync, ParameterListSyntax? parameterList, CSharpSyntaxNode? blockOrExpression, Func<CSharpSyntaxNode, CSharpSyntaxNode> bodyReplacement)

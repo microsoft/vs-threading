@@ -1,11 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Threading.Tasks;
-using Xunit;
 using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.VSTHRD107AwaitTaskWithinUsingExpressionAnalyzer, Microsoft.VisualStudio.Threading.Analyzers.VSTHRD107AwaitTaskWithinUsingExpressionCodeFix>;
-
-namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
 
 public class VSTHRD107AwaitTaskWithinUsingExpressionAnalyzerTests
 {
@@ -39,7 +35,7 @@ class Test {
 }
 ";
 
-        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(8, 16, 8, 32);
+        DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(8, 16, 8, 32);
         await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
     }
 
@@ -77,7 +73,7 @@ class Test {
 }
 ";
 
-        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(8, 16, 8, 32);
+        DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(8, 16, 8, 32);
         await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
     }
 
@@ -113,7 +109,7 @@ class Test {
 }
 ";
 
-        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(8, 16, 8, 32);
+        DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(8, 16, 8, 32);
         await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
     }
 
@@ -147,7 +143,7 @@ class Test {
 }
 ";
 
-        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(8, 16, 8, 32);
+        DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(8, 16, 8, 32);
         await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
     }
 
@@ -183,7 +179,7 @@ class Test {
 }
 ";
 
-        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(9, 16, 9, 24);
+        DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(9, 16, 9, 24);
         await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
     }
 
@@ -225,7 +221,7 @@ class Test {
 }
 ";
 
-        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(9, 16, 9, 27);
+        DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(9, 16, 9, 27);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -247,7 +243,7 @@ class Test {
 }
 ";
 
-        CodeAnalysis.Testing.DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(9, 16, 9, 19);
+        DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(9, 16, 9, 19);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 }

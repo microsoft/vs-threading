@@ -3,7 +3,6 @@
 
 using System.Collections.Immutable;
 using System.Net;
-using Microsoft.CodeAnalysis.Testing;
 
 namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
 
@@ -11,8 +10,6 @@ internal static class ReferencesHelper
 {
 #if NETFRAMEWORK
     public static ReferenceAssemblies DefaultReferences = ReferenceAssemblies.NetFramework.Net471.Default
-#elif NETCOREAPP3_1
-    public static ReferenceAssemblies DefaultReferences = ReferenceAssemblies.NetCore.NetCoreApp31
 #elif NET6_0
     public static ReferenceAssemblies DefaultReferences = ReferenceAssemblies.Net.Net60
 #else

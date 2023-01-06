@@ -32,7 +32,6 @@ public class JoinableTaskCollection : IJoinableTaskDependent, IEnumerable<Joinab
     /// <summary>
     /// The <see cref="JoinableTaskDependencyGraph.JoinableTaskDependentData"/> to track dependencies between tasks.
     /// </summary>
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private JoinableTaskDependencyGraph.JoinableTaskDependentData dependentData;
 
     /// <summary>

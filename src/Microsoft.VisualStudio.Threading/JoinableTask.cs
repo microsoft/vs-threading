@@ -53,13 +53,11 @@ public partial class JoinableTask : IJoinableTaskDependent
     /// <summary>
     /// The <see cref="JoinableTaskDependencyGraph.JoinableTaskDependentData"/> to track dependencies between tasks.
     /// </summary>
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private JoinableTaskDependencyGraph.JoinableTaskDependentData dependentData;
 
     /// <summary>
     /// The collections that this job is a member of.
     /// </summary>
-    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private RarelyRemoveItemSet<IJoinableTaskDependent> dependencyParents;
 
     /// <summary>
