@@ -2,8 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.IO;
-using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -11,7 +9,7 @@ namespace CpsDbg;
 
 internal static class ExtensionContext
 {
-    [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
+    [UnmanagedCallersOnly(EntryPoint = nameof(DebugExtensionInitialize), CallConvs = new[] { typeof(CallConvStdcall) })]
     public static unsafe int DebugExtensionInitialize(uint* pVersion, uint* pFlags)
     {
         // Set the extension version to 1, which expects exports with this signature:
