@@ -5,32 +5,46 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.Runtime;
-using Microsoft.Diagnostics.Runtime.Interop;
+using Microsoft.Diagnostics.Runtime.Utilities.DbgEng;
 
 namespace CpsDbg;
 
-internal class DumpAsyncCommand : ICommandHandler
+internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
 {
-    public void Execute(DebuggerContext context, string args)
+    internal DumpAsyncCommand(IntPtr pUnknown, bool isRunningAsExtension)
+        : base(pUnknown, isRunningAsExtension)
     {
-        ClrHeap heap = context.Runtime.Heap;
-
-        var allStateMachines = new List<AsyncStateMachine>();
-        var knownStateMachines = new Dictionary<ulong, AsyncStateMachine>();
-
-        GetAllStateMachines(context, heap, allStateMachines, knownStateMachines);
-
-        ChainStateMachinesBasedOnTaskContinuations(context, knownStateMachines);
-        ChainStateMachinesBasedOnJointableTasks(context, allStateMachines);
-        MarkThreadingBlockTasks(context, allStateMachines);
-        MarkUIThreadDependingTasks(allStateMachines);
-        FixBrokenDependencies(allStateMachines);
-
-        PrintOutStateMachines(allStateMachines, context.Output);
-        LoadCodePages(context, allStateMachines);
     }
 
-    private static void GetAllStateMachines(DebuggerContext context, ClrHeap heap, List<AsyncStateMachine> allStateMachines, Dictionary<ulong, AsyncStateMachine> knownStateMachines)
+    internal DumpAsyncCommand(IDisposable dbgEng, bool isRunningAsExtension = false)
+        : base(dbgEng, isRunningAsExtension)
+    {
+    }
+
+    public void Execute(string args)
+    {
+        // There can be multiple CLR runtimes loaded into
+        foreach (ClrRuntime runtime in this.Runtimes)
+        {
+            ClrHeap heap = runtime.Heap;
+
+            var allStateMachines = new List<AsyncStateMachine>();
+            var knownStateMachines = new Dictionary<ulong, AsyncStateMachine>();
+
+            GetAllStateMachines(heap, allStateMachines, knownStateMachines);
+
+            ChainStateMachinesBasedOnTaskContinuations(knownStateMachines);
+            ChainStateMachinesBasedOnJointableTasks(allStateMachines);
+            this.MarkThreadingBlockTasks(allStateMachines);
+            MarkUIThreadDependingTasks(allStateMachines);
+            FixBrokenDependencies(allStateMachines);
+
+            this.PrintOutStateMachines(allStateMachines);
+            this.LoadCodePages(allStateMachines);
+        }
+    }
+
+    private static void GetAllStateMachines(ClrHeap heap, List<AsyncStateMachine> allStateMachines, Dictionary<ulong, AsyncStateMachine> knownStateMachines)
     {
         foreach (ClrObject obj in heap.GetObjectsOfType("System.Runtime.CompilerServices.AsyncMethodBuilderCore+MoveNextRunner"))
         {
@@ -156,7 +170,7 @@ internal class DumpAsyncCommand : ICommandHandler
                     catch (Exception ex)
 #pragma warning restore CA1031 // Do not catch general exception types
                     {
-                        context.Output.WriteLine($"Fail to process state machine {stateMachine.Address:x} Type:'{stateMachine.Type?.Name}' Module:'{stateMachine.Type?.Module?.Name}' Error: {ex.Message}");
+                        Console.WriteLine($"Fail to process state machine {stateMachine.Address:x} Type:'{stateMachine.Type?.Name}' Module:'{stateMachine.Type?.Module?.Name}' Error: {ex.Message}");
                     }
                 }
             }
@@ -164,12 +178,12 @@ internal class DumpAsyncCommand : ICommandHandler
             catch (Exception ex)
 #pragma warning restore CA1031 // Do not catch general exception types
             {
-                context.Output.WriteLine($"Fail to process AsyncStateMachine Runner {obj.Address:x} Error: {ex.Message}");
+                Console.WriteLine($"Fail to process AsyncStateMachine Runner {obj.Address:x} Error: {ex.Message}");
             }
         }
     }
 
-    private static void ChainStateMachinesBasedOnTaskContinuations(DebuggerContext context, Dictionary<ulong, AsyncStateMachine> knownStateMachines)
+    private static void ChainStateMachinesBasedOnTaskContinuations(Dictionary<ulong, AsyncStateMachine> knownStateMachines)
     {
         foreach (AsyncStateMachine? stateMachine in knownStateMachines.Values)
         {
@@ -197,7 +211,7 @@ internal class DumpAsyncCommand : ICommandHandler
             catch (Exception ex)
 #pragma warning restore CA1031 // Do not catch general exception types
             {
-                context.Output.WriteLine($"Fail to fix continuation of state {stateMachine.StateMachine.Address:x} Error: {ex.Message}");
+                Console.WriteLine($"Fail to fix continuation of state {stateMachine.StateMachine.Address:x} Error: {ex.Message}");
             }
         }
     }
@@ -262,7 +276,7 @@ internal class DumpAsyncCommand : ICommandHandler
         }
     }
 
-    private static void ChainStateMachinesBasedOnJointableTasks(DebuggerContext context, List<AsyncStateMachine> allStateMachines)
+    private static void ChainStateMachinesBasedOnJointableTasks(List<AsyncStateMachine> allStateMachines)
     {
         foreach (AsyncStateMachine? stateMachine in allStateMachines)
         {
@@ -288,53 +302,7 @@ internal class DumpAsyncCommand : ICommandHandler
                 catch (Exception ex)
 #pragma warning restore CA1031 // Do not catch general exception types
                 {
-                    context.Output.WriteLine($"Fail to fix continuation of state {stateMachine.StateMachine.Address:x} Error: {ex.Message}");
-                }
-            }
-        }
-    }
-
-    private static void MarkThreadingBlockTasks(DebuggerContext context, List<AsyncStateMachine> allStateMachines)
-    {
-        foreach (ClrThread? thread in context.Runtime.Threads)
-        {
-            ClrStackFrame? stackFrame = thread.EnumerateStackTrace().Take(50).FirstOrDefault(
-                f => f.Method is { } method
-                    && string.Equals(f.Method.Name, "CompleteOnCurrentThread", StringComparison.Ordinal)
-                    && string.Equals(f.Method.Type?.Name, "Microsoft.VisualStudio.Threading.JoinableTask", StringComparison.Ordinal));
-
-            if (stackFrame is object)
-            {
-                var visitedObjects = new HashSet<ulong>();
-                foreach (IClrStackRoot stackRoot in thread.EnumerateStackRoots())
-                {
-                    ClrObject stackObject = stackRoot.Object;
-                    if (string.Equals(stackObject.Type?.Name, "Microsoft.VisualStudio.Threading.JoinableTask", StringComparison.Ordinal) ||
-                        string.Equals(stackObject.Type?.BaseType?.Name, "Microsoft.VisualStudio.Threading.JoinableTask", StringComparison.Ordinal))
-                    {
-                        if (visitedObjects.Add(stackObject.Address))
-                        {
-                            var joinableTaskObject = new ClrObject(stackObject.Address, stackObject.Type);
-                            int state = joinableTaskObject.ReadField<int>("state");
-                            if ((state & 0x10) == 0x10)
-                            {
-                                // This flag indicates the JTF is blocking the thread
-                                ClrObject wrappedTask = joinableTaskObject.TryGetObjectField("wrappedTask");
-                                if (!wrappedTask.IsNull)
-                                {
-                                    AsyncStateMachine? blockingStateMachine = allStateMachines
-                                        .FirstOrDefault(s => s.Task.Address == wrappedTask.Address);
-                                    if (blockingStateMachine is object)
-                                    {
-                                        blockingStateMachine.BlockedThread = thread.OSThreadId;
-                                        blockingStateMachine.BlockedJoinableTask = joinableTaskObject;
-                                    }
-                                }
-
-                                break;
-                            }
-                        }
-                    }
+                    Console.WriteLine($"Fail to fix continuation of state {stateMachine.StateMachine.Address:x} Error: {ex.Message}");
                 }
             }
         }
@@ -380,7 +348,56 @@ internal class DumpAsyncCommand : ICommandHandler
         }
     }
 
-    private static void PrintOutStateMachines(List<AsyncStateMachine> allStateMachines, DebuggerOutput output)
+    private void MarkThreadingBlockTasks(List<AsyncStateMachine> allStateMachines)
+    {
+        foreach (ClrRuntime runtime in this.Runtimes)
+        {
+            foreach (ClrThread? thread in runtime.Threads)
+            {
+                ClrStackFrame? stackFrame = thread.EnumerateStackTrace().Take(50).FirstOrDefault(
+                    f => f.Method is { } method
+                        && string.Equals(f.Method.Name, "CompleteOnCurrentThread", StringComparison.Ordinal)
+                        && string.Equals(f.Method.Type?.Name, "Microsoft.VisualStudio.Threading.JoinableTask", StringComparison.Ordinal));
+
+                if (stackFrame is object)
+                {
+                    var visitedObjects = new HashSet<ulong>();
+                    foreach (IClrStackRoot stackRoot in thread.EnumerateStackRoots())
+                    {
+                        ClrObject stackObject = stackRoot.Object;
+                        if (string.Equals(stackObject.Type?.Name, "Microsoft.VisualStudio.Threading.JoinableTask", StringComparison.Ordinal) ||
+                            string.Equals(stackObject.Type?.BaseType?.Name, "Microsoft.VisualStudio.Threading.JoinableTask", StringComparison.Ordinal))
+                        {
+                            if (visitedObjects.Add(stackObject.Address))
+                            {
+                                var joinableTaskObject = new ClrObject(stackObject.Address, stackObject.Type);
+                                int state = joinableTaskObject.ReadField<int>("state");
+                                if ((state & 0x10) == 0x10)
+                                {
+                                    // This flag indicates the JTF is blocking the thread
+                                    ClrObject wrappedTask = joinableTaskObject.TryGetObjectField("wrappedTask");
+                                    if (!wrappedTask.IsNull)
+                                    {
+                                        AsyncStateMachine? blockingStateMachine = allStateMachines
+                                            .FirstOrDefault(s => s.Task.Address == wrappedTask.Address);
+                                        if (blockingStateMachine is object)
+                                        {
+                                            blockingStateMachine.BlockedThread = thread.OSThreadId;
+                                            blockingStateMachine.BlockedJoinableTask = joinableTaskObject;
+                                        }
+                                    }
+
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void PrintOutStateMachines(List<AsyncStateMachine> allStateMachines)
     {
         int loopMark = -1;
         foreach (AsyncStateMachine? stateMachine in allStateMachines)
@@ -418,30 +435,30 @@ internal class DumpAsyncCommand : ICommandHandler
             .OrderByDescending(m => m.Depth)
             .ThenByDescending(m => m.SwitchToMainThreadTask.Address))
         {
-            bool multipleLineBlock = PrintAsyncStateMachineChain(output, node, printedMachines);
+            bool multipleLineBlock = this.PrintAsyncStateMachineChain(node, printedMachines);
 
             if (multipleLineBlock)
             {
-                output.WriteLine(string.Empty);
+                Console.WriteLine(string.Empty);
             }
         }
 
         // Print nodes which we didn't print because of loops.
         if (allStateMachines.Count > printedMachines.Count)
         {
-            output.WriteLine("States form dependencies loop -- could be an error caused by the analysis tool");
+            Console.WriteLine("States form dependencies loop -- could be an error caused by the analysis tool");
             foreach (AsyncStateMachine? node in allStateMachines)
             {
                 if (!printedMachines.Contains(node))
                 {
-                    PrintAsyncStateMachineChain(output, node, printedMachines);
-                    output.WriteLine(string.Empty);
+                    this.PrintAsyncStateMachineChain(node, printedMachines);
+                    Console.WriteLine(string.Empty);
                 }
             }
         }
     }
 
-    private static bool PrintAsyncStateMachineChain(DebuggerOutput output, AsyncStateMachine node, HashSet<AsyncStateMachine> printedMachines)
+    private bool PrintAsyncStateMachineChain(AsyncStateMachine node, HashSet<AsyncStateMachine> printedMachines)
     {
         int nLevel = 0;
         bool multipleLineBlock = false;
@@ -453,53 +470,53 @@ internal class DumpAsyncCommand : ICommandHandler
 
             if (nLevel > 0)
             {
-                output.WriteString("..");
+                this.WriteString("..");
                 multipleLineBlock = true;
             }
             else if (p.AlterPrevious is object)
             {
-                output.WriteObjectAddress(p.AlterPrevious.StateMachine.Address);
-                output.WriteString($" <{p.AlterPrevious.State}> * {p.AlterPrevious.StateMachine.Type?.Name} @ ");
-                output.WriteMethodInfo($"{p.AlterPrevious.CodeAddress:x}", p.AlterPrevious.CodeAddress);
-                output.WriteLine(string.Empty);
-                output.WriteString("..");
+                this.WriteObjectAddress(p.AlterPrevious.StateMachine.Address);
+                this.WriteString($" <{p.AlterPrevious.State}> * {p.AlterPrevious.StateMachine.Type?.Name} @ ");
+                this.WriteMethodInfo($"{p.AlterPrevious.CodeAddress:x}", p.AlterPrevious.CodeAddress);
+                this.WriteLine(string.Empty);
+                this.WriteString("..");
                 multipleLineBlock = true;
             }
             else if (!p.SwitchToMainThreadTask.IsNull)
             {
-                output.WriteObjectAddress(p.SwitchToMainThreadTask.Address);
-                output.WriteLine(".SwitchToMainThreadAsync");
-                output.WriteString("..");
+                this.WriteObjectAddress(p.SwitchToMainThreadTask.Address);
+                this.WriteLine(".SwitchToMainThreadAsync");
+                this.WriteString("..");
                 multipleLineBlock = true;
             }
 
-            output.WriteObjectAddress(p.StateMachine.Address);
+            this.WriteObjectAddress(p.StateMachine.Address);
             string doubleDependentTaskMark = p.DependentCount > 1 ? " * " : " ";
-            output.WriteString($" <{p.State}>{doubleDependentTaskMark}{p.StateMachine.Type?.Name} @ ");
-            output.WriteMethodInfo($"{p.CodeAddress:x}", p.CodeAddress);
-            output.WriteLine(string.Empty);
+            this.WriteString($" <{p.State}>{doubleDependentTaskMark}{p.StateMachine.Type?.Name} @ ");
+            this.WriteMethodInfo($"{p.CodeAddress:x}", p.CodeAddress);
+            this.WriteLine(string.Empty);
 
             if (!loopDetection.Add(p))
             {
-                output.WriteLine("!!Loop task dependencies");
+                this.WriteLine("!!Loop task dependencies");
                 break;
             }
 
             if (p.Next is null && p.BlockedThread.HasValue)
             {
-                output.WriteString("-- ");
-                output.WriteThreadLink(p.BlockedThread.Value);
-                output.WriteString(" - JoinableTask: ");
-                output.WriteObjectAddress(p.BlockedJoinableTask.Address);
+                this.WriteString("-- ");
+                this.WriteThreadLink(p.BlockedThread.Value);
+                this.WriteString(" - JoinableTask: ");
+                this.WriteObjectAddress(p.BlockedJoinableTask.Address);
 
                 int state = p.BlockedJoinableTask.ReadField<int>("state");
                 if ((state & 0x20) == 0x20)
                 {
-                    output.WriteLine(" SynchronouslyBlockingMainThread");
+                    this.WriteLine(" SynchronouslyBlockingMainThread");
                 }
                 else
                 {
-                    output.WriteLine(string.Empty);
+                    this.WriteLine(string.Empty);
                 }
 
                 multipleLineBlock = true;
@@ -511,7 +528,7 @@ internal class DumpAsyncCommand : ICommandHandler
         return multipleLineBlock;
     }
 
-    private static void LoadCodePages(DebuggerContext context, List<AsyncStateMachine> allStateMachines)
+    private void LoadCodePages(List<AsyncStateMachine> allStateMachines)
     {
         var loadedAddresses = new HashSet<ulong>();
         foreach (AsyncStateMachine? stateMachine in allStateMachines)
@@ -519,7 +536,7 @@ internal class DumpAsyncCommand : ICommandHandler
             ulong codeAddress = stateMachine.CodeAddress;
             if (loadedAddresses.Add(codeAddress))
             {
-                context.DebugControl.Execute(DEBUG_OUTCTL.IGNORE, $"u {codeAddress} {codeAddress}", DEBUG_EXECUTE.NOT_LOGGED);
+                this.DebugControl.Execute(DEBUG_OUTCTL.IGNORE, $"u {codeAddress} {codeAddress}", DEBUG_EXECUTE.NOT_LOGGED);
             }
         }
     }
