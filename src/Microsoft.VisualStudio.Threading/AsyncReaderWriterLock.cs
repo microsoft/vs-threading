@@ -1174,8 +1174,7 @@ public partial class AsyncReaderWriterLock : IDisposable
         {
             this.etw.Issued(awaiter);
         }
-
-        if (!issued)
+        else
         {
             this.etw.WaitStart(awaiter);
 
