@@ -17,7 +17,7 @@ stages:
   displayName: VS insertion
   jobs:
   - deployment: insertion
-    pool: VSEng-ReleasePool
+    pool: VSEng-ReleasePool-1ES
     environment: No-Approval
     strategy:
       runOnce:

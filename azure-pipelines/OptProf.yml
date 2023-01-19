@@ -46,7 +46,7 @@ stages:
 - stage: QueueVSBuild
   jobs:
   - job: QueueOptProf
-    pool: VSEng-ReleasePool
+    pool: VSEng-ReleasePool-1ES
     variables:
       InsertPayloadName: vs-threading
       InsertTopicBranch: team/VS-IDE/vs-threading-OptProf-run-$(Build.BuildId)
