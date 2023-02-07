@@ -1067,6 +1067,8 @@ public partial class AsyncReaderWriterLock : IDisposable
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
     private bool TryIssueLock(Awaiter awaiter, bool previouslyQueued, bool skipPendingWriteLockCheck = false)
     {
+        bool issued = false;
+
         lock (this.syncObject)
         {
             if (this.completeInvoked && !previouslyQueued)
@@ -1079,7 +1081,6 @@ public partial class AsyncReaderWriterLock : IDisposable
                 }
             }
 
-            bool issued = false;
             if (this.reenterConcurrencyPrepRunning is null)
             {
                 if (this.issuedWriteLocks.Count == 0 && this.issuedUpgradeableReadLocks.Count == 0 && this.issuedReadLocks.Count == 0)
@@ -1166,20 +1167,23 @@ public partial class AsyncReaderWriterLock : IDisposable
             if (issued)
             {
                 this.GetActiveLockSet(awaiter.Kind).Add(awaiter);
-                this.etw.Issued(awaiter);
             }
-
-            if (!issued)
-            {
-                this.etw.WaitStart(awaiter);
-
-                // If the lock is immediately available, we don't need to coordinate with other threads.
-                // But if it is NOT available, we'd have to wait potentially for other threads to do more work.
-                Debugger.NotifyOfCrossThreadDependency();
-            }
-
-            return issued;
         }
+
+        if (issued)
+        {
+            this.etw.Issued(awaiter);
+        }
+        else
+        {
+            this.etw.WaitStart(awaiter);
+
+            // If the lock is immediately available, we don't need to coordinate with other threads.
+            // But if it is NOT available, we'd have to wait potentially for other threads to do more work.
+            Debugger.NotifyOfCrossThreadDependency();
+        }
+
+        return issued;
     }
 
     /// <summary>
