@@ -503,7 +503,7 @@ public abstract class AsyncReaderWriterResourceLock<TMoniker, TResource> : Async
         /// <summary>
         /// A map of resources to the status of tasks that most recently began evaluating them.
         /// </summary>
-        private WeakKeyDictionary<TResource, ResourcePreparationTaskState> resourcePreparationStates = new WeakKeyDictionary<TResource, ResourcePreparationTaskState>(capacity: 2);
+        private readonly WeakKeyDictionary<TResource, ResourcePreparationTaskState> resourcePreparationStates = new WeakKeyDictionary<TResource, ResourcePreparationTaskState>(capacity: 2);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Helper"/> class.
@@ -697,7 +697,7 @@ public abstract class AsyncReaderWriterResourceLock<TMoniker, TResource> : Async
         {
             using (AsyncReaderWriterResourceLock<TMoniker, TResource>.ResourceReleaser resourceLock = this.AcquirePreexistingLockOrThrow())
             {
-                TResource? resource = await this.service.GetResourceAsync(resourceMoniker, cancellationToken).ConfigureAwait(false);
+                TResource? resource = await this.service.GetResourceAsync(resourceMoniker, cancellationToken).ConfigureAwaitRunInline();
                 Task preparationTask;
 
                 lock (this.service.SyncObject)
@@ -707,7 +707,7 @@ public abstract class AsyncReaderWriterResourceLock<TMoniker, TResource> : Async
                     preparationTask = this.PrepareResourceAsync(resource, cancellationToken);
                 }
 
-                await preparationTask.ConfigureAwait(false);
+                await preparationTask.ConfigureAwaitRunInline();
                 return resource;
             }
         }
@@ -733,6 +733,7 @@ public abstract class AsyncReaderWriterResourceLock<TMoniker, TResource> : Async
                 this.resourcePreparationStates[resource] = ResourcePreparationTaskState.Create(
                     _ => previousState?.InnerTask ?? Task.CompletedTask,
                     ResourceState.Unknown,
+                    TaskScheduler.Default,
                     CancellationToken.None).PreparationState;
             }
         }
@@ -768,6 +769,7 @@ public abstract class AsyncReaderWriterResourceLock<TMoniker, TResource> : Async
             AsyncReaderWriterResourceLock<TMoniker, TResource>.Helper.ResourceState finalState = forConcurrentUse ? ResourceState.Concurrent : ResourceState.Exclusive;
 
             Task? preparationTask = null;
+            TaskScheduler taskScheduler = TaskScheduler.Current.MaximumConcurrencyLevel > 1 ? TaskScheduler.Current : TaskScheduler.Default;
 
             if (!this.resourcePreparationStates.TryGetValue(resource, out ResourcePreparationTaskState? preparationState))
             {
@@ -778,7 +780,7 @@ public abstract class AsyncReaderWriterResourceLock<TMoniker, TResource> : Async
                 // We kick this off on a new task because we're currently holding a private lock
                 // and don't want to execute arbitrary code.
                 // Let's also hide the ARWL from the delegate if this is a shared lock request.
-                using (forConcurrentUse ? this.service.HideLocks() : default(Suppression))
+                using (forConcurrentUse ? this.service.HideLocks() : default)
                 {
                     // We can't currently use the caller's cancellation token for this task because
                     // this task may be shared with others or call this method later, and we wouldn't
@@ -789,8 +791,9 @@ public abstract class AsyncReaderWriterResourceLock<TMoniker, TResource> : Async
                             forConcurrentUse ? Tuple.Create(resource, combinedCancellationToken) : Tuple.Create(resource, this.service.GetAggregateLockFlags(), combinedCancellationToken),
                             combinedCancellationToken,
                             TaskCreationOptions.None,
-                            TaskScheduler.Default).Unwrap(),
+                            taskScheduler).Unwrap(),
                         finalState,
+                        taskScheduler,
                         cancellationToken);
                 }
             }
@@ -803,7 +806,7 @@ public abstract class AsyncReaderWriterResourceLock<TMoniker, TResource> : Async
                         ? this.prepareResourceConcurrentContinuationDelegate
                         : this.prepareResourceExclusiveContinuationDelegate;
                 }
-                else if (!preparationState.TryJoinPrepationTask(out preparationTask, cancellationToken))
+                else if (!preparationState.TryJoinPreparationTask(out preparationTask, taskScheduler, cancellationToken))
                 {
                     preparationDelegate = forConcurrentUse
                         ? this.prepareResourceConcurrentContinuationOnPossibleCancelledTaskDelegate
@@ -817,7 +820,7 @@ public abstract class AsyncReaderWriterResourceLock<TMoniker, TResource> : Async
                     // We kick this off on a new task because we're currently holding a private lock
                     // and don't want to execute arbitrary code.
                     // Let's also hide the ARWL from the delegate if this is a shared lock request.
-                    using (forConcurrentUse ? this.service.HideLocks() : default(Suppression))
+                    using (forConcurrentUse ? this.service.HideLocks() : default)
                     {
                         (preparationState, preparationTask) = ResourcePreparationTaskState.Create(
                             combinedCancellationToken => preparationState.InnerTask.ContinueWith(
@@ -825,8 +828,9 @@ public abstract class AsyncReaderWriterResourceLock<TMoniker, TResource> : Async
                                 forConcurrentUse ? Tuple.Create(resource, combinedCancellationToken) : Tuple.Create(resource, this.service.GetAggregateLockFlags(), combinedCancellationToken),
                                 CancellationToken.None,
                                 TaskContinuationOptions.RunContinuationsAsynchronously,
-                                TaskScheduler.Default).Unwrap(),
+                                taskScheduler).Unwrap(),
                             finalState,
+                            taskScheduler,
                             cancellationToken);
                     }
                 }
@@ -879,12 +883,13 @@ public abstract class AsyncReaderWriterResourceLock<TMoniker, TResource> : Async
             /// </summary>
             /// <param name="taskCreation">A callback method to create the preparation task.</param>
             /// <param name="finalState">The final resource state when the preparation is done.</param>
+            /// <param name="taskScheduler">A task scheduler for continuation.</param>
             /// <param name="cancellationToken">A cancellation token to abort the preparation task.</param>
             /// <returns>The preparation task and its status to be used to join more waiting tasks later.</returns>
-            internal static (ResourcePreparationTaskState PreparationState, Task InitialTask) Create(Func<CancellationToken, Task> taskCreation, ResourceState finalState, CancellationToken cancellationToken)
+            internal static (ResourcePreparationTaskState PreparationState, Task InitialTask) Create(Func<CancellationToken, Task> taskCreation, ResourceState finalState, TaskScheduler taskScheduler, CancellationToken cancellationToken)
             {
                 var preparationState = new ResourcePreparationTaskState(taskCreation, finalState, cancellationToken.CanBeCanceled);
-                Assumes.True(preparationState.TryJoinComputation(isInitialTask: true, out Task? initialTask, cancellationToken));
+                Assumes.True(preparationState.TryJoinComputation(isInitialTask: true, out Task? initialTask, taskScheduler, cancellationToken));
 
                 return (preparationState, initialTask);
             }
@@ -892,12 +897,13 @@ public abstract class AsyncReaderWriterResourceLock<TMoniker, TResource> : Async
             /// <summary>
             /// Try to join an existing preparation task.
             /// </summary>
-            /// <param name="task">The new waiting task to be compeleted when the resource preparation is done.</param>
-            /// <param name="cancellationToken">A cancellation token to abandone the new waiting task.</param>
-            /// <returns>True if it joins sucessfully, it return false, if the current task has been cancelled.</returns>
-            internal bool TryJoinPrepationTask([NotNullWhen(true)] out Task? task, CancellationToken cancellationToken)
+            /// <param name="task">The new waiting task to be completed when the resource preparation is done.</param>
+            /// <param name="taskScheduler">A task scheduler for continuation.</param>
+            /// <param name="cancellationToken">A cancellation token to abandon the new waiting task.</param>
+            /// <returns>True if it joins successfully, it return false, if the current task has been cancelled.</returns>
+            internal bool TryJoinPreparationTask([NotNullWhen(true)] out Task? task, TaskScheduler taskScheduler, CancellationToken cancellationToken)
             {
-                return this.TryJoinComputation(isInitialTask: false, out task, cancellationToken);
+                return this.TryJoinComputation(isInitialTask: false, out task, taskScheduler, cancellationToken);
             }
         }
     }
