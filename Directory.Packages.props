@@ -3,7 +3,6 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
-
     <MicroBuildVersion>2.0.112</MicroBuildVersion>
     <CodeAnalysisVersion>3.11.0</CodeAnalysisVersion>
     <CodeAnalysisVersion Condition="'$(IsTestProject)'=='true'">4.4.0</CodeAnalysisVersion>
@@ -11,7 +10,7 @@
     <MicrosoftDiagnosticsRuntimeVersion>2.3.405501</MicrosoftDiagnosticsRuntimeVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="DNNE" Version="1.0.32" />
+    <PackageVersion Include="DNNE" Version="2.0.0" />
     <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="7.0.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis" Version="$(CodeAnalysisVersion)" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.3" />
