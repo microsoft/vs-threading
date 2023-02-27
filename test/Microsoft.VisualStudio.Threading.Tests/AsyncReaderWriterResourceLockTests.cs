@@ -763,6 +763,31 @@ public class AsyncReaderWriterResourceLockTests : TestBase
     }
 
     [Fact]
+    public async Task PreparationReservesThrottlingScheduler()
+    {
+        var resourceTask = new TaskCompletionSource<TaskScheduler>();
+
+        this.resourceLock.SetPreparationCallback(
+            this.resources[1],
+            (r, c) =>
+            {
+                resourceTask.SetResult(TaskScheduler.Current);
+                return Task.CompletedTask;
+            });
+
+        var schedulerPair = new ConcurrentExclusiveSchedulerPair(TaskScheduler.Default, 2);
+
+        await schedulerPair.ConcurrentScheduler.SwitchTo();
+
+        using (AsyncReaderWriterResourceLock<int, Resource>.ResourceReleaser access = await this.resourceLock.ReadLockAsync())
+        {
+            _ = await access.GetResourceAsync(1);
+        }
+
+        Assert.Equal(schedulerPair.ConcurrentScheduler, await resourceTask.Task);
+    }
+
+    [Fact]
     public async Task PreparationResourceTaskCanBeCancelled()
     {
         using (AsyncReaderWriterResourceLock<int, Resource>.ResourceReleaser access = await this.resourceLock.ReadLockAsync())
@@ -1519,7 +1544,7 @@ public class AsyncReaderWriterResourceLockTests : TestBase
     {
         private readonly List<Resource> resources;
 
-        private readonly Dictionary<Resource, Tuple<TaskCompletionSource<CancellationToken>, Task>> preparationTasks = new Dictionary<Resource, Tuple<TaskCompletionSource<CancellationToken>, Task>>();
+        private readonly Dictionary<Resource, IResourcePreparation> preparationTasks = new Dictionary<Resource, IResourcePreparation>();
 
         private readonly AsyncAutoResetEvent preparationTaskBegun = new AsyncAutoResetEvent();
 
@@ -1538,6 +1563,11 @@ public class AsyncReaderWriterResourceLockTests : TestBase
             this.logger = logger;
         }
 
+        private interface IResourcePreparation
+        {
+            Task PrepareResourceAsync(Resource resource, CancellationToken cancellationToken);
+        }
+
         internal AsyncAutoResetEvent PreparationTaskBegun
         {
             get { return this.preparationTaskBegun; }
@@ -1553,10 +1583,18 @@ public class AsyncReaderWriterResourceLockTests : TestBase
             var tcs = new TaskCompletionSource<CancellationToken>();
             lock (this.preparationTasks)
             {
-                this.preparationTasks[resource] = Tuple.Create(tcs, task);
+                this.preparationTasks[resource] = new ResourcePreparationState(tcs, task);
             }
 
             return tcs.Task;
+        }
+
+        internal void SetPreparationCallback(Resource resource, Func<Resource, CancellationToken, Task> callback)
+        {
+            lock (this.preparationTasks)
+            {
+                this.preparationTasks[resource] = new ResourcePreparationCallback(callback);
+            }
         }
 
         internal new void SetResourceAsAccessed(Resource resource)
@@ -1615,22 +1653,54 @@ public class AsyncReaderWriterResourceLockTests : TestBase
             Assert.True(this.IsWriteLockHeld || !this.IsAnyLockHeld);
             Assert.False(Monitor.IsEntered(this.SyncObject));
 
-            Tuple<TaskCompletionSource<CancellationToken>, Task>? tuple;
+            IResourcePreparation? resourcePreparation;
             lock (this.preparationTasks)
             {
-                if (this.preparationTasks.TryGetValue(resource, out tuple))
+                if (this.preparationTasks.TryGetValue(resource, out resourcePreparation))
                 {
                     this.preparationTasks.Remove(resource); // consume task
                 }
             }
 
-            if (tuple is object)
+            if (resourcePreparation is object)
             {
-                tuple.Item1.SetResult(cancellationToken); // signal that the preparation method has been entered
-                await tuple.Item2;
+                await resourcePreparation.PrepareResourceAsync(resource, cancellationToken);
             }
 
             Assert.True(this.IsWriteLockHeld || !this.IsAnyLockHeld);
+        }
+
+        private class ResourcePreparationState : IResourcePreparation
+        {
+            private readonly TaskCompletionSource<CancellationToken> preparationStart;
+            private readonly Task preparationTask;
+
+            public ResourcePreparationState(TaskCompletionSource<CancellationToken> preparationStart, Task preparationTask)
+            {
+                this.preparationStart = preparationStart;
+                this.preparationTask = preparationTask;
+            }
+
+            public Task PrepareResourceAsync(Resource resource, CancellationToken cancellationToken)
+            {
+                this.preparationStart.SetResult(cancellationToken); // signal that the preparation method has been entered
+                return this.preparationTask;
+            }
+        }
+
+        private class ResourcePreparationCallback : IResourcePreparation
+        {
+            private readonly Func<Resource, CancellationToken, Task> callback;
+
+            public ResourcePreparationCallback(Func<Resource, CancellationToken, Task> callback)
+            {
+                this.callback = callback;
+            }
+
+            public Task PrepareResourceAsync(Resource resource, CancellationToken cancellationToken)
+            {
+                return this.callback(resource, cancellationToken);
+            }
         }
     }
 }
