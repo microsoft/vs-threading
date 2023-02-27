@@ -763,7 +763,7 @@ public class AsyncReaderWriterResourceLockTests : TestBase
     }
 
     [Fact]
-    public async Task PreparationReservesThrottlingScheduler()
+    public async Task PreparationPreservesThrottlingScheduler()
     {
         var resourceTask = new TaskCompletionSource<TaskScheduler>();
 
