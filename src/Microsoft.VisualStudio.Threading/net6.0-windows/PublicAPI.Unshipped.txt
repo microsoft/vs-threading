@@ -1,0 +1,1 @@
+virtual Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.GetTaskSchedulerToPrepareResourcesForConcurrentAccess(TResource! resource) -> System.Threading.Tasks.TaskScheduler!

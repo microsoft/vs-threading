@@ -1617,6 +1617,11 @@ public class AsyncReaderWriterResourceLockTests : TestBase
             return Task.FromResult(this.resources[resourceMoniker]);
         }
 
+        protected override TaskScheduler GetTaskSchedulerToPrepareResourcesForConcurrentAccess(Resource resource)
+        {
+            return TaskScheduler.Current.MaximumConcurrencyLevel > 1 ? TaskScheduler.Current : TaskScheduler.Default;
+        }
+
         protected override async Task PrepareResourceForConcurrentAccessAsync(Resource resource, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();

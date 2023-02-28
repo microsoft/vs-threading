@@ -214,6 +214,16 @@ public abstract class AsyncReaderWriterResourceLock<TMoniker, TResource> : Async
     }
 
     /// <summary>
+    /// Gets a task scheduler to prepare a resource for concurrent access.
+    /// </summary>
+    /// <param name="resource">The resource to prepare.</param>
+    /// <returns>A <see cref="TaskScheduler"/>.</returns>
+    protected virtual TaskScheduler GetTaskSchedulerToPrepareResourcesForConcurrentAccess(TResource resource)
+    {
+        return TaskScheduler.Default;
+    }
+
+    /// <summary>
     /// Prepares a resource for concurrent access.
     /// </summary>
     /// <param name="resource">The resource to prepare.</param>
@@ -769,7 +779,7 @@ public abstract class AsyncReaderWriterResourceLock<TMoniker, TResource> : Async
             AsyncReaderWriterResourceLock<TMoniker, TResource>.Helper.ResourceState finalState = forConcurrentUse ? ResourceState.Concurrent : ResourceState.Exclusive;
 
             Task? preparationTask = null;
-            TaskScheduler taskScheduler = TaskScheduler.Current.MaximumConcurrencyLevel > 1 ? TaskScheduler.Current : TaskScheduler.Default;
+            TaskScheduler taskScheduler = this.service.GetTaskSchedulerToPrepareResourcesForConcurrentAccess(resource);
 
             if (!this.resourcePreparationStates.TryGetValue(resource, out ResourcePreparationTaskState? preparationState))
             {
