@@ -85,7 +85,7 @@ internal static class InternalUtilities
                 stateMachine.GetType().FullName,
                 state,
                 AsyncReturnStackPrefix,
-                (long)GetAddress(stateMachine)); // the int cast allows hex formatting
+                (long)GetAddress(stateMachine)); // the long cast allows hex formatting
 
             Delegate[]? continuationDelegates = FindContinuationDelegates(stateMachine).ToArray();
             if (continuationDelegates.Length == 0)
