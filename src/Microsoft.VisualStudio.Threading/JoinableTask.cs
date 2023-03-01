@@ -44,6 +44,15 @@ public partial class JoinableTask : IJoinableTaskDependent
     private readonly JoinableTaskCreationOptions creationOptions;
 
     /// <summary>
+    /// The serializable token associated with this particular <see cref="JoinableTask"/>.
+    /// </summary>
+    /// <remarks>
+    /// This will be created when the <see cref="JoinableTask"/> was created with a parent token
+    /// or lazily created when this <see cref="JoinableTask"/> needs to be serialized.
+    /// </remarks>
+    private SerializableToken? token;
+
+    /// <summary>
     /// Other instances of <see cref="JoinableTaskFactory"/> that should be posted
     /// to with any main thread bound work.
     /// </summary>
@@ -125,9 +134,10 @@ public partial class JoinableTask : IJoinableTaskDependent
     /// </summary>
     /// <param name="owner">The instance that began the async operation.</param>
     /// <param name="synchronouslyBlocking">A value indicating whether the launching thread will synchronously block for this job's completion.</param>
+    /// <param name="parentToken">An optional token that identifies one or more <see cref="JoinableTask"/> instances, typically in other processes, that serve as 'parents' to this one.</param>
     /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior.</param>
     /// <param name="initialDelegate">The entry method's info for diagnostics.</param>
-    internal JoinableTask(JoinableTaskFactory owner, bool synchronouslyBlocking, JoinableTaskCreationOptions creationOptions, Delegate initialDelegate)
+    internal JoinableTask(JoinableTaskFactory owner, bool synchronouslyBlocking, string? parentToken, JoinableTaskCreationOptions creationOptions, Delegate initialDelegate)
     {
         Requires.NotNull(owner, nameof(owner));
 
@@ -147,6 +157,7 @@ public partial class JoinableTask : IJoinableTaskDependent
         }
 
         this.creationOptions = creationOptions;
+        this.token = SerializableToken.From(parentToken, this);
         this.owner.Context.OnJoinableTaskStarted(this);
         this.initialDelegate = initialDelegate;
     }
@@ -655,6 +666,32 @@ public partial class JoinableTask : IJoinableTaskDependent
     }
 
     /// <summary>
+    /// Gets the full token that should be serialized when this <see cref="JoinableTask"/> owns the context to be shared.
+    /// </summary>
+    /// <returns>The token; or <see langword="null" /> when this task is already completed.</returns>
+    internal string? GetSerializableToken()
+    {
+        if (this.token is null && !this.IsCompleteRequested)
+        {
+            using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
+            {
+                lock (this.JoinableTaskContext.SyncContextLock)
+                {
+                    this.token ??= SerializableToken.New(this);
+                }
+            }
+        }
+
+        return this.token?.ToString();
+    }
+
+    /// <summary>
+    /// Looks up the <see cref="JoinableTask"/> that serves as this instance's parent due to the token provided when this was created.
+    /// </summary>
+    /// <returns>A task; or <see langword="null" /> if no parent token was provided at construction time or no match was found (possibly due to the parent having already completed).</returns>
+    internal JoinableTask? GetTokenizedParent() => this.JoinableTaskContext.Lookup(this.token?.ParentToken);
+
+    /// <summary>
     /// Gets a very likely value whether the main thread is blocked by this <see cref="JoinableTask"/>.
     /// </summary>
     internal bool MaybeBlockMainThread()
@@ -891,6 +928,10 @@ public partial class JoinableTask : IJoinableTaskDependent
                 if (!this.IsCompleteRequested)
                 {
                     this.IsCompleteRequested = true;
+                    if (this.token?.TaskId is ulong taskId)
+                    {
+                        this.JoinableTaskContext.RemoveSerializableIdentifier(taskId);
+                    }
 
                     if (this.mainThreadQueue is object)
                     {
@@ -1242,5 +1283,77 @@ public partial class JoinableTask : IJoinableTaskDependent
                 }
             }
         }
+    }
+
+    private class SerializableToken
+    {
+        private readonly JoinableTask owner;
+        private ulong? taskId;
+        private string? fullToken;
+
+        private SerializableToken(JoinableTask owner)
+        {
+            this.owner = owner;
+        }
+
+        /// <summary>
+        /// Gets the original token provided by the remote parent task.
+        /// </summary>
+        internal string? ParentToken { get; init; }
+
+        /// <summary>
+        /// Gets the unique ID that identifies the owning <see cref="JoinableTask"/> in the <see cref="JoinableTaskContext.serializedTasks"/> dictionary.
+        /// </summary>
+        internal ulong? TaskId
+        {
+            get
+            {
+                if (this.taskId is null && !this.owner.IsCompleteRequested)
+                {
+                    using (this.owner.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
+                    {
+                        lock (this.owner.JoinableTaskContext.SyncContextLock)
+                        {
+                            if (this.taskId is null && !this.owner.IsCompleteRequested)
+                            {
+                                this.taskId = this.owner.JoinableTaskContext.AssignUniqueIdentifier(this.owner);
+                            }
+                        }
+                    }
+                }
+
+                return this.owner.IsCompleteRequested ? null : this.taskId;
+            }
+        }
+
+        /// <summary>
+        /// Serializes this token as a string.
+        /// </summary>
+        /// <returns>A string that identifies the owner <see cref="JoinableTask"/> and retains information about its parents, if any. May be <see langword="null" /> if the owning task has already completed.</returns>
+        public override string? ToString()
+        {
+            if (this.fullToken is null && this.TaskId is ulong taskId)
+            {
+                this.fullToken = this.owner.JoinableTaskContext.ConstructFullToken(taskId, this.ParentToken);
+            }
+
+            return this.owner.IsCompleteRequested ? null : this.fullToken;
+        }
+
+        /// <summary>
+        /// Creates a <see cref="SerializableToken"/> when a parent token is provided.
+        /// </summary>
+        /// <param name="parentToken">The parent token, if any.</param>
+        /// <param name="owner">The owning task.</param>
+        /// <returns>The token, if any is required.</returns>
+        [return: NotNullIfNotNull(nameof(parentToken))]
+        internal static SerializableToken? From(string? parentToken, JoinableTask owner) => parentToken is null ? null : new SerializableToken(owner) { ParentToken = parentToken };
+
+        /// <summary>
+        /// Creates a <see cref="SerializableToken"/> for a given <see cref="JoinableTask"/> if it has not yet completed.
+        /// </summary>
+        /// <param name="owner">The owning task.</param>
+        /// <returns>A token, if the task has not yet completed; otherwise <see langword="null" />.</returns>
+        internal static SerializableToken? New(JoinableTask owner) => owner.IsCompleteRequested ? null : new SerializableToken(owner);
     }
 }
