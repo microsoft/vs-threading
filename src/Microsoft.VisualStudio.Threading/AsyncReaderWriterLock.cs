@@ -127,6 +127,11 @@ public partial class AsyncReaderWriterLock : IDisposable
     private readonly Queue<Func<Task>> beforeWriteReleasedCallbacks = new Queue<Func<Task>>();
 
     /// <summary>
+    /// A helper class to produce ETW trace events.
+    /// </summary>
+    private readonly EventsHelper etw;
+
+    /// <summary>
     /// A value indicating whether extra resources should be spent to collect diagnostic information
     /// that may be useful in deadlock investigations.
     /// </summary>
@@ -143,11 +148,6 @@ public partial class AsyncReaderWriterLock : IDisposable
     /// new top-level lock requests should be serviced.
     /// </summary>
     private bool completeInvoked;
-
-    /// <summary>
-    /// A helper class to produce ETW trace events.
-    /// </summary>
-    private EventsHelper etw;
 
     /// <summary>
     /// A timer to recheck potential deadlock caused by pending writer locks.
@@ -676,11 +676,11 @@ public partial class AsyncReaderWriterLock : IDisposable
 
     /// <summary>
     /// Get the task scheduler to execute the continuation when the lock is acquired.
-    ///  AsyncReaderWriterLock uses a special <see cref="SynchronizationContext"/> to handle execusive locks, and will ignore task scheduler provided, so this is only used in a read lock scenario.
+    ///  AsyncReaderWriterLock uses a special <see cref="SynchronizationContext"/> to handle exclusive locks, and will ignore task scheduler provided, so this is only used in a read lock scenario.
     /// This method is called within the execution context to wait the read lock, so it can pick up <see cref="TaskScheduler"/> based on the current execution context.
     /// Note: the task scheduler is only used, when the lock is issued later.  If the lock is issued immediately when <see cref="CanCurrentThreadHoldActiveLock"/> returns true, it will be ignored.
     /// </summary>
-    /// <returns>A task scheduler to schedule the continutation task when a lock is issued.</returns>
+    /// <returns>A task scheduler to schedule the continuation task when a lock is issued.</returns>
     protected virtual TaskScheduler GetTaskSchedulerForReadLockRequest()
     {
         return TaskScheduler.Default;
@@ -2198,32 +2198,41 @@ public partial class AsyncReaderWriterLock : IDisposable
         /// <summary>
         /// The instance of the lock class to which this awaiter is affiliated.
         /// </summary>
-        private AsyncReaderWriterLock lck;
+        private readonly AsyncReaderWriterLock lck;
 
         /// <summary>
         /// The type of lock requested.
         /// </summary>
-        private LockKind kind;
+        private readonly LockKind kind;
 
         /// <summary>
         /// The "parent" lock (i.e. the lock within which this lock is nested) if any.
         /// </summary>
-        private Awaiter? nestingLock;
+        private readonly Awaiter? nestingLock;
 
         /// <summary>
         /// The cancellation token that would terminate waiting for a lock that is not yet available.
         /// </summary>
-        private CancellationToken cancellationToken;
+        private readonly CancellationToken cancellationToken;
+
+        /// <summary>
+        /// The flags applied to this lock.
+        /// </summary>
+        private readonly LockFlags options;
+
+        /// <summary>
+        /// The stack trace of the caller originally requesting the lock.
+        /// </summary>
+        /// <remarks>
+        /// This field is initialized only when <see cref="AsyncReaderWriterLock"/> is constructed with
+        /// the captureDiagnostics parameter set to <see langword="true" />.
+        /// </remarks>
+        private readonly StackTrace? requestingStackTrace;
 
         /// <summary>
         /// The cancellation token event that should be disposed of to free memory when we no longer need to receive cancellation notifications.
         /// </summary>
         private CancellationTokenRegistration cancellationRegistration;
-
-        /// <summary>
-        /// The flags applied to this lock.
-        /// </summary>
-        private LockFlags options;
 
         /// <summary>
         /// Any exception to throw back to the lock requestor.
@@ -2257,15 +2266,6 @@ public partial class AsyncReaderWriterLock : IDisposable
         /// The synchronization context applied to folks who hold the lock.
         /// </summary>
         private SynchronizationContext? synchronizationContext;
-
-        /// <summary>
-        /// The stacktrace of the caller originally requesting the lock.
-        /// </summary>
-        /// <remarks>
-        /// This field is initialized only when <see cref="AsyncReaderWriterLock"/> is constructed with
-        /// the captureDiagnostics parameter set to <see langword="true" />.
-        /// </remarks>
-        private StackTrace? requestingStackTrace;
 
         /// <summary>
         /// An arbitrary object that may be set by a derived type of the containing lock class.

@@ -62,7 +62,7 @@ internal static class InternalUtilities
     }
 
     /// <summary>
-    /// Walk the continuation objects inside "async state machines" to generate the return callstack.
+    /// Walk the continuation objects inside "async state machines" to generate the return call stack.
     /// FOR DIAGNOSTIC PURPOSES ONLY.
     /// </summary>
     /// <param name="continuationDelegate">The delegate that represents the head of an async continuation chain.</param>
@@ -85,7 +85,7 @@ internal static class InternalUtilities
                 stateMachine.GetType().FullName,
                 state,
                 AsyncReturnStackPrefix,
-                (int)GetAddress(stateMachine)); // the int cast allows hex formatting
+                (long)GetAddress(stateMachine)); // the long cast allows hex formatting
 
             Delegate[]? continuationDelegates = FindContinuationDelegates(stateMachine).ToArray();
             if (continuationDelegates.Length == 0)

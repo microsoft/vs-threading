@@ -22,7 +22,7 @@ internal class CancellableJoinComputation
 
     /// <summary>
     /// A list of task completion sources which represents joined waiting requests with cancellable cancellation tokens.
-    /// When an individule cancellation token is triggered, we may allow that specific waiting task to continue, and only all of them abandone the computation then we may
+    /// When an individual cancellation token is triggered, we may allow that specific waiting task to continue, and only all of them abandon the computation then we may
     /// cancel the inner computation.
     /// </summary>
     private List<WaitingCancellationStatus>? joinedWaitingList;
@@ -142,13 +142,14 @@ internal class CancellableJoinComputation
     /// </summary>
     /// <param name="isInitialTask">It is true for the initial task starting the computation. This must be called once right after the constructor.</param>
     /// <param name="task">Returns a task which can be waited on.</param>
+    /// <param name="taskScheduler">A task scheduler for continuation.</param>
     /// <param name="cancellationToken">A cancellation token to abort this waiting.</param>
     /// <returns>It returns false, if the inner task is aborted. In which case, no way to join the existing computation.</returns>
-    internal bool TryJoinComputation(bool isInitialTask, [NotNullWhen(true)] out Task? task, CancellationToken cancellationToken)
+    internal bool TryJoinComputation(bool isInitialTask, [NotNullWhen(true)] out Task? task, TaskScheduler taskScheduler, CancellationToken cancellationToken)
     {
         if (!this.isCancellationAllowed)
         {
-            task = this.JoinNotCancellableTaskAsync(isInitialTask, cancellationToken);
+            task = this.JoinNotCancellableTaskAsync(isInitialTask, taskScheduler, cancellationToken);
             return true;
         }
 
@@ -184,7 +185,7 @@ internal class CancellableJoinComputation
             }
         }
 
-        // if the inner task is joined by a new uncancellable task, we will abandone the cancellation token source because we will never use it anymore.
+        // if the inner task is joined by a new not cancellable task, we will abandon the cancellation token source because we will never use it anymore.
         // we do it outside of our lock.
         CancellationTokenSource? combinedCancellationTokenSourceToDispose = null;
 
@@ -213,11 +214,11 @@ internal class CancellableJoinComputation
 
                     this.isCancellationAllowed = false;
 
-                    task = this.JoinNotCancellableTaskAsync(isInitialTask, CancellationToken.None);
+                    task = this.JoinNotCancellableTaskAsync(isInitialTask, taskScheduler, CancellationToken.None);
                 }
                 else if (!this.isCancellationAllowed)
                 {
-                    task = this.JoinNotCancellableTaskAsync(isInitialTask, cancellationToken);
+                    task = this.JoinNotCancellableTaskAsync(isInitialTask, taskScheduler, cancellationToken);
                 }
                 else
                 {
@@ -225,7 +226,7 @@ internal class CancellableJoinComputation
 
                     WaitingCancellationStatus status;
 
-                    // we need increase the outstanding count before creating WiatingCancellationStatus.
+                    // we need increase the outstanding count before creating WaitingCancellationStatus.
                     // Under a rare race condition the cancellation token can be trigger with this time frame, and lead OnWaitingTaskCancelled to be called recursively
                     // within this lock. It would be critical to make sure the outstandingWaitingCount to increase before decreasing there.
                     this.outstandingWaitingCount++;
@@ -257,14 +258,15 @@ internal class CancellableJoinComputation
     /// A simple way to join if the inner task cannot be cancelled.
     /// </summary>
     /// <param name="isInitialTask">Whether it is the first task to start the computation.</param>
+    /// <param name="taskScheduler">A task scheduler for continuation.</param>
     /// <param name="cancellationToken">A cancellation token to abort the waiting.</param>
     /// <returns>A task to complete when the computation ends.</returns>
-    private Task JoinNotCancellableTaskAsync(bool isInitialTask, CancellationToken cancellationToken)
+    private Task JoinNotCancellableTaskAsync(bool isInitialTask, TaskScheduler taskScheduler, CancellationToken cancellationToken)
     {
         if (this.InnerTask.IsCompleted || (isInitialTask && !cancellationToken.CanBeCanceled))
         {
             // Note: we don't reuse the inner task directly even for second request which is not cancellable.
-            // This is to prevent two task sychorized continuations, which can be blocking each other causing unexpected deadlocks.
+            // This is to prevent two task synchronized continuations, which can be blocking each other causing unexpected deadlocks.
             // Adding an extra async task continuation prevents this problem, because all async continuation will be queued before calling synchronized task continuations,
             // which are called one by one.
             return this.InnerTask;
@@ -282,7 +284,7 @@ internal class CancellableJoinComputation
             t => t.GetAwaiter().GetResult(),
             cancellationToken,
             TaskContinuationOptions.RunContinuationsAsynchronously,
-            TaskScheduler.Default);
+            taskScheduler);
     }
 
     /// <summary>
@@ -327,7 +329,7 @@ internal class CancellableJoinComputation
         /// <summary>
         /// The cancellation registration to handle the cancellation token of the request.
         /// </summary>
-        private CancellationTokenRegistration cancellationTokenRegistration;
+        private readonly CancellationTokenRegistration cancellationTokenRegistration;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="WaitingCancellationStatus"/> class.
