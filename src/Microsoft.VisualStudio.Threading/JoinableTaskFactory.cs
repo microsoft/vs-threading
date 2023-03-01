@@ -203,62 +203,19 @@ public partial class JoinableTaskFactory
         return new MainThreadAwaitable(this, this.Context.AmbientTask, cancellationToken, alwaysYield);
     }
 
-    /// <summary>
-    /// Runs the specified asynchronous method to completion while synchronously blocking the calling thread.
-    /// </summary>
-    /// <param name="asyncMethod">The asynchronous method to execute.</param>
-    /// <remarks>
-    /// <para>Any exception thrown by the delegate is rethrown in its original type to the caller of this method.</para>
-    /// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
-    /// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
-    /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
-    /// <example>
-    /// <code>
-    /// // On threadpool or Main thread, this method will block
-    /// // the calling thread until all async operations in the
-    /// // delegate complete.
-    /// joinableTaskFactory.Run(async delegate {
-    ///     // still on the threadpool or Main thread as before.
-    ///     await OperationAsync();
-    ///     // still on the threadpool or Main thread as before.
-    ///     await Task.Run(async delegate {
-    ///          // Now we're on a threadpool thread.
-    ///          await Task.Yield();
-    ///          // still on a threadpool thread.
-    ///     });
-    ///     // Now back on the Main thread (or threadpool thread if that's where we started).
-    /// });
-    /// </code>
-    /// </example>
-    /// </remarks>
+    /// <inheritdoc cref="Run{T}(Func{Task{T}}, JoinableTaskCreationOptions)" />
     public void Run(Func<Task> asyncMethod)
     {
         this.Run(asyncMethod, JoinableTaskCreationOptions.None, entrypointOverride: null);
     }
 
-    /// <summary>
-    /// Runs the specified asynchronous method to completion while synchronously blocking the calling thread.
-    /// </summary>
-    /// <param name="asyncMethod">The asynchronous method to execute.</param>
-    /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior.</param>
+    /// <inheritdoc cref="Run{T}(Func{Task{T}}, JoinableTaskCreationOptions)" />
     public void Run(Func<Task> asyncMethod, JoinableTaskCreationOptions creationOptions)
     {
         this.Run(asyncMethod, creationOptions, entrypointOverride: null);
     }
 
-    /// <summary>
-    /// Runs the specified asynchronous method to completion while synchronously blocking the calling thread.
-    /// </summary>
-    /// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
-    /// <param name="asyncMethod">The asynchronous method to execute.</param>
-    /// <returns>The result of the Task returned by <paramref name="asyncMethod"/>.</returns>
-    /// <remarks>
-    /// <para>Any exception thrown by the delegate is rethrown in its original type to the caller of this method.</para>
-    /// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
-    /// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
-    /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
-    /// <para>See the <see cref="Run(Func{Task})" /> overload documentation for an example.</para>
-    /// </remarks>
+    /// <inheritdoc cref="Run{T}(Func{Task{T}}, JoinableTaskCreationOptions)" />
     public T Run<T>(Func<Task<T>> asyncMethod)
     {
         return this.Run(asyncMethod, JoinableTaskCreationOptions.None);
@@ -276,92 +233,66 @@ public partial class JoinableTaskFactory
     /// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
     /// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
     /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
+    /// <example>
+    /// <code><![CDATA[
+    /// // On threadpool or Main thread, this method will block
+    /// // the calling thread until all async operations in the
+    /// // delegate complete.
+    /// joinableTaskFactory.Run(async delegate {
+    ///     // still on the threadpool or Main thread as before.
+    ///     await OperationAsync();
+    ///     // still on the threadpool or Main thread as before.
+    ///     await Task.Run(async delegate {
+    ///          // Now we're on a threadpool thread.
+    ///          await Task.Yield();
+    ///          // still on a threadpool thread.
+    ///     });
+    ///     // Now back on the Main thread (or threadpool thread if that's where we started).
+    /// });
+    /// ]]></code>
+    /// </example>
     /// </remarks>
     public T Run<T>(Func<Task<T>> asyncMethod, JoinableTaskCreationOptions creationOptions)
     {
         VerifyNoNonConcurrentSyncContext();
-        JoinableTask<T>? joinable = this.RunAsync(asyncMethod, synchronouslyBlocking: true, creationOptions: creationOptions);
+        JoinableTask<T>? joinable = this.RunAsync(asyncMethod, synchronouslyBlocking: true, parentToken: null, creationOptions: creationOptions);
         return joinable.CompleteOnCurrentThread();
     }
 
-    /// <summary>
-    /// Invokes an async delegate on the caller's thread, and yields back to the caller when the async method yields.
-    /// The async delegate is invoked in such a way as to mitigate deadlocks in the event that the async method
-    /// requires the main thread while the main thread is blocked waiting for the async method's completion.
-    /// </summary>
-    /// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
-    /// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
-    /// <remarks>
-    /// <para>Exceptions thrown by the delegate are captured by the returned <see cref="JoinableTask" />.</para>
-    /// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
-    /// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
-    /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
-    /// </remarks>
+    /// <inheritdoc cref="RunAsync{T}(Func{Task{T}}, bool, string?, JoinableTaskCreationOptions)"/>
     public JoinableTask RunAsync(Func<Task> asyncMethod)
     {
-        return this.RunAsync(asyncMethod, synchronouslyBlocking: false, creationOptions: JoinableTaskCreationOptions.None);
+        return this.RunAsync(asyncMethod, synchronouslyBlocking: false, parentToken: null, creationOptions: JoinableTaskCreationOptions.None);
     }
 
-    /// <summary>
-    /// Invokes an async delegate on the caller's thread, and yields back to the caller when the async method yields.
-    /// The async delegate is invoked in such a way as to mitigate deadlocks in the event that the async method
-    /// requires the main thread while the main thread is blocked waiting for the async method's completion.
-    /// </summary>
-    /// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
-    /// <returns>An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.</returns>
-    /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior.</param>
-    /// <remarks>
-    /// <para>Exceptions thrown by the delegate are captured by the returned <see cref="JoinableTask" />.</para>
-    /// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
-    /// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
-    /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
-    /// </remarks>
+    /// <inheritdoc cref="RunAsync(Func{Task}, string?, JoinableTaskCreationOptions)" />
     public JoinableTask RunAsync(Func<Task> asyncMethod, JoinableTaskCreationOptions creationOptions)
     {
-        return this.RunAsync(asyncMethod, synchronouslyBlocking: false, creationOptions: creationOptions);
+        return this.RunAsync(asyncMethod, synchronouslyBlocking: false, parentToken: null, creationOptions: creationOptions);
     }
 
-    /// <summary>
-    /// Invokes an async delegate on the caller's thread, and yields back to the caller when the async method yields.
-    /// The async delegate is invoked in such a way as to mitigate deadlocks in the event that the async method
-    /// requires the main thread while the main thread is blocked waiting for the async method's completion.
-    /// </summary>
-    /// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
-    /// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
-    /// <returns>
-    /// An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.
-    /// </returns>
-    /// <remarks>
-    /// <para>Exceptions thrown by the delegate are captured by the returned <see cref="JoinableTask" />.</para>
-    /// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
-    /// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
-    /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
-    /// </remarks>
+    /// <inheritdoc cref="RunAsync{T}(Func{Task{T}}, bool, string?, JoinableTaskCreationOptions)"/>
+    public JoinableTask RunAsync(Func<Task> asyncMethod, string? parentToken, JoinableTaskCreationOptions creationOptions)
+    {
+        return this.RunAsync(asyncMethod, synchronouslyBlocking: false, parentToken, creationOptions: creationOptions);
+    }
+
+    /// <inheritdoc cref="RunAsync{T}(Func{Task{T}}, bool, string?, JoinableTaskCreationOptions)"/>
     public JoinableTask<T> RunAsync<T>(Func<Task<T>> asyncMethod)
     {
-        return this.RunAsync(asyncMethod, synchronouslyBlocking: false, creationOptions: JoinableTaskCreationOptions.None);
+        return this.RunAsync(asyncMethod, synchronouslyBlocking: false, parentToken: null, creationOptions: JoinableTaskCreationOptions.None);
     }
 
-    /// <summary>
-    /// Invokes an async delegate on the caller's thread, and yields back to the caller when the async method yields.
-    /// The async delegate is invoked in such a way as to mitigate deadlocks in the event that the async method
-    /// requires the main thread while the main thread is blocked waiting for the async method's completion.
-    /// </summary>
-    /// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
-    /// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
-    /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior.</param>
-    /// <returns>
-    /// An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.
-    /// </returns>
-    /// <remarks>
-    /// <para>Exceptions thrown by the delegate are captured by the returned <see cref="JoinableTask" />.</para>
-    /// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
-    /// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
-    /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
-    /// </remarks>
+    /// <inheritdoc cref="RunAsync{T}(Func{Task{T}}, string?, JoinableTaskCreationOptions)" />
     public JoinableTask<T> RunAsync<T>(Func<Task<T>> asyncMethod, JoinableTaskCreationOptions creationOptions)
     {
-        return this.RunAsync(asyncMethod, synchronouslyBlocking: false, creationOptions: creationOptions);
+        return this.RunAsync(asyncMethod, synchronouslyBlocking: false, parentToken: null, creationOptions: creationOptions);
+    }
+
+    /// <inheritdoc cref="RunAsync{T}(Func{Task{T}}, bool, string?, JoinableTaskCreationOptions)"/>
+    public JoinableTask<T> RunAsync<T>(Func<Task<T>> asyncMethod, string? parentToken, JoinableTaskCreationOptions creationOptions)
+    {
+        return this.RunAsync(asyncMethod, synchronouslyBlocking: false, parentToken, creationOptions: creationOptions);
     }
 
     /// <summary>
@@ -394,6 +325,7 @@ public partial class JoinableTaskFactory
                     return Task.CompletedTask;
                 },
                 synchronouslyBlocking: false,
+                parentToken: null,
                 creationOptions: JoinableTaskCreationOptions.None,
                 entrypointOverride: callback);
 
@@ -438,7 +370,7 @@ public partial class JoinableTaskFactory
     internal void Run(Func<Task> asyncMethod, JoinableTaskCreationOptions creationOptions, Delegate? entrypointOverride)
     {
         VerifyNoNonConcurrentSyncContext();
-        JoinableTask? joinable = this.RunAsync(asyncMethod, synchronouslyBlocking: true, creationOptions: creationOptions, entrypointOverride: entrypointOverride);
+        JoinableTask? joinable = this.RunAsync(asyncMethod, synchronouslyBlocking: true, parentToken: null, creationOptions, entrypointOverride);
         joinable.CompleteOnCurrentThread();
     }
 
@@ -674,23 +606,43 @@ public partial class JoinableTaskFactory
     /// synchronously completed (waited on) in the future.
     /// </summary>
     /// <param name="asyncMethod">The asynchronous method to execute.</param>
-    /// <param name="synchronouslyBlocking">A value indicating whether the launching thread will synchronously block for this job's completion.</param>
-    /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior.</param>
+    /// <param name="synchronouslyBlocking"><inheritdoc cref="JoinableTask(JoinableTaskFactory, bool, string?, JoinableTaskCreationOptions, Delegate)" path="/param[@name='synchronouslyBlocking']"/></param>
+    /// <param name="parentToken"><inheritdoc cref="JoinableTask(JoinableTaskFactory, bool, string?, JoinableTaskCreationOptions, Delegate)" path="/param[@name='parentToken']"/></param>
+    /// <param name="creationOptions"><inheritdoc cref="JoinableTask(JoinableTaskFactory, bool, string?, JoinableTaskCreationOptions, Delegate)" path="/param[@name='creationOptions']"/></param>
     /// <param name="entrypointOverride">The entry method's info for diagnostics.</param>
-    private JoinableTask RunAsync(Func<Task> asyncMethod, bool synchronouslyBlocking, JoinableTaskCreationOptions creationOptions, Delegate? entrypointOverride = null)
+    private JoinableTask RunAsync(Func<Task> asyncMethod, bool synchronouslyBlocking, string? parentToken, JoinableTaskCreationOptions creationOptions, Delegate? entrypointOverride = null)
     {
         Requires.NotNull(asyncMethod, nameof(asyncMethod));
 
-        var job = new JoinableTask(this, synchronouslyBlocking, creationOptions, entrypointOverride ?? asyncMethod);
+        var job = new JoinableTask(this, synchronouslyBlocking, parentToken, creationOptions, entrypointOverride ?? asyncMethod);
         this.ExecuteJob<EmptyStruct>(asyncMethod, job);
         return job;
     }
 
-    private JoinableTask<T> RunAsync<T>(Func<Task<T>> asyncMethod, bool synchronouslyBlocking, JoinableTaskCreationOptions creationOptions)
+    /// <summary>
+    /// Invokes an async delegate on the caller's thread, and yields back to the caller when the async method yields.
+    /// The async delegate is invoked in such a way as to mitigate deadlocks in the event that the async method
+    /// requires the main thread while the main thread is blocked waiting for the async method's completion.
+    /// </summary>
+    /// <typeparam name="T">The type of value returned by the asynchronous operation.</typeparam>
+    /// <param name="asyncMethod">The method that, when executed, will begin the async operation.</param>
+    /// <param name="synchronouslyBlocking">A value indicating whether the caller is synchronously blocking.</param>
+    /// <param name="parentToken">An optional token that identifies one or more <see cref="JoinableTask"/> instances, typically in other processes, that serve as 'parents' to this one.</param>
+    /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior.</param>
+    /// <returns>
+    /// An object that tracks the completion of the async operation, and allows for later synchronous blocking of the main thread for completion if necessary.
+    /// </returns>
+    /// <remarks>
+    /// <para>Exceptions thrown by the delegate are captured by the returned <see cref="JoinableTask" />.</para>
+    /// <para>When the delegate resumes from a yielding await, the default behavior is to resume in its original context
+    /// as an ordinary async method execution would. For example, if the caller was on the main thread, execution
+    /// resumes after an await on the main thread; but if it started on a threadpool thread it resumes on a threadpool thread.</para>
+    /// </remarks>
+    private JoinableTask<T> RunAsync<T>(Func<Task<T>> asyncMethod, bool synchronouslyBlocking, string? parentToken, JoinableTaskCreationOptions creationOptions)
     {
         Requires.NotNull(asyncMethod, nameof(asyncMethod));
 
-        var job = new JoinableTask<T>(this, synchronouslyBlocking, creationOptions, asyncMethod);
+        var job = new JoinableTask<T>(this, synchronouslyBlocking, parentToken, creationOptions, asyncMethod);
         this.ExecuteJob<T>(asyncMethod, job);
         return job;
     }
@@ -1048,6 +1000,11 @@ public partial class JoinableTaskFactory
                 }
 
                 this.joinable.NestingFactories = nestingFactories;
+            }
+
+            if (joinable.GetTokenizedParent() is JoinableTask tokenizedParent)
+            {
+                JoinableTaskDependencyGraph.AddDependency(tokenizedParent, joinable);
             }
         }
 

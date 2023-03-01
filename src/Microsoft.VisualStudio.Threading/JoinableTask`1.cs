@@ -27,12 +27,13 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Initializes a new instance of the <see cref="JoinableTask{T}"/> class.
         /// </summary>
-        /// <param name="owner">The instance that began the async operation.</param>
-        /// <param name="synchronouslyBlocking">A value indicating whether the launching thread will synchronously block for this job's completion.</param>
-        /// <param name="creationOptions">The <see cref="JoinableTaskCreationOptions"/> used to customize the task's behavior.</param>
-        /// <param name="initialDelegate">The entry method's info for diagnostics.</param>
-        internal JoinableTask(JoinableTaskFactory owner, bool synchronouslyBlocking, JoinableTaskCreationOptions creationOptions, Delegate initialDelegate)
-            : base(owner, synchronouslyBlocking, creationOptions, initialDelegate)
+        /// <param name="owner"><inheritdoc cref="JoinableTask(JoinableTaskFactory, bool, string?, JoinableTaskCreationOptions, Delegate)" path="/param[@name='owner']"/></param>
+        /// <param name="synchronouslyBlocking"><inheritdoc cref="JoinableTask(JoinableTaskFactory, bool, string?, JoinableTaskCreationOptions, Delegate)" path="/param[@name='synchronouslyBlocking']"/></param>
+        /// <param name="parentToken"><inheritdoc cref="JoinableTask(JoinableTaskFactory, bool, string?, JoinableTaskCreationOptions, Delegate)" path="/param[@name='parentToken']"/></param>
+        /// <param name="creationOptions"><inheritdoc cref="JoinableTask(JoinableTaskFactory, bool, string?, JoinableTaskCreationOptions, Delegate)" path="/param[@name='creationOptions']"/></param>
+        /// <param name="initialDelegate"><inheritdoc cref="JoinableTask(JoinableTaskFactory, bool, string?, JoinableTaskCreationOptions, Delegate)" path="/param[@name='initialDelegate']"/></param>
+        internal JoinableTask(JoinableTaskFactory owner, bool synchronouslyBlocking, string? parentToken, JoinableTaskCreationOptions creationOptions, Delegate initialDelegate)
+            : base(owner, synchronouslyBlocking, parentToken, creationOptions, initialDelegate)
         {
         }
 

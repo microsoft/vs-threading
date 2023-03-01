@@ -1,0 +1,3 @@
+Microsoft.VisualStudio.Threading.JoinableTaskContext.Capture() -> string?
+Microsoft.VisualStudio.Threading.JoinableTaskFactory.RunAsync(System.Func<System.Threading.Tasks.Task!>! asyncMethod, string? parentToken, Microsoft.VisualStudio.Threading.JoinableTaskCreationOptions creationOptions) -> Microsoft.VisualStudio.Threading.JoinableTask!
+Microsoft.VisualStudio.Threading.JoinableTaskFactory.RunAsync<T>(System.Func<System.Threading.Tasks.Task<T>!>! asyncMethod, string? parentToken, Microsoft.VisualStudio.Threading.JoinableTaskCreationOptions creationOptions) -> Microsoft.VisualStudio.Threading.JoinableTask<T>!

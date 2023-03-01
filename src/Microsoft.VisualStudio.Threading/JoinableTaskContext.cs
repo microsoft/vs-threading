@@ -2,17 +2,16 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using static System.FormattableString;
 using JoinableTaskSynchronizationContext = Microsoft.VisualStudio.Threading.JoinableTask.JoinableTaskSynchronizationContext;
-using SingleExecuteProtector = Microsoft.VisualStudio.Threading.JoinableTaskFactory.SingleExecuteProtector;
 
 namespace Microsoft.VisualStudio.Threading;
 
@@ -67,6 +66,14 @@ namespace Microsoft.VisualStudio.Threading;
 public partial class JoinableTaskContext : IDisposable
 {
     /// <summary>
+    /// The expected length of the serialized task ID.
+    /// </summary>
+    /// <remarks>
+    /// This value is the length required to hex-encode a 64-bit integer. We use <see cref="ulong"/> for task IDs, so this is appropriate.
+    /// </remarks>
+    private const int TaskIdHexLength = 16;
+
+    /// <summary>
     /// A "global" lock that allows the graph of interconnected sync context and JoinableSet instances
     /// communicate in a thread-safe way without fear of deadlocks due to each taking their own private
     /// lock and then calling others, thus leading to deadlocks from lock ordering issues.
@@ -115,6 +122,24 @@ public partial class JoinableTaskContext : IDisposable
     /// The ManagedThreadID for the main thread.
     /// </summary>
     private readonly int mainThreadManagedThreadId;
+
+    /// <summary>
+    /// A dictionary of incomplete <see cref="JoinableTask"/> objects for which serializable identifiers have been requested.
+    /// </summary>
+    /// <remarks>
+    /// Only access this while locking <see cref="SyncContextLock"/>.
+    /// </remarks>
+    private readonly Dictionary<ulong, JoinableTask> serializedTasks = new();
+
+    /// <summary>
+    /// A unique instance ID that is used when creating IDs for JoinableTasks that come from this instance.
+    /// </summary>
+    private readonly string contextId = Guid.NewGuid().ToString("n");
+
+    /// <summary>
+    /// The next unique ID to assign to a <see cref="JoinableTask"/> for which a token is required.
+    /// </summary>
+    private ulong nextTaskId = 1;
 
     /// <summary>
     /// The count of <see cref="JoinableTask"/>s blocking the main thread.
@@ -385,6 +410,18 @@ public partial class JoinableTaskContext : IDisposable
         return new JoinableTaskCollection(this);
     }
 
+    /// <summary>
+    /// Captures the caller's context and serializes it as a string
+    /// that is suitable for application via a subsequent call to <see cref="JoinableTaskFactory.RunAsync(Func{Task}, string?, JoinableTaskCreationOptions)" />.
+    /// </summary>
+    /// <returns>A string that represent the current context, or <see langword="null" /> if there is none.</returns>
+    /// <remarks>
+    /// To optimize calling patterns, this method returns <see langword="null" /> even when inside a <see cref="JoinableTask"/> context
+    /// when this <see cref="JoinableTaskContext"/> was initialized without a <see cref="SynchronizationContext"/>, which means no main thread exists
+    /// and thus there is no need to capture and reapply tokens.
+    /// </remarks>
+    public string? Capture() => this.UnderlyingSynchronizationContext is null ? null : this.AmbientTask?.GetSerializableToken();
+
     /// <inheritdoc/>
     public void Dispose()
     {
@@ -501,6 +538,113 @@ public partial class JoinableTaskContext : IDisposable
     }
 
     /// <summary>
+    /// Reserves a unique ID for the given <see cref="JoinableTask"/> and records the association in the <see cref="serializedTasks"/> table.
+    /// </summary>
+    /// <param name="joinableTask">The <see cref="JoinableTask"/> to associate with the new ID.</param>
+    /// <returns>
+    /// An ID assignment that is unique for this <see cref="JoinableTaskContext"/>.
+    /// It <em>must</em> be passed to <see cref="RemoveSerializableIdentifier(ulong)"/> when the task completes to avoid a memory leak.
+    /// </returns>
+    internal ulong AssignUniqueIdentifier(JoinableTask joinableTask)
+    {
+        // The caller must have entered this lock because it's required that it only do it while it has not completed
+        // so that we don't have a leak in our dictionary, since completion removes the id's from the dictionary.
+        Assumes.True(Monitor.IsEntered(this.SyncContextLock));
+        ulong taskId = checked(this.nextTaskId++);
+        this.serializedTasks.Add(taskId, joinableTask);
+        return taskId;
+    }
+
+    /// <summary>
+    /// Applies the result of a call to <see cref="Capture()"/> to the caller's context.
+    /// </summary>
+    /// <param name="parentToken">The result of a prior <see cref="Capture()"/> call.</param>
+    /// <returns>The task referenced by the parent token if it came from our context and is still running; otherwise <see langword="null" />.</returns>
+    internal JoinableTask? Lookup(string? parentToken)
+    {
+        if (parentToken is not null)
+        {
+#if NET6_0_OR_GREATER
+            ReadOnlySpan<char> taskIdChars = this.GetOurTaskId(parentToken);
+#else
+            string taskIdChars = this.GetOurTaskId(parentToken.AsSpan()).ToString();
+#endif
+            if (ulong.TryParse(taskIdChars, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out ulong taskId))
+            {
+                using (this.NoMessagePumpSynchronizationContext.Apply())
+                {
+                    lock (this.SyncContextLock)
+                    {
+                        if (this.serializedTasks.TryGetValue(taskId, out JoinableTask? deserialized))
+                        {
+                            return deserialized;
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Assembles a new token based on a parent token and the unique ID for some <see cref="JoinableTask"/>.
+    /// </summary>
+    /// <param name="taskId">The value previously obtained from <see cref="AssignUniqueIdentifier(JoinableTask)"/>.</param>
+    /// <param name="parentToken">The parent token the <see cref="JoinableTask"/> was created with, if any.</param>
+    /// <returns>A token that may be serialized to recreate the dependency chain for this <see cref="JoinableTask"/> and its remote parents.</returns>
+    internal string ConstructFullToken(ulong taskId, string? parentToken)
+    {
+        const char ContextAndTaskSeparator = ':';
+        if (parentToken is null)
+        {
+            return Invariant($"{this.contextId}{ContextAndTaskSeparator}{taskId:X16}");
+        }
+        else
+        {
+            const char ContextSeparator = ';';
+
+            StringBuilder builder = new(parentToken.Length + 1 + this.contextId.Length + 1 + TaskIdHexLength);
+            builder.Append(parentToken);
+
+            string taskIdString = taskId.ToString("X16", CultureInfo.InvariantCulture);
+
+            // Replace our own contextual unique ID if it is found in the parent token.
+            int ownTaskIdIndex = this.FindOurTaskId(parentToken.AsSpan());
+            if (ownTaskIdIndex < 0)
+            {
+                // Add our own task ID because we have no presence in the parent token already.
+                builder.Append(ContextSeparator);
+                builder.Append(this.contextId);
+                builder.Append(ContextAndTaskSeparator);
+                builder.Append(taskIdString);
+            }
+            else
+            {
+                // Replace our existing task ID that appears in the parent token.
+                builder.Remove(ownTaskIdIndex, TaskIdHexLength);
+                builder.Insert(ownTaskIdIndex, taskIdString);
+            }
+
+            return builder.ToString();
+        }
+    }
+
+    /// <summary>
+    /// Removes an association between a <see cref="JoinableTask" /> and a unique ID that was generated for it
+    /// from the <see cref="serializedTasks"/> table.
+    /// </summary>
+    /// <param name="taskId">The value previously obtained from <see cref="AssignUniqueIdentifier(JoinableTask)"/>.</param>
+    /// <remarks>
+    /// This method must be called when a <see cref="JoinableTask"/> is completed to avoid a memory leak.
+    /// </remarks>
+    internal void RemoveSerializableIdentifier(ulong taskId)
+    {
+        Assumes.True(Monitor.IsEntered(this.SyncContextLock));
+        Assumes.True(this.serializedTasks.Remove(taskId));
+    }
+
+    /// <summary>
     /// Invoked when a hang is suspected to have occurred involving the main thread.
     /// </summary>
     /// <param name="hangDuration">The duration of the current hang.</param>
@@ -588,6 +732,43 @@ public partial class JoinableTaskContext : IDisposable
     /// <param name="disposing"><see langword="true" /> if <see cref="Dispose()"/> was called; <see langword="false" /> if the object is being finalized.</param>
     protected virtual void Dispose(bool disposing)
     {
+    }
+
+    /// <summary>
+    /// Searches a parent token for a task ID that belongs to this <see cref="JoinableTaskContext"/> instance.
+    /// </summary>
+    /// <param name="parentToken">A parent token.</param>
+    /// <returns>The 0-based index into the string where the context of the local task ID begins, if found; otherwise <c>-1</c>.</returns>
+    private int FindOurTaskId(ReadOnlySpan<char> parentToken)
+    {
+        // Fetch the unique id for the JoinableTask that came from *this* context, if any.
+        int matchingContextIndex = parentToken.IndexOf(this.contextId.AsSpan(), StringComparison.Ordinal);
+        if (matchingContextIndex < 0)
+        {
+            return -1;
+        }
+
+        // IMPORTANT: As the parent token frequently comes in over RPC, take care to never throw exceptions based on bad input
+        // as we're called on a critical scheduling callstack where an exception would lead to an Environment.FailFast call.
+        // To that end, only report that we found the task id if the remaining string is long enough to support it.
+        int uniqueIdStartIndex = matchingContextIndex + this.contextId.Length + 1;
+        if (parentToken.Length < uniqueIdStartIndex + TaskIdHexLength)
+        {
+            return -1;
+        }
+
+        return uniqueIdStartIndex;
+    }
+
+    /// <summary>
+    /// Gets the task ID that came from this <see cref="JoinableTaskContext"/> that is carried in a given a parent token.
+    /// </summary>
+    /// <param name="parentToken">A parent token.</param>
+    /// <returns>The characters that formulate the task ID that originally came from this instance, if found; otherwise an empty span.</returns>
+    private ReadOnlySpan<char> GetOurTaskId(ReadOnlySpan<char> parentToken)
+    {
+        int index = this.FindOurTaskId(parentToken);
+        return index < 0 ? default : parentToken.Slice(index, TaskIdHexLength);
     }
 
     /// <summary>
