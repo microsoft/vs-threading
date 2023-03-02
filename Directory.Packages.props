@@ -7,7 +7,7 @@
     <CodeAnalysisVersion>3.11.0</CodeAnalysisVersion>
     <CodeAnalysisVersion Condition="'$(IsTestProject)'=='true'">4.4.0</CodeAnalysisVersion>
     <CodefixTestingVersion>1.1.1</CodefixTestingVersion>
-    <MicrosoftDiagnosticsRuntimeVersion>2.3.405501</MicrosoftDiagnosticsRuntimeVersion>
+    <MicrosoftDiagnosticsRuntimeVersion>2.4.412801</MicrosoftDiagnosticsRuntimeVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="DNNE" Version="2.0.1" />
