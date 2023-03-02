@@ -10,7 +10,7 @@
     <MicrosoftDiagnosticsRuntimeVersion>2.3.405501</MicrosoftDiagnosticsRuntimeVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="DNNE" Version="2.0.0" />
+    <PackageVersion Include="DNNE" Version="2.0.1" />
     <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="7.0.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis" Version="$(CodeAnalysisVersion)" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.3" />
