@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard1.3</TargetFramework>
+    <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Microsoft.VisualStudio.Threading.Analyzers</RootNamespace>
 
     <Description>Static code analyzer to detect common mistakes or potential issues regarding threading and async coding.</Description>
@@ -32,10 +32,10 @@
   </ItemDefinitionGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis" Version="2.10.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.3" PrivateAssets="all" />
-    <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
-    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
+    <PackageReference Include="System.Threading.Tasks.Extensions" />
+    <PackageReference Include="System.ValueTuple" />
   </ItemGroup>
 
   <ItemGroup>

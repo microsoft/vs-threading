@@ -1,18 +1,14 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
-{
-    using System.Threading.Tasks;
-    using Xunit;
-    using Verify = CSharpCodeFixVerifier<VSTHRD106UseInvokeAsyncForAsyncEventsAnalyzer, CodeAnalysis.Testing.EmptyCodeFixProvider>;
+using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.VSTHRD106UseInvokeAsyncForAsyncEventsAnalyzer, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
-    public class VSTHRD106UseInvokeAsyncForAsyncEventsAnalyzerTests
+public class VSTHRD106UseInvokeAsyncForAsyncEventsAnalyzerTests
+{
+    [Fact]
+    public async Task ReportWarningIfInvokeAsyncEventHandlerDirectly()
     {
-        [Fact]
-        public async Task ReportWarningIfInvokeAsyncEventHandlerDirectly()
-        {
-            var test = @"
+        var test = @"
 using System;
 using System.Linq;
 using Microsoft.VisualStudio.Threading;
@@ -30,13 +26,13 @@ class Test<T> where T : EventArgs {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task DoNotReportWarningIfAsyncEventHandlerIsInvokedByInvokeAsync()
-        {
-            var test = @"
+    [Fact]
+    public async Task DoNotReportWarningIfAsyncEventHandlerIsInvokedByInvokeAsync()
+    {
+        var test = @"
 using System;
 using System.Linq;
 using Microsoft.VisualStudio.Threading;
@@ -49,13 +45,13 @@ class TplExtensions {
     }
 }}
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task ReportWarningIfInvokeAsyncEventHandlerDirectlyViaInvoke()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningIfInvokeAsyncEventHandlerDirectlyViaInvoke()
+    {
+        var test = @"
 using System;
 using System.Linq;
 using Microsoft.VisualStudio.Threading;
@@ -73,13 +69,13 @@ class Test<T> where T : EventArgs {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task ReportWarningIfInvokeAsyncEventHandlerDirectlyAsDelegateViaInvoke()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningIfInvokeAsyncEventHandlerDirectlyAsDelegateViaInvoke()
+    {
+        var test = @"
 using System;
 using System.Linq;
 using Microsoft.VisualStudio.Threading;
@@ -97,13 +93,13 @@ class Test<T> where T : EventArgs {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task ReportWarningIfInvokeAsyncEventHandlerDirectlyAndTheyAreLocalVariables()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningIfInvokeAsyncEventHandlerDirectlyAndTheyAreLocalVariables()
+    {
+        var test = @"
 using System;
 using System.Linq;
 using Microsoft.VisualStudio.Threading;
@@ -121,13 +117,13 @@ class Test<T> where T : EventArgs {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task ReportWarningIfInvokeAsyncEventHandlerDirectlyAndTheyAreProperties()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningIfInvokeAsyncEventHandlerDirectlyAndTheyAreProperties()
+    {
+        var test = @"
 using System;
 using System.Linq;
 using Microsoft.VisualStudio.Threading;
@@ -145,13 +141,13 @@ class Test<T> where T : EventArgs {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task ReportWarningIfInvokeAsyncEventHandlerViaInvocationList()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningIfInvokeAsyncEventHandlerViaInvocationList()
+    {
+        var test = @"
 using System;
 using System.Linq;
 using Microsoft.VisualStudio.Threading;
@@ -169,13 +165,13 @@ class Test<T> where T : EventArgs {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task ReportWarningIfInvokeAsyncEventHandlerAsDelegate()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningIfInvokeAsyncEventHandlerAsDelegate()
+    {
+        var test = @"
 using System;
 using System.Linq;
 using Microsoft.VisualStudio.Threading;
@@ -193,13 +189,13 @@ class Test<T> where T : EventArgs {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task ReportWarningIfInvokeLazyAsyncEventHandlerAsDelegate()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningIfInvokeLazyAsyncEventHandlerAsDelegate()
+    {
+        var test = @"
 using System;
 using System.Linq;
 using Microsoft.VisualStudio.Threading;
@@ -217,13 +213,13 @@ class Test<T> where T : EventArgs {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task ReportWarningIfInvokeAsyncEventHandlerDirectlyAndTheyArePassedAsParameters()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningIfInvokeAsyncEventHandlerDirectlyAndTheyArePassedAsParameters()
+    {
+        var test = @"
 using System;
 using System.Linq;
 using Microsoft.VisualStudio.Threading;
@@ -237,13 +233,13 @@ class Test<T> where T : EventArgs {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task ReportWarningIfInvokeAsyncEventHandlerDirectlyAndTheyArePassedAsArray()
-        {
-            var test = @"
+    [Fact]
+    public async Task ReportWarningIfInvokeAsyncEventHandlerDirectlyAndTheyArePassedAsArray()
+    {
+        var test = @"
 using System;
 using System.Linq;
 using Microsoft.VisualStudio.Threading;
@@ -257,13 +253,13 @@ class Test<T> where T : EventArgs {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task DoNotReportWarningIfInvokeAsyncEventHandlerUsingInvokeAsync()
-        {
-            var test = @"
+    [Fact]
+    public async Task DoNotReportWarningIfInvokeAsyncEventHandlerUsingInvokeAsync()
+    {
+        var test = @"
 using System;
 using System.Linq;
 using Microsoft.VisualStudio.Threading;
@@ -280,13 +276,13 @@ class Test<T> where T : EventArgs {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task DoNotReportWarningIfNonInvokeMethodsAreUsed()
-        {
-            var test = @"
+    [Fact]
+    public async Task DoNotReportWarningIfNonInvokeMethodsAreUsed()
+    {
+        var test = @"
 using System;
 using System.Linq;
 using Microsoft.VisualStudio.Threading;
@@ -303,13 +299,13 @@ class Test<T> where T : EventArgs {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task DoNotReportWarningIfInvokeAsyncEventHandlerUsingInvokeAsyncAndTheyArePassedAsParameters()
-        {
-            var test = @"
+    [Fact]
+    public async Task DoNotReportWarningIfInvokeAsyncEventHandlerUsingInvokeAsyncAndTheyArePassedAsParameters()
+    {
+        var test = @"
 using System;
 using System.Linq;
 using Microsoft.VisualStudio.Threading;
@@ -322,13 +318,13 @@ class Test<T> where T : EventArgs {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 
-        [Fact]
-        public async Task DoNotReportWarningIfInvokeAsyncEventHandlerUsingInvokeAsyncAndTheyArePassedAsArray()
-        {
-            var test = @"
+    [Fact]
+    public async Task DoNotReportWarningIfInvokeAsyncEventHandlerUsingInvokeAsyncAndTheyArePassedAsArray()
+    {
+        var test = @"
 using System;
 using System.Linq;
 using Microsoft.VisualStudio.Threading;
@@ -341,7 +337,6 @@ class Test<T> where T : EventArgs {
     }
 }
 ";
-            await Verify.VerifyAnalyzerAsync(test);
-        }
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 }

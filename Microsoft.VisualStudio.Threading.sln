@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.28413.118
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.33116.440
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.VisualStudio.Threading.Analyzers", "src\Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.csproj", "{536F3F9A-B457-43B8-BC93-CE1C16959037}"
 EndProject
@@ -12,6 +12,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 		azure-pipelines\build.yml = azure-pipelines\build.yml
 		Directory.Build.props = Directory.Build.props
+		Directory.Build.targets = Directory.Build.targets
+		Directory.Packages.props = Directory.Packages.props
 		global.json = global.json
 		nuget.config = nuget.config
 		stylecop.json = stylecop.json
@@ -33,6 +35,21 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.VisualStudio.Threading.Analyzers.CSharp", "src\Microsoft.VisualStudio.Threading.Analyzers.CSharp\Microsoft.VisualStudio.Threading.Analyzers.CSharp.csproj", "{D5A0D627-7853-43F5-9AF4-E23D062C6ABA}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.VisualStudio.Threading.Analyzers.VisualBasic", "src\Microsoft.VisualStudio.Threading.Analyzers.VisualBasic\Microsoft.VisualStudio.Threading.Analyzers.VisualBasic.csproj", "{8CDF7526-D625-4E16-A266-BAF654ABE181}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{96134B19-FB32-4FA0-A565-BD4247D1E5B2}"
+	ProjectSection(SolutionItems) = preProject
+		src\.editorconfig = src\.editorconfig
+		src\AssemblyInfo.cs = src\AssemblyInfo.cs
+		src\Directory.Build.props = src\Directory.Build.props
+		src\Directory.Build.targets = src\Directory.Build.targets
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{C1DAF484-769B-4C5E-9DD1-A4CFAA66E938}"
+	ProjectSection(SolutionItems) = preProject
+		test\.editorconfig = test\.editorconfig
+		test\Directory.Build.props = test\Directory.Build.props
+		test\Directory.Build.targets = test\Directory.Build.targets
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -123,6 +140,18 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{536F3F9A-B457-43B8-BC93-CE1C16959037} = {96134B19-FB32-4FA0-A565-BD4247D1E5B2}
+		{620ED702-B6DA-4454-BF3E-5494D3652724} = {C1DAF484-769B-4C5E-9DD1-A4CFAA66E938}
+		{4961AA84-088C-46C0-BAC0-F9E87A9F03A7} = {C1DAF484-769B-4C5E-9DD1-A4CFAA66E938}
+		{D9BB9FB6-3833-44E8-B7A7-DE729FCE214D} = {96134B19-FB32-4FA0-A565-BD4247D1E5B2}
+		{CBEDB102-ABAE-40B1-AF3F-A6226DB6713D} = {C1DAF484-769B-4C5E-9DD1-A4CFAA66E938}
+		{BA4643D8-E6B2-4DED-882F-4827F3AB6AB0} = {C1DAF484-769B-4C5E-9DD1-A4CFAA66E938}
+		{3BDB8F46-A39C-422B-8B0E-89E98B83073F} = {96134B19-FB32-4FA0-A565-BD4247D1E5B2}
+		{7177DEEE-D14D-4A4A-BF6E-8B0CDC26B624} = {96134B19-FB32-4FA0-A565-BD4247D1E5B2}
+		{D5A0D627-7853-43F5-9AF4-E23D062C6ABA} = {96134B19-FB32-4FA0-A565-BD4247D1E5B2}
+		{8CDF7526-D625-4E16-A266-BAF654ABE181} = {96134B19-FB32-4FA0-A565-BD4247D1E5B2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E2124DFF-970E-4BA1-9E50-3ADB0AABF347}

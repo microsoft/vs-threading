@@ -37,8 +37,12 @@
     when building.
 .PARAMETER OptProf
     Install the MicroBuild OptProf plugin for building optimized assemblies on desktop machines.
+.PARAMETER Sbom
+    Install the MicroBuild SBOM plugin.
 .PARAMETER AccessToken
     An optional access token for authenticating to Azure Artifacts authenticated feeds.
+.PARAMETER Interactive
+    Runs NuGet restore in interactive mode. This can turn authentication failures into authentication challenges.
 #>
 [CmdletBinding(SupportsShouldProcess = $true)]
 Param (
@@ -59,7 +63,11 @@ Param (
     [Parameter()]
     [switch]$OptProf,
     [Parameter()]
-    [string]$AccessToken
+    [switch]$SBOM,
+    [Parameter()]
+    [string]$AccessToken,
+    [Parameter()]
+    [switch]$Interactive
 )
 
 $EnvVars = @{}
@@ -91,14 +99,20 @@ try {
     $HeaderColor = 'Green'
 
     if (!$NoRestore -and $PSCmdlet.ShouldProcess("NuGet packages", "Restore")) {
+        $RestoreArguments = @()
+        if ($Interactive)
+        {
+            $RestoreArguments += '--interactive'
+        }
+
         Write-Host "Restoring NuGet packages" -ForegroundColor $HeaderColor
-        dotnet restore
+        dotnet restore @RestoreArguments
         if ($lastexitcode -ne 0) {
             throw "Failure while restoring packages."
         }
     }
 
-    $InstallNuGetPkgScriptPath = ".\azure-pipelines\Install-NuGetPackage.ps1"
+    $InstallNuGetPkgScriptPath = "$PSScriptRoot\azure-pipelines\Install-NuGetPackage.ps1"
     $nugetVerbosity = 'quiet'
     if ($Verbose) { $nugetVerbosity = 'normal' }
     $MicroBuildPackageSource = 'https://pkgs.dev.azure.com/devdiv/_packaging/MicroBuildToolset%40Local/nuget/v3/index.json'
@@ -119,6 +133,14 @@ try {
         & $InstallNuGetPkgScriptPath MicroBuild.Plugins.Localization -source $MicroBuildPackageSource -Verbosity $nugetVerbosity
         $EnvVars['LocType'] = "Pseudo"
         $EnvVars['LocLanguages'] = "JPN"
+    }
+
+    if ($SBOM) {
+        Write-Host "Installing MicroBuild SBOM plugin" -ForegroundColor $HeaderColor
+        & $InstallNuGetPkgScriptPath MicroBuild.Plugins.Sbom -source $MicroBuildPackageSource -Verbosity $nugetVerbosity
+        $PkgMicrosoft_ManifestTool_CrossPlatform = & $InstallNuGetPkgScriptPath Microsoft.ManifestTool.CrossPlatform -source 'https://1essharedassets.pkgs.visualstudio.com/1esPkgs/_packaging/SBOMTool/nuget/v3/index.json' -Verbosity $nugetVerbosity
+        $EnvVars['GenerateSBOM'] = "true"
+        $EnvVars['PkgMicrosoft_ManifestTool_CrossPlatform'] = $PkgMicrosoft_ManifestTool_CrossPlatform
     }
 
     & "$PSScriptRoot/tools/Set-EnvVars.ps1" -Variables $EnvVars -PrependPath $PrependPath | Out-Null

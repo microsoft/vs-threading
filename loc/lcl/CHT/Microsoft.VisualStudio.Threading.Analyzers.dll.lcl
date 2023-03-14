@@ -432,10 +432,13 @@
       </Item>
       <Item ItemId=";VSTHRD110_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Observe the awaitable result of this method call by awaiting it, assigning to a variable, or passing it to another method.]]></Val>
+          <Val><![CDATA[Observe the awaitable result of this method call by awaiting it, assigning to a variable, or passing it to another method]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[觀察此方法呼叫的可等候結果，方法是加以等候、指派至變數，或傳遞至另一個方法。]]></Val>
+            <Val><![CDATA[觀察此方法呼叫的可等候結果，方法是加以等候、指派至變數，或傳遞至另一個方法]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Observe the awaitable result of this method call by awaiting it, assigning to a variable, or passing it to another method.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>

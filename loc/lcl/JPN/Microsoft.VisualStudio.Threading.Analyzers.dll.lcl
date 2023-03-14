@@ -432,10 +432,13 @@
       </Item>
       <Item ItemId=";VSTHRD110_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[Observe the awaitable result of this method call by awaiting it, assigning to a variable, or passing it to another method.]]></Val>
+          <Val><![CDATA[Observe the awaitable result of this method call by awaiting it, assigning to a variable, or passing it to another method]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[このメソッド呼び出しの待機可能な結果を確認するには、それを待機するか、変数に割り当てるか、別のメソッドに渡します。]]></Val>
+            <Val><![CDATA[このメソッド呼び出しの待機可能な結果を確認するには、結果が出るまで待機するか、変数に割り当てるか、別のメソッドに渡します]]></Val>
           </Tgt>
+          <Prev Cat="Text">
+            <Val><![CDATA[Observe the awaitable result of this method call by awaiting it, assigning to a variable, or passing it to another method.]]></Val>
+          </Prev>
         </Str>
         <Disp Icon="Str" />
       </Item>
