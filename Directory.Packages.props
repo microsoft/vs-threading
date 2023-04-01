@@ -25,7 +25,7 @@
     <PackageVersion Include="Microsoft.Diagnostics.Runtime" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
     <PackageVersion Include="Microsoft.VisualStudio.Internal.MicroBuild.NonShipping" Version="$(MicroBuildVersion)" />
-    <PackageVersion Include="Microsoft.VisualStudio.Interop" Version="17.4.33103.184" />
+    <PackageVersion Include="Microsoft.VisualStudio.Interop" Version="17.6.36236" />
     <PackageVersion Include="Microsoft.VisualStudio.Shell.15.0" Version="17.4.33103.184" />
     <PackageVersion Include="Microsoft.VisualStudio.Shell.Framework" Version="17.4.33103.184" />
     <PackageVersion Include="Microsoft.VisualStudio.Validation" Version="17.0.71" />
