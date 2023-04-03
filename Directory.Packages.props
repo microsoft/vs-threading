@@ -3,7 +3,7 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
-    <MicroBuildVersion>2.0.113</MicroBuildVersion>
+    <MicroBuildVersion>2.0.115</MicroBuildVersion>
     <CodeAnalysisVersion>3.11.0</CodeAnalysisVersion>
     <CodeAnalysisVersion Condition="'$(IsTestProject)'=='true'">4.4.0</CodeAnalysisVersion>
     <CodefixTestingVersion>1.1.1</CodefixTestingVersion>
@@ -20,7 +20,6 @@
     <PackageVersion Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" Version="3.3.0-beta2.final" />
     <PackageVersion Include="Microsoft.CodeAnalysis.VisualBasic" Version="$(CodeAnalysisVersion)" />
     <PackageVersion Include="Microsoft.CodeAnalysis.VisualBasic.CodeFix.Testing.XUnit" Version="$(CodefixTestingVersion)" />
-    <PackageVersion Include="Microsoft.CodeCoverage" Version="17.5.0" />
     <PackageVersion Include="Microsoft.Diagnostics.Runtime.Utilities" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
     <PackageVersion Include="Microsoft.Diagnostics.Runtime" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.5.0" />
