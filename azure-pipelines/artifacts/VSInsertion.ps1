@@ -32,8 +32,7 @@ $profilingInputs = [xml](Get-Content -Path "$PSScriptRoot\..\ProfilingInputs.pro
 $profilingInputs.Project.ItemGroup.TestStore.Include = "vstsdrop:" + (& "$PSScriptRoot\..\variables\ProfilingInputsDropName.ps1")
 $profilingInputs.Save("$ArtifactPath\ProfilingInputs.props")
 
-$nbgv = & "$PSScriptRoot\..\Get-nbgv.ps1"
-$InsertionMetadataVersion = $(& $nbgv get-version -p "$RepoRoot\src" -f json | ConvertFrom-Json).NuGetPackageVersion
+$InsertionMetadataVersion = $(dotnet tool run nbgv get-version -p "$RepoRoot\src" -f json | ConvertFrom-Json).NuGetPackageVersion
 if ($env:BUILD_BUILDID) {
     # We must ensure unique versions for the insertion metadata package so
     # it can contain information that is unique to this build.
