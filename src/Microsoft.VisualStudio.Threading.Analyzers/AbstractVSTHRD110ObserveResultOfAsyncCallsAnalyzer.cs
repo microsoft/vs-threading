@@ -51,20 +51,22 @@ public abstract class AbstractVSTHRD110ObserveResultOfAsyncCallsAnalyzer : Diagn
             return;
         }
 
+        // Only consider invocations that are direct statements. Otherwise, we assume their
+        // result is awaited, assigned, or otherwise consumed.
+        if (operation.Parent is not IExpressionStatementOperation and not IConditionalAccessOperation)
+        {
+            return;
+        }
+
         if (operation.GetContainingFunction() is { } function && this.LanguageUtils.IsAsyncMethod(function.Syntax))
         {
             // CS4014 should already take care of this case.
             return;
         }
 
-        // Only consider invocations that are direct statements. Otherwise, we assume their
-        // result is awaited, assigned, or otherwise consumed.
-        if (operation.Parent is IExpressionStatementOperation || operation.Parent is IConditionalAccessOperation)
+        if (awaitableTypes.IsAwaitableType(operation.Type))
         {
-            if (awaitableTypes.IsAwaitableType(operation.Type))
-            {
-                context.ReportDiagnostic(Diagnostic.Create(Descriptor, operation.Syntax.GetLocation()));
-            }
+            context.ReportDiagnostic(Diagnostic.Create(Descriptor, operation.Syntax.GetLocation()));
         }
     }
 }
