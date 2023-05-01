@@ -145,6 +145,7 @@ public static class CancellationTokenExtensions
         /// <param name="cancellationTokenSource">The cancellation token source.</param>
         public CombinedCancellationToken(CancellationTokenSource cancellationTokenSource)
         {
+            Requires.NotNull(cancellationTokenSource);
             this.cts = cancellationTokenSource;
             this.Token = cancellationTokenSource.Token;
         }
