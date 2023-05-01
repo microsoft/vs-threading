@@ -2,6 +2,7 @@
 
 The following are the diagnostic analyzers installed with the [Microsoft.VisualStudio.Threading.Analyzers][1]
 NuGet package.
+Learn more about [how to install and configure these analyzers](installation.md).
 
 ID | Title | Severity | Supports | Default diagnostic severity
 ---- | --- | --- | --- | --- |

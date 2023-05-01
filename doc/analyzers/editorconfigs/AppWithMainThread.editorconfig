@@ -1,0 +1,4 @@
+# This file applies to applications with a main thread, and libraries that may run in them.
+
+# This file is intentionally empty because the default severity levels for the threading analyzers
+# are optimized for these types of projects.

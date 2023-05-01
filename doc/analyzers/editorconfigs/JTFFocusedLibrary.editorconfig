@@ -1,0 +1,4 @@
+# These settings are appropriate for libraries that always run within a process that follows the JoinableTaskFactory rules.
+
+# VSTHRD111: Use .ConfigureAwait(bool)
+dotnet_diagnostic.VSTHRD111.severity = silent
