@@ -15,7 +15,7 @@
       ]
     },
     "dotnet-coverage": {
-      "version": "17.6.11",
+      "version": "17.7.0",
       "commands": [
         "dotnet-coverage"
       ]
