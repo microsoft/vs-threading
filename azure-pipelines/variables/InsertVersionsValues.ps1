@@ -1,8 +1,14 @@
 $MacroName = 'MicrosoftVisualStudioThreadingVersion'
 $SampleProject = "$PSScriptRoot\..\..\src\Microsoft.VisualStudio.Threading"
 try {
-    return [string]::join(',',(@{
-        ($MacroName) = & { (dotnet tool run nbgv get-version --project $SampleProject --format json | ConvertFrom-Json).AssemblyVersion };
+    $json = dotnet tool run nbgv get-version --project $SampleProject --format json
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Exit code is $LASTEXITCODE. STDOUT follows"
+        Write-Error $json
+        throw
+    }
+    [string]::join(',',(@{
+        ($MacroName) = & { ($json | ConvertFrom-Json).AssemblyVersion };
     }.GetEnumerator() |% { "$($_.key)=$($_.value)" }))
 }
 catch {
