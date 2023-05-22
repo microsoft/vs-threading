@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <RootNamespace>Microsoft.VisualStudio.Threading.Analyzers</RootNamespace>
+    <HasLceComments>false</HasLceComments>
 
     <Description>Static code analyzer to detect common mistakes or potential issues regarding threading and async coding.</Description>
     <DevelopmentDependency>true</DevelopmentDependency>

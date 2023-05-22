@@ -5,6 +5,7 @@
     <ExtrasBuildEachRuntimeIdentifier>true</ExtrasBuildEachRuntimeIdentifier>
     <EnableDynamicLoading>true</EnableDynamicLoading>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <HasLceComments>false</HasLceComments>
 
     <!-- This project's build is incomplete without DNNE, which only works on Windows when using a -windows TFM. -->
     <IsPackable Condition=" '$(OS)' != 'Windows_NT' ">false</IsPackable>
