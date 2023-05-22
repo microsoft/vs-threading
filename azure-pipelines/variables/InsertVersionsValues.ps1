@@ -1,7 +1,7 @@
 $MacroName = 'MicrosoftVisualStudioThreadingVersion'
 $SampleProject = "$PSScriptRoot\..\..\src\Microsoft.VisualStudio.Threading"
 try {
-    $json = dotnet tool run nbgv get-version --project $SampleProject --format json
+    $json = dotnet tool run nbgv -- get-version --project $SampleProject --format json
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Exit code is $LASTEXITCODE. STDOUT follows"
         Write-Error $json
