@@ -431,6 +431,252 @@ public class TplExtensionsTests : TestBase
     }
 
     [Fact]
+    public async Task NoThrowAwaitable_ValueTask()
+    {
+        var tcs = new TaskCompletionSource<object>();
+        TplExtensions.NoThrowValueTaskAwaitable nothrowTask = new ValueTask(tcs.Task).NoThrowAwaitable();
+        Assert.False(nothrowTask.GetAwaiter().IsCompleted);
+        tcs.SetException(new InvalidOperationException());
+        await nothrowTask;
+
+        tcs = new TaskCompletionSource<object>();
+        nothrowTask = new ValueTask(tcs.Task).NoThrowAwaitable();
+        Assert.False(nothrowTask.GetAwaiter().IsCompleted);
+        tcs.SetCanceled();
+        await nothrowTask;
+    }
+
+    /// <summary>
+    /// Verifies that independent of whether the <see cref="SynchronizationContext" /> or <see cref="TaskScheduler"/>
+    /// is captured and used to schedule the continuation, the <see cref="ExecutionContext"/> is always captured and applied.
+    /// </summary>
+    [Theory]
+    [CombinatorialData]
+    public async Task NoThrowAwaitable_ValueTask_Await_CapturesExecutionContext(bool captureContext)
+    {
+        var awaitableTcs = new TaskCompletionSource<object?>();
+        var asyncLocal = new System.Threading.AsyncLocal<object?>();
+        asyncLocal.Value = "expected";
+        var testResult = Task.Run(async delegate
+        {
+            await new ValueTask(awaitableTcs.Task).NoThrowAwaitable(captureContext); // uses UnsafeOnCompleted
+            Assert.Equal("expected", asyncLocal.Value);
+        });
+        asyncLocal.Value = null;
+        await Task.Delay(AsyncDelay); // Make sure the delegate above has time to yield
+        awaitableTcs.SetResult(null);
+
+        await testResult.WithTimeout(UnexpectedTimeout);
+    }
+
+    /// <summary>
+    /// Verifies that independent of whether the <see cref="SynchronizationContext" /> or <see cref="TaskScheduler"/>
+    /// is captured and used to schedule the continuation, the <see cref="ExecutionContext"/> is always captured and applied.
+    /// </summary>
+    [Theory]
+    [CombinatorialData]
+    public async Task NoThrowAwaitable_ValueTask_OnCompleted_CapturesExecutionContext(bool captureContext)
+    {
+        var testResultTcs = new TaskCompletionSource<object?>();
+        var awaitableTcs = new TaskCompletionSource<object?>();
+        var asyncLocal = new System.Threading.AsyncLocal<object?>();
+        asyncLocal.Value = "expected";
+        TplExtensions.NoThrowValueTaskAwaiter awaiter = new ValueTask(awaitableTcs.Task).NoThrowAwaitable(captureContext).GetAwaiter();
+        awaiter.OnCompleted(delegate
+        {
+            try
+            {
+                Assert.Equal("expected", asyncLocal.Value);
+                testResultTcs.SetResult(null);
+            }
+            catch (Exception ex)
+            {
+                testResultTcs.SetException(ex);
+            }
+        });
+        asyncLocal.Value = null;
+        await Task.Yield();
+        awaitableTcs.SetResult(null);
+
+        await testResultTcs.Task.WithTimeout(UnexpectedTimeout);
+    }
+
+    [Theory]
+    [CombinatorialData]
+    public async Task NoThrowAwaitable_ValueTask_UnsafeOnCompleted_DoesNotCaptureExecutionContext(bool captureContext)
+    {
+        var testResultTcs = new TaskCompletionSource<object?>();
+        var awaitableTcs = new TaskCompletionSource<object?>();
+        var asyncLocal = new System.Threading.AsyncLocal<object?>();
+        asyncLocal.Value = "expected";
+        TplExtensions.NoThrowValueTaskAwaiter awaiter = new ValueTask(awaitableTcs.Task).NoThrowAwaitable(captureContext).GetAwaiter();
+        awaiter.UnsafeOnCompleted(delegate
+        {
+            try
+            {
+                Assert.Null(asyncLocal.Value);
+                testResultTcs.SetResult(null);
+            }
+            catch (Exception ex)
+            {
+                testResultTcs.SetException(ex);
+            }
+        });
+        asyncLocal.Value = null;
+        await Task.Yield();
+        awaitableTcs.SetResult(null);
+
+        await testResultTcs.Task.WithTimeout(UnexpectedTimeout);
+    }
+
+    [Fact]
+    public async Task NoThrowAwaitable_ValueTaskT_Succeeds()
+    {
+        var barrier = new TaskCompletionSource<object?>();
+        var result = new object();
+        var tcs = new TaskCompletionSource<object>();
+        var test = Task.Run(async () =>
+        {
+            ValueTask<object> awaitable = MethodAsync(barrier, result).Preserve();
+            await awaitable.NoThrowAwaitable();
+            Assert.True(awaitable.IsCompletedSuccessfully);
+            Assert.Same(result, awaitable.Result);
+        });
+
+        barrier.SetResult(null);
+        await test;
+
+        static async ValueTask<object> MethodAsync(TaskCompletionSource<object?> barrier, object result)
+        {
+            await barrier.Task;
+            return result;
+        }
+    }
+
+    [Fact]
+    public async Task NoThrowAwaitable_ValueTaskT_Fails()
+    {
+        var barrier = new TaskCompletionSource<object?>();
+        var result = new InvalidOperationException();
+        var tcs = new TaskCompletionSource<object>();
+        var test = Task.Run(async () =>
+        {
+            ValueTask<object> awaitable = MethodAsync(barrier, result).Preserve();
+            await awaitable.NoThrowAwaitable();
+            Assert.True(awaitable.IsFaulted);
+            Assert.Same(result, awaitable.AsTask().Exception!.InnerException);
+        });
+
+        barrier.SetResult(null);
+        await test;
+
+        static async ValueTask<object> MethodAsync(TaskCompletionSource<object?> barrier, Exception result)
+        {
+            await barrier.Task;
+            throw result;
+        }
+    }
+
+    [Fact]
+    public async Task NoThrowAwaitable_ValueTaskT()
+    {
+        var tcs = new TaskCompletionSource<object>();
+        TplExtensions.NoThrowValueTaskAwaitable<object> nothrowTask = new ValueTask<object>(tcs.Task).NoThrowAwaitable();
+        Assert.False(nothrowTask.GetAwaiter().IsCompleted);
+        tcs.SetException(new InvalidOperationException());
+        await nothrowTask;
+
+        tcs = new TaskCompletionSource<object>();
+        nothrowTask = new ValueTask<object>(tcs.Task).NoThrowAwaitable();
+        Assert.False(nothrowTask.GetAwaiter().IsCompleted);
+        tcs.SetCanceled();
+        await nothrowTask;
+    }
+
+    /// <summary>
+    /// Verifies that independent of whether the <see cref="SynchronizationContext" /> or <see cref="TaskScheduler"/>
+    /// is captured and used to schedule the continuation, the <see cref="ExecutionContext"/> is always captured and applied.
+    /// </summary>
+    [Theory]
+    [CombinatorialData]
+    public async Task NoThrowAwaitable_ValueTaskT_Await_CapturesExecutionContext(bool captureContext)
+    {
+        var awaitableTcs = new TaskCompletionSource<object?>();
+        var asyncLocal = new System.Threading.AsyncLocal<object?>();
+        asyncLocal.Value = "expected";
+        var testResult = Task.Run(async delegate
+        {
+            await new ValueTask<object?>(awaitableTcs.Task).NoThrowAwaitable(captureContext); // uses UnsafeOnCompleted
+            Assert.Equal("expected", asyncLocal.Value);
+        });
+        asyncLocal.Value = null;
+        await Task.Delay(AsyncDelay); // Make sure the delegate above has time to yield
+        awaitableTcs.SetResult(null);
+
+        await testResult.WithTimeout(UnexpectedTimeout);
+    }
+
+    /// <summary>
+    /// Verifies that independent of whether the <see cref="SynchronizationContext" /> or <see cref="TaskScheduler"/>
+    /// is captured and used to schedule the continuation, the <see cref="ExecutionContext"/> is always captured and applied.
+    /// </summary>
+    [Theory]
+    [CombinatorialData]
+    public async Task NoThrowAwaitable_ValueTaskT_OnCompleted_CapturesExecutionContext(bool captureContext)
+    {
+        var testResultTcs = new TaskCompletionSource<object?>();
+        var awaitableTcs = new TaskCompletionSource<object?>();
+        var asyncLocal = new System.Threading.AsyncLocal<object?>();
+        asyncLocal.Value = "expected";
+        TplExtensions.NoThrowValueTaskAwaiter<object?> awaiter = new ValueTask<object?>(awaitableTcs.Task).NoThrowAwaitable(captureContext).GetAwaiter();
+        awaiter.OnCompleted(delegate
+        {
+            try
+            {
+                Assert.Equal("expected", asyncLocal.Value);
+                testResultTcs.SetResult(null);
+            }
+            catch (Exception ex)
+            {
+                testResultTcs.SetException(ex);
+            }
+        });
+        asyncLocal.Value = null;
+        await Task.Yield();
+        awaitableTcs.SetResult(null);
+
+        await testResultTcs.Task.WithTimeout(UnexpectedTimeout);
+    }
+
+    [Theory]
+    [CombinatorialData]
+    public async Task NoThrowAwaitable_ValueTaskT_UnsafeOnCompleted_DoesNotCaptureExecutionContext(bool captureContext)
+    {
+        var testResultTcs = new TaskCompletionSource<object?>();
+        var awaitableTcs = new TaskCompletionSource<object?>();
+        var asyncLocal = new System.Threading.AsyncLocal<object?>();
+        asyncLocal.Value = "expected";
+        TplExtensions.NoThrowValueTaskAwaiter<object?> awaiter = new ValueTask<object?>(awaitableTcs.Task).NoThrowAwaitable(captureContext).GetAwaiter();
+        awaiter.UnsafeOnCompleted(delegate
+        {
+            try
+            {
+                Assert.Null(asyncLocal.Value);
+                testResultTcs.SetResult(null);
+            }
+            catch (Exception ex)
+            {
+                testResultTcs.SetException(ex);
+            }
+        });
+        asyncLocal.Value = null;
+        await Task.Yield();
+        awaitableTcs.SetResult(null);
+
+        await testResultTcs.Task.WithTimeout(UnexpectedTimeout);
+    }
+
+    [Fact]
     public void InvokeAsyncNullEverything()
     {
         AsyncEventHandler? handler = null;
