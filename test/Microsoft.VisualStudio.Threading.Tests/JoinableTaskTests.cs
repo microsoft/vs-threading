@@ -307,6 +307,21 @@ public class JoinableTaskTests : JoinableTaskTestBase
     }
 
     [Fact]
+    public void SwitchToMainThreadNoThrowCancellable()
+    {
+        var task = Task.Run(async delegate
+        {
+            var cts = new CancellationTokenSource(AsyncDelay);
+            await this.asyncPump.SwitchToMainThreadAsync(cts.Token).NoThrowAwaitable();
+
+            Assert.Null(SynchronizationContext.Current);
+            Assert.NotEqual(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
+        });
+
+        Assert.True(task.Wait(TestTimeout * 3), "Test timed out.");
+    }
+
+    [Fact]
     public void SwitchToMainThreadCancellableWithinRun()
     {
         var endTestTokenSource = new CancellationTokenSource(AsyncDelay);
@@ -356,6 +371,26 @@ public class JoinableTaskTests : JoinableTaskTestBase
             var asyncLocal = new System.Threading.AsyncLocal<object>();
             asyncLocal.Value = "expected";
             await Assert.ThrowsAsync<OperationCanceledException>(async () => await this.asyncPump.SwitchToMainThreadAsync(cts.Token));
+            Assert.NotEqual(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
+            Assert.Equal("expected", asyncLocal.Value);
+        });
+        transitionRequested.Wait();
+        cts.Cancel();
+        task.Wait(this.TimeoutToken);
+    }
+
+    [Fact]
+    public void SwitchToMainThreadAsync_NoThrowAwait_Canceled_CapturesExecutionContext()
+    {
+        var factory = (DerivedJoinableTaskFactory)this.asyncPump;
+        var cts = new CancellationTokenSource();
+        var transitionRequested = new ManualResetEventSlim();
+        factory.TransitioningToMainThreadCallback = jt => transitionRequested.Set();
+        var task = Task.Run(async delegate
+        {
+            var asyncLocal = new System.Threading.AsyncLocal<object>();
+            asyncLocal.Value = "expected";
+            await this.asyncPump.SwitchToMainThreadAsync(cts.Token).NoThrowAwaitable();
             Assert.NotEqual(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
             Assert.Equal("expected", asyncLocal.Value);
         });
@@ -490,6 +525,21 @@ public class JoinableTaskTests : JoinableTaskTestBase
     }
 
     [Fact]
+    public void SwitchToMainThread_PrecanceledOnMainThread_NoThrow()
+    {
+        this.SimulateUIThread(async delegate
+        {
+            JoinableTaskFactory.MainThreadAwaiter awaiter = this.asyncPump.SwitchToMainThreadAsync(new CancellationToken(true)).NoThrowAwaitable().GetAwaiter();
+            Assert.True(awaiter.IsCompleted);
+            awaiter.GetResult();
+
+            // Verify that the SynchronizationContext remains such that we stay on the main thread after yielding.
+            await Task.Yield();
+            Assert.True(this.context.IsOnMainThread);
+        });
+    }
+
+    [Fact]
     public void SwitchToMainThread_PrecanceledOnMainThread_StillYieldsWhenRequired()
     {
         this.SimulateUIThread(async delegate
@@ -515,6 +565,31 @@ public class JoinableTaskTests : JoinableTaskTestBase
     }
 
     [Fact]
+    public void SwitchToMainThread_PrecanceledOnMainThread_StillYieldsWhenRequired_NoThrow()
+    {
+        this.SimulateUIThread(async delegate
+        {
+            JoinableTaskFactory.MainThreadAwaiter awaiter = this.asyncPump.SwitchToMainThreadAsync(alwaysYield: true, new CancellationToken(true)).NoThrowAwaitable().GetAwaiter();
+            Assert.False(awaiter.IsCompleted);
+            var testResult = new TaskCompletionSource<object?>();
+            awaiter.OnCompleted(delegate
+            {
+                try
+                {
+                    awaiter.GetResult();
+                    Assert.Equal(this.context.IsOnMainThread, SynchronizationContext.Current is object);
+                    testResult.SetResult(null);
+                }
+                catch (Exception ex)
+                {
+                    testResult.SetException(ex);
+                }
+            });
+            await testResult.Task.WithCancellation(this.TimeoutToken);
+        });
+    }
+
+    [Fact]
     public void SwitchToMainThreadAsync_CompletesSynchronouslyWhenPreCanceledOffMainThread()
     {
         this.SimulateUIThread(delegate
@@ -526,6 +601,22 @@ public class JoinableTaskTests : JoinableTaskTestBase
                 Assert.True(awaiter.IsCompleted);
                 OperationCanceledException? ex = Assert.Throws<OperationCanceledException>(() => awaiter.GetResult());
                 Assert.Equal(precanceled, ex.CancellationToken);
+                Assert.Null(SynchronizationContext.Current);
+            });
+        });
+    }
+
+    [Fact]
+    public void SwitchToMainThreadAsync_CompletesSynchronouslyWhenPreCanceledOffMainThread_NoThrow()
+    {
+        this.SimulateUIThread(delegate
+        {
+            return Task.Run(delegate
+            {
+                var precanceled = new CancellationToken(canceled: true);
+                JoinableTaskFactory.MainThreadAwaiter awaiter = this.asyncPump.SwitchToMainThreadAsync(precanceled).NoThrowAwaitable().GetAwaiter();
+                Assert.True(awaiter.IsCompleted);
+                awaiter.GetResult();
                 Assert.Null(SynchronizationContext.Current);
             });
         });
@@ -592,6 +683,36 @@ public class JoinableTaskTests : JoinableTaskTestBase
                         cts.Cancel();
                         OperationCanceledException? ex = Assert.Throws<OperationCanceledException>(() => awaiter.GetResult());
                         Assert.Equal(cts.Token, ex.CancellationToken);
+                        testResult.SetResult(null);
+                    }
+                    catch (Exception ex)
+                    {
+                        testResult.SetException(ex);
+                    }
+                });
+                await testResult.Task.WithCancellation(this.TimeoutToken);
+            });
+        });
+    }
+
+    [Fact]
+    public void SwitchToMainThreadAsync_NoThrowOnCancellationAfterReachingMainThread()
+    {
+        this.SimulateUIThread(delegate
+        {
+            return Task.Run(async delegate
+            {
+                var cts = new CancellationTokenSource();
+                JoinableTaskFactory.MainThreadAwaiter awaiter = this.asyncPump.SwitchToMainThreadAsync(cts.Token).NoThrowAwaitable().GetAwaiter();
+                Assert.False(awaiter.IsCompleted);
+                var testResult = new TaskCompletionSource<object?>();
+                awaiter.OnCompleted(delegate
+                {
+                    try
+                    {
+                        Assert.True(this.context.IsOnMainThread);
+                        cts.Cancel();
+                        awaiter.GetResult();
                         testResult.SetResult(null);
                     }
                     catch (Exception ex)
