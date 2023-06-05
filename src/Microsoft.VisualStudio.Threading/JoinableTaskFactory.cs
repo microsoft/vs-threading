@@ -696,10 +696,20 @@ public partial class JoinableTaskFactory
 
         private readonly bool alwaysYield;
 
+        private readonly bool throwOnCancellation;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="MainThreadAwaitable"/> struct.
         /// </summary>
         internal MainThreadAwaitable(JoinableTaskFactory jobFactory, JoinableTask? job, CancellationToken cancellationToken, bool alwaysYield = false)
+            : this(jobFactory, job, alwaysYield, throwOnCancellation: true, cancellationToken)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MainThreadAwaitable"/> struct.
+        /// </summary>
+        private MainThreadAwaitable(JoinableTaskFactory jobFactory, JoinableTask? job, bool alwaysYield, bool throwOnCancellation, CancellationToken cancellationToken)
         {
             Requires.NotNull(jobFactory, nameof(jobFactory));
 
@@ -707,6 +717,22 @@ public partial class JoinableTaskFactory
             this.job = job;
             this.cancellationToken = cancellationToken;
             this.alwaysYield = alwaysYield;
+            this.throwOnCancellation = throwOnCancellation;
+        }
+
+        /// <summary>
+        /// Returns an awaitable for the specified <see cref="SwitchToMainThreadAsync(CancellationToken)"/>
+        /// operation that will not throw an exception if cancellation is requested.
+        /// </summary>
+        /// <returns>An awaitable.</returns>
+        public MainThreadAwaitable NoThrowAwaitable()
+        {
+            if (this.jobFactory is null)
+            {
+                return default;
+            }
+
+            return new MainThreadAwaitable(this.jobFactory, this.job, this.alwaysYield, throwOnCancellation: false, this.cancellationToken);
         }
 
         /// <summary>
@@ -719,7 +745,7 @@ public partial class JoinableTaskFactory
                 return default;
             }
 
-            return new MainThreadAwaiter(this.jobFactory, this.job, this.alwaysYield, this.cancellationToken);
+            return new MainThreadAwaiter(this.jobFactory, this.job, this.alwaysYield, this.throwOnCancellation, this.cancellationToken);
         }
     }
 
@@ -737,6 +763,8 @@ public partial class JoinableTaskFactory
         private readonly CancellationToken cancellationToken;
 
         private readonly bool alwaysYield;
+
+        private readonly bool throwOnCancellation;
 
         private readonly JoinableTask? job;
 
@@ -762,13 +790,14 @@ public partial class JoinableTaskFactory
         /// <summary>
         /// Initializes a new instance of the <see cref="MainThreadAwaiter"/> struct.
         /// </summary>
-        internal MainThreadAwaiter(JoinableTaskFactory jobFactory, JoinableTask? job, bool alwaysYield, CancellationToken cancellationToken)
+        internal MainThreadAwaiter(JoinableTaskFactory jobFactory, JoinableTask? job, bool alwaysYield, bool throwOnCancellation, CancellationToken cancellationToken)
         {
             this.jobFactory = jobFactory;
             this.job = job;
             this.cancellationToken = cancellationToken;
             this.synchronousCancellation = cancellationToken.IsCancellationRequested && !alwaysYield;
             this.alwaysYield = alwaysYield;
+            this.throwOnCancellation = throwOnCancellation;
 
             // Don't allocate the pointer if the cancellation token can't be canceled (or already is):
             this.cancellationRegistrationPtr = cancellationToken.CanBeCanceled && !this.synchronousCancellation
@@ -867,11 +896,14 @@ public partial class JoinableTaskFactory
             SynchronizationContext? syncContext = this.job is object ? this.job.ApplicableJobSyncContext : this.jobFactory.ApplicableJobSyncContext;
             syncContext.Apply();
 
-            // Cancel if requested, even if we arrived on the main thread.
-            // Unlike most async methods where throwing OperationCanceledException after completing the work may not be a good idea,
-            // SwitchToMainThreadAsync is a scheduler method, and always precedes some work by the caller that almost certainly should
-            // not be carried out if cancellation was requested.
-            this.cancellationToken.ThrowIfCancellationRequested();
+            if (this.throwOnCancellation)
+            {
+                // Cancel if requested, even if we arrived on the main thread.
+                // Unlike most async methods where throwing OperationCanceledException after completing the work may not be a good idea,
+                // SwitchToMainThreadAsync is a scheduler method, and always precedes some work by the caller that almost certainly should
+                // not be carried out if cancellation was requested.
+                this.cancellationToken.ThrowIfCancellationRequested();
+            }
         }
 
         /// <summary>
