@@ -1,11 +1,4 @@
-Microsoft.VisualStudio.Threading.JoinableTaskFactory.NoThrowMainThreadAwaitable
-Microsoft.VisualStudio.Threading.JoinableTaskFactory.NoThrowMainThreadAwaitable.GetAwaiter() -> Microsoft.VisualStudio.Threading.JoinableTaskFactory.NoThrowMainThreadAwaiter
-Microsoft.VisualStudio.Threading.JoinableTaskFactory.NoThrowMainThreadAwaiter
-Microsoft.VisualStudio.Threading.JoinableTaskFactory.NoThrowMainThreadAwaiter.GetResult() -> bool
-Microsoft.VisualStudio.Threading.JoinableTaskFactory.NoThrowMainThreadAwaiter.IsCompleted.get -> bool
-Microsoft.VisualStudio.Threading.JoinableTaskFactory.NoThrowMainThreadAwaiter.OnCompleted(System.Action! continuation) -> void
-Microsoft.VisualStudio.Threading.JoinableTaskFactory.NoThrowMainThreadAwaiter.UnsafeOnCompleted(System.Action! continuation) -> void
-static Microsoft.VisualStudio.Threading.TplExtensions.NoThrowAwaitable(this Microsoft.VisualStudio.Threading.JoinableTaskFactory.MainThreadAwaitable awaitable) -> Microsoft.VisualStudio.Threading.JoinableTaskFactory.NoThrowMainThreadAwaitable
+Microsoft.VisualStudio.Threading.JoinableTaskFactory.MainThreadAwaitable.NoThrowAwaitable() -> Microsoft.VisualStudio.Threading.JoinableTaskFactory.MainThreadAwaitable
 virtual Microsoft.VisualStudio.Threading.AsyncReaderWriterResourceLock<TMoniker, TResource>.GetTaskSchedulerToPrepareResourcesForConcurrentAccess(TResource! resource) -> System.Threading.Tasks.TaskScheduler!
 Microsoft.VisualStudio.Threading.JoinableTaskContext.Capture() -> string?
 Microsoft.VisualStudio.Threading.JoinableTaskFactory.RunAsync(System.Func<System.Threading.Tasks.Task!>! asyncMethod, string? parentToken, Microsoft.VisualStudio.Threading.JoinableTaskCreationOptions creationOptions) -> Microsoft.VisualStudio.Threading.JoinableTask!
