@@ -72,6 +72,7 @@ steps:
     GdnBreakSuppressionSets: falsepositives
     GdnBreakOutputSuppressionFile: $(Build.ArtifactStagingDirectory)/guardian_failures_as_suppressions/
     GdnBreakOutputSuppressionSet: falsepositives
+  condition: and(succeeded(), ne(variables['OptProf'], 'true'))
 
 # This is useful when false positives appear so we can copy some of the output into the suppressions file.
 - publish: $(Build.ArtifactStagingDirectory)/guardian_failures_as_suppressions
