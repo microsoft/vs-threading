@@ -3,7 +3,7 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
-    <MicroBuildVersion>2.0.125</MicroBuildVersion>
+    <MicroBuildVersion>2.0.130</MicroBuildVersion>
     <CodeAnalysisVersion>3.11.0</CodeAnalysisVersion>
     <CodeAnalysisVersion Condition="'$(IsTestProject)'=='true'">4.4.0</CodeAnalysisVersion>
     <CodefixTestingVersion>1.1.1</CodefixTestingVersion>
@@ -49,7 +49,7 @@
     <GlobalPackageReference Include="IsExternalInit" Version="1.0.3" />
     <GlobalPackageReference Include="Microsoft.VisualStudio.Internal.MicroBuild.VisualStudio" Version="$(MicroBuildVersion)" />
     <GlobalPackageReference Include="Nerdbank.GitVersioning" Version="3.6.133" />
-    <GlobalPackageReference Include="StyleCop.Analyzers.Unstable" Version="1.2.0.435" />
+    <GlobalPackageReference Include="StyleCop.Analyzers.Unstable" Version="1.2.0.507" />
   </ItemGroup>
   <ItemGroup>
     <GlobalPackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" />
