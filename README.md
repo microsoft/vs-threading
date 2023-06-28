@@ -1,47 +1,24 @@
-Microsoft.VisualStudio.Threading
-=================================
+# vs-threading
 
-[![NuGet package](https://img.shields.io/nuget/v/Microsoft.VisualStudio.Threading.svg)](https://nuget.org/packages/Microsoft.VisualStudio.Threading)
 [![Build Status](https://dev.azure.com/azure-public/vside/_apis/build/status/vs-threading)](https://dev.azure.com/azure-public/vside/_build/latest?definitionId=12)
 [![Join the chat at https://gitter.im/vs-threading/Lobby](https://badges.gitter.im/vs-threading/Lobby.svg)](https://gitter.im/vs-threading/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Analyzers: [![NuGet package](https://img.shields.io/nuget/v/Microsoft.VisualStudio.Threading.Analyzers.svg)](https://nuget.org/packages/Microsoft.VisualStudio.Threading.Analyzers)
+## Microsoft.VisualStudio.Threading
 
-## Features
+[![NuGet package](https://img.shields.io/nuget/v/Microsoft.VisualStudio.Threading.svg)](https://nuget.org/packages/Microsoft.VisualStudio.Threading)
 
-* Async versions of many threading synchronization primitives
-  * `AsyncAutoResetEvent`
-  * `AsyncBarrier`
-  * `AsyncCountdownEvent`
-  * `AsyncManualResetEvent`
-  * `AsyncReaderWriterLock`
-  * `AsyncSemaphore`
-  * `ReentrantSemaphore`
-* Async versions of very common types
-  * `AsyncEventHandler`
-  * `AsyncLazy<T>`
-  * `AsyncLazyInitializer`
-  * `AsyncLocal<T>`
-  * `AsyncQueue<T>`
-* Await extension methods
-  * Await on a `TaskScheduler` to switch to it.
-    Switch to a background thread with `await TaskScheduler.Default;`
-  * Await on a `Task` with a timeout
-  * Await on a `Task` with cancellation
-* `JoinableTaskFactory` that allows you to schedule asynchronous or synchronous work
-  that does not deadlock with the UI thread even when the UI thread needs to
-  synchronously block on the result.
+Async synchronization primitives, async collections, TPL and dataflow extensions. The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This package is applicable to any .NET application (not just Visual Studio).
 
-## Documentation
+[Overview documentation](doc/index.md).
 
-* [Overview documentation](doc/index.md)
-* [Diagnostic analyzer rules](doc/analyzers/index.md)
+[See the full list of features](src/Microsoft.VisualStudio.Threading/README.md).
 
-## Supported platforms
+## Microsoft.VisualStudio.Threading.Analyzers
 
-* .NET 4.5
-* .NET 4.6
-* .NET Standard 1.3
-* .NET Standard 2.0
+[![NuGet package](https://img.shields.io/nuget/v/Microsoft.VisualStudio.Threading.Analyzers.svg)](https://nuget.org/packages/Microsoft.VisualStudio.Threading.Analyzers)
 
-[1]: https://nuget.org/packages/Microsoft.VisualStudio.Threading "Microsoft.VisualStudio.Threading NuGet package"
+Static code analyzer to detect common mistakes or potential issues regarding threading and async coding.
+
+[Diagnostic analyzer rules](doc/analyzers/index.md).
+
+[See the full list of features](src/Microsoft.VisualStudio.Threading.Analyzers.CodeFixes/README.md).
