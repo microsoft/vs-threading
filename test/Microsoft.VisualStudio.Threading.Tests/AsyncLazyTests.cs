@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft;
 using Microsoft.VisualStudio.Threading;
 using Xunit;
 using Xunit.Abstractions;
@@ -16,6 +17,13 @@ public class AsyncLazyTests : TestBase
     public AsyncLazyTests(ITestOutputHelper logger)
         : base(logger)
     {
+    }
+
+    public enum DisposeStyle
+    {
+        IDisposable,
+        SystemIAsyncDisposable,
+        ThreadingIAsyncDisposable,
     }
 
     [Fact]
@@ -644,6 +652,106 @@ public class AsyncLazyTests : TestBase
         await asyncLazy.GetValueAsync();
     }
 
+    [Fact]
+    public async Task Dispose_ValueType_Completed()
+    {
+        AsyncLazy<int> lazy = new(() => Task.FromResult(3));
+        lazy.GetValue();
+        lazy.DisposeValue();
+        await this.AssertDisposedLazyAsync(lazy);
+    }
+
+    [Theory, CombinatorialData]
+    public async Task Dispose_Disposable_Completed(DisposeStyle variety)
+    {
+        AsyncLazy<object> lazy = new(() => Task.FromResult<object>(DisposableFactory(variety)));
+        DisposableBase value = (DisposableBase)lazy.GetValue();
+        lazy.DisposeValue();
+        Assert.True(value.IsDisposed);
+        await this.AssertDisposedLazyAsync(lazy);
+    }
+
+    [Fact]
+    public async Task Dispose_NonDisposable_Completed()
+    {
+        AsyncLazy<object> lazy = new(() => Task.FromResult(new object()));
+        lazy.GetValue();
+        lazy.DisposeValue();
+        await this.AssertDisposedLazyAsync(lazy);
+    }
+
+    [Theory, CombinatorialData]
+    public async Task Dispose_Disposable_Incomplete(DisposeStyle variety)
+    {
+        AsyncManualResetEvent unblock = new();
+        AsyncLazy<object> lazy = new(async delegate
+        {
+            await unblock;
+            return DisposableFactory(variety);
+        });
+        Task<object> lazyTask = lazy.GetValueAsync(this.TimeoutToken);
+        Task disposeTask = lazy.DisposeValueAsync();
+        await Assert.ThrowsAnyAsync<TimeoutException>(() => disposeTask.WithTimeout(ExpectedTimeout));
+        unblock.Set();
+        await disposeTask.WithCancellation(this.TimeoutToken);
+        DisposableBase value = (DisposableBase)await lazyTask;
+        await this.AssertDisposedLazyAsync(lazy);
+        await value.Disposed.WithCancellation(this.TimeoutToken);
+    }
+
+    [Fact]
+    public async Task Dispose_NonDisposable_Incomplete()
+    {
+        AsyncManualResetEvent unblock = new();
+        AsyncLazy<object> lazy = new(async delegate
+        {
+            await unblock;
+            return new object();
+        });
+        Task<object> lazyTask = lazy.GetValueAsync(this.TimeoutToken);
+        Task disposeTask = lazy.DisposeValueAsync();
+        await Assert.ThrowsAnyAsync<TimeoutException>(() => disposeTask.WithTimeout(ExpectedTimeout));
+        unblock.Set();
+        await disposeTask.WithCancellation(this.TimeoutToken);
+        await lazyTask;
+        await this.AssertDisposedLazyAsync(lazy);
+    }
+
+    [Fact]
+    public async Task Dispose_CalledTwice_NotStarted()
+    {
+        bool valueFactoryExecuted = false;
+        AsyncLazy<object> lazy = new(() =>
+        {
+            valueFactoryExecuted = true;
+            return Task.FromResult(new object());
+        });
+        lazy.DisposeValue();
+        lazy.DisposeValue();
+        await this.AssertDisposedLazyAsync(lazy);
+        Assert.False(valueFactoryExecuted);
+    }
+
+    [Fact]
+    public async Task Dispose_CalledTwice_NonDisposable_Completed()
+    {
+        AsyncLazy<object> lazy = new(() => Task.FromResult(new object()));
+        lazy.GetValue();
+        lazy.DisposeValue();
+        lazy.DisposeValue();
+        await this.AssertDisposedLazyAsync(lazy);
+    }
+
+    [Fact]
+    public async Task Dispose_CalledTwice_Disposable_Completed()
+    {
+        AsyncLazy<Disposable> lazy = new(() => Task.FromResult(new Disposable()));
+        lazy.GetValue();
+        lazy.DisposeValue();
+        lazy.DisposeValue();
+        await this.AssertDisposedLazyAsync(lazy);
+    }
+
     [Fact(Skip = "Hangs. This test documents a deadlock scenario that is not fixed (by design, IIRC).")]
     public async Task ValueFactoryRequiresReadLockHeldByOther()
     {
@@ -689,6 +797,14 @@ public class AsyncLazyTests : TestBase
         }
     }
 
+    private static DisposableBase DisposableFactory(DisposeStyle variety) => variety switch
+    {
+        DisposeStyle.IDisposable => new Disposable(),
+        DisposeStyle.SystemIAsyncDisposable => new SystemAsyncDisposable(),
+        DisposeStyle.ThreadingIAsyncDisposable => new ThreadingAsyncDisposable(),
+        _ => throw new NotSupportedException(),
+    };
+
     private JoinableTaskContext InitializeJTCAndSC()
     {
         SynchronizationContext.SetSynchronizationContext(SingleThreadedTestSynchronizationContext.New());
@@ -726,5 +842,45 @@ public class AsyncLazyTests : TestBase
 
         await lazy.GetValueAsync().NoThrowAwaitable();
         return collectible;
+    }
+
+    private async Task AssertDisposedLazyAsync<T>(AsyncLazy<T> lazy)
+    {
+        Assert.False(lazy.IsValueCreated);
+        Assert.False(lazy.IsValueFactoryCompleted);
+        Assert.Throws<ObjectDisposedException>(() => lazy.GetValue());
+        await Assert.ThrowsAsync<ObjectDisposedException>(lazy.GetValueAsync);
+    }
+
+    private abstract class DisposableBase
+    {
+        protected readonly AsyncManualResetEvent disposalEvent = new();
+
+        public Task Disposed => this.disposalEvent.WaitAsync();
+
+        public bool IsDisposed => this.disposalEvent.IsSet;
+    }
+
+    private class Disposable : DisposableBase, IDisposableObservable
+    {
+        public void Dispose() => this.disposalEvent.Set();
+    }
+
+    private class SystemAsyncDisposable : DisposableBase, System.IAsyncDisposable
+    {
+        public ValueTask DisposeAsync()
+        {
+            this.disposalEvent.Set();
+            return default;
+        }
+    }
+
+    private class ThreadingAsyncDisposable : DisposableBase, Microsoft.VisualStudio.Threading.IAsyncDisposable
+    {
+        public Task DisposeAsync()
+        {
+            this.disposalEvent.Set();
+            return Task.CompletedTask;
+        }
     }
 }

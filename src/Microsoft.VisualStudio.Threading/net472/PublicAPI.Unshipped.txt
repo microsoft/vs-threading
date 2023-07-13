@@ -8,3 +8,6 @@ Microsoft.VisualStudio.Threading.AsyncCrossProcessMutex.LockReleaser.Dispose() -
 Microsoft.VisualStudio.Threading.AsyncCrossProcessMutex.LockReleaser.IsAbandoned.get -> bool
 Microsoft.VisualStudio.Threading.AsyncCrossProcessMutex.Name.get -> string!
 Microsoft.VisualStudio.Threading.AsyncCrossProcessMutex.TryEnterAsync(System.TimeSpan timeout) -> System.Threading.Tasks.Task<Microsoft.VisualStudio.Threading.AsyncCrossProcessMutex.LockReleaser?>!
+Microsoft.VisualStudio.Threading.AsyncLazy<T>.DisposeValue() -> void
+Microsoft.VisualStudio.Threading.AsyncLazy<T>.DisposeValueAsync() -> System.Threading.Tasks.Task!
+Microsoft.VisualStudio.Threading.AsyncLazy<T>.IsValueDisposed.get -> bool
