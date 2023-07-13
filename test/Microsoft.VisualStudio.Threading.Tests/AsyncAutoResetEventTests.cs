@@ -121,7 +121,7 @@ public class AsyncAutoResetEventTests : TestBase
         try
         {
             waitTask.GetAwaiter().GetResult();
-            Assert.True(false, "Task was expected to transition to a canceled state.");
+            Assert.Fail("Task was expected to transition to a canceled state.");
         }
         catch (OperationCanceledException ex)
         {
@@ -148,7 +148,7 @@ public class AsyncAutoResetEventTests : TestBase
         try
         {
             this.evt.WaitAsync(token).GetAwaiter().GetResult();
-            Assert.True(false, "Task was expected to transition to a canceled state.");
+            Assert.Fail("Task was expected to transition to a canceled state.");
         }
         catch (OperationCanceledException ex)
         {

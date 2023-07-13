@@ -293,7 +293,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
             try
             {
                 await this.asyncPump.SwitchToMainThreadAsync(cts.Token);
-                Assert.True(false, "Expected OperationCanceledException not thrown.");
+                Assert.Fail("Expected OperationCanceledException not thrown.");
             }
             catch (OperationCanceledException)
             {
@@ -337,7 +337,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
                     });
                 }
             });
-            Assert.True(false, "Expected OperationCanceledException not thrown.");
+            Assert.Fail("Expected OperationCanceledException not thrown.");
         }
         catch (OperationCanceledException)
         {
@@ -2500,7 +2500,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
 
             if (ex is object)
             {
-                Assert.True(false, $"Posted message threw an exception: {ex}");
+                Assert.Fail($"Posted message threw an exception: {ex}");
             }
 
             return Task.CompletedTask;
@@ -3491,7 +3491,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
         try
         {
             awaiter.GetResult();
-            Assert.True(false, "Expected exception not rethrown.");
+            Assert.Fail("Expected exception not rethrown.");
         }
         catch (InvalidOperationException ex)
         {
@@ -3513,7 +3513,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
         try
         {
             awaiter.GetResult();
-            Assert.True(false, "Expected exception not rethrown.");
+            Assert.Fail("Expected exception not rethrown.");
         }
         catch (InvalidOperationException ex)
         {

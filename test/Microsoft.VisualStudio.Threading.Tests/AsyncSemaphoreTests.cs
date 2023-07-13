@@ -158,7 +158,7 @@ public class AsyncSemaphoreTests : TestBase
         try
         {
             await second;
-            Assert.True(false, "Expected OperationCanceledException not thrown.");
+            Assert.Fail("Expected OperationCanceledException not thrown.");
         }
         catch (OperationCanceledException ex)
         {
@@ -176,7 +176,7 @@ public class AsyncSemaphoreTests : TestBase
         try
         {
             enterAsyncTask.GetAwaiter().GetResult();
-            Assert.True(false, "Expected exception not thrown.");
+            Assert.Fail("Expected exception not thrown.");
         }
         catch (OperationCanceledException ex)
         {

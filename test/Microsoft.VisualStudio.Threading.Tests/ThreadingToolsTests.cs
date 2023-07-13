@@ -179,7 +179,7 @@ public class ThreadingToolsTests : TestBase
         try
         {
             tcs.Task.WithCancellation(cts.Token).Wait(TestTimeout);
-            Assert.True(false, "Expected OperationCanceledException not thrown.");
+            Assert.Fail("Expected OperationCanceledException not thrown.");
         }
         catch (AggregateException ex)
         {

@@ -2652,7 +2652,7 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
             try
             {
                 awaiter.GetResult();
-                Assert.True(false, "Expected OperationCanceledException not thrown.");
+                Assert.Fail("Expected OperationCanceledException not thrown.");
             }
             catch (OperationCanceledException)
             {
@@ -2670,7 +2670,7 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
         try
         {
             awaiter.GetResult();
-            Assert.True(false, "Expected OperationCanceledException not thrown.");
+            Assert.Fail("Expected OperationCanceledException not thrown.");
         }
         catch (OperationCanceledException)
         {
@@ -2702,7 +2702,7 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
                     try
                     {
                         awaiter.GetResult();
-                        cancellationTestConcluded.SetException(new ThrowsException(typeof(OperationCanceledException)));
+                        cancellationTestConcluded.SetException(ThrowsException.ForNoException(typeof(OperationCanceledException)));
                     }
                     catch (OperationCanceledException)
                     {
@@ -2740,7 +2740,7 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
                     try
                     {
                         awaiter.GetResult();
-                        cancellationTestConcluded.SetException(new ThrowsException(typeof(OperationCanceledException)));
+                        cancellationTestConcluded.SetException(ThrowsException.ForNoException(typeof(OperationCanceledException)));
                     }
                     catch (OperationCanceledException)
                     {
@@ -3026,7 +3026,7 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
         try
         {
             awaiter.GetResult();
-            Assert.True(false, "Expected exception not thrown.");
+            Assert.Fail("Expected exception not thrown.");
         }
         catch (InvalidOperationException)
         {
@@ -3047,7 +3047,7 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
             try
             {
                 awaiter.GetResult();
-                Assert.True(false, "Expected exception not thrown.");
+                Assert.Fail("Expected exception not thrown.");
             }
             catch (InvalidOperationException)
             {
@@ -3448,7 +3448,7 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
                 this.asyncLock.Complete();
             }
 
-            Assert.True(false, "Expected exception not thrown.");
+            Assert.Fail("Expected exception not thrown.");
         }
         catch (AggregateException ex)
         {
@@ -4184,7 +4184,7 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
             try
             {
                 await completingTask; // observe any exception.
-                Assert.True(false, "Expected exception not thrown.");
+                Assert.Fail("Expected exception not thrown.");
             }
             catch (CriticalErrorException ex)
             {
@@ -4993,7 +4993,7 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
                 bool dummy = this.asyncLock.IsReadLockHeld;
                 if (!successExpected)
                 {
-                    Assert.True(false, "Expected exception not thrown.");
+                    Assert.Fail("Expected exception not thrown.");
                 }
             }
             catch (Exception ex)
@@ -5009,7 +5009,7 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
                 bool dummy = this.asyncLock.IsUpgradeableReadLockHeld;
                 if (!successExpected)
                 {
-                    Assert.True(false, "Expected exception not thrown.");
+                    Assert.Fail("Expected exception not thrown.");
                 }
             }
             catch (Exception ex)
@@ -5025,7 +5025,7 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
                 bool dummy = this.asyncLock.IsWriteLockHeld;
                 if (!successExpected)
                 {
-                    Assert.True(false, "Expected exception not thrown.");
+                    Assert.Fail("Expected exception not thrown.");
                 }
             }
             catch (Exception ex)
@@ -5045,7 +5045,7 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
             try
             {
                 releaser = await locker();
-                Assert.True(false, "Expected exception not thrown.");
+                Assert.Fail("Expected exception not thrown.");
             }
             catch (Exception ex)
             {

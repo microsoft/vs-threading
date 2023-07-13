@@ -310,7 +310,7 @@ public class AsyncReaderWriterResourceLockTests : TestBase
                 try
                 {
                     await resourceTask;
-                    Assert.True(false, "Expected OperationCanceledException not thrown.");
+                    Assert.Fail("Expected OperationCanceledException not thrown.");
                 }
                 catch (OperationCanceledException)
                 {
@@ -461,7 +461,7 @@ public class AsyncReaderWriterResourceLockTests : TestBase
                 (resource, s) =>
                 {
                     Assert.Same(state, s);
-                    Assert.True(false, "Read locks should not invoke this.");
+                    Assert.Fail("Read locks should not invoke this.");
                     return false;
                 },
                 state);
@@ -1216,7 +1216,7 @@ public class AsyncReaderWriterResourceLockTests : TestBase
             try
             {
                 await access.GetResourceAsync(1);
-                Assert.True(false, "Expected exception not thrown.");
+                Assert.Fail("Expected exception not thrown.");
             }
             catch (ApplicationException)
             {
@@ -1242,7 +1242,7 @@ public class AsyncReaderWriterResourceLockTests : TestBase
             try
             {
                 Resource? resource = await access.GetResourceAsync(1);
-                Assert.True(false, "Expected exception not thrown.");
+                Assert.Fail("Expected exception not thrown.");
             }
             catch (ApplicationException)
             {
@@ -1275,7 +1275,7 @@ public class AsyncReaderWriterResourceLockTests : TestBase
                     try
                     {
                         await writeAccess.ReleaseAsync();
-                        Assert.True(false, "Expected exception not thrown.");
+                        Assert.Fail("Expected exception not thrown.");
                     }
                     catch (ApplicationException)
                     {
@@ -1285,7 +1285,7 @@ public class AsyncReaderWriterResourceLockTests : TestBase
                 }
 
                 // Exiting the using block should also throw.
-                Assert.True(false, "Expected exception not thrown.");
+                Assert.Fail("Expected exception not thrown.");
             }
             catch (ApplicationException)
             {
@@ -1308,7 +1308,7 @@ public class AsyncReaderWriterResourceLockTests : TestBase
                 try
                 {
                     await readAccess.GetResourceAsync(1);
-                    Assert.True(false, "Expected exception not thrown.");
+                    Assert.Fail("Expected exception not thrown.");
                 }
                 catch (ApplicationException)
                 {

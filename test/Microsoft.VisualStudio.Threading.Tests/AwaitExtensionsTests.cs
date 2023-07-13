@@ -507,7 +507,7 @@ public partial class AwaitExtensionsTests : TestBase
         try
         {
             await joint.ConfigureAwaitForAggregateException();
-            Assert.False(true, "Exception was not thrown.");
+            Assert.Fail("Exception was not thrown.");
         }
         catch (AggregateException ex)
         {
@@ -523,7 +523,7 @@ public partial class AwaitExtensionsTests : TestBase
         try
         {
             await canceled.ConfigureAwaitForAggregateException();
-            Assert.False(true, "Exception was not thrown.");
+            Assert.Fail("Exception was not thrown.");
         }
         catch (OperationCanceledException)
         {
@@ -540,7 +540,7 @@ public partial class AwaitExtensionsTests : TestBase
         try
         {
             await joint.ConfigureAwaitForAggregateException();
-            Assert.False(true, "Exception was not thrown.");
+            Assert.Fail("Exception was not thrown.");
         }
         catch (OperationCanceledException)
         {
@@ -557,7 +557,7 @@ public partial class AwaitExtensionsTests : TestBase
         try
         {
             await joint.ConfigureAwaitForAggregateException();
-            Assert.False(true, "Exception was not thrown.");
+            Assert.Fail("Exception was not thrown.");
         }
         catch (AggregateException ex)
         {
@@ -718,7 +718,7 @@ public partial class AwaitExtensionsTests : TestBase
             try
             {
                 await changeWatcherTask;
-                Assert.True(false, "Expected exception not thrown.");
+                Assert.Fail("Expected exception not thrown.");
             }
             catch (OperationCanceledException ex)
             {
@@ -756,7 +756,7 @@ public partial class AwaitExtensionsTests : TestBase
         try
         {
             await watchingTask;
-            Assert.True(false, "Expected exception not thrown.");
+            Assert.Fail("Expected exception not thrown.");
         }
         catch (OperationCanceledException ex)
         {

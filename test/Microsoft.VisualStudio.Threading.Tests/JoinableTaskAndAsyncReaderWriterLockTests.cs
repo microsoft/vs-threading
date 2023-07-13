@@ -163,7 +163,7 @@ public class JoinableTaskAndAsyncReaderWriterLockTests : TestBase
                 try
                 {
                     this.asyncPump.Run(() => Task.CompletedTask);
-                    Assert.False(true, "Expected InvalidOperationException not thrown.");
+                    Assert.Fail("Expected InvalidOperationException not thrown.");
                 }
                 catch (InvalidOperationException)
                 {
@@ -190,7 +190,7 @@ public class JoinableTaskAndAsyncReaderWriterLockTests : TestBase
                 try
                 {
                     this.asyncPump.Run(() => Task.CompletedTask);
-                    Assert.True(false, "Expected InvalidOperationException not thrown.");
+                    Assert.Fail("Expected InvalidOperationException not thrown.");
                 }
                 catch (InvalidOperationException)
                 {
