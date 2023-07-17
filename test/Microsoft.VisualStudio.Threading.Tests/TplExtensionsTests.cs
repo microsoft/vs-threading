@@ -299,7 +299,7 @@ public class TplExtensionsTests : TestBase
         try
         {
             tcs.Task.WaitWithoutInlining();
-            Assert.False(true, "Expected exception not thrown.");
+            Assert.Fail("Expected exception not thrown.");
         }
         catch (AggregateException ex)
         {
@@ -765,7 +765,7 @@ public class TplExtensionsTests : TestBase
         try
         {
             task.GetAwaiter().GetResult();
-            Assert.True(false, "Expected AggregateException not thrown.");
+            Assert.Fail("Expected AggregateException not thrown.");
         }
         catch (AggregateException ex)
         {
@@ -792,7 +792,7 @@ public class TplExtensionsTests : TestBase
         try
         {
             task.GetAwaiter().GetResult();
-            Assert.True(false, "Expected AggregateException not thrown.");
+            Assert.Fail("Expected AggregateException not thrown.");
         }
         catch (AggregateException ex)
         {

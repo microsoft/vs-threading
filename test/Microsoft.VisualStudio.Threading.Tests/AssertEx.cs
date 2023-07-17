@@ -10,7 +10,7 @@ internal static class AssertEx
     {
         if (!EqualityComparer<T>.Default.Equals(expected, actual))
         {
-            throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, message);
+            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, message);
         }
     }
 
@@ -18,7 +18,7 @@ internal static class AssertEx
     {
         if (!EqualityComparer<T>.Default.Equals(expected, actual))
         {
-            throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, string.Format(CultureInfo.CurrentCulture, formattingMessage, formattingArgs));
+            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, string.Format(CultureInfo.CurrentCulture, formattingMessage, formattingArgs));
         }
     }
 
@@ -26,7 +26,7 @@ internal static class AssertEx
     {
         if (EqualityComparer<T>.Default.Equals(expected, actual))
         {
-            throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, message);
+            throw Xunit.Sdk.NotEqualException.ForEqualValues(expected?.ToString() ?? "<null>", actual?.ToString() ?? "<null>", message);
         }
     }
 
@@ -34,7 +34,7 @@ internal static class AssertEx
     {
         if (EqualityComparer<T>.Default.Equals(expected, actual))
         {
-            throw new Xunit.Sdk.AssertActualExpectedException(expected, actual, string.Format(CultureInfo.CurrentCulture, formattingMessage, formattingArgs));
+            throw Xunit.Sdk.NotEqualException.ForEqualValues(expected?.ToString() ?? "<null>", actual?.ToString() ?? "<null>", string.Format(CultureInfo.CurrentCulture, formattingMessage, formattingArgs));
         }
     }
 }
