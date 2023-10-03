@@ -4,7 +4,7 @@ pr: none
 resources:
   pipelines:
   - pipeline: VisualStudioBuildUnderTest
-    source: DD-CB-PR
+    source: DD-CB-TestSignVS-devCI
     trigger:
       tags:
       - vs-threading-insertion
