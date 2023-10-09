@@ -561,4 +561,27 @@ class Test {
 ";
         await CSVerify.VerifyAnalyzerAsync(test);
     }
+
+    [Fact]
+    public async Task MethodDisposeAsyncCore_GeneratesNoWarning()
+    {
+        var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test : IAsyncDisposable
+{
+    public async ValueTask DisposeAsync()
+    {
+        await DisposeAsyncCore().ConfigureAwait(false);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual async ValueTask DisposeAsyncCore()
+    {
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 }

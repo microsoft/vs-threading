@@ -72,6 +72,12 @@ public class VSTHRD200UseAsyncNamingConventionAnalyzer : DiagnosticAnalyzer
             return;
         }
 
+        // Skip the method of the recommended dispose pattern.
+        if (methodSymbol.Name == "DisposeAsyncCore")
+        {
+            return;
+        }
+
         bool hasAsyncFocusedReturnType = Utils.HasAsyncCompatibleReturnType(methodSymbol);
 
         bool actuallyEndsWithAsync = methodSymbol.Name.EndsWith(MandatoryAsyncSuffix, StringComparison.CurrentCulture);
