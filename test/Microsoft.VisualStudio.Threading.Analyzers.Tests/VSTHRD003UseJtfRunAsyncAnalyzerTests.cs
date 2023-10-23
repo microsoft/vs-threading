@@ -1243,6 +1243,62 @@ class Test {
         await CSVerify.VerifyAnalyzerAsync(test);
     }
 
+    [Fact]
+    public async Task ReportWarningWhenAwaitingTaskReturningProperty()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Tests
+{
+    async Task GetTask(TaskCompletionSource<int> tcs)
+    {
+        await [|tcs.Task|];
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningWhenAwaitingTaskPropertyThatWasSetInContext()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Tests
+{
+    private Task MyTaskProperty { get; set; }
+
+    async Task GetTask()
+    {
+        this.MyTaskProperty = Task.Run(() => {});
+        await this.MyTaskProperty;
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task ReportWarningWhenAwaitingTaskPropertyThatWasNotSetInContext()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Tests
+{
+    private Task MyTaskProperty { get; set; } = Task.Run(() => {});
+
+    async Task GetTask()
+    {
+        await [|this.MyTaskProperty|];
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
     private DiagnosticResult CreateDiagnostic(int line, int column, int length) =>
         CSVerify.Diagnostic().WithSpan(line, column, line, column + length);
 }
