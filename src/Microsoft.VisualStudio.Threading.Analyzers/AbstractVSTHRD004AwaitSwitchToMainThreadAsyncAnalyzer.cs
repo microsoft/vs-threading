@@ -45,12 +45,23 @@ public abstract class AbstractVSTHRD004AwaitSwitchToMainThreadAsyncAnalyzer : Di
             methodSymbol.ContainingType.Name == Types.JoinableTaskFactory.TypeName &&
             methodSymbol.ContainingType.BelongsToNamespace(Types.JoinableTaskFactory.Namespace))
         {
-            // This is a call to JTF.SwitchToMainThreadAsync(). Is it being (directly) awaited?
-            if (!(invocation.Parent is IAwaitOperation))
+            // This is a call to JTF.SwitchToMainThreadAsync(). Is it being awaited in some ancestor?
+            for (IOperation? parentOp = invocation.Parent; parentOp is not null; parentOp = parentOp.Parent)
             {
-                Location? location = (this.LanguageUtils.IsolateMethodName(invocation) ?? invocation.Syntax).GetLocation();
-                context.ReportDiagnostic(Diagnostic.Create(Descriptor, location));
+                if (parentOp is IAwaitOperation)
+                {
+                    return;
+                }
+
+                if (parentOp is IExpressionStatementOperation or IReturnOperation)
+                {
+                    // We've reached the top of the statement without finding an await.
+                    break;
+                }
             }
+
+            Location? location = (this.LanguageUtils.IsolateMethodName(invocation) ?? invocation.Syntax).GetLocation();
+            context.ReportDiagnostic(Diagnostic.Create(Descriptor, location));
         }
     }
 }
