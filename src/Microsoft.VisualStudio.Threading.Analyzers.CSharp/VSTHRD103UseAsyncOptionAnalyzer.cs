@@ -72,6 +72,7 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
         {
             ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(MethodAnalyzer.AnalyzeInvocation), SyntaxKind.InvocationExpression);
             ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(MethodAnalyzer.AnalyzePropertyGetter), SyntaxKind.SimpleMemberAccessExpression);
+            ctxt.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(MethodAnalyzer.AnalyzeConditionalAccessExpression), SyntaxKind.ConditionalAccessExpression);
         });
     }
 
@@ -82,7 +83,21 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
             var memberAccessSyntax = (MemberAccessExpressionSyntax)context.Node;
             if (IsInTaskReturningMethodOrDelegate(context))
             {
-                InspectMemberAccess(context, memberAccessSyntax, CommonInterest.SyncBlockingProperties);
+                InspectMemberAccess(context, memberAccessSyntax.Name, CommonInterest.SyncBlockingProperties);
+            }
+        }
+
+        internal static void AnalyzeConditionalAccessExpression(SyntaxNodeAnalysisContext context)
+        {
+            var conditionalAccessSyntax = (ConditionalAccessExpressionSyntax)context.Node;
+            if (IsInTaskReturningMethodOrDelegate(context))
+            {
+                ExpressionSyntax rightSide = conditionalAccessSyntax.WhenNotNull switch
+                {
+                    MemberBindingExpressionSyntax bindingExpr => bindingExpr.Name,
+                    _ => conditionalAccessSyntax.WhenNotNull,
+                };
+                InspectMemberAccess(context, rightSide, CommonInterest.SyncBlockingProperties);
             }
         }
 
@@ -92,7 +107,7 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
             {
                 var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
                 var memberAccessSyntax = invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax;
-                if (InspectMemberAccess(context, memberAccessSyntax, CommonInterest.SyncBlockingMethods))
+                if (memberAccessSyntax is not null && InspectMemberAccess(context, memberAccessSyntax.Name, CommonInterest.SyncBlockingMethods))
                 {
                     // Don't return double-diagnostics.
                     return;
@@ -174,21 +189,16 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
             return methodSymbol.HasAsyncCompatibleReturnType();
         }
 
-        private static bool InspectMemberAccess(SyntaxNodeAnalysisContext context, [NotNullWhen(true)] MemberAccessExpressionSyntax? memberAccessSyntax, IEnumerable<CommonInterest.SyncBlockingMethod> problematicMethods)
+        private static bool InspectMemberAccess(SyntaxNodeAnalysisContext context, ExpressionSyntax memberName, IEnumerable<CommonInterest.SyncBlockingMethod> problematicMethods)
         {
-            if (memberAccessSyntax is null)
-            {
-                return false;
-            }
-
-            ISymbol? memberSymbol = context.SemanticModel.GetSymbolInfo(memberAccessSyntax, context.CancellationToken).Symbol;
+            ISymbol? memberSymbol = context.SemanticModel.GetSymbolInfo(memberName, context.CancellationToken).Symbol;
             if (memberSymbol is object)
             {
                 foreach (CommonInterest.SyncBlockingMethod item in problematicMethods)
                 {
                     if (item.Method.IsMatch(memberSymbol))
                     {
-                        Location? location = memberAccessSyntax.Name.GetLocation();
+                        Location? location = memberName.GetLocation();
                         ImmutableDictionary<string, string?>? properties = ImmutableDictionary<string, string?>.Empty
                             .Add(ExtensionMethodNamespaceKeyName, item.ExtensionMethodNamespace is object ? string.Join(".", item.ExtensionMethodNamespace) : string.Empty);
                         DiagnosticDescriptor descriptor;

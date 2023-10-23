@@ -59,6 +59,12 @@ public class VSTHRD103UseAsyncOptionCodeFix : CodeFixProvider
             SemanticModel? semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
             SyntaxNode syntaxRoot = await context.Document.GetSyntaxRootOrThrowAsync(context.CancellationToken).ConfigureAwait(false);
             var blockingIdentifier = syntaxRoot.FindNode(diagnostic.Location.SourceSpan) as IdentifierNameSyntax;
+            if (blockingIdentifier?.Parent is MemberBindingExpressionSyntax) // ?. conditional access expressions.
+            {
+                // Fixes for these are complex, and the violations rare. So we won't automate a code fix for them.
+                return;
+            }
+
             var memberAccessExpression = blockingIdentifier?.Parent as MemberAccessExpressionSyntax;
 
             // Check whether this code was already calling the awaiter (in a synchronous fashion).
