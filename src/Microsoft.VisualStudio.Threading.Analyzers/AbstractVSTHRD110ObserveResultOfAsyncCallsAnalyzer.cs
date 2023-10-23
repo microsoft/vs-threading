@@ -57,14 +57,33 @@ public abstract class AbstractVSTHRD110ObserveResultOfAsyncCallsAnalyzer : Diagn
             return;
         }
 
-        // Only consider invocations that are direct statements. Otherwise, we assume their
-        // result is awaited, assigned, or otherwise consumed.
-        if (operation.Parent is IExpressionStatementOperation || operation.Parent is IConditionalAccessOperation)
+        // Only consider invocations that are direct statements (or are statements through limited steps).
+        // Otherwise, we assume their result is awaited, assigned, or otherwise consumed.
+        IOperation? parentOperation = operation.Parent;
+        while (parentOperation is not null)
         {
-            if (awaitableTypes.IsAwaitableType(operation.Type))
+            if (parentOperation is IExpressionStatementOperation)
             {
-                context.ReportDiagnostic(Diagnostic.Create(Descriptor, operation.Syntax.GetLocation()));
+                // This expression is directly used in a statement.
+                break;
             }
+
+            // This check is where we allow for specific operation types that may appear between the invocation
+            // and the statement that don't disqualify the invocation search for an invalid pattern.
+            if (parentOperation is IConditionalAccessOperation)
+            {
+                parentOperation = parentOperation.Parent;
+            }
+            else
+            {
+                // This expression is not directly used in a statement.
+                return;
+            }
+        }
+
+        if (awaitableTypes.IsAwaitableType(operation.Type))
+        {
+            context.ReportDiagnostic(Diagnostic.Create(Descriptor, operation.Syntax.GetLocation()));
         }
     }
 }
