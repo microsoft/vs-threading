@@ -10,7 +10,6 @@ using System.Windows.Threading;
 #endif
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Testing;
-using Microsoft.CodeAnalysis.Testing.Verifiers;
 using Microsoft.CodeAnalysis.Text;
 using IOleServiceProvider = Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
 
@@ -18,7 +17,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
 
 public static partial class CSharpCodeFixVerifier<TAnalyzer, TCodeFix>
 {
-    public class Test : CSharpCodeFixTest<TAnalyzer, TCodeFix, XUnitVerifier>
+    public class Test : CSharpCodeFixTest<TAnalyzer, TCodeFix, DefaultVerifier>
     {
         public Test()
         {
