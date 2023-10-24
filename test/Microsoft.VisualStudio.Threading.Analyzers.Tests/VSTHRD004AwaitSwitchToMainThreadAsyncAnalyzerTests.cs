@@ -105,6 +105,26 @@ class Test
     }
 
     [Fact]
+    public async Task AsyncMethodWithAwaitNoThrowAwaitable_ProducesNoDiagnostic()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test
+{
+    Microsoft.VisualStudio.Threading.JoinableTaskFactory jtf;
+
+    async Task FooAsync()
+    {
+        await jtf.SwitchToMainThreadAsync().NoThrowAwaitable();
+    }
+}
+";
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
     public async Task TaskReturningSyncMethod_ProducesDiagnostic()
     {
         var test = @"
