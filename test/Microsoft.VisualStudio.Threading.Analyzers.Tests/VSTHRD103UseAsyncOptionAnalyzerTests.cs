@@ -409,7 +409,7 @@ using System.Threading.Tasks;
 class Test {
     Task<int> T() {
         Task<int> t = null;
-        int result = t.Result;
+        int result = t.{|#0:Result|};
         return Task.FromResult(result);
     }
 }
@@ -427,8 +427,46 @@ class Test {
 }
 ";
 
-        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(7, 24).WithArguments("Result");
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result");
         await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
+
+    [Fact]
+    public async Task TaskOfTResultInTaskReturningMethodGeneratesWarning_ConditionalAccess()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task<int?> T() {
+        Task<int> t = null;
+        int? result = t?.{|#0:Result|};
+        return Task.FromResult(result);
+    }
+}
+";
+
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task TaskOfTResultInTaskReturningMethodGeneratesWarning_ConditionalAccess2()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task<int> T() {
+        Task<int> t = null;
+        int result = t?.{|#0:Result|} ?? 1;
+        return Task.FromResult(result);
+    }
+}
+";
+
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
     [Fact]
