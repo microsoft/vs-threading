@@ -171,22 +171,30 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
             // We want to scan invocations that occur inside Task and Task<T>-returning delegates or methods.
             // That is: methods that either are or could be made async.
             IMethodSymbol? methodSymbol = null;
-            AnonymousFunctionExpressionSyntax? anonymousFunc = context.Node.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>();
-            if (anonymousFunc is object)
+            for (SyntaxNode? focusedNode = context.Node; focusedNode is not null; focusedNode = focusedNode.Parent)
             {
-                SymbolInfo symbolInfo = context.SemanticModel.GetSymbolInfo(anonymousFunc, context.CancellationToken);
-                methodSymbol = symbolInfo.Symbol as IMethodSymbol;
-            }
-            else
-            {
-                MethodDeclarationSyntax? methodDecl = context.Node.FirstAncestorOrSelf<MethodDeclarationSyntax>();
-                if (methodDecl is object)
+                switch (focusedNode)
                 {
-                    methodSymbol = context.SemanticModel.GetDeclaredSymbol(methodDecl, context.CancellationToken);
+                    case AnonymousFunctionExpressionSyntax anonFunc:
+                        SymbolInfo symbolInfo = context.SemanticModel.GetSymbolInfo(anonFunc, context.CancellationToken);
+                        methodSymbol = symbolInfo.Symbol as IMethodSymbol;
+                        break;
+                    case LocalFunctionStatementSyntax localFunc:
+                        methodSymbol = context.SemanticModel.GetDeclaredSymbol(localFunc, context.CancellationToken) as IMethodSymbol;
+                        break;
+                    case MethodDeclarationSyntax methodDecl:
+                        methodSymbol = context.SemanticModel.GetDeclaredSymbol(methodDecl, context.CancellationToken);
+                        break;
+                    default:
+                        // We want to continue iteration of the for loop.
+                        continue;
                 }
+
+                // We encountered one of our case statements, so whether or not we have a methodSymbol, we shouldn't look further.
+                break;
             }
 
-            return methodSymbol.HasAsyncCompatibleReturnType();
+            return methodSymbol?.HasAsyncCompatibleReturnType() is true;
         }
 
         private static bool InspectMemberAccess(SyntaxNodeAnalysisContext context, ExpressionSyntax memberName, IEnumerable<CommonInterest.SyncBlockingMethod> problematicMethods)
