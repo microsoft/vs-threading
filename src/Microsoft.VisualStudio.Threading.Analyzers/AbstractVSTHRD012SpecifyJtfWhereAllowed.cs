@@ -81,8 +81,10 @@ public abstract class AbstractVSTHRD012SpecifyJtfWhereAllowed : DiagnosticAnalyz
             // The method being invoked doesn't take any JTC/JTF parameters.
             // Look for an overload that does.
             bool preferableAlternativesExist = otherOverloads
-                .Where(m => !m.IsObsolete())
-                .Any(m => m.Parameters.Skip(m.IsExtensionMethod ? 1 : 0).Any(IsImportantJtfParameter));
+                .Any(m =>
+                    !m.IsObsolete() &&
+                    m.Parameters.Skip(m.IsExtensionMethod ? 1 : 0).Any(IsImportantJtfParameter) &&
+                    context.ContainingSymbol.FindContainingNamedOrAssemblySymbol() is ISymbol containingSymbol && context.Compilation.IsSymbolAccessibleWithin(m, containingSymbol));
             if (preferableAlternativesExist)
             {
                 Diagnostic diagnostic = Diagnostic.Create(

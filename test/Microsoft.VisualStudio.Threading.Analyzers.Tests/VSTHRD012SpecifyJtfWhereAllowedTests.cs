@@ -254,4 +254,61 @@ class Test {
 
         await CSVerify.VerifyAnalyzerAsync(test);
     }
+
+    [Fact]
+    public async Task InaccessibleMembers_Private_GeneratesNoWarning()
+    {
+        string test = """
+            using System;
+            using Microsoft.VisualStudio.Threading;
+
+            static class Extensions
+            {
+                public static void OnMainThread(Action action) => OnMainThread(null, action);
+
+                private static void OnMainThread(JoinableTaskFactory factory, Action action) => factory.Run(async delegate
+                {
+                    await factory.SwitchToMainThreadAsync();
+                    action();
+                });
+            }
+
+            class Foo
+            {
+                void Bar()
+                {
+                    Extensions.OnMainThread(() => { });
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task AccessibleMembers_Private_GeneratesWarning()
+    {
+        string test = """
+            using System;
+            using Microsoft.VisualStudio.Threading;
+
+            static class Extensions
+            {
+                public static void OnMainThread(Action action) => OnMainThread(null, action);
+
+                private static void OnMainThread(JoinableTaskFactory factory, Action action) => factory.Run(async delegate
+                {
+                    await factory.SwitchToMainThreadAsync();
+                    action();
+                });
+
+                static void Bar()
+                {
+                    [|OnMainThread|](() => { });
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 }
