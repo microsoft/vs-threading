@@ -71,6 +71,30 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
         context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeLambdaExpression), SyntaxKind.ParenthesizedLambdaExpression);
     }
 
+    private static bool IsSymbolAlwaysOkToAwait(ISymbol? symbol)
+    {
+        if (symbol is IFieldSymbol field)
+        {
+            // Allow the TplExtensions.CompletedTask and related fields.
+            if (field.ContainingType.Name == Types.TplExtensions.TypeName && field.BelongsToNamespace(Types.TplExtensions.Namespace) &&
+                (field.Name == Types.TplExtensions.CompletedTask || field.Name == Types.TplExtensions.CanceledTask || field.Name == Types.TplExtensions.TrueTask || field.Name == Types.TplExtensions.FalseTask))
+            {
+                return true;
+            }
+        }
+        else if (symbol is IPropertySymbol property)
+        {
+            // Explicitly allow Task.CompletedTask
+            if (property.ContainingType.Name == Types.Task.TypeName && property.BelongsToNamespace(Types.Task.Namespace) &&
+                property.Name == Types.Task.CompletedTask)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private void AnalyzeArrowExpressionClause(SyntaxNodeAnalysisContext context)
     {
         var arrowExpressionClause = (ArrowExpressionClauseSyntax)context.Node;
@@ -156,6 +180,9 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
                 symbolType = localSymbol.Type;
                 dataflowAnalysisCompatibleVariable = true;
                 break;
+            case IPropertySymbol propertySymbol when !IsSymbolAlwaysOkToAwait(propertySymbol):
+                symbolType = propertySymbol.Type;
+                break;
             case IParameterSymbol parameterSymbol:
                 symbolType = parameterSymbol.Type;
                 dataflowAnalysisCompatibleVariable = true;
@@ -209,23 +236,9 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
                                 }
 
                                 ISymbol? definition = declarationSemanticModel.GetSymbolInfo(memberAccessSyntax, cancellationToken).Symbol;
-                                if (definition is IFieldSymbol field)
+                                if (IsSymbolAlwaysOkToAwait(definition))
                                 {
-                                    // Allow the TplExtensions.CompletedTask and related fields.
-                                    if (field.ContainingType.Name == Types.TplExtensions.TypeName && field.BelongsToNamespace(Types.TplExtensions.Namespace) &&
-                                        (field.Name == Types.TplExtensions.CompletedTask || field.Name == Types.TplExtensions.CanceledTask || field.Name == Types.TplExtensions.TrueTask || field.Name == Types.TplExtensions.FalseTask))
-                                    {
-                                        return null;
-                                    }
-                                }
-                                else if (definition is IPropertySymbol property)
-                                {
-                                    // Explicitly allow Task.CompletedTask
-                                    if (property.ContainingType.Name == Types.Task.TypeName && property.BelongsToNamespace(Types.Task.Namespace) &&
-                                        property.Name == Types.Task.CompletedTask)
-                                    {
-                                        return null;
-                                    }
+                                    return null;
                                 }
                             }
                         }
