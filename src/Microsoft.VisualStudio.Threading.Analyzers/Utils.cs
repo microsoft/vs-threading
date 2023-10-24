@@ -700,6 +700,22 @@ internal static class Utils
         return default;
     }
 
+    internal static ISymbol? FindContainingNamedOrAssemblySymbol(this ISymbol? symbol)
+    {
+        ISymbol? candidate = symbol;
+        while (candidate is not null)
+        {
+            if (candidate is INamedTypeSymbol or IAssemblySymbol)
+            {
+                return candidate;
+            }
+
+            candidate = candidate.ContainingSymbol;
+        }
+
+        return null;
+    }
+
     private static bool IsSymbolTheRightType(ISymbol symbol, string typeName, IReadOnlyList<string> namespaces)
     {
         var fieldSymbol = symbol as IFieldSymbol;
