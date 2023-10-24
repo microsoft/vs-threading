@@ -57,8 +57,8 @@ public class VSTHRD111UseConfigureAwaitCodeFix : CodeFixProvider
                 return Task.FromResult(context.Document.WithSyntaxRoot(syntaxRoot.ReplaceNode(awaitedExpression, configuredAwaitExpression)));
             }
 
-            context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD111_CodeFix_True_Title, ct => ApplyFix(true), true.ToString()), diagnostic);
             context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD111_CodeFix_False_Title, ct => ApplyFix(false), false.ToString()), diagnostic);
+            context.RegisterCodeFix(CodeAction.Create(Strings.VSTHRD111_CodeFix_True_Title, ct => ApplyFix(true), true.ToString()), diagnostic);
         }
     }
 }
