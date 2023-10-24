@@ -453,6 +453,24 @@ public async ValueTask DisposeAsync()
         await CSVerify.VerifyAnalyzerAsync(test);
     }
 
+    [Fact]
+    public async Task ParentheticalUseOfTaskResult_ProducesNoDiagnostic()
+    {
+        string test = """
+            using System;
+            using System.Threading.Tasks;
+
+            class Class1
+            {
+                public Func<Task<int>>? VCLoadMethod;
+
+                public int? VirtualCurrencyBalances => (VCLoadMethod?.Invoke()).GetAwaiter().GetResult();
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
     private DiagnosticResult CreateDiagnostic(int line, int column, int length)
         => CSVerify.Diagnostic().WithSpan(line, column, line, column + length);
 }
