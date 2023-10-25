@@ -1314,6 +1314,31 @@ class Test {
         await CSVerify.VerifyAnalyzerAsync(test);
     }
 
+    [Fact]
+    public async Task DoNotRaiseInSyncLocalFunctionInsideAsyncMethod()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class SomeClass {
+                Task Foo()
+                {
+                    return Task.CompletedTask;
+
+                    void CompletionHandler()
+                    {
+                        this.Bar();
+                    }
+                }
+
+                void Bar() {}
+                Task BarAsync() => Task.CompletedTask;
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
     private DiagnosticResult CreateDiagnostic(int line, int column, int length, string methodName)
         => CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithSpan(line, column, line, column + length).WithArguments(methodName);
 

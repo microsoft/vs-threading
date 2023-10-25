@@ -430,6 +430,21 @@ class Test {
     }
 
     [Fact]
+    public async Task NullCoalescing_ProducesNoDiagnostic()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Tree {
+                static Task ShakeTreeAsync(Tree? tree) => tree?.ShakeAsync() ?? Task.CompletedTask;
+                Task ShakeAsync() => Task.CompletedTask;
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
     public async Task TaskInFinalizer()
     {
         string test = @"
@@ -470,7 +485,4 @@ public async ValueTask DisposeAsync()
 
         await CSVerify.VerifyAnalyzerAsync(test);
     }
-
-    private DiagnosticResult CreateDiagnostic(int line, int column, int length)
-        => CSVerify.Diagnostic().WithSpan(line, column, line, column + length);
 }
