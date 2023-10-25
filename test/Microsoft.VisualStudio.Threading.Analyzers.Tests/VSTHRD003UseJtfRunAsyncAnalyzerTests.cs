@@ -201,12 +201,11 @@ class Tests
 
     public async Task AwaitAndGetResult()
     {{
-        await task.ConfigureAwait({(continueOnCapturedContext ? "true" : "false")});
+        await [|task|].ConfigureAwait({(continueOnCapturedContext ? "true" : "false")});
     }}
 }}
 ";
-        DiagnosticResult expected = this.CreateDiagnostic(10, 15, 21 + continueOnCapturedContext.ToString().Length);
-        await CSVerify.VerifyAnalyzerAsync(test, expected);
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 
     [Theory]
@@ -223,12 +222,11 @@ class Tests
 
     public async Task<int> AwaitAndGetResult()
     {{
-        return await task.ConfigureAwait({(continueOnCapturedContext ? "true" : "false")});
+        return await [|task|].ConfigureAwait({(continueOnCapturedContext ? "true" : "false")});
     }}
 }}
 ";
-        DiagnosticResult expected = this.CreateDiagnostic(10, 22, 21 + continueOnCapturedContext.ToString().Length);
-        await CSVerify.VerifyAnalyzerAsync(test, expected);
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 
     [Fact]
@@ -244,12 +242,11 @@ class Tests
 
     public async Task AwaitAndGetResult()
     {
-        await task.ConfigureAwaitRunInline();
+        await [|task|].ConfigureAwaitRunInline();
     }
 }
 ";
-        DiagnosticResult expected = this.CreateDiagnostic(11, 15, 30);
-        await CSVerify.VerifyAnalyzerAsync(test, expected);
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 
     [Fact]
@@ -265,12 +262,11 @@ class Tests
 
     public async Task<int> AwaitAndGetResult()
     {
-        return await task.ConfigureAwaitRunInline();
+        return await [|task|].ConfigureAwaitRunInline();
     }
 }
 ";
-        DiagnosticResult expected = this.CreateDiagnostic(11, 22, 30);
-        await CSVerify.VerifyAnalyzerAsync(test, expected);
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 
     [Fact]
@@ -1281,6 +1277,64 @@ class Tests
     }
 
     [Fact]
+    public async Task DoNotReportWarningWhenAwaitingTaskPropertyOfObjectCreatedInContext()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Tests
+{
+    private Task MyTaskProperty { get; set; }
+
+    static async Task GetTask()
+    {
+        // our own property.
+        var obj = new Tests();
+        await obj.MyTaskProperty;
+
+        // local with initializer
+        var tcs = new TaskCompletionSource<int>();
+        await tcs.Task;
+
+        // Assign later
+        TaskCompletionSource<int> tcs2;
+        tcs2 = new TaskCompletionSource<int>();
+        await tcs2.Task;
+
+        // Assigned, but not to a newly created object.
+        TaskCompletionSource<int> tcs3 = tcs2;
+        await [|tcs3.Task|];
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    /// <summary>
+    /// This is important to allow folks to return jtf.RunAsync(...).Task from a method.
+    /// </summary>
+    [Fact]
+    public async Task DoNotReportWarningWhenAwaitingTaskPropertyOfObjectReturnedFromMethod()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Tests
+{
+    private Task MyTaskProperty { get; set; }
+
+    static Tests NewTests() => new Tests();
+
+    static async Task GetTask()
+    {
+        await NewTests().MyTaskProperty;
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
     public async Task ReportWarningWhenAwaitingTaskPropertyThatWasNotSetInContext()
     {
         var test = @"
@@ -1293,6 +1347,7 @@ class Tests
     async Task GetTask()
     {
         await [|this.MyTaskProperty|];
+        await [|MyTaskProperty|];
     }
 }
 ";

@@ -49,6 +49,11 @@ internal sealed class CSharpUtils : LanguageUtils
                 return new ContainingFunctionData(simpleLambda, simpleLambda.AsyncKeyword != default(SyntaxToken), SyntaxFactory.ParameterList().AddParameters(simpleLambda.Parameter), simpleLambda.Body, simpleLambda.WithBody);
             }
 
+            if (syntaxNode is LocalFunctionStatementSyntax localFunc)
+            {
+                return new ContainingFunctionData(localFunc, localFunc.Modifiers.Any(SyntaxKind.AsyncKeyword), localFunc.ParameterList, (CSharpSyntaxNode?)localFunc.ExpressionBody ?? localFunc.Body, localFunc.WithBody);
+            }
+
             if (syntaxNode is AnonymousMethodExpressionSyntax anonymousMethod)
             {
                 return new ContainingFunctionData(anonymousMethod, anonymousMethod.AsyncKeyword != default(SyntaxToken), anonymousMethod.ParameterList, anonymousMethod.Body, anonymousMethod.WithBody);
@@ -125,7 +130,7 @@ internal sealed class CSharpUtils : LanguageUtils
         return false;
     }
 
-    internal static bool IsAssignedWithin(SyntaxNode container, SemanticModel semanticModel, ISymbol variable, CancellationToken cancellationToken)
+    internal static IEnumerable<ExpressionSyntax> FindAssignedValuesWithin(SyntaxNode container, SemanticModel semanticModel, ISymbol variable, CancellationToken cancellationToken)
     {
         if (semanticModel is null)
         {
@@ -139,22 +144,36 @@ internal sealed class CSharpUtils : LanguageUtils
 
         if (container is null)
         {
-            return false;
+            yield break;
         }
 
-        foreach (SyntaxNode? node in container.DescendantNodesAndSelf(n => !(n is AnonymousFunctionExpressionSyntax)))
+        foreach (SyntaxNode? node in container.DescendantNodesAndSelf(n => !(n is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax)))
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (node is AssignmentExpressionSyntax assignment)
             {
                 ISymbol? assignedSymbol = semanticModel.GetSymbolInfo(assignment.Left, cancellationToken).Symbol;
                 if (variable.Equals(assignedSymbol, SymbolEqualityComparer.Default))
                 {
-                    return true;
+                    yield return assignment.Right;
+                }
+            }
+
+            if (node is LocalDeclarationStatementSyntax localDeclarationStatement)
+            {
+                foreach (VariableDeclaratorSyntax localDeclVar in localDeclarationStatement.Declaration.Variables)
+                {
+                    if (localDeclVar.Initializer is not null)
+                    {
+                        ISymbol? assignedSymbol = semanticModel.GetDeclaredSymbol(localDeclVar, cancellationToken);
+                        if (variable.Equals(assignedSymbol, SymbolEqualityComparer.Default))
+                        {
+                            yield return localDeclVar.Initializer.Value;
+                        }
+                    }
                 }
             }
         }
-
-        return false;
     }
 
     internal static MemberAccessExpressionSyntax MemberAccess(IReadOnlyList<string> qualifiers, SimpleNameSyntax simpleName)
@@ -277,7 +296,7 @@ internal sealed class CSharpUtils : LanguageUtils
 
     internal readonly struct ContainingFunctionData
     {
-        internal ContainingFunctionData(CSharpSyntaxNode function, bool isAsync, ParameterListSyntax? parameterList, CSharpSyntaxNode? blockOrExpression, Func<CSharpSyntaxNode, CSharpSyntaxNode> bodyReplacement)
+        internal ContainingFunctionData(CSharpSyntaxNode function, bool isAsync, ParameterListSyntax? parameterList, CSharpSyntaxNode? blockOrExpression, Func<BlockSyntax, CSharpSyntaxNode> bodyReplacement)
         {
             this.Function = function;
             this.IsAsync = isAsync;
@@ -294,6 +313,6 @@ internal sealed class CSharpUtils : LanguageUtils
 
         internal CSharpSyntaxNode? BlockOrExpression { get; }
 
-        internal Func<CSharpSyntaxNode, CSharpSyntaxNode> BodyReplacement { get; }
+        internal Func<BlockSyntax, CSharpSyntaxNode> BodyReplacement { get; }
     }
 }
