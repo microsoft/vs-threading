@@ -93,9 +93,9 @@ stages:
         SkipCreatePR: true
         CustomScriptExecutionCommand: src\VSSDK\NuGet\AllowUnstablePackages.ps1
     - task: benjhuser.tfs-extensions-build-tasks.trigger-build-task.TriggerBuild@3
-      displayName: Trigger a new build of DD-CB-PR
+      displayName: Trigger a new build of DD-CB-TestSignVS-devCI
       inputs:
-        buildDefinition: DD-CB-PR
+        buildDefinition: DD-CB-TestSignVS-devCI
         useSameBranch: false
         branchToUse: $(InsertTopicBranch)
         storeInEnvironmentVariable: true
