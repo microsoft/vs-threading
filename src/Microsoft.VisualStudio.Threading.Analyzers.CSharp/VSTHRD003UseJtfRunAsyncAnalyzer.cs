@@ -198,10 +198,11 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
                     if (memberAccessExpression.Expression is IdentifierNameSyntax identifier &&
                         semanticModel.GetSymbolInfo(identifier, cancellationToken).Symbol is ILocalSymbol local)
                     {
-                        // Search for assignments to the local and see if it was to a new object.
+                        // Search for assignments to the local and see if it was to a new object or the result of an invocation.
                         containingFunc ??= CSharpUtils.GetContainingFunction(focusedExpression);
                         if (containingFunc.Value.BlockOrExpression is not null &&
-                            CSharpUtils.FindAssignedValuesWithin(containingFunc.Value.BlockOrExpression, semanticModel, local, cancellationToken).Any(v => v is ObjectCreationExpressionSyntax or ImplicitObjectCreationExpressionSyntax))
+                            CSharpUtils.FindAssignedValuesWithin(containingFunc.Value.BlockOrExpression, semanticModel, local, cancellationToken).Any(
+                                v => v is ObjectCreationExpressionSyntax or ImplicitObjectCreationExpressionSyntax or InvocationExpressionSyntax))
                         {
                             return null;
                         }

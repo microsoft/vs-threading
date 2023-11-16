@@ -1358,6 +1358,31 @@ class Tests
     }
 
     [Fact]
+    public async Task DoNotReportWarningWhenAwaitingTaskPropertyOfObjectReturnedFromMethodViaLocal()
+    {
+        var test = """
+            using System.Threading.Tasks;
+
+            class JsonRpc
+            {
+                internal static JsonRpc Attach() => throw new System.NotImplementedException();
+
+                internal Task Completion { get; }
+            }
+
+            class Tests
+            {
+                static async Task ListenAndWait()
+                {
+                    var jsonRpc = JsonRpc.Attach();
+                    await jsonRpc.Completion;
+                }
+            }
+            """;
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
     public async Task ReportWarningWhenAwaitingTaskPropertyThatWasNotSetInContext()
     {
         var test = @"
