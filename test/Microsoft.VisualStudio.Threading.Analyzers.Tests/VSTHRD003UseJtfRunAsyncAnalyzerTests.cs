@@ -1402,6 +1402,32 @@ class Tests
         await CSVerify.VerifyAnalyzerAsync(test);
     }
 
+    [Fact]
+    public async Task DoNotReportWarningWhenReturningTaskFromLambdaArgument()
+    {
+        var test = """
+            using System.Linq;
+            using System.Threading.Tasks;
+            
+            class JsonRpc
+            {
+                internal static JsonRpc Attach() => throw new System.NotImplementedException();
+            
+                internal Task Completion { get; }
+            }
+            
+            class Tests
+            {
+                static async Task ListenAndWait()
+                {
+                    JsonRpc[] rpcs = new [] { JsonRpc.Attach(), JsonRpc.Attach() };
+                    await Task.WhenAll(rpcs.Select(r => r.Completion));
+                }
+            }
+            """;
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
     private DiagnosticResult CreateDiagnostic(int line, int column, int length) =>
         CSVerify.Diagnostic().WithSpan(line, column, line, column + length);
 }
