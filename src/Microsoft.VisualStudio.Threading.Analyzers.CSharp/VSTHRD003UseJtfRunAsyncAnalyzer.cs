@@ -201,7 +201,7 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
                         // Search for assignments to the local and see if it was to a new object.
                         containingFunc ??= CSharpUtils.GetContainingFunction(focusedExpression);
                         if (containingFunc.Value.BlockOrExpression is not null &&
-                            CSharpUtils.FindAssignedValuesWithin(containingFunc.Value.BlockOrExpression, semanticModel, local, cancellationToken).Any(v => v is ObjectCreationExpressionSyntax))
+                            CSharpUtils.FindAssignedValuesWithin(containingFunc.Value.BlockOrExpression, semanticModel, local, cancellationToken).Any(v => v is ObjectCreationExpressionSyntax or ImplicitObjectCreationExpressionSyntax))
                         {
                             return null;
                         }

@@ -1310,6 +1310,29 @@ class Tests
         await CSVerify.VerifyAnalyzerAsync(test);
     }
 
+    [Fact]
+    public async Task DoNotReportWarningWhenAwaitingTaskPropertyOfObjectCreatedInContext_TargetTypeCreation()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                static Task Exec2Async(string executable, params string[] args)
+                {
+                    Process p = new();
+                    return p.Task;
+                }
+            }
+
+            class Process
+            {
+                public Task Task { get; }
+            }
+            """;
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
     /// <summary>
     /// This is important to allow folks to return jtf.RunAsync(...).Task from a method.
     /// </summary>
