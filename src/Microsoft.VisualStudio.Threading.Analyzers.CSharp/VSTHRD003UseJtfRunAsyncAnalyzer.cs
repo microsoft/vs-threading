@@ -195,15 +195,30 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
                     }
 
                     // Do not report a warning if the task is a member of an object that was created in this method.
-                    if (memberAccessExpression.Expression is IdentifierNameSyntax identifier &&
-                        semanticModel.GetSymbolInfo(identifier, cancellationToken).Symbol is ILocalSymbol local)
+                    if (memberAccessExpression.Expression is IdentifierNameSyntax identifier)
                     {
-                        // Search for assignments to the local and see if it was to a new object.
-                        containingFunc ??= CSharpUtils.GetContainingFunction(focusedExpression);
-                        if (containingFunc.Value.BlockOrExpression is not null &&
-                            CSharpUtils.FindAssignedValuesWithin(containingFunc.Value.BlockOrExpression, semanticModel, local, cancellationToken).Any(v => v is ObjectCreationExpressionSyntax))
+                        ISymbol? symbol = semanticModel.GetSymbolInfo(identifier, cancellationToken).Symbol;
+                        switch (symbol)
                         {
-                            return null;
+                            case ILocalSymbol local:
+                                // Search for assignments to the local and see if it was to a new object or the result of an invocation.
+                                containingFunc ??= CSharpUtils.GetContainingFunction(focusedExpression);
+                                if (containingFunc.Value.BlockOrExpression is not null &&
+                                    CSharpUtils.FindAssignedValuesWithin(containingFunc.Value.BlockOrExpression, semanticModel, local, cancellationToken).Any(
+                                        v => v is ObjectCreationExpressionSyntax or ImplicitObjectCreationExpressionSyntax or InvocationExpressionSyntax))
+                                {
+                                    return null;
+                                }
+
+                                break;
+                            case IParameterSymbol parameter:
+                                // We allow returning members of a parameter in a lambda, to support `.Select(x => x.Completion)` syntax.
+                                if (parameter.ContainingSymbol is IMethodSymbol method && method.MethodKind == MethodKind.AnonymousFunction)
+                                {
+                                    return null;
+                                }
+
+                                break;
                         }
                     }
                 }

@@ -73,7 +73,7 @@ public static partial class CSharpCodeFixVerifier<TAnalyzer, TCodeFix>
 
         protected override ParseOptions CreateParseOptions()
         {
-            return ((CSharpParseOptions)base.CreateParseOptions()).WithLanguageVersion(LanguageVersion.CSharp8);
+            return ((CSharpParseOptions)base.CreateParseOptions()).WithLanguageVersion(LanguageVersion.CSharp11);
         }
 
         private static string ReadManifestResource(Assembly assembly, string resourceName)

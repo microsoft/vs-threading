@@ -1310,6 +1310,29 @@ class Tests
         await CSVerify.VerifyAnalyzerAsync(test);
     }
 
+    [Fact]
+    public async Task DoNotReportWarningWhenAwaitingTaskPropertyOfObjectCreatedInContext_TargetTypeCreation()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                static Task Exec2Async(string executable, params string[] args)
+                {
+                    Process p = new();
+                    return p.Task;
+                }
+            }
+
+            class Process
+            {
+                public Task Task { get; }
+            }
+            """;
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
     /// <summary>
     /// This is important to allow folks to return jtf.RunAsync(...).Task from a method.
     /// </summary>
@@ -1335,6 +1358,31 @@ class Tests
     }
 
     [Fact]
+    public async Task DoNotReportWarningWhenAwaitingTaskPropertyOfObjectReturnedFromMethodViaLocal()
+    {
+        var test = """
+            using System.Threading.Tasks;
+
+            class JsonRpc
+            {
+                internal static JsonRpc Attach() => throw new System.NotImplementedException();
+
+                internal Task Completion { get; }
+            }
+
+            class Tests
+            {
+                static async Task ListenAndWait()
+                {
+                    var jsonRpc = JsonRpc.Attach();
+                    await jsonRpc.Completion;
+                }
+            }
+            """;
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
     public async Task ReportWarningWhenAwaitingTaskPropertyThatWasNotSetInContext()
     {
         var test = @"
@@ -1351,6 +1399,32 @@ class Tests
     }
 }
 ";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningWhenReturningTaskFromLambdaArgument()
+    {
+        var test = """
+            using System.Linq;
+            using System.Threading.Tasks;
+            
+            class JsonRpc
+            {
+                internal static JsonRpc Attach() => throw new System.NotImplementedException();
+            
+                internal Task Completion { get; }
+            }
+            
+            class Tests
+            {
+                static async Task ListenAndWait()
+                {
+                    JsonRpc[] rpcs = new [] { JsonRpc.Attach(), JsonRpc.Attach() };
+                    await Task.WhenAll(rpcs.Select(r => r.Completion));
+                }
+            }
+            """;
         await CSVerify.VerifyAnalyzerAsync(test);
     }
 
