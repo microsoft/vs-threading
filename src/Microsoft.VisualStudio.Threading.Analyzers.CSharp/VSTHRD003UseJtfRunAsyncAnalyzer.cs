@@ -205,7 +205,7 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
                                 containingFunc ??= CSharpUtils.GetContainingFunction(focusedExpression);
                                 if (containingFunc.Value.BlockOrExpression is not null &&
                                     CSharpUtils.FindAssignedValuesWithin(containingFunc.Value.BlockOrExpression, semanticModel, local, cancellationToken).Any(
-                                        v => v is ObjectCreationExpressionSyntax or ImplicitObjectCreationExpressionSyntax or InvocationExpressionSyntax))
+                                        v => v is ObjectCreationExpressionSyntax or ImplicitObjectCreationExpressionSyntax or InvocationExpressionSyntax or AwaitExpressionSyntax { Expression: InvocationExpressionSyntax }))
                                 {
                                     return null;
                                 }
