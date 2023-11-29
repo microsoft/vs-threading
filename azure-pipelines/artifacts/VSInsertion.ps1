@@ -1,20 +1,33 @@
 # This artifact captures everything needed to insert into VS (NuGet packages, insertion metadata, etc.)
 
+<#
+.PARAMETER SbomNotRequired
+    Indicates that returning the artifacts available is preferable to nothing at all when the SBOM has not yet been generated.
+#>
+[CmdletBinding()]
+Param (
+    [switch]$SbomNotRequired
+)
+
 if ($IsMacOS -or $IsLinux) {
     # We only package up for insertions on Windows agents since they are where optprof can happen.
-    Write-Verbose "Skipping VSInsertion artifact since we're not on Windows"
+    Write-Verbose "Skipping VSInsertion artifact since we're not on Windows."
     return @{}
 }
 
 $RepoRoot = [System.IO.Path]::GetFullPath("$PSScriptRoot\..\..")
-$config = 'Debug'
-if ($env:BUILDCONFIGURATION) { $config = $env:BUILDCONFIGURATION }
-$NuGetPackages = "$RepoRoot\bin\Packages\$config\NuGet"
-$CoreXTPackages = "$RepoRoot\bin\Packages\$config\CoreXT"
-if (-not (Test-Path $NuGetPackages)) { Write-Warning "No NuGet packages found. Has a build been run?"; return @{} }
+$BuildConfiguration = $env:BUILDCONFIGURATION
+if (!$BuildConfiguration) {
+    $BuildConfiguration = 'Debug'
+}
 
-# This artifact is not ready if we're running on the devdiv AzDO account and we don't have an SBOM yet.
-if ($env:SYSTEM_COLLECTIONID -eq '011b8bdf-6d56-4f87-be0d-0092136884d9' -and -not (Test-Path $NuGetPackages/_manifest)) { return @{} }
+$NuGetPackages = "$RepoRoot\bin\Packages\$BuildConfiguration\NuGet"
+$CoreXTPackages = "$RepoRoot\bin\Packages\$BuildConfiguration\CoreXT"
+
+if (!(Test-Path $NuGetPackages)) {
+    Write-Warning "Skipping because NuGet packages haven't been built yet."
+    return @{}
+}
 
 $ArtifactBasePath = "$RepoRoot\obj\_artifacts"
 $ArtifactPath = "$ArtifactBasePath\VSInsertion"
@@ -39,7 +52,13 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
+# This artifact is not ready if we're running on the devdiv AzDO account and we don't have an SBOM yet.
+if ($env:SYSTEM_COLLECTIONID -eq '011b8bdf-6d56-4f87-be0d-0092136884d9' -and -not (Test-Path $NuGetPackages/_manifest) -and -not $SbomNotRequired) {
+  Write-Host "Skipping because SBOM isn't generated yet."
+  return @{}
+}
+
 @{
-    "$NuGetPackages" = (Get-ChildItem -Recurse $NuGetPackages);
+    "$NuGetPackages" = (Get-ChildItem $NuGetPackages -Recurse)
     "$CoreXTPackages" = (Get-ChildItem "$CoreXTPackages\Microsoft.VisualStudio.Threading.VSInsertionMetadata.$InsertionMetadataVersion.nupkg");
 }
