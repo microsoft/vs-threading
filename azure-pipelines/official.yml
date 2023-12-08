@@ -81,14 +81,13 @@ stages:
     - download: current
       artifact: symbols-Windows
       displayName: Download symbols-Windows artifact
-    - task: MicroBuildArchiveSymbols@1
-      displayName: Archive symbols to Symweb
+    - task: MicroBuildArchiveSymbols@4
+      displayName: 🔣 Archive symbols to Symweb
       inputs:
         SymbolsFeatureName: $(SymbolsFeatureName)
-        SymbolsSymwebProject: VS
-        SymbolsUncPath: \\cpvsbuild\drops\$(TeamName)\$(Build.DefinitionName)\$(Build.SourceBranchName)\$(Build.BuildId)\Symbols.Archival
-        SymbolsEmailContacts: vsidemicrobuild
+        SymbolsProject: VS
         SymbolsAgentPath: $(Pipeline.Workspace)/symbols-Windows
+        azureSubscription: Symbols Upload (DevDiv)
     - task: MicroBuildCleanup@1
       displayName: Send Telemetry
 
