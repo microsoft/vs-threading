@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
@@ -21,6 +21,24 @@ class Test {
 }
 ";
             CodeAnalysis.Testing.DiagnosticResult expected = Verify.Diagnostic().WithLocation(5, 16);
+            await Verify.VerifyAnalyzerAsync(test, expected);
+        }
+
+        [Fact]
+        public async Task ReportWarningOnAsyncVoidLocalFunction()
+        {
+            var test = @"
+using System;
+
+class Test {
+    void M() {
+        F();
+
+        async void F() {}
+    }
+}
+";
+            CodeAnalysis.Testing.DiagnosticResult expected = Verify.Diagnostic().WithLocation(8, 20);
             await Verify.VerifyAnalyzerAsync(test, expected);
         }
 

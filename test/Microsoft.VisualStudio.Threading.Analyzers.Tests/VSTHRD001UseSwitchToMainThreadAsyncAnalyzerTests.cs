@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
@@ -57,7 +57,7 @@ class Test {
             await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithLocation(0));
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task DispatcherInvoke_ProducesDiagnostic()
         {
             var test = @"
@@ -70,10 +70,12 @@ class Test {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithLocation(0));
+            var t = new Verify.Test { TestCode = test, IncludeWindowsBase = true };
+            t.ExpectedDiagnostics.Add(Verify.Diagnostic().WithLocation(0));
+            await t.RunAsync();
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task DispatcherBeginInvoke_ProducesDiagnostic()
         {
             var test = @"
@@ -87,10 +89,12 @@ class Test {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithLocation(0));
+            var t = new Verify.Test { TestCode = test, IncludeWindowsBase = true };
+            t.ExpectedDiagnostics.Add(Verify.Diagnostic().WithLocation(0));
+            await t.RunAsync();
         }
 
-        [Fact]
+        [SkippableFact]
         public async Task DispatcherInvokeAsync_ProducesDiagnostic()
         {
             var test = @"
@@ -103,7 +107,9 @@ class Test {
 }
 ";
 
-            await Verify.VerifyAnalyzerAsync(test, Verify.Diagnostic().WithLocation(0));
+            var t = new Verify.Test { TestCode = test, IncludeWindowsBase = true };
+            t.ExpectedDiagnostics.Add(Verify.Diagnostic().WithLocation(0));
+            await t.RunAsync();
         }
 
         [Fact]

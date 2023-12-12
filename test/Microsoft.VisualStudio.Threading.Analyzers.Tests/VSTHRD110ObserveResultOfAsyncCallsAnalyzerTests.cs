@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
@@ -396,6 +396,30 @@ class Test {
     }
 
     Task BarAsync() => null;
+}
+";
+
+            await Verify.VerifyAnalyzerAsync(test);
+        }
+
+        [Fact]
+        public async Task TaskInFinalizer()
+        {
+            string test = @"
+using System;
+using System.Threading.Tasks;
+
+public class Test : IAsyncDisposable
+{
+    ~Test()
+    {
+        Task.[|Run|](async () => await DisposeAsync().ConfigureAwait(false));
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await Task.Delay(5000);
+    }
 }
 ";
 

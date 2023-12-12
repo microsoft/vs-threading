@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading
@@ -60,7 +60,7 @@ namespace Microsoft.VisualStudio.Threading
         /// The collections that this job is a member of.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        private ListOfOftenOne<IJoinableTaskDependent> dependencyParents;
+        private RarelyRemoveItemSet<IJoinableTaskDependent> dependencyParents;
 
         /// <summary>
         /// The <see cref="System.Threading.Tasks.Task"/> returned by the async delegate that this JoinableTask originally executed,
@@ -479,7 +479,7 @@ namespace Microsoft.VisualStudio.Threading
             get
             {
                 Assumes.True(Monitor.IsEntered(this.JoinableTaskContext.SyncContextLock));
-                return this.dependencyParents.OfType<JoinableTaskCollection>().ToList();
+                return this.dependencyParents.ToArray().OfType<JoinableTaskCollection>();
             }
         }
 
@@ -590,13 +590,35 @@ namespace Microsoft.VisualStudio.Threading
         /// before the async operation has completed.
         /// </param>
         /// <returns>A task that completes after the asynchronous operation completes and the join is reverted.</returns>
-        public async Task JoinAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public Task JoinAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            using (this.AmbientJobJoinsThis())
+            if (!cancellationToken.CanBeCanceled)
             {
-                await this.Task.WithCancellation(AwaitShouldCaptureSyncContext, cancellationToken).ConfigureAwait(AwaitShouldCaptureSyncContext);
+                // A completed or failed JoinableTask will remove itself from parent dependency chains, so we don't repeat it which requires the sync lock.
+                _ = this.AmbientJobJoinsThis();
+                return this.Task;
+            }
+            else
+            {
+                return JoinSlowAsync(this, cancellationToken);
+            }
+
+            static async Task JoinSlowAsync(JoinableTask me, CancellationToken cancellationToken)
+            {
+                // No need to dispose of this except in cancellation case.
+                JoinRelease dependency = me.AmbientJobJoinsThis();
+
+                try
+                {
+                    await me.Task.WithCancellation(continueOnCapturedContext: AwaitShouldCaptureSyncContext, cancellationToken).ConfigureAwait(AwaitShouldCaptureSyncContext);
+                }
+                catch (OperationCanceledException)
+                {
+                    dependency.Dispose();
+                    throw;
+                }
             }
         }
 
@@ -632,6 +654,24 @@ namespace Microsoft.VisualStudio.Threading
 
         void IJoinableTaskDependent.OnDependencyRemoved(IJoinableTaskDependent joinChild)
         {
+        }
+
+        /// <summary>
+        /// Gets a very likely value whether the main thread is blocked by this <see cref="JoinableTask"/>.
+        /// </summary>
+        internal bool MaybeBlockMainThread()
+        {
+            if ((this.State & JoinableTask.JoinableTaskFlags.CompleteFinalized) == JoinableTask.JoinableTaskFlags.CompleteFinalized)
+            {
+                return false;
+            }
+
+            if ((this.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)
+            {
+                return true;
+            }
+
+            return JoinableTaskDependencyGraph.MaybeHasMainThreadSynchronousTaskWaiting(this);
         }
 
         internal void Post(SendOrPostCallback d, object? state, bool mainThreadAffinitized)
@@ -1000,7 +1040,7 @@ namespace Microsoft.VisualStudio.Threading
                 // notifications come in.
                 this.JoinableTaskContext.OnJoinableTaskCompleted(this);
 
-                foreach (IJoinableTaskDependent? collection in this.dependencyParents)
+                foreach (IJoinableTaskDependent collection in this.dependencyParents.EnumerateAndClear())
                 {
                     JoinableTaskDependencyGraph.RemoveDependency(collection, this, forceCleanup: true);
                 }
@@ -1053,6 +1093,20 @@ namespace Microsoft.VisualStudio.Threading
 
             this.pendingEventCount += newPendingMessagesCount;
             return this.queueNeedProcessEvent;
+        }
+
+        private protected JoinRelease AmbientJobJoinsThis()
+        {
+            if (!this.IsCompleted)
+            {
+                JoinableTask? ambientJob = this.JoinableTaskContext.AmbientTask;
+                if (ambientJob is object && ambientJob != this)
+                {
+                    return JoinableTaskDependencyGraph.AddDependency(ambientJob, this);
+                }
+            }
+
+            return default(JoinRelease);
         }
 
         private static bool TryDequeueSelfOrDependencies(IJoinableTaskDependent currentNode, bool onMainThread, HashSet<IJoinableTaskDependent> visited, [NotNullWhen(true)] out SingleExecuteProtector? work)
@@ -1190,20 +1244,6 @@ namespace Microsoft.VisualStudio.Threading
                     }
                 }
             }
-        }
-
-        private JoinRelease AmbientJobJoinsThis()
-        {
-            if (!this.IsCompleted)
-            {
-                JoinableTask? ambientJob = this.JoinableTaskContext.AmbientTask;
-                if (ambientJob is object && ambientJob != this)
-                {
-                    return JoinableTaskDependencyGraph.AddDependency(ambientJob, this);
-                }
-            }
-
-            return default(JoinRelease);
         }
     }
 }

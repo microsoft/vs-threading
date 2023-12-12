@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
@@ -10,12 +10,15 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
     using System.Reflection;
     using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
+#if WINDOWS
     using System.Windows.Threading;
+#endif
     using Microsoft.CodeAnalysis;
     using Microsoft.CodeAnalysis.CSharp;
     using Microsoft.CodeAnalysis.CSharp.Testing;
     using Microsoft.CodeAnalysis.Testing.Verifiers;
     using Microsoft.CodeAnalysis.Text;
+    using Xunit;
     using IOleServiceProvider = Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
 
     public static partial class CSharpCodeFixVerifier<TAnalyzer, TCodeFix>
@@ -37,7 +40,11 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 
                     if (this.IncludeWindowsBase)
                     {
+#if WINDOWS
                         project = project.AddMetadataReference(MetadataReference.CreateFromFile(typeof(Dispatcher).Assembly.Location));
+#else
+                        Skip.If(true);
+#endif
                     }
 
                     if (this.IncludeVisualStudioSdk)
@@ -66,7 +73,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 
             public bool IncludeMicrosoftVisualStudioThreading { get; set; } = true;
 
-            public bool IncludeWindowsBase { get; set; } = true;
+            public bool IncludeWindowsBase { get; set; }
 
             public bool IncludeVisualStudioSdk { get; set; } = true;
 
@@ -77,7 +84,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
 
             private static string ReadManifestResource(Assembly assembly, string resourceName)
             {
-                using (var reader = new StreamReader(assembly.GetManifestResourceStream(resourceName)))
+                using (var reader = new StreamReader(assembly.GetManifestResourceStream(resourceName) ?? throw Assumes.Fail("Resource not found.")))
                 {
                     return reader.ReadToEnd();
                 }

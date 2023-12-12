@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers.Tests
@@ -281,7 +281,7 @@ public class Test {
         {
             System.Reflection.AssemblyName[]? refAssemblies = typeof(CSharpVSTHRD001UseSwitchToMainThreadAsyncAnalyzer)
                 .Assembly.GetReferencedAssemblies();
-            Assert.DoesNotContain(refAssemblies, a => a.Name.Equals("System.ValueTuple", StringComparison.OrdinalIgnoreCase));
+            Assert.DoesNotContain(refAssemblies, a => a.Name!.Equals("System.ValueTuple", StringComparison.OrdinalIgnoreCase));
         }
 
         /// <summary>
@@ -298,7 +298,7 @@ public class Test {
         {
             System.Reflection.AssemblyName[]? refAssemblies = typeof(CSharpVSTHRD001UseSwitchToMainThreadAsyncAnalyzer)
                 .Assembly.GetReferencedAssemblies();
-            Assert.DoesNotContain(refAssemblies, a => a.Name.Equals("System.Threading.Tasks.Extensions", StringComparison.OrdinalIgnoreCase));
+            Assert.DoesNotContain(refAssemblies, a => a.Name!.Equals("System.Threading.Tasks.Extensions", StringComparison.OrdinalIgnoreCase));
         }
 
         [Fact]
@@ -336,7 +336,7 @@ class Foo { }
                 {
                     IEnumerable<DiagnosticAnalyzer>? analyzers = from type in typeof(VSTHRD002UseJtfRunAnalyzer).Assembly.GetTypes()
                                     where type.GetCustomAttributes(typeof(DiagnosticAnalyzerAttribute), true).Any()
-                                    select (DiagnosticAnalyzer)Activator.CreateInstance(type);
+                                    select (DiagnosticAnalyzer?)Activator.CreateInstance(type) ?? throw Assumes.Fail("Unable to instantiate the analyzer");
                     return analyzers.ToImmutableArray();
                 }
             }

@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net472;netcoreapp3.1;net5.0</TargetFrameworks>
+    <TargetFrameworks>net6.0;netcoreapp3.1</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsTestProject>true</IsTestProject>
 
@@ -10,7 +10,7 @@
     <DefineConstants Condition=" '$(TargetFramework)' == 'net472' ">$(DefineConstants);ISOLATED_TEST_SUPPORT</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-    <TargetFrameworks>$(TargetFrameworks);net5.0-windows</TargetFrameworks>
+    <TargetFrameworks>$(TargetFrameworks);net472;net6.0-windows</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\src\Microsoft.VisualStudio.Threading\InternalUtilities.cs">
@@ -19,6 +19,9 @@
     <Compile Include="..\..\src\Microsoft.VisualStudio.Threading\ListOfOftenOne`1.cs">
       <Link>ListOfOftenOne`1.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\Microsoft.VisualStudio.Threading\RarelyRemoveItemSet`1.cs">
+      <Link>RarelyRemoveItemSet`1.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\Microsoft.VisualStudio.Threading\RoslynDebug.cs" Link="RoslynDebug.cs" />
     <Compile Include="..\..\src\Microsoft.VisualStudio.Threading\WeakKeyDictionary`2.cs">
       <Link>WeakKeyDictionary`2.cs</Link>
@@ -26,11 +29,11 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="coverlet.msbuild" Version="3.1.2" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.1.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.2.0" />
     <PackageReference Include="Nullable" Version="1.3.0" PrivateAssets="all" />
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
     <PackageReference Include="Xunit.Combinatorial" Version="1.4.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.5" />
     <PackageReference Include="Xunit.SkippableFact" Version="1.4.13" />
     <PackageReference Include="Xunit.StaFact" Version="1.1.11" />
     <PackageReference Include="xunit" Version="2.4.1" />

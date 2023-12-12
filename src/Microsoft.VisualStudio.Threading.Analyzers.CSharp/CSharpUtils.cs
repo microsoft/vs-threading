@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading.Analyzers
@@ -90,6 +90,12 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
                         {
                             ArrowExpressionClauseSyntax expr => o.WithExpressionBody(expr),
                             BlockSyntax block => o.WithBody(block),
+                            _ => throw new NotSupportedException(),
+                        },
+                        DestructorDeclarationSyntax d => (CSharpSyntaxNode newBody) => newBody switch
+                        {
+                            ArrowExpressionClauseSyntax expr => d.WithExpressionBody(expr),
+                            BlockSyntax block => d.WithBody(block),
                             _ => throw new NotSupportedException(),
                         },
                         _ => throw new NotSupportedException(),

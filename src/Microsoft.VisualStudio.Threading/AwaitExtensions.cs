@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading
@@ -7,12 +7,14 @@ namespace Microsoft.VisualStudio.Threading
     using System.Collections.Generic;
     using System.ComponentModel;
     using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
     using System.Runtime.CompilerServices;
     using System.Runtime.ExceptionServices;
     using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Windows.Win32;
+    using global::Windows.Win32.Foundation;
+    using global::Windows.Win32.System.Registry;
     using Microsoft.Win32;
     using Microsoft.Win32.SafeHandles;
 
@@ -204,44 +206,53 @@ namespace Microsoft.VisualStudio.Threading
         /// </returns>
         private static async Task WaitForRegistryChangeAsync(SafeRegistryHandle registryKeyHandle, bool watchSubtree, RegistryChangeNotificationFilters change, CancellationToken cancellationToken)
         {
+#if NET5_0_OR_GREATER
+            if (!OperatingSystem.IsWindowsVersionAtLeast(7))
+#else
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+#endif
+            {
+                throw new PlatformNotSupportedException();
+            }
+
             IDisposable? dedicatedThreadReleaser = null;
             try
             {
-                using (var evt = new ManualResetEvent(false))
+                using ManualResetEvent evt = new(false);
+                REG_NOTIFY_FILTER dwNotifyFilter = (REG_NOTIFY_FILTER)change;
+
+                static void DoNotify(SafeRegistryHandle registryKeyHandle, bool watchSubtree, REG_NOTIFY_FILTER change, WaitHandle evt)
                 {
-                    static void DoNotify(SafeRegistryHandle registryKeyHandle, bool watchSubtree, RegistryChangeNotificationFilters change, WaitHandle evt)
+                    WIN32_ERROR win32Error = PInvoke.RegNotifyChangeKeyValue(
+                        registryKeyHandle,
+                        watchSubtree,
+                        change,
+                        evt.SafeWaitHandle,
+                        true);
+                    if (win32Error != 0)
                     {
-                        int win32Error = NativeMethods.RegNotifyChangeKeyValue(
-                            registryKeyHandle,
-                            watchSubtree,
-                            change,
-                            evt.SafeWaitHandle,
-                            true);
-                        if (win32Error != 0)
-                        {
-                            throw new Win32Exception(win32Error);
-                        }
+                        throw new Win32Exception((int)win32Error);
                     }
-
-                    if (LightUps.IsWindows8OrLater)
-                    {
-                        change |= NativeMethods.REG_NOTIFY_THREAD_AGNOSTIC;
-                        DoNotify(registryKeyHandle, watchSubtree, change, evt);
-                    }
-                    else
-                    {
-                        // Engage our downlevel support by using a single, dedicated thread to guarantee
-                        // that we request notification on a thread that will not be destroyed later.
-                        // Although we *could* await this, we synchronously block because our caller expects
-                        // subscription to have begun before we return: for the async part to simply be notification.
-                        // This async method we're calling uses .ConfigureAwait(false) internally so this won't
-                        // deadlock if we're called on a thread with a single-thread SynchronizationContext.
-                        Action registerAction = () => DoNotify(registryKeyHandle, watchSubtree, change, evt);
-                        dedicatedThreadReleaser = DownlevelRegistryWatcherSupport.ExecuteOnDedicatedThreadAsync(registerAction).GetAwaiter().GetResult();
-                    }
-
-                    await evt.ToTask(cancellationToken: cancellationToken).ConfigureAwait(false);
                 }
+
+                if (LightUps.IsWindows8OrLater)
+                {
+                    dwNotifyFilter |= REG_NOTIFY_FILTER.REG_NOTIFY_THREAD_AGNOSTIC;
+                    DoNotify(registryKeyHandle, watchSubtree, dwNotifyFilter, evt);
+                }
+                else
+                {
+                    // Engage our downlevel support by using a single, dedicated thread to guarantee
+                    // that we request notification on a thread that will not be destroyed later.
+                    // Although we *could* await this, we synchronously block because our caller expects
+                    // subscription to have begun before we return: for the async part to simply be notification.
+                    // This async method we're calling uses .ConfigureAwait(false) internally so this won't
+                    // deadlock if we're called on a thread with a single-thread SynchronizationContext.
+                    Action registerAction = () => DoNotify(registryKeyHandle, watchSubtree, dwNotifyFilter, evt);
+                    dedicatedThreadReleaser = DownlevelRegistryWatcherSupport.ExecuteOnDedicatedThreadAsync(registerAction).GetAwaiter().GetResult();
+                }
+
+                await evt.ToTask(cancellationToken: cancellationToken).ConfigureAwait(false);
             }
             finally
             {
@@ -802,7 +813,7 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// A queue of actions the dedicated thread should take.
             /// </summary>
-            private static readonly Queue<Tuple<Action, TaskCompletionSource<EmptyStruct>>> PendingWork = new Queue<Tuple<Action, TaskCompletionSource<EmptyStruct>>>();
+            private static readonly Queue<Tuple<Action, TaskCompletionSource<EmptyStruct>>> PendingWork = new();
 
             /// <summary>
             /// The number of callers that still have an interest in the survival of the dedicated thread.

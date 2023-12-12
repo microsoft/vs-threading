@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading
@@ -69,7 +69,16 @@ namespace Microsoft.VisualStudio.Threading
             {
                 base.OnCompleted();
 
-                this.owningJob.OnQueueCompleted();
+                if ((this.owningJob.state & JoinableTaskFlags.CompleteFinalized) != JoinableTaskFlags.CompleteFinalized)
+                {
+                    using (this.owningJob.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
+                    {
+                        lock (this.owningJob.JoinableTaskContext.SyncContextLock)
+                        {
+                            this.owningJob.OnQueueCompleted();
+                        }
+                    }
+                }
             }
 
             private void Scavenge()

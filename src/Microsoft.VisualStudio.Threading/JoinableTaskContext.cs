@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft. All rights reserved.
+﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace Microsoft.VisualStudio.Threading
@@ -117,6 +117,11 @@ namespace Microsoft.VisualStudio.Threading
         private readonly int mainThreadManagedThreadId;
 
         /// <summary>
+        /// The count of <see cref="JoinableTask"/>s blocking the main thread.
+        /// </summary>
+        private volatile int mainThreadBlockingJoinableTaskCount;
+
+        /// <summary>
         /// A single joinable task factory that itself cannot be joined.
         /// </summary>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
@@ -199,6 +204,11 @@ namespace Microsoft.VisualStudio.Threading
         {
             get { return this.AmbientTask is object; }
         }
+
+        /// <summary>
+        /// Gets a value indicating whether the main thread is blocked by any joinable task.
+        /// </summary>
+        internal bool IsMainThreadBlockedByAnyJoinableTask => this.mainThreadBlockingJoinableTaskCount > 0;
 
         /// <summary>
         /// Gets the underlying <see cref="SynchronizationContext"/> that controls the main thread in the host.
@@ -349,12 +359,7 @@ namespace Microsoft.VisualStudio.Threading
             JoinableTask? ambientTask = this.AmbientTask;
             if (ambientTask is object)
             {
-                if ((ambientTask.State & JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread) == JoinableTask.JoinableTaskFlags.SynchronouslyBlockingMainThread)
-                {
-                    return true;
-                }
-
-                return JoinableTaskDependencyGraph.MaybeHasMainThreadSynchronousTaskWaiting(ambientTask);
+                return ambientTask.MaybeBlockMainThread();
             }
 
             return false;
@@ -469,6 +474,30 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             return new HangNotificationRegistration(node);
+        }
+
+        /// <summary>
+        /// Increment the count of <see cref="JoinableTask"/>s blocking the main thread.
+        /// </summary>
+        /// <remarks>
+        /// This method should only be called on the main thread.
+        /// </remarks>
+        internal void IncrementMainThreadBlockingCount()
+        {
+            Assumes.True(this.IsOnMainThread);
+            this.mainThreadBlockingJoinableTaskCount++;
+        }
+
+        /// <summary>
+        /// Decrement the count of <see cref="JoinableTask"/>s blocking the main thread.
+        /// </summary>
+        /// <remarks>
+        /// This method should only be called on the main thread.
+        /// </remarks>
+        internal void DecrementMainThreadBlockingCount()
+        {
+            Assumes.True(this.IsOnMainThread);
+            this.mainThreadBlockingJoinableTaskCount--;
         }
 
         /// <summary>
