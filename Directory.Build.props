@@ -5,7 +5,7 @@
     <BaseIntermediateOutputPath>$(RepoRootPath)obj\$([MSBuild]::MakeRelative($(RepoRootPath), $(MSBuildProjectDirectory)))\</BaseIntermediateOutputPath>
     <BaseOutputPath Condition=" '$(BaseOutputPath)' == '' ">$(RepoRootPath)bin\$(MSBuildProjectName)\</BaseOutputPath>
     <PackageOutputPath>$(RepoRootPath)bin\Packages\$(Configuration)\NuGet\</PackageOutputPath>
-    <LangVersion>10.0</LangVersion>
+    <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <AnalysisLevel>latest</AnalysisLevel>
@@ -16,29 +16,23 @@
     <!-- https://github.com/dotnet/msbuild/blob/main/documentation/ProjectReference-Protocol.md#setplatform-negotiation -->
     <EnableDynamicPlatformResolution>true</EnableDynamicPlatformResolution>
 
+    <!-- Opt in till https://github.com/NuGet/Home/issues/9803 makes this the default. -->
+    <!-- Opt back out until an SDK with the fix for https://github.com/NuGet/Home/issues/12177 is generally available. -->
+    <RestoreUseStaticGraphEvaluation>false</RestoreUseStaticGraphEvaluation>
+
     <!-- Local builds should embed PDBs so we never lose them when a subsequent build occurs. -->
     <DebugType Condition=" '$(CI)' != 'true' and '$(TF_BUILD)' != 'true' ">embedded</DebugType>
 
+    <PackageProjectUrl>https://github.com/Microsoft/vs-threading</PackageProjectUrl>
     <Company>Microsoft</Company>
     <Authors>Microsoft</Authors>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/Microsoft/vs-threading</PackageProjectUrl>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <IncludeSymbols Condition=" '$(DebugType)' != 'embedded' ">true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-
-    <MicroBuildVersion>2.0.68</MicroBuildVersion>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.VisualStudio.Internal.MicroBuild.VisualStudio" Version="$(MicroBuildVersion)" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="all" />
-    <PackageReference Include="Nerdbank.GitVersioning" Version="3.5.107" PrivateAssets="all" />
-    <!-- Use the Unstable package ID so that update tools will help us keep it current even though it seems to be ever-unstable lately. -->
-    <PackageReference Include="StyleCop.Analyzers.Unstable" Version="1.2.0.435" PrivateAssets="all" />
-  </ItemGroup>
 
   <ItemGroup>
     <None Include="$(RepoRootPath)obj/NOTICE" Pack="true" PackagePath="" Visible="false" Condition=" Exists('$(RepoRootPath)obj/NOTICE') " />
@@ -55,7 +49,7 @@
 
   <Target Name="PrepareReleaseNotes" BeforeTargets="GenerateNuspec" DependsOnTargets="GetBuildVersion">
     <PropertyGroup>
-      <PackageReleaseNotes>https://github.com/microsoft/vs-threading/releases/tag/v$(Version)</PackageReleaseNotes>
+      <PackageReleaseNotes Condition="'$(PackageProjectUrl)'!=''">$(PackageProjectUrl)/releases/tag/v$(Version)</PackageReleaseNotes>
     </PropertyGroup>
   </Target>
 
@@ -66,23 +60,15 @@
 
   <!--
     Inspired by https://github.com/dotnet/arcade/blob/cbfa29d4e859622ada3d226f90f103f659665d31/src/Microsoft.DotNet.Arcade.Sdk/tools/Workarounds.props#L14-L31
-    WPF temp-projects do not import .props and .targets files from NuGet packages.
-    (see https://github.com/dotnet/sourcelink/issues/91).
 
-    Property _TargetAssemblyProjectName is set by GenerateTemporaryTargetAssembly task.
     Disable Source Link and Xliff in WPF temp projects to avoid generating non-deterministic file names to obj dir.
     The project name is non-deterministic and is included in the Source Link json file name and xlf directory names.
     It's also not necessary to generate these assets.
   -->
   <PropertyGroup Condition="'$(IsWpfTempProject)' == 'true'">
-    <_WpfTempProjectNuGetFilePathNoExt>$(RepoRootPath)obj\$(_TargetAssemblyProjectName)\$(_TargetAssemblyProjectName)$(MSBuildProjectExtension).nuget.g</_WpfTempProjectNuGetFilePathNoExt>
-
     <EnableSourceLink>false</EnableSourceLink>
     <EmbedUntrackedSources>false</EmbedUntrackedSources>
     <DeterministicSourcePaths>false</DeterministicSourcePaths>
     <EnableXlfLocalization>false</EnableXlfLocalization>
   </PropertyGroup>
-
-  <!-- Workaround https://github.com/dotnet/wpf/issues/810 -->
-  <Import Project="$(_WpfTempProjectNuGetFilePathNoExt).props" Condition="'$(_WpfTempProjectNuGetFilePathNoExt)' != '' and Exists('$(_WpfTempProjectNuGetFilePathNoExt).props')"/>
 </Project>

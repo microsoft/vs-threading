@@ -3,13 +3,14 @@ parameters:
 
 steps:
 - task: ComponentGovernanceComponentDetection@0
-  displayName: Component Detection
+  displayName: 🔍 Component Detection
 
 - task: notice@0
-  displayName: Generate NOTICE file
+  displayName: 🛠️ Generate NOTICE file
   inputs:
     outputfile: $(System.DefaultWorkingDirectory)/obj/NOTICE
     outputformat: text
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
 
 - task: MicroBuildOptProfPlugin@6
   inputs:
@@ -18,14 +19,20 @@ steps:
     DropNamePrefix: OptimizationInputs/$(System.TeamProject)/$(Build.Repository.Name)
     ShouldSkipOptimize: ${{ parameters.ShouldSkipOptimize }}
     AccessToken: $(System.AccessToken)
-  displayName: Install OptProf Plugin
-
-- task: MicroBuildSigningPlugin@3
-  inputs:
-    signType: $(SignType)
-  displayName: Install MicroBuild Signing Plugin
+  displayName: 🔧 Install OptProf Plugin
 
 - task: MicroBuildLocalizationPlugin@3
   inputs:
     languages: $(LocLanguages)
-  displayName: Install MicroBuild Localization Plugin
+  displayName: 🔧 Install MicroBuild Localization Plugin
+
+- task: MicroBuildSigningPlugin@3
+  inputs:
+    signType: $(SignType)
+    zipSources: false
+  displayName: 🔧 Install MicroBuild Signing Plugin
+  condition: and(succeeded(), or(eq(variables['Agent.OS'], 'Windows_NT'), eq(variables['SignType'], 'real')))
+
+- task: MicroBuildSbomPlugin@1
+  displayName: 🔧 Install MicroBuild Sbom Plugin
+  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))

@@ -130,7 +130,7 @@ public abstract class TestBase
     /// <param name="maxBytesAllocated">The maximum number of bytes allowed to be allocated by one run of the scenario. Use -1 to indicate no limit.</param>
     /// <param name="iterations">The number of times to invoke <paramref name="scenario"/> in a row before measuring average memory impact.</param>
     /// <param name="allowedAttempts">The number of times the (scenario * iterations) loop repeats with a failing result before ultimately giving up.</param>
-    /// <param name="completeSynchronously"><c>true</c> to synchronously complete instead of yielding.</param>
+    /// <param name="completeSynchronously"><see langword="true" /> to synchronously complete instead of yielding.</param>
     /// <returns>A task that captures the result of the operation.</returns>
     protected async Task CheckGCPressureAsync(Func<Task> scenario, int maxBytesAllocated, int iterations = 100, int allowedAttempts = GCAllocationAttempts, bool completeSynchronously = false)
     {
@@ -336,8 +336,8 @@ public abstract class TestBase
     /// </summary>
     /// <param name="testMethodName">The name of the test method.</param>
     /// <returns>
-    /// A task whose result is <c>true</c> if test execution is already isolated and should therefore proceed with the body of the test,
-    /// or <c>false</c> after the isolated instance of the test has completed execution.
+    /// A task whose result is <see langword="true" /> if test execution is already isolated and should therefore proceed with the body of the test,
+    /// or <see langword="false" /> after the isolated instance of the test has completed execution.
     /// </returns>
     /// <exception cref="Xunit.Sdk.XunitException">Thrown if the isolated test result is a Failure.</exception>
     /// <exception cref="SkipException">Thrown if on a platform that we do not yet support test isolation on.</exception>
@@ -352,8 +352,8 @@ public abstract class TestBase
     /// </summary>
     /// <param name="testMethodName">The name of the test method.</param>
     /// <returns>
-    /// <c>true</c> if test execution is already isolated and should therefore proceed with the body of the test,
-    /// or <c>false</c> after the isolated instance of the test has completed execution.
+    /// <see langword="true" /> if test execution is already isolated and should therefore proceed with the body of the test,
+    /// or <see langword="false" /> after the isolated instance of the test has completed execution.
     /// </returns>
     /// <exception cref="Xunit.Sdk.XunitException">Thrown if the isolated test result is a Failure.</exception>
     /// <exception cref="SkipException">Thrown if on a platform that we do not yet support test isolation on.</exception>

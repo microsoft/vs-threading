@@ -10,7 +10,6 @@
 
 namespace Microsoft.VisualStudio.Threading.Analyzers {
     using System;
-    using System.Reflection;
     
     
     /// <summary>
@@ -40,7 +39,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.VisualStudio.Threading.Analyzers.Strings", typeof(Strings).GetTypeInfo().Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.VisualStudio.Threading.Analyzers.Strings", typeof(Strings).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -450,7 +449,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Observe the awaitable result of this method call by awaiting it, assigning to a variable, or passing it to another method..
+        ///   Looks up a localized string similar to Observe the awaitable result of this method call by awaiting it, assigning to a variable, or passing it to another method.
         /// </summary>
         internal static string VSTHRD110_MessageFormat {
             get {

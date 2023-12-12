@@ -68,4 +68,26 @@ In the first stack above, `SendRequestAsync` method is on top, so it is the meth
 | -1 | The async method is currently executing (you should find it on a real thread's callstack somewhere).
 | >= 0 | The 0-index into which "await" has most recently yielded. The list of awaits for the method are in strict syntax appearance order. That is, regardless of code execution, if branching, etc., it's the index into which await in code syntax order has yielded. For example, if you position the caret at the top of the method definition and search for "await ", and count how many times you hit a match, starting from 0, when you arrive at the number that you found in the state field, you've found the await that has most recently yielded. Note that when the code being debugged is compiled with certain Dev14 prerelease versions of the Roslyn compiler, this index is 1-based instead of 0-based.
 
+In some cases, the top most frame may point to an `await` on an async method without other frames present at the top such as: 
+
+```
+0730c750 <0> MyClass+<ExecuteAsync>d__23
+.0730c17c <0> MyClass+<StartAsync>d__2
+```
+
+where `ExecuteAsync` may look like:
+
+```csharp
+async Task ExecuteAsync(...)
+{
+  await ExecuteInternalAsync(..);
+}
+```
+
+This could mean either:
+
+- `ExecuteInternalAsync` method is executing code before its first `await`, in which case it should be visible on thread callstacks.
+- `ExecuteInternalAsync` is completed and continuation is scheduled for execution but is not started yet. In Visual Studio case this could be because continuation is scheduled
+for main thread but main thread is busy and/or not allowing the task to be executed yet.
+
 [WinDbg]: https://aka.ms/windbg-direct-download

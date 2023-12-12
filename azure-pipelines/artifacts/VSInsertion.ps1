@@ -1,12 +1,7 @@
 # This artifact captures everything needed to insert into VS (NuGet packages, insertion metadata, etc.)
 
-<#
-.PARAMETER SbomNotRequired
-    Indicates that returning the artifacts available is preferable to nothing at all when the SBOM has not yet been generated.
-#>
 [CmdletBinding()]
 Param (
-    [switch]$SbomNotRequired
 )
 
 if ($IsMacOS -or $IsLinux) {
@@ -50,12 +45,6 @@ if ($env:BUILD_BUILDID) {
 & (& "$PSScriptRoot\..\Get-NuGetTool.ps1") pack "$PSScriptRoot\..\InsertionMetadataPackage.nuspec" -OutputDirectory $CoreXTPackages -BasePath $ArtifactPath -Version $InsertionMetadataVersion | Out-Null
 if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
-}
-
-# This artifact is not ready if we're running on the devdiv AzDO account and we don't have an SBOM yet.
-if ($env:SYSTEM_COLLECTIONID -eq '011b8bdf-6d56-4f87-be0d-0092136884d9' -and -not (Test-Path $NuGetPackages/_manifest) -and -not $SbomNotRequired) {
-  Write-Host "Skipping because SBOM isn't generated yet."
-  return @{}
 }
 
 @{
