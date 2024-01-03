@@ -35,8 +35,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
-    <PackageReference Include="System.Threading.Tasks.Extensions" />
-    <PackageReference Include="System.ValueTuple" />
   </ItemGroup>
 
   <ItemGroup>

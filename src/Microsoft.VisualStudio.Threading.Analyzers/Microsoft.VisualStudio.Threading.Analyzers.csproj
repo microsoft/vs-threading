@@ -25,7 +25,5 @@
     <PackageReference Include="Nullable" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.Common" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
-    <PackageReference Include="System.Threading.Tasks.Extensions" />
-    <PackageReference Include="System.ValueTuple" />
   </ItemGroup>
 </Project>
