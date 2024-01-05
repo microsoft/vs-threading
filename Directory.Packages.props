@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <Project>
   <!-- https://learn.microsoft.com/nuget/consume-packages/central-package-management -->
   <PropertyGroup>
@@ -24,7 +25,7 @@
     <PackageVersion Include="Microsoft.CodeAnalysis.VisualBasic.CodeFix.Testing.XUnit" Version="$(CodefixTestingVersion)" />
     <PackageVersion Include="Microsoft.Diagnostics.Runtime.Utilities" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
     <PackageVersion Include="Microsoft.Diagnostics.Runtime" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.7.2" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageVersion Include="Microsoft.VisualStudio.Internal.MicroBuild.NonShipping" Version="$(MicroBuildVersion)" />
     <PackageVersion Include="Microsoft.VisualStudio.Interop" Version="17.4.33103.184" />
     <PackageVersion Include="Microsoft.VisualStudio.Shell.15.0" Version="17.4.33103.184" />
@@ -40,10 +41,10 @@
     <PackageVersion Include="System.Threading.Tasks.Dataflow" Version="7.0.0" />
     <PackageVersion Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
     <PackageVersion Include="System.ValueTuple" Version="4.5.0" />
-    <PackageVersion Include="xunit" Version="2.5.3" />
+    <PackageVersion Include="xunit" Version="2.6.3" />
     <PackageVersion Include="xunit.abstractions" Version="2.0.3" />
     <PackageVersion Include="Xunit.Combinatorial" Version="1.5.25" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="2.5.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.5.5" />
     <PackageVersion Include="Xunit.SkippableFact" Version="1.4.13" />
     <PackageVersion Include="Xunit.StaFact" Version="1.1.11" />
   </ItemGroup>
@@ -56,6 +57,6 @@
     <GlobalPackageReference Include="StyleCop.Analyzers.Unstable" Version="1.2.0.507" />
   </ItemGroup>
   <ItemGroup>
-    <GlobalPackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" />
+    <GlobalPackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" />
   </ItemGroup>
 </Project>
