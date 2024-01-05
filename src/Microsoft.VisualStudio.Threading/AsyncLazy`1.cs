@@ -38,7 +38,7 @@ public class AsyncLazy<T>
     /// <summary>
     /// The unique instance identifier.
     /// </summary>
-    private readonly AsyncLocal<object> recursiveFactoryCheck = new AsyncLocal<object>();
+    private AsyncLocal<object>? recursiveFactoryCheck;
 
     /// <summary>
     /// The function to invoke to produce the task.
@@ -71,6 +71,31 @@ public class AsyncLazy<T>
         this.valueFactory = valueFactory;
         this.jobFactory = joinableTaskFactory;
     }
+
+    /// <summary>
+    /// Gets a value indicating whether to suppress detection of a value factory depending on itself.
+    /// </summary>
+    /// <value>The default value is <see langword="false" />.</value>
+    /// <remarks>
+    /// <para>
+    /// A value factory that truly depends on itself (e.g. by calling <see cref="GetValueAsync()"/> on the same instance)
+    /// would deadlock, and by default this class will throw an exception if it detects such a condition.
+    /// However this detection relies on the .NET ExecutionContext, which can flow to "spin off" contexts that are not awaited
+    /// by the factory, and thus could legally await the result of the value factory without deadlocking.
+    /// </para>
+    /// <para>
+    /// When this flows improperly, it can cause <see cref="InvalidOperationException"/> to be thrown, but only when the value factory
+    /// has not already been completed, leading to a difficult to reproduce race condition.
+    /// Such a case can be resolved by calling <see cref="SuppressRelevance"/> around the non-awaited fork in <see cref="ExecutionContext" />,
+    /// or the entire instance can be configured to suppress this check by setting this property to <see langword="true"/>.
+    /// </para>
+    /// <para>
+    /// When this property is set to <see langword="true" />, the recursive factory check will not be performed,
+    /// but <see cref="SuppressRelevance"/> will still call into <see cref="JoinableTaskContext.SuppressRelevance"/>
+    /// if a <see cref="JoinableTaskFactory"/> was provided to the constructor.
+    /// </para>
+    /// </remarks>
+    public bool SuppressRecursiveFactoryDetection { get; init; }
 
     /// <summary>
     /// Gets a value indicating whether the value factory has been invoked.
@@ -137,7 +162,7 @@ public class AsyncLazy<T>
     /// <exception cref="ObjectDisposedException">Thrown after <see cref="DisposeValue"/> is called.</exception>
     public Task<T> GetValueAsync(CancellationToken cancellationToken)
     {
-        if (!((this.value is object && this.value.IsCompleted) || this.recursiveFactoryCheck.Value is null))
+        if (this.value is not { IsCompleted: true } && this.recursiveFactoryCheck is { Value: not null })
         {
             // PERF: we check the condition and *then* retrieve the string resource only on failure
             // because the string retrieval has shown up as significant on ETL traces.
@@ -183,7 +208,12 @@ public class AsyncLazy<T>
                         }
                     };
 
-                    this.recursiveFactoryCheck.Value = RecursiveCheckSentinel;
+                    if (!this.SuppressRecursiveFactoryDetection)
+                    {
+                        Assumes.Null(this.recursiveFactoryCheck);
+                        this.recursiveFactoryCheck = new AsyncLocal<object>() { Value = RecursiveCheckSentinel };
+                    }
+
                     try
                     {
                         if (this.jobFactory is object)
@@ -201,7 +231,10 @@ public class AsyncLazy<T>
                     }
                     finally
                     {
-                        this.recursiveFactoryCheck.Value = null;
+                        if (this.recursiveFactoryCheck is not null)
+                        {
+                            this.recursiveFactoryCheck.Value = null;
+                        }
                     }
                 }
             }
@@ -451,7 +484,11 @@ public class AsyncLazy<T>
             Requires.NotNull(owner, nameof(owner));
             this.owner = owner;
 
-            (this.oldCheckValue, owner.recursiveFactoryCheck.Value) = (owner.recursiveFactoryCheck.Value, null);
+            if (owner.recursiveFactoryCheck is not null)
+            {
+                (this.oldCheckValue, owner.recursiveFactoryCheck.Value) = (owner.recursiveFactoryCheck.Value, null);
+            }
+
             this.joinableRelevance = owner.jobFactory?.Context.SuppressRelevance();
         }
 
@@ -460,9 +497,9 @@ public class AsyncLazy<T>
         /// </summary>
         public void Dispose()
         {
-            if (this.owner is object)
+            if (this.owner?.recursiveFactoryCheck is { } check)
             {
-                this.owner.recursiveFactoryCheck.Value = this.oldCheckValue;
+                check.Value = this.oldCheckValue;
             }
 
             this.joinableRelevance?.Dispose();
