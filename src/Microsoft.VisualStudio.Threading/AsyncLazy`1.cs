@@ -41,14 +41,14 @@ public class AsyncLazy<T>
     private readonly AsyncLocal<object> recursiveFactoryCheck = new AsyncLocal<object>();
 
     /// <summary>
+    /// An optional means to avoid deadlocks when synchronous APIs are called that must invoke async methods in user code.
+    /// </summary>
+    private readonly JoinableTaskFactory? jobFactory;
+
+    /// <summary>
     /// The function to invoke to produce the task.
     /// </summary>
     private Func<Task<T>>? valueFactory;
-
-    /// <summary>
-    /// The async pump to Join on calls to <see cref="GetValueAsync(CancellationToken)"/>.
-    /// </summary>
-    private JoinableTaskFactory? jobFactory;
 
     /// <summary>
     /// The result of the value factory.
@@ -64,7 +64,10 @@ public class AsyncLazy<T>
     /// Initializes a new instance of the <see cref="AsyncLazy{T}"/> class.
     /// </summary>
     /// <param name="valueFactory">The async function that produces the value.  To be invoked at most once.</param>
-    /// <param name="joinableTaskFactory">The factory to use when invoking the value factory in <see cref="GetValueAsync(CancellationToken)"/> to avoid deadlocks when the main thread is required by the value factory.</param>
+    /// <param name="joinableTaskFactory">
+    /// The <see cref="JoinableTaskFactory" /> to use for avoiding deadlocks when the <paramref name="valueFactory"/>
+    /// or the constructed value's <see cref="System.IAsyncDisposable.DisposeAsync"/> method may require the main thread in the process.
+    /// </param>
     public AsyncLazy(Func<Task<T>> valueFactory, JoinableTaskFactory? joinableTaskFactory = null)
     {
         Requires.NotNull(valueFactory, nameof(valueFactory));
@@ -178,7 +181,6 @@ public class AsyncLazy<T>
                         }
                         finally
                         {
-                            this.jobFactory = null;
                             this.joinableTask = null;
                         }
                     };
@@ -252,11 +254,8 @@ public class AsyncLazy<T>
         }
         else
         {
-            // Capture the factory as a local before comparing and dereferencing it since
-            // the field can transition to null and we want to gracefully handle that race condition.
-            JoinableTaskFactory? factory = this.jobFactory;
-            return factory is object
-                ? factory.Run(() => this.GetValueAsync(cancellationToken))
+            return this.jobFactory is JoinableTaskFactory jtf
+                ? jtf.Run(() => this.GetValueAsync(cancellationToken))
                 : this.GetValueAsync(cancellationToken).GetAwaiter().GetResult();
         }
     }
