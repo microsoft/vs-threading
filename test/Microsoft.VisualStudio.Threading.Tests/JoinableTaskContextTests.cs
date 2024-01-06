@@ -410,8 +410,8 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
             this.Logger.WriteLine(report.Content);
             var dgml = XDocument.Parse(report.Content);
             IEnumerable<string>? collectionLabels = from node in dgml.Root!.Element(XName.Get("Nodes", DgmlNamespace))!.Elements()
-                                    where node.Attribute(XName.Get("Category"))?.Value == "Collection"
-                                    select node.Attribute(XName.Get("Label"))?.Value;
+                                                    where node.Attribute(XName.Get("Category"))?.Value == "Collection"
+                                                    select node.Attribute(XName.Get("Label"))?.Value;
             Assert.Contains(collectionLabels, label => label == jtcName);
             return Task.CompletedTask;
         });
@@ -433,8 +433,8 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
         this.Logger.WriteLine(report.Content);
         var dgml = XDocument.Parse(report.Content);
         IEnumerable<string>? collectionLabels = from node in dgml.Root!.Element(XName.Get("Nodes", DgmlNamespace))!.Elements()
-                                where node.Attribute(XName.Get("Category"))?.Value == "Task"
-                                select node.Attribute(XName.Get("Label"))?.Value;
+                                                where node.Attribute(XName.Get("Category"))?.Value == "Task"
+                                                select node.Attribute(XName.Get("Label"))?.Value;
         Assert.Contains(collectionLabels, label => label.Contains(nameof(this.GetHangReportProducesDgmlWithMethodNameRequestingMainThread)));
     }
 
@@ -456,8 +456,8 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
             this.Logger.WriteLine(report.Content);
             var dgml = XDocument.Parse(report.Content);
             IEnumerable<string>? collectionLabels = from node in dgml.Root!.Element(XName.Get("Nodes", DgmlNamespace))!.Elements()
-                                    where node.Attribute(XName.Get("Category"))?.Value == "Task"
-                                    select node.Attribute(XName.Get("Label"))?.Value;
+                                                    where node.Attribute(XName.Get("Category"))?.Value == "Task"
+                                                    select node.Attribute(XName.Get("Label"))?.Value;
             Assert.Contains(collectionLabels, label => label.Contains(nameof(this.YieldingMethodAsync)));
         });
     }

@@ -47,9 +47,9 @@ internal static class CommonFixes
         }
 
         IEnumerable<TextDocument>? docs = from doc in additionalFiles.OrderBy(x => x.FilePath, StringComparer.Ordinal)
-                   let fileName = Path.GetFileName(doc.Name)
-                   where fileNamePattern.IsMatch(fileName)
-                   select doc;
+                                          let fileName = Path.GetFileName(doc.Name)
+                                          where fileNamePattern.IsMatch(fileName)
+                                          select doc;
         ImmutableArray<string>.Builder? result = ImmutableArray.CreateBuilder<string>();
         foreach (TextDocument? doc in docs)
         {

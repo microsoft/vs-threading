@@ -330,8 +330,8 @@ class Foo { }
             protected override IEnumerable<DiagnosticAnalyzer> GetDiagnosticAnalyzers()
             {
                 IEnumerable<DiagnosticAnalyzer>? analyzers = from type in typeof(VSTHRD002UseJtfRunAnalyzer).Assembly.GetTypes()
-                                where type.GetCustomAttributes(typeof(DiagnosticAnalyzerAttribute), true).Any()
-                                select (DiagnosticAnalyzer?)Activator.CreateInstance(type) ?? throw Assumes.Fail("Unable to instantiate the analyzer");
+                                                             where type.GetCustomAttributes(typeof(DiagnosticAnalyzerAttribute), true).Any()
+                                                             select (DiagnosticAnalyzer?)Activator.CreateInstance(type) ?? throw Assumes.Fail("Unable to instantiate the analyzer");
                 return analyzers.ToImmutableArray();
             }
         }

@@ -71,9 +71,9 @@ public abstract class AbstractVSTHRD011UseAsyncLazyAnalyzer : DiagnosticAnalyzer
                 if (firstArgExpression is IDelegateCreationOperation { Target: IAnonymousFunctionOperation anonFunc })
                 {
                     System.Collections.Generic.IEnumerable<IInvocationOperation>? problems = from invocation in anonFunc.Descendants().OfType<IInvocationOperation>()
-                                   let invokedSymbol = invocation.TargetMethod
-                                   where invokedSymbol is object && CommonInterest.SyncBlockingMethods.Any(m => m.Method.IsMatch(invokedSymbol))
-                                   select invocation;
+                                                                                             let invokedSymbol = invocation.TargetMethod
+                                                                                             where invokedSymbol is object && CommonInterest.SyncBlockingMethods.Any(m => m.Method.IsMatch(invokedSymbol))
+                                                                                             select invocation;
                     IInvocationOperation? firstProblem = problems.FirstOrDefault();
                     if (firstProblem is object)
                     {
