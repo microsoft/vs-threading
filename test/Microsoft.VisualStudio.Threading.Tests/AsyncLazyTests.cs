@@ -898,6 +898,44 @@ public class AsyncLazyTests : TestBase
     }
 
     [Fact]
+    public void DisposeValue_AsyncDisposableValueRequiresMainThread()
+    {
+        JoinableTaskContext context = this.InitializeJTCAndSC();
+        SingleThreadedTestSynchronizationContext.IFrame frame = SingleThreadedTestSynchronizationContext.NewFrame();
+
+        AsyncLazy<SystemAsyncDisposable> lazy = new(
+            delegate
+            {
+                return Task.FromResult(new SystemAsyncDisposable { YieldDuringDispose = true });
+            },
+            context.Factory);
+        lazy.GetValue();
+
+        TaskCompletionSource<bool> delegateResult = new();
+        SynchronizationContext.Current!.Post(
+            delegate
+            {
+                try
+                {
+                    lazy.DisposeValue();
+
+                    delegateResult.SetResult(true);
+                }
+                catch (Exception ex)
+                {
+                    delegateResult.SetException(ex);
+                }
+                finally
+                {
+                    frame.Continue = false;
+                }
+            },
+            null);
+        SingleThreadedTestSynchronizationContext.PushFrame(SynchronizationContext.Current!, frame);
+        delegateResult.Task.GetAwaiter().GetResult(); // rethrow any exceptions
+    }
+
+    [Fact]
     public async Task Dispose_NonDisposable_Incomplete()
     {
         AsyncManualResetEvent unblock = new();
@@ -1066,10 +1104,15 @@ public class AsyncLazyTests : TestBase
 
     private class SystemAsyncDisposable : DisposableBase, System.IAsyncDisposable
     {
-        public ValueTask DisposeAsync()
+        internal bool YieldDuringDispose { get; set; }
+
+        public async ValueTask DisposeAsync()
         {
             this.disposalEvent.Set();
-            return default;
+            if (this.YieldDuringDispose)
+            {
+                await Task.Yield();
+            }
         }
     }
 
