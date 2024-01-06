@@ -6,10 +6,13 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+
 using Microsoft;
 using Microsoft.VisualStudio.Threading;
+
 using Xunit;
 using Xunit.Abstractions;
+
 using NamedSyncContext = AwaitExtensionsTests.NamedSyncContext;
 
 public class AsyncLazyTests : TestBase
@@ -749,6 +752,105 @@ public class AsyncLazyTests : TestBase
     }
 
     [Fact]
+    public async Task SuppressRecursiveFactoryDetection_WithoutJTF()
+    {
+        AsyncManualResetEvent allowValueFactoryToFinish = new();
+        Task<int>? fireAndForgetTask = null;
+        AsyncLazy<int> asyncLazy = null!;
+        asyncLazy = new AsyncLazy<int>(
+            async delegate
+            {
+                fireAndForgetTask = FireAndForgetCodeAsync();
+                await allowValueFactoryToFinish;
+                return 1;
+            },
+            null)
+        {
+            SuppressRecursiveFactoryDetection = true,
+        };
+
+        bool fireAndForgetCodeAsyncEntered = false;
+        Task<int> lazyValue = asyncLazy.GetValueAsync();
+        Assert.True(fireAndForgetCodeAsyncEntered);
+        allowValueFactoryToFinish.Set();
+
+        // Assert that the value factory was allowed to finish.
+        Assert.Equal(1, await lazyValue.WithCancellation(this.TimeoutToken));
+
+        // Assert that the fire-and-forget task was allowed to finish and did so without throwing.
+        Assert.Equal(1, await fireAndForgetTask!.WithCancellation(this.TimeoutToken));
+
+        async Task<int> FireAndForgetCodeAsync()
+        {
+            fireAndForgetCodeAsyncEntered = true;
+            return await asyncLazy.GetValueAsync();
+        }
+    }
+
+    [Theory, PairwiseData]
+    public async Task SuppressRecursiveFactoryDetection_WithJTF(bool suppressWithJTF)
+    {
+        JoinableTaskContext? context = this.InitializeJTCAndSC();
+        SingleThreadedTestSynchronizationContext.IFrame frame = SingleThreadedTestSynchronizationContext.NewFrame();
+
+        JoinableTaskFactory? jtf = context.Factory;
+        AsyncManualResetEvent allowValueFactoryToFinish = new();
+        Task<int>? fireAndForgetTask = null;
+        AsyncLazy<int> asyncLazy = null!;
+        asyncLazy = new AsyncLazy<int>(
+            async delegate
+            {
+                using (suppressWithJTF ? jtf.Context.SuppressRelevance() : default)
+                using (suppressWithJTF ? default : asyncLazy.SuppressRelevance())
+                {
+                    fireAndForgetTask = FireAndForgetCodeAsync();
+                }
+
+                await allowValueFactoryToFinish;
+                return 1;
+            },
+            jtf)
+        {
+            SuppressRecursiveFactoryDetection = true,
+        };
+
+        bool fireAndForgetCodeAsyncEntered = false;
+        bool fireAndForgetCodeAsyncReachedUIThread = false;
+        jtf.Run(async delegate
+        {
+            Task<int> lazyValue = asyncLazy.GetValueAsync();
+            Assert.True(fireAndForgetCodeAsyncEntered);
+            await Task.Delay(AsyncDelay);
+            Assert.False(fireAndForgetCodeAsyncReachedUIThread);
+            allowValueFactoryToFinish.Set();
+
+            // Assert that the value factory was allowed to finish.
+            Assert.Equal(1, await lazyValue.WithCancellation(this.TimeoutToken));
+        });
+
+        // Run a main thread pump so the fire-and-forget task can finish.
+        SingleThreadedTestSynchronizationContext.PushFrame(SynchronizationContext.Current!, frame);
+
+        // Assert that the fire-and-forget task was allowed to finish and did so without throwing.
+        Assert.Equal(1, await fireAndForgetTask!.WithCancellation(this.TimeoutToken));
+
+        async Task<int> FireAndForgetCodeAsync()
+        {
+            fireAndForgetCodeAsyncEntered = true;
+
+            // Yield the caller's thread.
+            // Resuming will require the main thread, since the caller was on the main thread.
+            await Task.Yield();
+
+            fireAndForgetCodeAsyncReachedUIThread = true;
+
+            int result = await asyncLazy.GetValueAsync();
+            frame.Continue = false;
+            return result;
+        }
+    }
+
+    [Fact]
     public async Task Dispose_ValueType_Completed()
     {
         AsyncLazy<int> lazy = new(() => Task.FromResult(3));
@@ -793,6 +895,44 @@ public class AsyncLazyTests : TestBase
         DisposableBase value = (DisposableBase)await lazyTask;
         await this.AssertDisposedLazyAsync(lazy);
         await value.Disposed.WithCancellation(this.TimeoutToken);
+    }
+
+    [Fact]
+    public void DisposeValue_AsyncDisposableValueRequiresMainThread()
+    {
+        JoinableTaskContext context = this.InitializeJTCAndSC();
+        SingleThreadedTestSynchronizationContext.IFrame frame = SingleThreadedTestSynchronizationContext.NewFrame();
+
+        AsyncLazy<SystemAsyncDisposable> lazy = new(
+            delegate
+            {
+                return Task.FromResult(new SystemAsyncDisposable { YieldDuringDispose = true });
+            },
+            context.Factory);
+        lazy.GetValue();
+
+        TaskCompletionSource<bool> delegateResult = new();
+        SynchronizationContext.Current!.Post(
+            delegate
+            {
+                try
+                {
+                    lazy.DisposeValue();
+
+                    delegateResult.SetResult(true);
+                }
+                catch (Exception ex)
+                {
+                    delegateResult.SetException(ex);
+                }
+                finally
+                {
+                    frame.Continue = false;
+                }
+            },
+            null);
+        SingleThreadedTestSynchronizationContext.PushFrame(SynchronizationContext.Current!, frame);
+        delegateResult.Task.GetAwaiter().GetResult(); // rethrow any exceptions
     }
 
     [Fact]
@@ -964,10 +1104,15 @@ public class AsyncLazyTests : TestBase
 
     private class SystemAsyncDisposable : DisposableBase, System.IAsyncDisposable
     {
-        public ValueTask DisposeAsync()
+        internal bool YieldDuringDispose { get; set; }
+
+        public async ValueTask DisposeAsync()
         {
             this.disposalEvent.Set();
-            return default;
+            if (this.YieldDuringDispose)
+            {
+                await Task.Yield();
+            }
         }
     }
 

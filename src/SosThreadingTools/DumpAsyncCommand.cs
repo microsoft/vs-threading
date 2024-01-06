@@ -362,7 +362,7 @@ internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
                 if (stackFrame is object)
                 {
                     var visitedObjects = new HashSet<ulong>();
-                    foreach (IClrStackRoot stackRoot in thread.EnumerateStackRoots())
+                    foreach (ClrStackRoot stackRoot in thread.EnumerateStackRoots())
                     {
                         ClrObject stackObject = stackRoot.Object;
                         if (string.Equals(stackObject.Type?.Name, "Microsoft.VisualStudio.Threading.JoinableTask", StringComparison.Ordinal) ||
@@ -370,7 +370,7 @@ internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
                         {
                             if (visitedObjects.Add(stackObject.Address))
                             {
-                                var joinableTaskObject = new ClrObject(stackObject.Address, stackObject.Type);
+                                ClrObject joinableTaskObject = stackObject.Type is null ? runtime.Heap.GetObject(stackObject.Address) : runtime.Heap.GetObject(stackObject.Address, stackObject.Type);
                                 int state = joinableTaskObject.ReadField<int>("state");
                                 if ((state & 0x10) == 0x10)
                                 {
