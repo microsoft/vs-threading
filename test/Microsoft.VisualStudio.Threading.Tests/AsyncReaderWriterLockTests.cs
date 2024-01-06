@@ -4512,7 +4512,7 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
                     await secondLockInQueue.SetAsync();
                 }),
                 secondLockObtained.Task);
-            });
+        });
     }
 
     private Task UncontestedTopLevelLocksAllocFreeHelperAsync(Func<AsyncReaderWriterLock.Awaitable> locker, bool yieldingLock)

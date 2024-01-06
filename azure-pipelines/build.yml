@@ -68,6 +68,9 @@ jobs:
   - template: dotnet.yml
     parameters:
       RunTests: ${{ parameters.RunTests }}
+  - script: dotnet format --verify-no-changes --no-restore
+    displayName: 💅 Verify formatted code
+    enabled: false
 
 - job: macOS
   condition: and(${{ parameters.includeMacOS }}, ne(variables['OptProf'], 'true'))

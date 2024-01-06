@@ -36,14 +36,14 @@ public class AsyncLazy<T>
     private readonly object syncObject = new object();
 
     /// <summary>
-    /// The unique instance identifier.
-    /// </summary>
-    private AsyncLocal<object>? recursiveFactoryCheck;
-
-    /// <summary>
     /// An optional means to avoid deadlocks when synchronous APIs are called that must invoke async methods in user code.
     /// </summary>
     private readonly JoinableTaskFactory? jobFactory;
+
+    /// <summary>
+    /// The unique instance identifier.
+    /// </summary>
+    private AsyncLocal<object>? recursiveFactoryCheck;
 
     /// <summary>
     /// The function to invoke to produce the task.

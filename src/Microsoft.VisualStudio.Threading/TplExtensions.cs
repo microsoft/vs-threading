@@ -121,7 +121,7 @@ public static partial class TplExtensions
     /// <param name="task">The task whose completion should be applied to another.</param>
     /// <param name="tcs">The task that should receive the completion status.</param>
     public static void ApplyResultTo<T>(this Task task, TaskCompletionSource<T> tcs)
-        //// where T : defaultable
+    //// where T : defaultable
     {
         Requires.NotNull(task, nameof(task));
         Requires.NotNull(tcs, nameof(tcs));

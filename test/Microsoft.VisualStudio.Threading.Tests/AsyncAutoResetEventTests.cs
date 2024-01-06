@@ -74,9 +74,9 @@ public class AsyncAutoResetEventTests : TestBase
             .ContinueWith(
                 delegate
                 {
-                        // Arrange to synchronously block the continuation until Set() has returned,
-                        // which would deadlock if Set does not return until inlined continuations complete.
-                        Assert.True(setReturned.Wait(AsyncDelay));
+                    // Arrange to synchronously block the continuation until Set() has returned,
+                    // which would deadlock if Set does not return until inlined continuations complete.
+                    Assert.True(setReturned.Wait(AsyncDelay));
                 },
                 TaskContinuationOptions.ExecuteSynchronously);
         this.evt.Set();
