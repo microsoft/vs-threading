@@ -201,12 +201,11 @@ class Tests
 
     public async Task AwaitAndGetResult()
     {{
-        await task.ConfigureAwait({(continueOnCapturedContext ? "true" : "false")});
+        await [|task|].ConfigureAwait({(continueOnCapturedContext ? "true" : "false")});
     }}
 }}
 ";
-        DiagnosticResult expected = this.CreateDiagnostic(10, 15, 21 + continueOnCapturedContext.ToString().Length);
-        await CSVerify.VerifyAnalyzerAsync(test, expected);
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 
     [Theory]
@@ -223,12 +222,11 @@ class Tests
 
     public async Task<int> AwaitAndGetResult()
     {{
-        return await task.ConfigureAwait({(continueOnCapturedContext ? "true" : "false")});
+        return await [|task|].ConfigureAwait({(continueOnCapturedContext ? "true" : "false")});
     }}
 }}
 ";
-        DiagnosticResult expected = this.CreateDiagnostic(10, 22, 21 + continueOnCapturedContext.ToString().Length);
-        await CSVerify.VerifyAnalyzerAsync(test, expected);
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 
     [Fact]
@@ -244,12 +242,11 @@ class Tests
 
     public async Task AwaitAndGetResult()
     {
-        await task.ConfigureAwaitRunInline();
+        await [|task|].ConfigureAwaitRunInline();
     }
 }
 ";
-        DiagnosticResult expected = this.CreateDiagnostic(11, 15, 30);
-        await CSVerify.VerifyAnalyzerAsync(test, expected);
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 
     [Fact]
@@ -265,12 +262,11 @@ class Tests
 
     public async Task<int> AwaitAndGetResult()
     {
-        return await task.ConfigureAwaitRunInline();
+        return await [|task|].ConfigureAwaitRunInline();
     }
 }
 ";
-        DiagnosticResult expected = this.CreateDiagnostic(11, 22, 30);
-        await CSVerify.VerifyAnalyzerAsync(test, expected);
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 
     [Fact]
@@ -1240,6 +1236,220 @@ class Test {
     }
 }
 ";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task ReportWarningWhenAwaitingTaskReturningProperty()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Tests
+{
+    async Task GetTask(TaskCompletionSource<int> tcs)
+    {
+        await [|tcs.Task|];
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningWhenAwaitingTaskPropertyThatWasSetInContext()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Tests
+{
+    private Task MyTaskProperty { get; set; }
+
+    async Task GetTask()
+    {
+        this.MyTaskProperty = Task.Run(() => {});
+        await this.MyTaskProperty;
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningWhenAwaitingTaskPropertyOfObjectCreatedInContext()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Tests
+{
+    private Task MyTaskProperty { get; set; }
+
+    static async Task GetTask()
+    {
+        // our own property.
+        var obj = new Tests();
+        await obj.MyTaskProperty;
+
+        // local with initializer
+        var tcs = new TaskCompletionSource<int>();
+        await tcs.Task;
+
+        // Assign later
+        TaskCompletionSource<int> tcs2;
+        tcs2 = new TaskCompletionSource<int>();
+        await tcs2.Task;
+
+        // Assigned, but not to a newly created object.
+        TaskCompletionSource<int> tcs3 = tcs2;
+        await [|tcs3.Task|];
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningWhenAwaitingTaskPropertyOfObjectCreatedInContext_TargetTypeCreation()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                static Task Exec2Async(string executable, params string[] args)
+                {
+                    Process p = new();
+                    return p.Task;
+                }
+            }
+
+            class Process
+            {
+                public Task Task { get; }
+            }
+            """;
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    /// <summary>
+    /// This is important to allow folks to return jtf.RunAsync(...).Task from a method.
+    /// </summary>
+    [Fact]
+    public async Task DoNotReportWarningWhenAwaitingTaskPropertyOfObjectReturnedFromMethod()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Tests
+{
+    private Task MyTaskProperty { get; set; }
+
+    static Tests NewTests() => new Tests();
+
+    static async Task GetTask()
+    {
+        await NewTests().MyTaskProperty;
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningWhenAwaitingTaskPropertyOfObjectReturnedFromMethodViaLocal()
+    {
+        var test = """
+            using System.Threading.Tasks;
+
+            class JsonRpc
+            {
+                internal static JsonRpc Attach() => throw new System.NotImplementedException();
+
+                internal Task Completion { get; }
+            }
+
+            class Tests
+            {
+                static async Task ListenAndWait()
+                {
+                    var jsonRpc = JsonRpc.Attach();
+                    await jsonRpc.Completion;
+                }
+            }
+            """;
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningWhenAwaitingTaskPropertyOfObjectReturnedFromAsyncMethodViaLocal()
+    {
+        var test = """
+            using System.Threading.Tasks;
+
+            class JsonRpc
+            {
+                internal static Task<JsonRpc> AttachAsync() => throw new System.NotImplementedException();
+
+                internal Task Completion { get; }
+            }
+
+            class Tests
+            {
+                static async Task ListenAndWait()
+                {
+                    var jsonRpc = await JsonRpc.AttachAsync();
+                    await jsonRpc.Completion;
+                }
+            }
+            """;
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task ReportWarningWhenAwaitingTaskPropertyThatWasNotSetInContext()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Tests
+{
+    private Task MyTaskProperty { get; set; } = Task.Run(() => {});
+
+    async Task GetTask()
+    {
+        await [|this.MyTaskProperty|];
+        await [|MyTaskProperty|];
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningWhenReturningTaskFromLambdaArgument()
+    {
+        var test = """
+            using System.Linq;
+            using System.Threading.Tasks;
+            
+            class JsonRpc
+            {
+                internal static JsonRpc Attach() => throw new System.NotImplementedException();
+            
+                internal Task Completion { get; }
+            }
+            
+            class Tests
+            {
+                static async Task ListenAndWait()
+                {
+                    JsonRpc[] rpcs = new [] { JsonRpc.Attach(), JsonRpc.Attach() };
+                    await Task.WhenAll(rpcs.Select(r => r.Completion));
+                }
+            }
+            """;
         await CSVerify.VerifyAnalyzerAsync(test);
     }
 

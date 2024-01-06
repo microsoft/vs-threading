@@ -38,7 +38,7 @@ public class AsyncLazy<T>
     /// <summary>
     /// The unique instance identifier.
     /// </summary>
-    private readonly AsyncLocal<object> recursiveFactoryCheck = new AsyncLocal<object>();
+    private AsyncLocal<object>? recursiveFactoryCheck;
 
     /// <summary>
     /// An optional means to avoid deadlocks when synchronous APIs are called that must invoke async methods in user code.
@@ -74,6 +74,31 @@ public class AsyncLazy<T>
         this.valueFactory = valueFactory;
         this.jobFactory = joinableTaskFactory;
     }
+
+    /// <summary>
+    /// Gets a value indicating whether to suppress detection of a value factory depending on itself.
+    /// </summary>
+    /// <value>The default value is <see langword="false" />.</value>
+    /// <remarks>
+    /// <para>
+    /// A value factory that truly depends on itself (e.g. by calling <see cref="GetValueAsync()"/> on the same instance)
+    /// would deadlock, and by default this class will throw an exception if it detects such a condition.
+    /// However this detection relies on the .NET ExecutionContext, which can flow to "spin off" contexts that are not awaited
+    /// by the factory, and thus could legally await the result of the value factory without deadlocking.
+    /// </para>
+    /// <para>
+    /// When this flows improperly, it can cause <see cref="InvalidOperationException"/> to be thrown, but only when the value factory
+    /// has not already been completed, leading to a difficult to reproduce race condition.
+    /// Such a case can be resolved by calling <see cref="SuppressRelevance"/> around the non-awaited fork in <see cref="ExecutionContext" />,
+    /// or the entire instance can be configured to suppress this check by setting this property to <see langword="true"/>.
+    /// </para>
+    /// <para>
+    /// When this property is set to <see langword="true" />, the recursive factory check will not be performed,
+    /// but <see cref="SuppressRelevance"/> will still call into <see cref="JoinableTaskContext.SuppressRelevance"/>
+    /// if a <see cref="JoinableTaskFactory"/> was provided to the constructor.
+    /// </para>
+    /// </remarks>
+    public bool SuppressRecursiveFactoryDetection { get; init; }
 
     /// <summary>
     /// Gets a value indicating whether the value factory has been invoked.
@@ -140,7 +165,7 @@ public class AsyncLazy<T>
     /// <exception cref="ObjectDisposedException">Thrown after <see cref="DisposeValue"/> is called.</exception>
     public Task<T> GetValueAsync(CancellationToken cancellationToken)
     {
-        if (!((this.value is object && this.value.IsCompleted) || this.recursiveFactoryCheck.Value is null))
+        if (this.value is not { IsCompleted: true } && this.recursiveFactoryCheck is { Value: not null })
         {
             // PERF: we check the condition and *then* retrieve the string resource only on failure
             // because the string retrieval has shown up as significant on ETL traces.
@@ -185,7 +210,12 @@ public class AsyncLazy<T>
                         }
                     };
 
-                    this.recursiveFactoryCheck.Value = RecursiveCheckSentinel;
+                    if (!this.SuppressRecursiveFactoryDetection)
+                    {
+                        Assumes.Null(this.recursiveFactoryCheck);
+                        this.recursiveFactoryCheck = new AsyncLocal<object>() { Value = RecursiveCheckSentinel };
+                    }
+
                     try
                     {
                         if (this.jobFactory is object)
@@ -203,7 +233,10 @@ public class AsyncLazy<T>
                     }
                     finally
                     {
-                        this.recursiveFactoryCheck.Value = null;
+                        if (this.recursiveFactoryCheck is not null)
+                        {
+                            this.recursiveFactoryCheck.Value = null;
+                        }
                     }
                 }
             }
@@ -259,6 +292,65 @@ public class AsyncLazy<T>
                 : this.GetValueAsync(cancellationToken).GetAwaiter().GetResult();
         }
     }
+
+    /// <summary>
+    /// Marks the code that follows as irrelevant to the receiving <see cref="AsyncLazy{T}"/> value factory.
+    /// </summary>
+    /// <returns>A value to dispose of to restore relevance into the value factory.</returns>
+    /// <remarks>
+    /// <para>In some cases asynchronous work may be spun off inside a value factory.
+    /// When the value factory does <em>not</em> require this work to finish before the value factory can complete,
+    /// it can be useful to use this method to mark that code as irrelevant to the value factory.
+    /// In particular, this can be necessary when the spun off task may actually include code that may itself
+    /// await the completion of the value factory itself.
+    /// Such a situation would lead to an <see cref="InvalidOperationException"/> being thrown from
+    /// <see cref="GetValueAsync(CancellationToken)"/> if the value factory has not completed already,
+    /// which can introduce non-determinstic failures in the program.</para>
+    /// <para>A <c>using</c> block around the spun off code can help your program achieve reliable behavior, as shown below.</para>
+    /// <example>
+    /// <code><![CDATA[
+    /// class MyClass {
+    ///   private readonly AsyncLazy<int> numberOfApples;
+    ///
+    ///   public MyClass() {
+    ///     this.numberOfApples = new AsyncLazy<int>(async delegate {
+    ///       // We have some fire-and-forget code to run.
+    ///       // This is *not* relevant to the value factory, which is allowed to complete without waiting for this code to finish.
+    ///       using (this.numberOfApples.SuppressRelevance()) {
+    ///         this.FireOffNotificationsAsync();
+    ///       }
+    ///
+    ///       // This code is relevant to the value factory, and must complete before the value factory can complete.
+    ///       return await this.CountNumberOfApplesAsync();
+    ///     });
+    ///   }
+    ///
+    ///   public event EventHandler? ApplesCountingHasBegun;
+    ///
+    ///   public async Task<int> GetApplesCountAsync(CancellationToken cancellationToken) {
+    ///     return await this.numberOfApples.GetValueAsync(cancellationToken);
+    ///   }
+    ///
+    ///   private async Task<int> CountNumberOfApplesAsync() {
+    ///     await Task.Delay(1000);
+    ///     return 5;
+    ///   }
+    ///
+    ///   private async Task FireOffNotificationsAsync() {
+    ///     // This may call to 3rd party code, which may happen to call back into GetApplesCountAsync (and thus into our AsyncLazy instance),
+    ///     // but such calls should *not* be interpreted as value factory reentrancy. They should just wait for the value factory to finish.
+    ///     // We accomplish this by suppressing relevance of the value factory while this code runs (see the caller of this method above).
+    ///     this.ApplesCountingHasBegun?.Invoke(this, EventArgs.Empty);
+    ///   }
+    /// }
+    /// ]]></code>
+    /// </example>
+    /// <para>If the <see cref="AsyncLazy{T}"/> was created with a <see cref="JoinableTaskFactory"/>,
+    /// this method also calls <see cref="JoinableTaskContext.SuppressRelevance"/> on the <see cref="JoinableTaskFactory.Context"/>
+    /// associated with that factory.
+    /// </para>
+    /// </remarks>
+    public RevertRelevance SuppressRelevance() => new RevertRelevance(this);
 
     /// <summary>
     /// Disposes of the lazily-initialized value if disposable, and causes all subsequent attempts to obtain the value to fail.
@@ -371,5 +463,45 @@ public class AsyncLazy<T>
         return (this.value is object && this.value.IsCompleted)
             ? (this.value.Status == TaskStatus.RanToCompletion ? $"{this.value.Result}" : Strings.LazyValueFaulted)
             : Strings.LazyValueNotCreated;
+    }
+
+    /// <summary>
+    /// A structure that hides relevance of a block of code from a particular <see cref="AsyncLazy{T}"/> and the <see cref="JoinableTaskContext"/> it was created with.
+    /// </summary>
+    public readonly struct RevertRelevance : IDisposable
+    {
+        private readonly AsyncLazy<T>? owner;
+        private readonly object? oldCheckValue;
+        private readonly JoinableTaskContext.RevertRelevance? joinableRelevance;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RevertRelevance"/> struct.
+        /// </summary>
+        /// <param name="owner">The instance that created this value.</param>
+        internal RevertRelevance(AsyncLazy<T> owner)
+        {
+            Requires.NotNull(owner, nameof(owner));
+            this.owner = owner;
+
+            if (owner.recursiveFactoryCheck is not null)
+            {
+                (this.oldCheckValue, owner.recursiveFactoryCheck.Value) = (owner.recursiveFactoryCheck.Value, null);
+            }
+
+            this.joinableRelevance = owner.jobFactory?.Context.SuppressRelevance();
+        }
+
+        /// <summary>
+        /// Reverts the async local and thread static values to their original values.
+        /// </summary>
+        public void Dispose()
+        {
+            if (this.owner?.recursiveFactoryCheck is { } check)
+            {
+                check.Value = this.oldCheckValue;
+            }
+
+            this.joinableRelevance?.Dispose();
+        }
     }
 }

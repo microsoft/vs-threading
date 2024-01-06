@@ -561,4 +561,62 @@ class Test {
 ";
         await CSVerify.VerifyAnalyzerAsync(test);
     }
+
+    [Fact]
+    public async Task MethodDisposeAsyncCore_GeneratesNoWarning()
+    {
+        var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test : IAsyncDisposable
+{
+    public async ValueTask DisposeAsync()
+    {
+        await DisposeAsyncCore().ConfigureAwait(false);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual async ValueTask DisposeAsyncCore()
+    {
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task LocalFunctionUsesAsyncSuffix()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class MyClass
+            {
+                void Foo()
+                {
+                    async Task {|#0:Bar|}()
+                    {
+                    }
+                }
+            }
+            """;
+
+        string fix = """
+            using System.Threading.Tasks;
+
+            class MyClass
+            {
+                void Foo()
+                {
+                    async Task BarAsync()
+                    {
+                    }
+                }
+            }
+            """;
+
+        DiagnosticResult expected = CSVerify.Diagnostic(AddSuffixDescriptor).WithLocation(0);
+        await CSVerify.VerifyCodeFixAsync(test, expected, fix);
+    }
 }

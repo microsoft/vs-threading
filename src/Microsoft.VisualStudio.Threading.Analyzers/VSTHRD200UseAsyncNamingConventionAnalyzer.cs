@@ -2,13 +2,12 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Operations;
 
 namespace Microsoft.VisualStudio.Threading.Analyzers;
 
@@ -54,22 +53,44 @@ public class VSTHRD200UseAsyncNamingConventionAnalyzer : DiagnosticAnalyzer
         {
             CommonInterest.AwaitableTypeTester awaitableTypes = CommonInterest.CollectAwaitableTypes(context.Compilation, context.CancellationToken);
             context.RegisterSymbolAction(Utils.DebuggableWrapper(context => this.AnalyzeNode(context, awaitableTypes)), SymbolKind.Method);
+            context.RegisterOperationAction(Utils.DebuggableWrapper(context => this.AnalyzeLocalFunction(context, awaitableTypes)), OperationKind.LocalFunction);
         });
+    }
+
+    private void AnalyzeLocalFunction(OperationAnalysisContext context, CommonInterest.AwaitableTypeTester awaitableTypes)
+    {
+        if (this.AnalyzeMethodSymbol(context.Compilation, ((ILocalFunctionOperation)context.Operation).Symbol, awaitableTypes, context.CancellationToken) is Diagnostic diagnostic)
+        {
+            context.ReportDiagnostic(diagnostic);
+        }
     }
 
     private void AnalyzeNode(SymbolAnalysisContext context, CommonInterest.AwaitableTypeTester awaitableTypes)
     {
-        var methodSymbol = (IMethodSymbol)context.Symbol;
+        if (this.AnalyzeMethodSymbol(context.Compilation, (IMethodSymbol)context.Symbol, awaitableTypes, context.CancellationToken) is Diagnostic diagnostic)
+        {
+            context.ReportDiagnostic(diagnostic);
+        }
+    }
+
+    private Diagnostic? AnalyzeMethodSymbol(Compilation compilation, IMethodSymbol methodSymbol, CommonInterest.AwaitableTypeTester awaitableTypes, CancellationToken cancellationToken)
+    {
         if (methodSymbol.AssociatedSymbol is IPropertySymbol)
         {
             // Skip accessor methods associated with properties.
-            return;
+            return null;
         }
 
         // Skip entrypoint methods since their name is non-negotiable.
-        if (Utils.IsEntrypointMethod(methodSymbol, context.Compilation, context.CancellationToken))
+        if (Utils.IsEntrypointMethod(methodSymbol, compilation, cancellationToken))
         {
-            return;
+            return null;
+        }
+
+        // Skip the method of the recommended dispose pattern.
+        if (methodSymbol.Name == "DisposeAsyncCore")
+        {
+            return null;
         }
 
         bool hasAsyncFocusedReturnType = Utils.HasAsyncCompatibleReturnType(methodSymbol);
@@ -82,7 +103,7 @@ public class VSTHRD200UseAsyncNamingConventionAnalyzer : DiagnosticAnalyzer
             // Do deeper checks to skip over methods that implement API contracts that are controlled elsewhere.
             if (methodSymbol.FindInterfacesImplemented().Any() || methodSymbol.IsOverride)
             {
-                return;
+                return null;
             }
 
             if (hasAsyncFocusedReturnType)
@@ -91,21 +112,23 @@ public class VSTHRD200UseAsyncNamingConventionAnalyzer : DiagnosticAnalyzer
                 // Not just any awaitable, since some stray extension method shouldn't change the world for everyone.
                 ImmutableDictionary<string, string?>? properties = ImmutableDictionary<string, string?>.Empty
                     .Add(NewNameKey, methodSymbol.Name + MandatoryAsyncSuffix);
-                context.ReportDiagnostic(Diagnostic.Create(
+                return Diagnostic.Create(
                     AddAsyncDescriptor,
                     methodSymbol.Locations[0],
-                    properties));
+                    properties);
             }
             else if (!awaitableTypes.IsAwaitableType(methodSymbol.ReturnType))
             {
                 // Only warn about abusing the Async suffix if the return type is not awaitable.
                 ImmutableDictionary<string, string?>? properties = ImmutableDictionary<string, string?>.Empty
                     .Add(NewNameKey, methodSymbol.Name.Substring(0, methodSymbol.Name.Length - MandatoryAsyncSuffix.Length));
-                context.ReportDiagnostic(Diagnostic.Create(
+                return Diagnostic.Create(
                     RemoveAsyncDescriptor,
                     methodSymbol.Locations[0],
-                    properties));
+                    properties);
             }
         }
+
+        return null;
     }
 }

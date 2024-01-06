@@ -71,6 +71,30 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
         context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeLambdaExpression), SyntaxKind.ParenthesizedLambdaExpression);
     }
 
+    private static bool IsSymbolAlwaysOkToAwait(ISymbol? symbol)
+    {
+        if (symbol is IFieldSymbol field)
+        {
+            // Allow the TplExtensions.CompletedTask and related fields.
+            if (field.ContainingType.Name == Types.TplExtensions.TypeName && field.BelongsToNamespace(Types.TplExtensions.Namespace) &&
+                (field.Name == Types.TplExtensions.CompletedTask || field.Name == Types.TplExtensions.CanceledTask || field.Name == Types.TplExtensions.TrueTask || field.Name == Types.TplExtensions.FalseTask))
+            {
+                return true;
+            }
+        }
+        else if (symbol is IPropertySymbol property)
+        {
+            // Explicitly allow Task.CompletedTask
+            if (property.ContainingType.Name == Types.Task.TypeName && property.BelongsToNamespace(Types.Task.Namespace) &&
+                property.Name == Types.Task.CompletedTask)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private void AnalyzeArrowExpressionClause(SyntaxNodeAnalysisContext context)
     {
         var arrowExpressionClause = (ArrowExpressionClauseSyntax)context.Node;
@@ -131,30 +155,74 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
             return null;
         }
 
-        SymbolInfo symbolToConsider = semanticModel.GetSymbolInfo(expressionSyntax, cancellationToken);
+        ExpressionSyntax focusedExpression = expressionSyntax;
+        SymbolInfo symbolToConsider = semanticModel.GetSymbolInfo(focusedExpression, cancellationToken);
         if (CommonInterest.TaskConfigureAwait.Any(configureAwait => configureAwait.IsMatch(symbolToConsider.Symbol)))
         {
             // If the invocation is wrapped inside parentheses then drill down to get the invocation.
-            while (expressionSyntax is ParenthesizedExpressionSyntax parenthesizedExprSyntax)
+            while (focusedExpression is ParenthesizedExpressionSyntax parenthesizedExprSyntax)
             {
-                expressionSyntax = parenthesizedExprSyntax.Expression;
+                focusedExpression = parenthesizedExprSyntax.Expression;
             }
 
-            Debug.Assert(expressionSyntax is InvocationExpressionSyntax, "expressionSyntax should be an invocation");
+            Debug.Assert(focusedExpression is InvocationExpressionSyntax, "focusedExpression  should be an invocation");
 
-            if (((InvocationExpressionSyntax)expressionSyntax).Expression is MemberAccessExpressionSyntax memberAccessExpression)
+            if (((InvocationExpressionSyntax)focusedExpression).Expression is MemberAccessExpressionSyntax memberAccessExpression)
             {
+                focusedExpression = memberAccessExpression.Expression;
                 symbolToConsider = semanticModel.GetSymbolInfo(memberAccessExpression.Expression, cancellationToken);
             }
         }
 
         ITypeSymbol symbolType;
         bool dataflowAnalysisCompatibleVariable = false;
+        CSharpUtils.ContainingFunctionData? containingFunc = null;
         switch (symbolToConsider.Symbol)
         {
             case ILocalSymbol localSymbol:
                 symbolType = localSymbol.Type;
                 dataflowAnalysisCompatibleVariable = true;
+                break;
+            case IPropertySymbol propertySymbol when !IsSymbolAlwaysOkToAwait(propertySymbol):
+                symbolType = propertySymbol.Type;
+
+                if (focusedExpression is MemberAccessExpressionSyntax memberAccessExpression)
+                {
+                    // Do not report a warning if the task is a member of an object that was returned from an invocation made in this method.
+                    if (memberAccessExpression.Expression is InvocationExpressionSyntax)
+                    {
+                        return null;
+                    }
+
+                    // Do not report a warning if the task is a member of an object that was created in this method.
+                    if (memberAccessExpression.Expression is IdentifierNameSyntax identifier)
+                    {
+                        ISymbol? symbol = semanticModel.GetSymbolInfo(identifier, cancellationToken).Symbol;
+                        switch (symbol)
+                        {
+                            case ILocalSymbol local:
+                                // Search for assignments to the local and see if it was to a new object or the result of an invocation.
+                                containingFunc ??= CSharpUtils.GetContainingFunction(focusedExpression);
+                                if (containingFunc.Value.BlockOrExpression is not null &&
+                                    CSharpUtils.FindAssignedValuesWithin(containingFunc.Value.BlockOrExpression, semanticModel, local, cancellationToken).Any(
+                                        v => v is ObjectCreationExpressionSyntax or ImplicitObjectCreationExpressionSyntax or InvocationExpressionSyntax or AwaitExpressionSyntax { Expression: InvocationExpressionSyntax }))
+                                {
+                                    return null;
+                                }
+
+                                break;
+                            case IParameterSymbol parameter:
+                                // We allow returning members of a parameter in a lambda, to support `.Select(x => x.Completion)` syntax.
+                                if (parameter.ContainingSymbol is IMethodSymbol method && method.MethodKind == MethodKind.AnonymousFunction)
+                                {
+                                    return null;
+                                }
+
+                                break;
+                        }
+                    }
+                }
+
                 break;
             case IParameterSymbol parameterSymbol:
                 symbolType = parameterSymbol.Type;
@@ -209,23 +277,9 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
                                 }
 
                                 ISymbol? definition = declarationSemanticModel.GetSymbolInfo(memberAccessSyntax, cancellationToken).Symbol;
-                                if (definition is IFieldSymbol field)
+                                if (IsSymbolAlwaysOkToAwait(definition))
                                 {
-                                    // Allow the TplExtensions.CompletedTask and related fields.
-                                    if (field.ContainingType.Name == Types.TplExtensions.TypeName && field.BelongsToNamespace(Types.TplExtensions.Namespace) &&
-                                        (field.Name == Types.TplExtensions.CompletedTask || field.Name == Types.TplExtensions.CanceledTask || field.Name == Types.TplExtensions.TrueTask || field.Name == Types.TplExtensions.FalseTask))
-                                    {
-                                        return null;
-                                    }
-                                }
-                                else if (definition is IPropertySymbol property)
-                                {
-                                    // Explicitly allow Task.CompletedTask
-                                    if (property.ContainingType.Name == Types.Task.TypeName && property.BelongsToNamespace(Types.Task.Namespace) &&
-                                        property.Name == Types.Task.CompletedTask)
-                                    {
-                                        return null;
-                                    }
+                                    return null;
                                 }
                             }
                         }
@@ -234,7 +288,7 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
 
                 break;
             case IMethodSymbol methodSymbol:
-                if (Utils.IsTask(methodSymbol.ReturnType) && expressionSyntax is InvocationExpressionSyntax invocationExpressionSyntax)
+                if (Utils.IsTask(methodSymbol.ReturnType) && focusedExpression is InvocationExpressionSyntax invocationExpressionSyntax)
                 {
                     // Consider all arguments
                     IEnumerable<ExpressionSyntax>? expressionsToConsider = invocationExpressionSyntax.ArgumentList.Arguments.Select(a => a.Expression);
@@ -262,8 +316,8 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
         }
 
         // Report warning if the task was not initialized within the current delegate or lambda expression
-        CSharpUtils.ContainingFunctionData containingFunc = CSharpUtils.GetContainingFunction(expressionSyntax);
-        if (containingFunc.BlockOrExpression is BlockSyntax delegateBlock)
+        containingFunc ??= CSharpUtils.GetContainingFunction(focusedExpression);
+        if (containingFunc.Value.BlockOrExpression is BlockSyntax delegateBlock)
         {
             if (dataflowAnalysisCompatibleVariable)
             {
@@ -272,9 +326,9 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
 
                 // When possible (await is direct child of the block and not a field), execute data flow analysis by passing first and last statement to capture only what happens before the await
                 // Check if the await is direct child of the code block (first parent is ExpressionStantement, second parent is the block itself)
-                if (delegateBlock.Equals(expressionSyntax.Parent?.Parent?.Parent))
+                if (delegateBlock.Equals(focusedExpression.Parent?.Parent?.Parent))
                 {
-                    dataFlowAnalysis = semanticModel.AnalyzeDataFlow(delegateBlock.ChildNodes().First(), expressionSyntax.Parent.Parent);
+                    dataFlowAnalysis = semanticModel.AnalyzeDataFlow(delegateBlock.ChildNodes().First(), focusedExpression.Parent.Parent);
                 }
                 else
                 {
@@ -284,22 +338,22 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
 
                 if (dataFlowAnalysis?.WrittenInside.Contains(symbolToConsider.Symbol) is false)
                 {
-                    return Diagnostic.Create(Descriptor, expressionSyntax.GetLocation());
+                    return Diagnostic.Create(Descriptor, focusedExpression.GetLocation());
                 }
             }
             else
             {
                 // Do the best we can searching for assignment statements.
-                if (!CSharpUtils.IsAssignedWithin(containingFunc.BlockOrExpression, semanticModel, symbolToConsider.Symbol, cancellationToken))
+                if (!CSharpUtils.FindAssignedValuesWithin(containingFunc.Value.BlockOrExpression, semanticModel, symbolToConsider.Symbol, cancellationToken).Any())
                 {
-                    return Diagnostic.Create(Descriptor, expressionSyntax.GetLocation());
+                    return Diagnostic.Create(Descriptor, focusedExpression.GetLocation());
                 }
             }
         }
         else
         {
             // It's not a block, it's just a lambda expression, so the variable must be external.
-            return Diagnostic.Create(Descriptor, expressionSyntax.GetLocation());
+            return Diagnostic.Create(Descriptor, focusedExpression.GetLocation());
         }
 
         return null;

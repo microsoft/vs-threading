@@ -2,18 +2,15 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Globalization;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Rename;
 
 namespace Microsoft.VisualStudio.Threading.Analyzers;
@@ -67,12 +64,12 @@ public class VSTHRD200UseAsyncNamingConventionCodeFix : CodeFixProvider
         protected override async Task<Solution?> GetChangedSolutionAsync(CancellationToken cancellationToken)
         {
             SyntaxNode root = await this.document.GetSyntaxRootOrThrowAsync(cancellationToken).ConfigureAwait(false);
-            var methodDeclaration = (MethodDeclarationSyntax)root.FindNode(this.diagnostic.Location.SourceSpan);
+            SyntaxNode declaration = root.FindNode(this.diagnostic.Location.SourceSpan);
 
             SemanticModel? semanticModel = await this.document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
-            IMethodSymbol methodSymbol = semanticModel.GetDeclaredSymbol(methodDeclaration, cancellationToken) ?? throw new InvalidOperationException("Unable to get method symbol.");
-
             Solution? solution = this.document.Project.Solution;
+            IMethodSymbol? methodSymbol = semanticModel?.GetDeclaredSymbol(declaration, cancellationToken) as IMethodSymbol ?? throw new InvalidOperationException("Unable to get method symbol.");
+
             Solution? updatedSolution = await Renamer.RenameSymbolAsync(
                 solution,
                 methodSymbol,

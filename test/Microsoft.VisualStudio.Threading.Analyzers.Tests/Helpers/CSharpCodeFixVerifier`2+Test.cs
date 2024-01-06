@@ -10,7 +10,6 @@ using System.Windows.Threading;
 #endif
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Testing;
-using Microsoft.CodeAnalysis.Testing.Verifiers;
 using Microsoft.CodeAnalysis.Text;
 using IOleServiceProvider = Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
 
@@ -18,7 +17,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
 
 public static partial class CSharpCodeFixVerifier<TAnalyzer, TCodeFix>
 {
-    public class Test : CSharpCodeFixTest<TAnalyzer, TCodeFix, XUnitVerifier>
+    public class Test : CSharpCodeFixTest<TAnalyzer, TCodeFix, DefaultVerifier>
     {
         public Test()
         {
@@ -74,7 +73,7 @@ public static partial class CSharpCodeFixVerifier<TAnalyzer, TCodeFix>
 
         protected override ParseOptions CreateParseOptions()
         {
-            return ((CSharpParseOptions)base.CreateParseOptions()).WithLanguageVersion(LanguageVersion.CSharp8);
+            return ((CSharpParseOptions)base.CreateParseOptions()).WithLanguageVersion(LanguageVersion.CSharp11);
         }
 
         private static string ReadManifestResource(Assembly assembly, string resourceName)

@@ -8,7 +8,6 @@ using System.Reflection;
 #if WINDOWS
 using System.Windows.Threading;
 #endif
-using Microsoft.CodeAnalysis.Testing.Verifiers;
 using Microsoft.CodeAnalysis.Text;
 using Microsoft.CodeAnalysis.VisualBasic;
 using Microsoft.CodeAnalysis.VisualBasic.Testing;
@@ -18,7 +17,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
 
 public static partial class VisualBasicCodeFixVerifier<TAnalyzer, TCodeFix>
 {
-    public class Test : VisualBasicCodeFixTest<TAnalyzer, TCodeFix, XUnitVerifier>
+    public class Test : VisualBasicCodeFixTest<TAnalyzer, TCodeFix, DefaultVerifier>
     {
         public Test()
         {
