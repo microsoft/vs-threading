@@ -29,8 +29,6 @@ stages:
           SymbolsProject: VS
           SymbolsAgentPath: $(Pipeline.Workspace)/symbols-legacy
           azureSubscription: Symbols Upload (DevDiv)
-      - task: MicroBuildCleanup@1
-        displayName: ☎️ Send Telemetry
 
   - job: push
     displayName: azure-public/vssdk feed
@@ -38,7 +36,9 @@ stages:
       dependsOn: symbol_archive
     pool:
       name: AzurePipelines-EO
-      vmImage: AzurePipelinesUbuntu20.04compliant
+      demands:
+      - ImageOverride -equals AzurePipelinesUbuntu20.04compliantGPT
+      os: Linux
     steps:
     - checkout: none
     - download: current
