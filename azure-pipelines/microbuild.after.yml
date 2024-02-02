@@ -21,14 +21,6 @@ steps:
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
   continueOnError: true
 
-- task: PublishBuildArtifacts@1
-  inputs:
-    PathtoPublish: $(Build.ArtifactStagingDirectory)/InsertionOutputs
-    ArtifactName: InsertionOutputs
-    ArtifactType: Container
-  displayName: 🔧 Publish InsertionOutputs as Azure DevOps artifacts
-  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
-
 - task: Ref12Analyze@0
   displayName: 📑 Ref12 (Codex) Analyze
   inputs:

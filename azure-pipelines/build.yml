@@ -56,6 +56,11 @@ jobs:
         displayName: 📢 Publish VSInsertion-Windows
         targetPath: $(Build.ArtifactStagingDirectory)/VSInsertion-Windows
         artifactName: VSInsertion-Windows
+      - output: pipelineArtifact
+        displayName: 📢 Publish InsertionOutputs
+        targetPath: $(Build.ArtifactStagingDirectory)/InsertionOutputs
+        artifactName: InsertionOutputs
+        condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
       # This is useful when false positives appear so we can copy some of the output into the suppressions file.
       - output: pipelineArtifact
         displayName: 📢 Publish Guardian failures
