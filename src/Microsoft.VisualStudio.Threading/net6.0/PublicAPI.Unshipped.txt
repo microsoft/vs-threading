@@ -16,3 +16,4 @@ Microsoft.VisualStudio.Threading.AsyncLazy<T>.RevertRelevance.Dispose() -> void
 Microsoft.VisualStudio.Threading.AsyncLazy<T>.SuppressRecursiveFactoryDetection.get -> bool
 Microsoft.VisualStudio.Threading.AsyncLazy<T>.SuppressRecursiveFactoryDetection.init -> void
 Microsoft.VisualStudio.Threading.AsyncLazy<T>.SuppressRelevance() -> Microsoft.VisualStudio.Threading.AsyncLazy<T>.RevertRelevance
+Microsoft.VisualStudio.Threading.JoinableTaskContext.OnMainThreadBlocked<TState>(System.Action<TState>! action, TState state) -> System.IDisposable!
