@@ -1038,8 +1038,10 @@ public partial class JoinableTaskContext : IDisposable
                         {
                             taskCompletion.SetCanceled();
                         }
-
-                        taskCompletion.SetResult(true);
+                        else
+                        {
+                            taskCompletion.SetResult(true);
+                        }
 
                         // ensure the cancellation registration is disposed.
                         awaiter.GetResult();
