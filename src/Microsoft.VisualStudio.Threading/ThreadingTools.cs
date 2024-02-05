@@ -187,7 +187,7 @@ public static class ThreadingTools
                 },
                 taskCompletionSource))
             {
-                using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s!).TrySetResult(true), taskCompletionSource))
+                using (cancellationToken.Register(static s => ((TaskCompletionSource<bool>)s!).TrySetResult(true), taskCompletionSource))
                 {
                     if (slowTask != await Task.WhenAny(slowTask, taskCompletionSource.Task).ConfigureAwait(false))
                     {
