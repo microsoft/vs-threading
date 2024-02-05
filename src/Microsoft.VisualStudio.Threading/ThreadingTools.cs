@@ -144,6 +144,67 @@ public static class ThreadingTools
     }
 
     /// <summary>
+    /// Wait a long running or later finishing task, but abort if this work is blocking the main thread.
+    /// </summary>
+    /// <param name="context">The JoinableTaskContext.</param>
+    /// <param name="slowTask">A slow task to wait.</param>
+    /// <param name="cancellationToken">An optional cancellation token.</param>
+    /// <returns>A task is completed either the slow task is completed, or the input cancellation token is triggered, or the context task blocks the main thread (inside JTF.Run).</returns>
+    /// <exception cref="OperationCanceledException">Throw when the cancellation token is triggered or the current task blocks the main thread.</exception>
+    public static Task WaitUnlessBlockingMainThreadAsync(this JoinableTaskContext context, Task slowTask, CancellationToken cancellationToken = default)
+    {
+        Requires.NotNull(context, nameof(context));
+        Requires.NotNull(slowTask, nameof(slowTask));
+
+        if (slowTask.IsCompleted)
+        {
+            return slowTask;
+        }
+
+        if (context.AmbientTask is null)
+        {
+            return slowTask.WithCancellation(cancellationToken);
+        }
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return Task.FromCanceled(cancellationToken);
+        }
+
+        return WaitUnlessBlockingMainThreadSlowAsync(context, slowTask, cancellationToken);
+
+        async Task WaitUnlessBlockingMainThreadSlowAsync(JoinableTaskContext context, Task slowTask, CancellationToken cancellationToken)
+        {
+            var taskCompletionSource = new TaskCompletionSource<bool>(slowTask);
+            using (context.OnMainThreadBlocked(
+                static s =>
+                {
+                    // prefer to complete normally if the inner task is completed.
+                    if (!((Task)s.Task.AsyncState!).IsCompleted)
+                    {
+                        s.TrySetResult(false);
+                    }
+                },
+                taskCompletionSource))
+            {
+                using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s!).TrySetResult(true), taskCompletionSource))
+                {
+                    if (slowTask != await Task.WhenAny(slowTask, taskCompletionSource.Task).ConfigureAwait(false))
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        // throw when the main thread is blocked
+                        throw new OperationCanceledException();
+                    }
+                }
+
+                // Rethrow any fault/cancellation exception, the task should be completed.
+                await slowTask;
+            }
+        }
+    }
+
+    /// <summary>
     /// Applies the specified <see cref="SynchronizationContext"/> to the caller's context.
     /// </summary>
     /// <param name="syncContext">The synchronization context to apply.</param>

@@ -1115,6 +1115,219 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
     }
 
     [Fact]
+    public void WaitUnlessBlockingMainThreadAsyncReturnsCompletedTask()
+    {
+        var taskCompletionSource = new TaskCompletionSource<bool>();
+        taskCompletionSource.SetResult(true);
+
+        var cancellationSource = new CancellationTokenSource();
+        Assert.Equal(this.Context.WaitUnlessBlockingMainThreadAsync(taskCompletionSource.Task, cancellationSource.Token), taskCompletionSource.Task);
+    }
+
+    [Fact]
+    public void WaitUnlessBlockingMainThreadAsyncReturnsTaskUnderSimpleCondition()
+    {
+        var taskCompletionSource = new TaskCompletionSource<bool>();
+        Assert.Equal(this.Context.WaitUnlessBlockingMainThreadAsync(taskCompletionSource.Task, CancellationToken.None), taskCompletionSource.Task);
+    }
+
+    [Fact]
+    public void WaitUnlessBlockingMainThreadAsyncCancellable()
+    {
+        var taskCompletionSource = new TaskCompletionSource<bool>();
+
+        var cancellationSource = new CancellationTokenSource();
+        Task waitingTask = this.Context.WaitUnlessBlockingMainThreadAsync(taskCompletionSource.Task, cancellationSource.Token);
+
+        Assert.False(waitingTask.IsCompleted);
+        cancellationSource.Cancel();
+
+        try
+        {
+            waitingTask.GetAwaiter().GetResult();
+            Assert.Fail("Expect to throw.");
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    [Fact]
+    public void WaitUnlessBlockingMainThreadAsyncCancellableInsideJTF()
+    {
+        JoinableTask task = this.Context.Factory.RunAsync(async () =>
+        {
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+
+            var cancellationSource = new CancellationTokenSource();
+            Task waitingTask = this.Context.WaitUnlessBlockingMainThreadAsync(taskCompletionSource.Task, cancellationSource.Token);
+
+            Assert.False(waitingTask.IsCompleted);
+            cancellationSource.Cancel();
+
+            try
+            {
+                await waitingTask;
+                Assert.Fail("Expect to throw.");
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        });
+
+        task.Join();
+    }
+
+    [Fact]
+    public void WaitUnlessBlockingMainThreadAsyncCanComplete()
+    {
+        var taskCompletionSource = new TaskCompletionSource<bool>();
+
+        var cancellationSource = new CancellationTokenSource();
+        Task waitingTask = this.Context.WaitUnlessBlockingMainThreadAsync(taskCompletionSource.Task, cancellationSource.Token);
+
+        Assert.False(waitingTask.IsCompleted);
+        taskCompletionSource.SetResult(true);
+
+        waitingTask.Wait(TestTimeout);
+    }
+
+    [Fact]
+    public void WaitUnlessBlockingMainThreadAsyncCanCompleteInsideJTF()
+    {
+        this.Context.Factory.Run(async () =>
+        {
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+
+            var cancellationSource = new CancellationTokenSource();
+            Task waitingTask = this.Context.WaitUnlessBlockingMainThreadAsync(taskCompletionSource.Task, cancellationSource.Token);
+
+            Assert.False(waitingTask.IsCompleted);
+            taskCompletionSource.SetResult(true);
+
+            await waitingTask;
+        });
+    }
+
+    [Fact]
+    public void WaitUnlessBlockingMainThreadAsyncAbortWithinMainThreadBlockingStack()
+    {
+        this.SimulateUIThread(() =>
+        {
+            this.Context.Factory.Run(async () =>
+            {
+                var taskCompletionSource = new TaskCompletionSource<bool>();
+                try
+                {
+                    await this.Context.WaitUnlessBlockingMainThreadAsync(taskCompletionSource.Task, CancellationToken.None);
+                    Assert.Fail("Expect to throw.");
+                }
+                catch (OperationCanceledException)
+                {
+                }
+            });
+
+            return Task.CompletedTask;
+        });
+    }
+
+    [Fact]
+    public void WaitUnlessBlockingMainThreadAsyncAbortWithinMainThreadBlockingStack2()
+    {
+        this.SimulateUIThread(() =>
+        {
+            this.Context.Factory.Run(async () =>
+            {
+                var taskCompletionSource = new TaskCompletionSource<bool>();
+                var cancellationSource = new CancellationTokenSource();
+                try
+                {
+                    await this.Context.WaitUnlessBlockingMainThreadAsync(taskCompletionSource.Task, cancellationSource.Token);
+                    Assert.Fail("Expect to throw.");
+                }
+                catch (OperationCanceledException)
+                {
+                }
+            });
+
+            return Task.CompletedTask;
+        });
+    }
+
+    [Fact]
+    public void WaitUnlessBlockingMainThreadAsyncAbortWhenMainThreadingBlockedLater()
+    {
+        JoinableTask firstTask = this.Context.Factory.RunAsync(async () =>
+        {
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var cancellationSource = new CancellationTokenSource();
+            try
+            {
+                await this.Context.WaitUnlessBlockingMainThreadAsync(taskCompletionSource.Task, cancellationSource.Token);
+                Assert.Fail("Expect to throw.");
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        });
+
+        Assert.False(firstTask.IsCompleted);
+
+        this.SimulateUIThread(() =>
+        {
+            firstTask.Join();
+            return Task.CompletedTask;
+        });
+    }
+
+    [Fact]
+    public void WaitUnlessBlockingMainThreadAsyncAbortWhenMainThreadingBlockedLaterAwaited()
+    {
+        JoinableTask firstTask = this.Context.Factory.RunAsync(async () =>
+        {
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var cancellationSource = new CancellationTokenSource();
+            try
+            {
+                await this.Context.WaitUnlessBlockingMainThreadAsync(taskCompletionSource.Task, cancellationSource.Token);
+                Assert.Fail("Expect to throw.");
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        });
+
+        Assert.False(firstTask.IsCompleted);
+
+        this.SimulateUIThread(() =>
+        {
+            this.Context.Factory.Run(async () => await firstTask);
+            return Task.CompletedTask;
+        });
+    }
+
+    [Fact]
+    public void WaitUnlessBlockingMainThreadAsyncTaskCompletedFirst()
+    {
+        var taskCompletionSource = new TaskCompletionSource<bool>();
+        var cancellationSource = new CancellationTokenSource();
+
+        JoinableTask firstTask = this.Context.Factory.RunAsync(async () =>
+        {
+            await this.Context.WaitUnlessBlockingMainThreadAsync(taskCompletionSource.Task, cancellationSource.Token);
+        });
+
+        Assert.False(firstTask.IsCompleted);
+
+        this.SimulateUIThread(() =>
+        {
+            taskCompletionSource.SetResult(true);
+            this.Context.Factory.Run(async () => await firstTask);
+            return Task.CompletedTask;
+        });
+    }
+
+    [Fact]
     public void RevertRelevanceDefaultValue()
     {
         var revert = default(JoinableTaskContext.RevertRelevance);
