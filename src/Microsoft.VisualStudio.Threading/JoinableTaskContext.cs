@@ -131,8 +131,6 @@ public partial class JoinableTaskContext : IDisposable
     /// </summary>
     private readonly string contextId = Guid.NewGuid().ToString("n");
 
-    private readonly NonPostJoinableTaskFactory nonPostJoinableTaskFactory;
-
     /// <summary>
     /// The next unique ID to assign to a <see cref="JoinableTask"/> for which a token is required.
     /// </summary>
@@ -148,6 +146,12 @@ public partial class JoinableTaskContext : IDisposable
     /// </summary>
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private JoinableTaskFactory? nonJoinableFactory;
+
+    /// <summary>
+    /// A special JoinableTaskFactory to detect main thread blocking tasks.
+    /// </summary>
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    private NonPostJoinableTaskFactory? nonPostJoinableTaskFactory;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="JoinableTaskContext"/> class
@@ -175,7 +179,6 @@ public partial class JoinableTaskContext : IDisposable
         this.MainThread = mainThread ?? Thread.CurrentThread;
         this.mainThreadManagedThreadId = this.MainThread.ManagedThreadId;
         this.UnderlyingSynchronizationContext = synchronizationContext ?? SynchronizationContext.Current; // may still be null after this.
-        this.nonPostJoinableTaskFactory = new NonPostJoinableTaskFactory(this);
     }
 
     /// <summary>
@@ -418,18 +421,24 @@ public partial class JoinableTaskContext : IDisposable
             TaskContinuationOptions.ExecuteSynchronously,
             TaskScheduler.Default);
 
+        if (this.nonPostJoinableTaskFactory is null)
+        {
+            Interlocked.CompareExchange(ref this.nonPostJoinableTaskFactory, new NonPostJoinableTaskFactory(this), null);
+        }
+
         _ = this.nonPostJoinableTaskFactory.WhenBlockingMainThreadAsync(cancellationToken)
             .ContinueWith(
                 static (_, s) =>
                 {
-                    (JoinableTaskContext me, Action<TState> callback, TState callState) = ((JoinableTaskContext, Action<TState>, TState))s!;
+                    (JoinableTaskContext me, DisposeToCancel cancellationSource, Action<TState> callback, TState callState) = ((JoinableTaskContext, DisposeToCancel, Action<TState>, TState))s!;
                     JoinableTask? ambientTask = me.AmbientTask;
                     if (ambientTask?.IsCompleted == false)
                     {
+                        cancellationSource.Dispose();
                         callback(callState);
                     }
                 },
-                (this, action, state),
+                (this, cancellation, action, state),
                 cancellationToken,
                 TaskContinuationOptions.OnlyOnRanToCompletion | TaskContinuationOptions.LazyCancellation,
                 TaskScheduler.Default);
@@ -980,14 +989,17 @@ public partial class JoinableTaskContext : IDisposable
     /// </summary>
     private class DisposeToCancel : IDisposable
     {
-        private readonly CancellationTokenSource cancellationTokenSource = new();
+        private CancellationTokenSource? cancellationTokenSource = new();
 
-        internal CancellationToken CancellationToken => this.cancellationTokenSource.Token;
+        internal CancellationToken CancellationToken => this.cancellationTokenSource?.Token ?? throw new ObjectDisposedException(nameof(DisposeToCancel));
 
         public void Dispose()
         {
-            this.cancellationTokenSource.Cancel();
-            this.cancellationTokenSource.Dispose();
+            if (Interlocked.Exchange(ref this.cancellationTokenSource, null) is CancellationTokenSource cancellationTokenSource)
+            {
+                cancellationTokenSource.Cancel();
+                cancellationTokenSource.Dispose();
+            }
         }
     }
 

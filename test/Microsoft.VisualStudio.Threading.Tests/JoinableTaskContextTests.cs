@@ -943,6 +943,55 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
         Assert.False(isCalled);
     }
 
+    [Fact]
+    public void OnMainThreadBlockedFineToDisposeMultipleTimes()
+    {
+        bool isCalled = false;
+
+        this.SimulateUIThread(() =>
+        {
+            this.Context.Factory.Run(async () =>
+            {
+                JoinableTask? childTask = null;
+                var taskCompletionSource = new TaskCompletionSource<bool>();
+                IDisposable? registration = null;
+
+                using (this.Context.SuppressRelevance())
+                {
+                    childTask = this.Context.Factory.RunAsync(async () =>
+                    {
+                        registration = this.Context.OnMainThreadBlocked<object?>(
+                            _ =>
+                            {
+                                isCalled = true;
+                            },
+                            null);
+                        await taskCompletionSource.Task;
+                    });
+                }
+
+                await Task.Delay(20);
+                Assert.False(isCalled);
+
+                Assert.NotNull(registration);
+
+                registration.Dispose();
+                registration.Dispose();
+
+                await Task.Delay(20);
+
+                registration.Dispose();
+
+                taskCompletionSource.TrySetResult(true);
+                await childTask;
+            });
+
+            return Task.CompletedTask;
+        });
+
+        Assert.False(isCalled);
+    }
+
     [Fact, Trait("GC", "true")]
     public void OnMainThreadBlockedNotLeakingObject()
     {
@@ -1028,6 +1077,39 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
             Thread.MemoryBarrier();
 
             newTask.Join();
+            return weakState;
+        }
+    }
+
+    [Fact, Trait("GC", "true")]
+    public void OnMainThreadBlockedNotLeakingDisposeCancellation()
+    {
+        WeakReference state = SpinOffTask(out JoinableTask newTask);
+
+        // MainThreadAwaiter always queues the cancelation callback through ThreadPool.QueueUserWorkItem to make it difficult to control when the cancellation is handled.
+        Thread.Sleep(20);
+
+        GC.Collect();
+        Assert.False(state.IsAlive);
+
+        newTask.Join();
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // mem leak detection requires literally popping locals with strong refs off the stack
+        WeakReference SpinOffTask(out JoinableTask newTask)
+        {
+            WeakReference? weakState = null;
+            newTask = this.Context.Factory.RunAsync(async () =>
+            {
+                await TaskScheduler.Default;
+
+                weakState = new WeakReference(this.Context.OnMainThreadBlocked<object?>(s => { }, null));
+
+                await Task.Yield();
+            });
+
+            newTask.Join();
+
+            Assert.NotNull(weakState);
             return weakState;
         }
     }
