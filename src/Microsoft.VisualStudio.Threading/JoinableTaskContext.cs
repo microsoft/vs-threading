@@ -158,7 +158,6 @@ public partial class JoinableTaskContext : IDisposable
     public JoinableTaskContext()
         : this(Thread.CurrentThread, SynchronizationContext.Current)
     {
-        this.nonPostJoinableTaskFactory = new NonPostJoinableTaskFactory(this);
     }
 
     /// <summary>
@@ -176,6 +175,7 @@ public partial class JoinableTaskContext : IDisposable
         this.MainThread = mainThread ?? Thread.CurrentThread;
         this.mainThreadManagedThreadId = this.MainThread.ManagedThreadId;
         this.UnderlyingSynchronizationContext = synchronizationContext ?? SynchronizationContext.Current; // may still be null after this.
+        this.nonPostJoinableTaskFactory = new NonPostJoinableTaskFactory(this);
     }
 
     /// <summary>
