@@ -1121,14 +1121,14 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
         taskCompletionSource.SetResult(true);
 
         var cancellationSource = new CancellationTokenSource();
-        Assert.Equal(this.Context.WaitUnlessBlockingMainThreadAsync(taskCompletionSource.Task, cancellationSource.Token), taskCompletionSource.Task);
+        Assert.Equal(taskCompletionSource.Task.WaitUnlessBlockingMainThreadAsync(this.Context, cancellationSource.Token), taskCompletionSource.Task);
     }
 
     [Fact]
     public void WaitUnlessBlockingMainThreadAsyncReturnsTaskUnderSimpleCondition()
     {
         var taskCompletionSource = new TaskCompletionSource<bool>();
-        Assert.Equal(this.Context.WaitUnlessBlockingMainThreadAsync(taskCompletionSource.Task, CancellationToken.None), taskCompletionSource.Task);
+        Assert.Equal(taskCompletionSource.Task.WaitUnlessBlockingMainThreadAsync(this.Context, CancellationToken.None), taskCompletionSource.Task);
     }
 
     [Fact]
@@ -1137,7 +1137,7 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
         var taskCompletionSource = new TaskCompletionSource<bool>();
 
         var cancellationSource = new CancellationTokenSource();
-        Task waitingTask = this.Context.WaitUnlessBlockingMainThreadAsync(taskCompletionSource.Task, cancellationSource.Token);
+        Task waitingTask = taskCompletionSource.Task.WaitUnlessBlockingMainThreadAsync(this.Context, cancellationSource.Token);
 
         Assert.False(waitingTask.IsCompleted);
         cancellationSource.Cancel();
@@ -1160,7 +1160,7 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
             var taskCompletionSource = new TaskCompletionSource<bool>();
 
             var cancellationSource = new CancellationTokenSource();
-            Task waitingTask = this.Context.WaitUnlessBlockingMainThreadAsync(taskCompletionSource.Task, cancellationSource.Token);
+            Task waitingTask = taskCompletionSource.Task.WaitUnlessBlockingMainThreadAsync(this.Context, cancellationSource.Token);
 
             Assert.False(waitingTask.IsCompleted);
             cancellationSource.Cancel();
@@ -1184,7 +1184,7 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
         var taskCompletionSource = new TaskCompletionSource<bool>();
 
         var cancellationSource = new CancellationTokenSource();
-        Task waitingTask = this.Context.WaitUnlessBlockingMainThreadAsync(taskCompletionSource.Task, cancellationSource.Token);
+        Task waitingTask = taskCompletionSource.Task.WaitUnlessBlockingMainThreadAsync(this.Context, cancellationSource.Token);
 
         Assert.False(waitingTask.IsCompleted);
         taskCompletionSource.SetResult(true);
@@ -1200,7 +1200,7 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
             var taskCompletionSource = new TaskCompletionSource<bool>();
 
             var cancellationSource = new CancellationTokenSource();
-            Task waitingTask = this.Context.WaitUnlessBlockingMainThreadAsync(taskCompletionSource.Task, cancellationSource.Token);
+            Task waitingTask = taskCompletionSource.Task.WaitUnlessBlockingMainThreadAsync(this.Context, cancellationSource.Token);
 
             Assert.False(waitingTask.IsCompleted);
             taskCompletionSource.SetResult(true);
@@ -1219,7 +1219,7 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
                 var taskCompletionSource = new TaskCompletionSource<bool>();
                 try
                 {
-                    await this.Context.WaitUnlessBlockingMainThreadAsync(taskCompletionSource.Task, CancellationToken.None);
+                    await taskCompletionSource.Task.WaitUnlessBlockingMainThreadAsync(this.Context, CancellationToken.None);
                     Assert.Fail("Expect to throw.");
                 }
                 catch (OperationCanceledException)
@@ -1242,7 +1242,7 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
                 var cancellationSource = new CancellationTokenSource();
                 try
                 {
-                    await this.Context.WaitUnlessBlockingMainThreadAsync(taskCompletionSource.Task, cancellationSource.Token);
+                    await taskCompletionSource.Task.WaitUnlessBlockingMainThreadAsync(this.Context, cancellationSource.Token);
                     Assert.Fail("Expect to throw.");
                 }
                 catch (OperationCanceledException)
@@ -1263,7 +1263,7 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
             var cancellationSource = new CancellationTokenSource();
             try
             {
-                await this.Context.WaitUnlessBlockingMainThreadAsync(taskCompletionSource.Task, cancellationSource.Token);
+                await taskCompletionSource.Task.WaitUnlessBlockingMainThreadAsync(this.Context, cancellationSource.Token);
                 Assert.Fail("Expect to throw.");
             }
             catch (OperationCanceledException)
@@ -1289,7 +1289,7 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
             var cancellationSource = new CancellationTokenSource();
             try
             {
-                await this.Context.WaitUnlessBlockingMainThreadAsync(taskCompletionSource.Task, cancellationSource.Token);
+                await taskCompletionSource.Task.WaitUnlessBlockingMainThreadAsync(this.Context, cancellationSource.Token);
                 Assert.Fail("Expect to throw.");
             }
             catch (OperationCanceledException)
@@ -1314,7 +1314,7 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
 
         JoinableTask firstTask = this.Context.Factory.RunAsync(async () =>
         {
-            await this.Context.WaitUnlessBlockingMainThreadAsync(taskCompletionSource.Task, cancellationSource.Token);
+            await taskCompletionSource.Task.WaitUnlessBlockingMainThreadAsync(this.Context, cancellationSource.Token);
         });
 
         Assert.False(firstTask.IsCompleted);

@@ -17,4 +17,4 @@ Microsoft.VisualStudio.Threading.AsyncLazy<T>.SuppressRecursiveFactoryDetection.
 Microsoft.VisualStudio.Threading.AsyncLazy<T>.SuppressRecursiveFactoryDetection.init -> void
 Microsoft.VisualStudio.Threading.AsyncLazy<T>.SuppressRelevance() -> Microsoft.VisualStudio.Threading.AsyncLazy<T>.RevertRelevance
 Microsoft.VisualStudio.Threading.JoinableTaskContext.OnMainThreadBlocked<TState>(System.Action<TState>! action, TState state) -> System.IDisposable!
-static Microsoft.VisualStudio.Threading.ThreadingTools.WaitUnlessBlockingMainThreadAsync(this Microsoft.VisualStudio.Threading.JoinableTaskContext! context, System.Threading.Tasks.Task! slowTask, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+static Microsoft.VisualStudio.Threading.ThreadingTools.WaitUnlessBlockingMainThreadAsync(this System.Threading.Tasks.Task! slowTask, Microsoft.VisualStudio.Threading.JoinableTaskContext! context, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
