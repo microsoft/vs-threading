@@ -29,7 +29,6 @@ parameters:
   - build_logs
   - coverageResults
   - deployables
-  - LocBin
   - projectAssetsJson
   - symbols
   - testResults
@@ -58,6 +57,10 @@ jobs:
         displayName: 📢 Publish VSInsertion-Windows
         targetPath: $(Build.ArtifactStagingDirectory)/VSInsertion-Windows
         artifactName: VSInsertion-Windows
+      - output: pipelineArtifact
+        displayName: 📢 Publish LocBin-Windows
+        targetPath: $(Build.ArtifactStagingDirectory)/LocBin-Windows
+        artifactName: LocBin-Windows
       - output: pipelineArtifact
         displayName: 📢 Publish InsertionOutputs
         targetPath: $(Build.ArtifactStagingDirectory)/InsertionOutputs
