@@ -24,6 +24,10 @@ parameters:
   displayName: Real sign?
   type: boolean
   default: false
+# - name: ShouldSkipOptimize # Enable this when setting EnableOptProf to true below.
+#   displayName: Skip OptProf optimization
+#   type: boolean
+#   default: false
 - name: includeMacOS
   displayName: Build on macOS
   type: boolean
@@ -69,7 +73,10 @@ extends:
         jobs:
         - template: /azure-pipelines/build.yml@self
           parameters:
+            Is1ESPT: true
             RealSign: ${{ or(parameters.RealSign, eq(variables['Build.Reason'],'Schedule')) }}
+            EnableOptProf: false
+            ShouldSkipOptimize: ${{ parameters.ShouldSkipOptimize }}
             EnableCompliance: ${{ parameters.EnableCompliance }}
             EnableAPIScan: ${{ parameters.EnableAPIScan }}
             windowsPool: VSEngSS-MicroBuild2022-1ES
@@ -101,7 +108,10 @@ extends:
         jobs:
         - template: /azure-pipelines/build.yml@self
           parameters:
+            Is1ESPT: true
             RealSign: ${{ or(parameters.RealSign, eq(variables['Build.Reason'],'Schedule')) }}
+            EnableOptProf: false
+            ShouldSkipOptimize: ${{ parameters.ShouldSkipOptimize }}
             EnableCompliance: ${{ parameters.EnableCompliance }}
             EnableAPIScan: ${{ parameters.EnableAPIScan }}
             windowsPool: VSEngSS-MicroBuild2022-1ES
