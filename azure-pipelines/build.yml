@@ -16,7 +16,6 @@ parameters:
   type: object
   default:
     vmImage: macOS-12
-- name: ShouldSkipOptimize
 - name: includeMacOS
   type: boolean
 - name: EnableOptProf
@@ -87,7 +86,7 @@ jobs:
         - checkout: self
           fetchDepth: 0 # avoid shallow clone so nbgv can do its work.
           clean: true
-        - template: install-dependencies.yml
+        - template: /azure-pipelines/install-dependencies.yml@self
 
       outputParentDirectory: $(Build.ArtifactStagingDirectory)
       outputs:
@@ -165,7 +164,6 @@ jobs:
         RunTests: ${{ parameters.RunTests }}
     - script: dotnet format --verify-no-changes --no-restore
       displayName: 💅 Verify formatted code
-    - template: expand-template.yml
 
   - job: macOS
     condition: ${{ parameters.includeMacOS }}
@@ -194,7 +192,6 @@ jobs:
       parameters:
         Is1ESPT: ${{ parameters.Is1ESPT }}
         RunTests: ${{ parameters.RunTests }}
-    - template: expand-template.yml
 
   - job: WrapUp
     dependsOn:
