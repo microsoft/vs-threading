@@ -1,0 +1,19 @@
+{
+  "tsaVersion": "TsaV2",
+  "codebase": "NewOrUpdate",
+  "codebaseName": "Microsoft.VisualStudio.Threading",
+  "tsaStamp": "DevDiv",
+  "tsaEnvironment": "PROD",
+  "notificationAliases": [
+     "vsidemicrobuild@microsoft.com"
+  ],
+  "codebaseAdmins": [
+      "REDMOND\\andarno"
+  ],
+  "instanceUrl": "https://devdiv.visualstudio.com",
+  "projectName": "DevDiv",
+  "areaPath": "DevDiv\\VS Core\\Special Projects\\vs-threading",
+  "iterationPath": "DevDiv",
+  "alltools": true,
+  "repositoryName": "vs-threading"
+}

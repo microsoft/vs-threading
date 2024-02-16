@@ -21,12 +21,11 @@ schedules:
     - main
 
 parameters:
-- name: SignTypeSelection
-  displayName: Sign type
-  type: string
-  default: Test
-  values: [ 'Test', 'Real' ]
-- name: ShouldSkipOptimize
+- name: RealSign
+  displayName: Real sign?
+  type: boolean
+  default: false
+- name: ShouldSkipOptimize # Enable this when setting EnableOptProf to true below.
   displayName: Skip OptProf optimization
   type: boolean
   default: false
@@ -54,24 +53,31 @@ resources:
     name: 1ESPipelineTemplates/MicroBuildTemplate
     ref: refs/tags/release
 
+variables:
+- template: GlobalVariables.yml
+
 extends:
   ${{ if parameters.EnableCompliance }}:
     template: azure-pipelines/MicroBuild.1ES.Official.yml@MicroBuildTemplate
     parameters:
       sdl:
         sourceAnalysisPool: VSEngSS-MicroBuild2022-1ES
+        policheck:
+          enabled: true
+          exclusionsFile: $(System.DefaultWorkingDirectory)\azure-pipelines\PoliCheckExclusions.xml
+        suppression:
+          suppressionFile: $(System.DefaultWorkingDirectory)\azure-pipelines\falsepositives.gdnsuppress
       stages:
       - stage: Build
         variables:
-          DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
-          BuildConfiguration: Release
-          NUGET_PACKAGES: $(Agent.TempDirectory)/.nuget/packages/
-          SignTypeSelection: ${{ parameters.SignTypeSelection }}
-          Packaging.EnableSBOMSigning: false
-          Codeql.Enabled: true
+        - template: /azure-pipelines/BuildStageVariables.yml@self
         jobs:
         - template: /azure-pipelines/build.yml@self
           parameters:
+            Is1ESPT: true
+            RealSign: ${{ or(parameters.RealSign, eq(variables['Build.Reason'],'Schedule')) }}
+            EnableOptProf: false
+            ShouldSkipOptimize: ${{ parameters.ShouldSkipOptimize }}
             EnableCompliance: ${{ parameters.EnableCompliance }}
             EnableAPIScan: ${{ parameters.EnableAPIScan }}
             windowsPool: VSEngSS-MicroBuild2022-1ES
@@ -84,27 +90,29 @@ extends:
               name: Azure Pipelines
               vmImage: macOS-12
               os: macOS
-            ShouldSkipOptimize: ${{ parameters.ShouldSkipOptimize }}
             includeMacOS: ${{ parameters.includeMacOS }}
             RunTests: ${{ parameters.RunTests }}
       - template: /azure-pipelines/prepare-insertion-stages.yml@self
+        parameters:
+          RealSign: ${{ or(parameters.RealSign, eq(variables['Build.Reason'],'Schedule')) }}
   ${{ else }}:
     template: azure-pipelines/MicroBuild.1ES.Unofficial.yml@MicroBuildTemplate
     parameters:
       sdl:
         sourceAnalysisPool: VSEngSS-MicroBuild2022-1ES
+        suppression:
+          suppressionFile: $(System.DefaultWorkingDirectory)\azure-pipelines\falsepositives.gdnsuppress
       stages:
       - stage: Build
         variables:
-          DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
-          BuildConfiguration: Release
-          NUGET_PACKAGES: $(Agent.TempDirectory)/.nuget/packages/
-          SignTypeSelection: ${{ parameters.SignTypeSelection }}
-          Packaging.EnableSBOMSigning: false
-          Codeql.Enabled: true
+        - template: /azure-pipelines/BuildStageVariables.yml@self
         jobs:
         - template: /azure-pipelines/build.yml@self
           parameters:
+            Is1ESPT: true
+            RealSign: ${{ or(parameters.RealSign, eq(variables['Build.Reason'],'Schedule')) }}
+            EnableOptProf: false
+            ShouldSkipOptimize: ${{ parameters.ShouldSkipOptimize }}
             EnableCompliance: ${{ parameters.EnableCompliance }}
             EnableAPIScan: ${{ parameters.EnableAPIScan }}
             windowsPool: VSEngSS-MicroBuild2022-1ES
@@ -117,7 +125,8 @@ extends:
               name: Azure Pipelines
               vmImage: macOS-12
               os: macOS
-            ShouldSkipOptimize: ${{ parameters.ShouldSkipOptimize }}
             includeMacOS: ${{ parameters.includeMacOS }}
             RunTests: ${{ parameters.RunTests }}
       - template: /azure-pipelines/prepare-insertion-stages.yml@self
+        parameters:
+          RealSign: ${{ or(parameters.RealSign, eq(variables['Build.Reason'],'Schedule')) }}

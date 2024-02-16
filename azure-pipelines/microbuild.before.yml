@@ -1,10 +1,18 @@
 parameters:
+- name: EnableLocalization
+  type: boolean
+  default: false
+- name: EnableOptProf
+  type: boolean
+  default: false
+- name: IsOptProf
+  type: boolean
+  default: false
 - name: ShouldSkipOptimize
+  type: boolean
+  default: false
 
 steps:
-- task: ComponentGovernanceComponentDetection@0
-  displayName: 🔍 Component Detection
-
 - task: notice@0
   displayName: 🛠️ Generate NOTICE file
   inputs:
@@ -13,27 +21,25 @@ steps:
   condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
   retryCountOnTaskFailure: 3 # fails when the cloud service is overloaded
 
-- task: MicroBuildOptProfPlugin@6
-  inputs:
-    ProfilingInputsDropName: ProfilingInputs/$(System.TeamProject)/$(Build.Repository.Name)/$(Build.SourceBranchName)/$(Build.BuildNumber)
-    OptimizationInputsLookupMethod: DropPrefix
-    DropNamePrefix: OptimizationInputs/$(System.TeamProject)/$(Build.Repository.Name)
-    ShouldSkipOptimize: ${{ parameters.ShouldSkipOptimize }}
-    AccessToken: $(System.AccessToken)
-  displayName: 🔧 Install OptProf Plugin
+- ${{ if parameters.IsOptProf }}:
+  # We have to install these plugins ourselves for Optprof runs because those pipelines haven't migrated to 1ES PT yet.
+  - task: MicroBuildOptProfPlugin@6
+    inputs:
+      ProfilingInputsDropName: $(ProfilingInputsDropName)
+      OptimizationInputsLookupMethod: DropPrefix
+      DropNamePrefix: OptimizationInputs/$(System.TeamProject)/$(Build.Repository.Name)
+      ShouldSkipOptimize: ${{ parameters.ShouldSkipOptimize }}
+      AccessToken: $(System.AccessToken)
+    displayName: 🔧 Install OptProf Plugin
 
-- task: MicroBuildLocalizationPlugin@3
-  inputs:
-    languages: $(LocLanguages)
-  displayName: 🔧 Install MicroBuild Localization Plugin
+  - task: MicroBuildSigningPlugin@4
+    inputs:
+      signType: Real
+      zipSources: false
+    displayName: 🔧 Install MicroBuild Signing Plugin
 
-- task: MicroBuildSigningPlugin@4
-  inputs:
-    signType: $(SignType)
-    zipSources: false
-  displayName: 🔧 Install MicroBuild Signing Plugin
-  condition: and(succeeded(), or(eq(variables['Agent.OS'], 'Windows_NT'), eq(variables['SignType'], 'real')))
-
-- task: MicroBuildSbomPlugin@1
-  displayName: 🔧 Install MicroBuild Sbom Plugin
-  condition: and(succeeded(), eq(variables['Agent.OS'], 'Windows_NT'))
+  - ${{ if parameters.EnableLocalization }}:
+    - task: MicroBuildLocalizationPlugin@4
+      inputs:
+        languages: $(LocLanguages)
+      displayName: 🔧 Install MicroBuild Localization Plugin
