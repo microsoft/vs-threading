@@ -18,32 +18,30 @@ schedules:
 #    ref: refs/heads/test
 
 variables:
-- name: TreatWarningsAsErrors
-  value: true
-- name: DOTNET_SKIP_FIRST_TIME_EXPERIENCE
-  value: true
-- name: BuildConfiguration
-  value: Release
-- name: BuildPlatform
-  value: Any CPU
-- name: NUGET_PACKAGES
-  value: $(Agent.TempDirectory)/.nuget/packages
+- template: GlobalVariables.yml
 - name: PublicRelease
   value: false # avoid using nice version since we're building a preliminary/unoptimized package
-- name: SignType
-  value: real
-- group: Library.Template
+- name: IsOptProf
+  value: true
 
 stages:
 - stage: Library
   variables:
-    OptProf: true
+  - name: OptProf
+    value: true
+  - template: BuildStageVariables.yml
   jobs:
   - template: build.yml
     parameters:
+      Is1ESPT: false
+      RealSign: true
+      EnableLocalization: false
+      EnableCompliance: false
       windowsPool: VSEngSS-MicroBuild2022-1ES
       includeMacOS: false
       ShouldSkipOptimize: true
+      IsOptProf: true
+      RunTests: false
 - stage: QueueVSBuild
   jobs:
   - job: QueueOptProf
@@ -85,7 +83,7 @@ stages:
         packagesToPush: $(Agent.TempDirectory)/VSInsertion-Windows/*.nupkg
         publishVstsFeed: 97a41293-2972-4f48-8c0e-05493ae82010 # VS feed
         allowPackageConflicts: true
-    - task: MicroBuildInsertVsPayload@3
+    - task: MicroBuildInsertVsPayload@4
       displayName: Insert VS Payload
       inputs:
         SkipCreatePR: true

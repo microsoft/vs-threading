@@ -1,5 +1,10 @@
 parameters:
-  initArgs:
+- name: initArgs
+  type: string
+  default: ''
+- name: setVariables
+  type: boolean
+  default: true
 
 steps:
 
@@ -7,7 +12,7 @@ steps:
   displayName: 🔏 Authenticate NuGet feeds
   inputs:
     ${{ if eq(variables['system.collectionId'], '011b8bdf-6d56-4f87-be0d-0092136884d9') }}:
-      nuGetServiceConnections: azure-public/msft_consumption
+      nuGetServiceConnections: azure-public/msft_consumption # Only necessary for GitHub-hosted repos
     forceReinstallCredentialProvider: true
 
 - powershell: |
@@ -21,7 +26,8 @@ steps:
     }
   displayName: ⚙ Install prerequisites
 
-- powershell: azure-pipelines/variables/_pipelines.ps1
-  failOnStderr: true
-  displayName: ⚙ Set pipeline variables based on source
-  name: SetPipelineVariables
+- ${{ if parameters.setVariables }}:
+  - powershell: azure-pipelines/variables/_pipelines.ps1
+    failOnStderr: true
+    displayName: ⚙ Set pipeline variables based on source
+    name: SetPipelineVariables
