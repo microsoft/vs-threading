@@ -4348,30 +4348,34 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
     [Fact]
     public async Task ReadLockAsync_OnCompleted_CapturesExecutionContext()
     {
-        var asyncLocal = new Microsoft.VisualStudio.Threading.AsyncLocal<string>();
-        asyncLocal.Value = "expected";
-        AsyncReaderWriterLock.Awaiter? awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
-        Assumes.False(awaiter.IsCompleted);
-        var testResultSource = new TaskCompletionSource<object?>();
-        awaiter.OnCompleted(delegate
+        // Set a lock-incompatible synchronization context to ensure the issued lock will require us to yield.
+        using (new SynchronizationContext().Apply(checkForChangesOnRevert: false))
         {
-            try
+            var asyncLocal = new Microsoft.VisualStudio.Threading.AsyncLocal<string>();
+            asyncLocal.Value = "expected";
+            AsyncReaderWriterLock.Awaiter? awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
+            Assumes.False(awaiter.IsCompleted);
+            var testResultSource = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            awaiter.OnCompleted(delegate
             {
-                using (awaiter.GetResult())
+                try
                 {
-                    Assert.Equal("expected", asyncLocal.Value);
-                    testResultSource.SetResult(null);
+                    using (awaiter.GetResult())
+                    {
+                        Assert.Equal("expected", asyncLocal.Value);
+                        testResultSource.SetResult(null);
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                testResultSource.SetException(ex);
-            }
-            finally
-            {
-            }
-        });
-        await testResultSource.Task;
+                catch (Exception ex)
+                {
+                    testResultSource.SetException(ex);
+                }
+                finally
+                {
+                }
+            });
+            await testResultSource.Task;
+        }
     }
 
     [Fact]
