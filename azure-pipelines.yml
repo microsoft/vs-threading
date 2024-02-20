@@ -35,4 +35,3 @@ jobs:
     includeMacOS: ${{ parameters.includeMacOS }}
     ShouldSkipOptimize:
     RunTests: ${{ parameters.RunTests }}
-- template: azure-pipelines/richnav.yml
