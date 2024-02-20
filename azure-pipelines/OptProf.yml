@@ -35,7 +35,6 @@ stages:
     parameters:
       Is1ESPT: false
       RealSign: true
-      EnableLocalization: false
       EnableCompliance: false
       windowsPool: VSEngSS-MicroBuild2022-1ES
       includeMacOS: false
