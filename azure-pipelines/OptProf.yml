@@ -86,6 +86,8 @@ stages:
     - task: MicroBuildInsertVsPayload@4
       displayName: Insert VS Payload
       inputs:
+        TeamName: $(TeamName)
+        TeamEmail: $(TeamEmail)
         SkipCreatePR: true
         CustomScriptExecutionCommand: src\VSSDK\NuGet\AllowUnstablePackages.ps1
     - task: benjhuser.tfs-extensions-build-tasks.trigger-build-task.TriggerBuild@3
