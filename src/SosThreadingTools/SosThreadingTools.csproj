@@ -13,6 +13,8 @@
     <PackageId>$(MSBuildProjectName)</PackageId>
     <AssemblyName>$(MSBuildProjectName)Managed</AssemblyName>
     <DnneNativeBinaryName>$(MSBuildProjectName)</DnneNativeBinaryName>
+    <DnneCompilerUserFlags>$(DnneCompilerUserFlags) /W3 /guard:cf</DnneCompilerUserFlags>
+    <DnneLinkerUserFlags>$(DnneLinkerUserFlags) /guard:cf</DnneLinkerUserFlags>
     <DebugSymbols>true</DebugSymbols>
 
     <Description>A WinDBG extension that contains the !DumpAsync command for .NET Framework processes.</Description>
