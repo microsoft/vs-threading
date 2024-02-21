@@ -2,11 +2,14 @@ parameters:
 - name: ArchiveSymbols
   type: boolean
   default: true
+- name: RealSign
+  displayName: Real sign?
+  type: boolean
 
 stages:
 - stage: release
   displayName: Publish
-  condition: and(succeeded(), eq(dependencies.Build.outputs['Windows.SetPipelineVariables.SignType'], 'Real'))
+  condition: and(succeeded(), eq('${{ parameters.RealSign }}', 'true'))
   jobs:
   - ${{ if parameters.ArchiveSymbols }}:
     - job: symbol_archive
@@ -30,34 +33,32 @@ stages:
           SymbolsAgentPath: $(Pipeline.Workspace)/symbols-legacy
           azureSubscription: Symbols Upload (DevDiv)
 
-  - job: push
-    displayName: azure-public/vssdk feed
-    ${{ if parameters.ArchiveSymbols }}:
-      dependsOn: symbol_archive
-    pool:
-      name: AzurePipelines-EO
-      demands:
-      - ImageOverride -equals AzurePipelinesUbuntu20.04compliantGPT
-      os: Linux
-    steps:
-    - checkout: none
-    - download: current
-      artifact: Variables-Windows
-      displayName: 🔻 Download Variables-Windows artifact
-    - powershell: $(Pipeline.Workspace)/Variables-Windows/_pipelines.ps1
-      displayName: ⚙️ Set pipeline variables based on artifacts
-    - download: current
-      artifact: deployables-Windows
-      displayName: 🔻 Download deployables-Windows artifact
-    - task: UseDotNet@2
-      displayName: ⚙️ Install .NET SDK
-      inputs:
-        packageType: sdk
-        version: 6.x
-    - task: NuGetAuthenticate@1
-      displayName: 🔏 Authenticate NuGet feeds
-      inputs:
-        nuGetServiceConnections: azure-public/vssdk
-        forceReinstallCredentialProvider: true
-    - script: dotnet nuget push $(Pipeline.Workspace)/deployables-Windows/NuGet/*.nupkg -s https://pkgs.dev.azure.com/azure-public/vside/_packaging/vssdk/nuget/v3/index.json --api-key azdo --skip-duplicate
-      displayName: 📦 Push nuget packages
+  - ${{ if false }}: # Switch to true to enable, but leave the condition to avoid merge conflicts later.
+    - job: push
+      displayName: azure-public/vssdk feed
+      ${{ if parameters.ArchiveSymbols }}:
+        dependsOn: symbol_archive
+      pool:
+        name: AzurePipelines-EO
+        demands:
+        - ImageOverride -equals AzurePipelinesUbuntu20.04compliantGPT
+        os: Linux
+      templateContext:
+        outputs:
+        - output: nuget
+          displayName: 📦 Push nuget packages
+          packagesToPush: '$(Pipeline.Workspace)/deployables-Windows/NuGet/*.nupkg'
+          packageParentPath: $(Pipeline.Workspace)/deployables-Windows/NuGet
+          allowPackageConflicts: true
+          nuGetFeedType: external
+          publishFeedCredentials: azure-public/vssdk
+      steps:
+      - checkout: none
+      - download: current
+        artifact: Variables-Windows
+        displayName: 🔻 Download Variables-Windows artifact
+      - powershell: $(Pipeline.Workspace)/Variables-Windows/_pipelines.ps1
+        displayName: ⚙️ Set pipeline variables based on artifacts
+      - download: current
+        artifact: deployables-Windows
+        displayName: 🔻 Download deployables-Windows artifact
