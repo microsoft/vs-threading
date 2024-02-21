@@ -14,7 +14,7 @@ trigger:
     - azure-pipelines/release.yml
 
 parameters:
-- name: includeMacOS
+- name: EnableMacOSBuild
   displayName: Build on macOS
   type: boolean
   default: false # macOS is often bogged down in Azure Pipelines
@@ -30,7 +30,6 @@ jobs:
 - template: azure-pipelines/build.yml
   parameters:
     Is1ESPT: false
-    includeMacOS: ${{ parameters.includeMacOS }}
-    ShouldSkipOptimize:
+    EnableMacOSBuild: ${{ parameters.EnableMacOSBuild }}
     RunTests: ${{ parameters.RunTests }}
 - template: azure-pipelines/richnav.yml
