@@ -33,7 +33,7 @@ stages:
           SymbolsAgentPath: $(Pipeline.Workspace)/symbols-legacy
           azureSubscription: Symbols Upload (DevDiv)
 
-  - ${{ if false }}: # Switch to true to enable, but leave the condition to avoid merge conflicts later.
+  - ${{ if true }}: # leave the condition to avoid merge conflicts later.
     - job: push
       displayName: azure-public/vssdk feed
       ${{ if parameters.ArchiveSymbols }}:
