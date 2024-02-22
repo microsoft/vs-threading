@@ -156,7 +156,7 @@ jobs:
     - checkout: self
       fetchDepth: 0 # avoid shallow clone so nbgv can do its work.
       clean: true
-    - template: install-dependencies.yml
+#    - template: install-dependencies.yml
     - template: dotnet.yml
       parameters:
         Is1ESPT: ${{ parameters.Is1ESPT }}
@@ -186,7 +186,7 @@ jobs:
     - checkout: self
       fetchDepth: 0 # avoid shallow clone so nbgv can do its work.
       clean: true
-    - template: install-dependencies.yml
+#    - template: install-dependencies.yml
     - template: dotnet.yml
       parameters:
         Is1ESPT: ${{ parameters.Is1ESPT }}
@@ -203,7 +203,7 @@ jobs:
     - checkout: self
       fetchDepth: 0 # avoid shallow clone so nbgv can do its work.
       clean: true
-    - template: install-dependencies.yml
+#    - template: install-dependencies.yml
       parameters:
         initArgs: -NoRestore
     - template: publish-symbols.yml
