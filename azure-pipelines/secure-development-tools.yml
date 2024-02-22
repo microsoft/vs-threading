@@ -1,5 +1,7 @@
 parameters:
-  EnableAPIScan:
+- name: EnableAPIScan
+  type: boolean
+  default: false
 
 steps:
 
@@ -19,39 +21,21 @@ steps:
       !**/osx*/**
     TargetFolder: $(Build.ArtifactStagingDirectory)/APIScanInputs
 
-- task: APIScan@2
-  displayName: 🔍 Run APIScan
-  inputs:
-    softwareFolder: $(Build.ArtifactStagingDirectory)/APIScanInputs
-    softwareName: $(SymbolsFeatureName)
-    softwareVersionNum: $(NBGV_MajorMinorVersion)
-    isLargeApp: false
-    toolVersion: Latest
-  condition: and(succeeded(), ${{ parameters.EnableAPIScan }}, ne(variables.ApiScanClientId, ''))
-  env:
-    AzureServicesAuthConnectionString: runAs=App;AppId=$(ApiScanClientId);TenantId=$(ApiScanTenant);AppKey=$(ApiScanSecret)
+- ${{ if parameters.EnableAPIScan }}:
+  - task: APIScan@2
+    displayName: 🔍 Run APIScan
+    inputs:
+      softwareFolder: $(Build.ArtifactStagingDirectory)/APIScanInputs
+      softwareName: $(SymbolsFeatureName)
+      softwareVersionNum: $(NBGV_MajorMinorVersion)
+      isLargeApp: false
+      toolVersion: Latest
+    env:
+      AzureServicesAuthConnectionString: runAs=App;AppId=$(ApiScanClientId);TenantId=$(ApiScanTenant);AppKey=$(ApiScanSecret)
 
-- task: SdtReport@2
-  displayName: 📃 Create Security Analysis Report
-  inputs:
-    GdnExportAllTools: true
-
-- task: PublishSecurityAnalysisLogs@3
-  displayName: 📢 Publish Code Analysis Logs
-  inputs:
-    ArtifactName: CodeAnalysisLogs
-    ArtifactType: Container
-    PublishProcessedResults: true
-    AllTools: true
-    ToolLogsNotFoundAction: Standard
-
-- task: PostAnalysis@2
-  displayName: 🏋️‍♀️ Break on compliance issues
-  inputs:
-    GdnBreakAllTools: true
-    GdnBreakGdnToolBinSkimSeverity: Warning
-    GdnBreakSuppressionFiles: $(System.DefaultWorkingDirectory)/azure-pipelines/falsepositives.gdnsuppress
-    GdnBreakSuppressionSets: falsepositives
-    GdnBreakOutputSuppressionFile: $(Build.ArtifactStagingDirectory)/guardian_failures_as_suppressions/
-    GdnBreakOutputSuppressionSet: falsepositives
-  condition: and(succeeded(), ne(variables['OptProf'], 'true'))
+  # File bugs when APIScan finds issues
+  - task: TSAUpload@2
+    displayName: 🪳 TSA upload
+    inputs:
+      GdnPublishTsaOnboard: True
+      GdnPublishTsaConfigFile: $(Build.SourcesDirectory)\azure-pipelines\TSAOptions.json

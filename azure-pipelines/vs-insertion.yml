@@ -17,6 +17,9 @@ resources:
       - Real signed
       - auto-insertion
 
+variables:
+- template: GlobalVariables.yml
+
 extends:
   template: azure-pipelines/MicroBuild.1ES.Official.yml@MicroBuildTemplate
   parameters:
@@ -33,21 +36,17 @@ extends:
         - checkout: none
         - powershell: Write-Host "##vso[build.updatebuildnumber]$(resources.pipeline.CI.runName)"
           displayName: ⚙️ Set pipeline name
-        - task: UseDotNet@2
-          displayName: ⚙️ Install .NET SDK
-          inputs:
-            packageType: sdk
-            version: 6.x
-        - task: NuGetAuthenticate@1
-          displayName: 🔏 Authenticate NuGet feeds
-          inputs:
-            forceReinstallCredentialProvider: true
         - template: azure-pipelines/release-deployment-prep.yml@self
         - download: CI
           artifact: VSInsertion-Windows
           displayName: 🔻 Download VSInsertion-Windows artifact
-        - script: dotnet nuget push $(Pipeline.Workspace)\CI\VSInsertion-windows\*.nupkg -s https://pkgs.dev.azure.com/devdiv/_packaging/VS/nuget/v3/index.json -k azdo --skip-duplicate
+        - task: 1ES.PublishNuget@1
           displayName: 📦 Push CoreXT packages to VS feed
+          inputs:
+            packagesToPush: '$(Pipeline.Workspace)/CI/VSInsertion-Windows/*.nupkg'
+            packageParentPath: $(Pipeline.Workspace)/CI/VSInsertion-Windows
+            allowPackageConflicts: true
+            publishVstsFeed: VS
         - task: MicroBuildInsertVsPayload@4
           displayName: 🏭 Insert VS Payload
           inputs:
@@ -55,6 +54,7 @@ extends:
             TeamEmail: $(TeamEmail)
             InsertionPayloadName: $(Build.Repository.Name) $(Build.BuildNumber)
             InsertionBuildPolicy: Request Perf DDRITs
+            InsertionReviewers: $(Build.RequestedFor),Andrew Arnott
             AutoCompletePR: true
             AutoCompleteMergeStrategy: Squash
         - powershell: |

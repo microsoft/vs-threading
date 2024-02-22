@@ -4348,30 +4348,34 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
     [Fact]
     public async Task ReadLockAsync_OnCompleted_CapturesExecutionContext()
     {
-        var asyncLocal = new Microsoft.VisualStudio.Threading.AsyncLocal<string>();
-        asyncLocal.Value = "expected";
-        AsyncReaderWriterLock.Awaiter? awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
-        Assumes.False(awaiter.IsCompleted);
-        var testResultSource = new TaskCompletionSource<object?>();
-        awaiter.OnCompleted(delegate
+        // Set a lock-incompatible synchronization context to ensure the issued lock will require us to yield.
+        using (new SynchronizationContext().Apply(checkForChangesOnRevert: false))
         {
-            try
+            var asyncLocal = new Microsoft.VisualStudio.Threading.AsyncLocal<string>();
+            asyncLocal.Value = "expected";
+            AsyncReaderWriterLock.Awaiter? awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
+            Assumes.False(awaiter.IsCompleted);
+            var testResultSource = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            awaiter.OnCompleted(delegate
             {
-                using (awaiter.GetResult())
+                try
                 {
-                    Assert.Equal("expected", asyncLocal.Value);
-                    testResultSource.SetResult(null);
+                    using (awaiter.GetResult())
+                    {
+                        Assert.Equal("expected", asyncLocal.Value);
+                        testResultSource.SetResult(null);
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                testResultSource.SetException(ex);
-            }
-            finally
-            {
-            }
-        });
-        await testResultSource.Task;
+                catch (Exception ex)
+                {
+                    testResultSource.SetException(ex);
+                }
+                finally
+                {
+                }
+            });
+            await testResultSource.Task;
+        }
     }
 
     [Fact]
@@ -4403,51 +4407,51 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
         await testResultSource.Task;
     }
 
-    [Fact]
+    [Fact(Skip = "Disabled after dependency updates introduced failures. See https://dev.azure.com/devdiv/DevDiv/_workitems/edit/1974921")]
     public async Task ReadLockAsync_UseTaskScheduler()
     {
         var asyncLock = new AsyncReaderWriterLockWithSpecialScheduler();
-        Assumes.Equals(0, asyncLock.StartedTaskCount);
+        Assert.Equal(0, asyncLock.StartedTaskCount);
 
         // A reader lock issued immediately will not be rescheduled.
         using (await asyncLock.ReadLockAsync())
         {
         }
 
-        Assumes.Equals(0, asyncLock.StartedTaskCount);
+        Assert.Equal(0, asyncLock.StartedTaskCount);
 
         var writeLockObtained = new AsyncManualResetEvent();
         var readLockObtained = new AsyncManualResetEvent();
         var writeLockToRelease = new AsyncManualResetEvent();
         var writeLockTask = Task.Run(async () =>
         {
-            using (await asyncLock.WriteLockAsync())
+            using (await asyncLock.WriteLockAsync(this.TimeoutToken))
             {
                 // Write lock is not scheduled through the read lock scheduler.
-                Assumes.Equals(0, asyncLock.StartedTaskCount);
+                Assert.Equal(0, asyncLock.StartedTaskCount);
                 writeLockObtained.Set();
-                await writeLockToRelease.WaitAsync();
+                await writeLockToRelease.WaitAsync(this.TimeoutToken);
             }
         });
 
-        await writeLockObtained.WaitAsync();
+        await writeLockObtained.WaitAsync(this.TimeoutToken);
         var readLockTask = Task.Run(async () =>
         {
-            using (await asyncLock.ReadLockAsync())
+            using (await asyncLock.ReadLockAsync(this.TimeoutToken))
             {
                 // Newly issued read lock is using the task scheduler.
-                Assumes.Equals(1, asyncLock.StartedTaskCount);
+                Assert.Equal(1, asyncLock.StartedTaskCount); // Unstable test. Sometimes it's 1, sometimes it's 2.
                 readLockObtained.Set();
             }
         });
 
-        await asyncLock.ScheduleSemaphore.WaitAsync();
+        await asyncLock.ScheduleSemaphore.WaitAsync(this.TimeoutToken);
         writeLockToRelease.Set();
 
-        await writeLockTask;
-        await readLockTask;
+        await writeLockTask.WithCancellation(this.TimeoutToken);
+        await readLockTask.WithCancellation(this.TimeoutToken);
 
-        Assumes.Equals(1, asyncLock.StartedTaskCount);
+        Assert.Equal(1, asyncLock.StartedTaskCount); // Unstable test. Sometimes it's 1, sometimes it's 2.
     }
 
     [Fact]

@@ -575,7 +575,7 @@ public partial class AwaitExtensionsTests : TestBase
     [Fact]
     public async Task SyncContext_Awaiter()
     {
-        TaskCompletionSource<SingleThreadedSynchronizationContext> syncContextSource = new();
+        TaskCompletionSource<SingleThreadedSynchronizationContext> syncContextSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
         SingleThreadedSynchronizationContext.Frame frame = new();
         Thread? otherThread = null;
         Task otherThreadTask = Task.Run(delegate

@@ -12,6 +12,9 @@ resources:
     name: 1ESPipelineTemplates/MicroBuildTemplate
     ref: refs/tags/release
 
+variables:
+- template: GlobalVariables.yml
+
 extends:
   template: azure-pipelines/MicroBuild.1ES.Unofficial.yml@MicroBuildTemplate
   parameters:
@@ -23,20 +26,22 @@ extends:
       variables:
         DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
         NUGET_PACKAGES: $(Agent.TempDirectory)/.nuget/packages/
-        SignTypeSelection: Real
         BuildConfiguration: Release
         ValidationBuild: true
 
       jobs:
       - template: /azure-pipelines/build.yml@self
         parameters:
+          Is1ESPT: true
+          RealSign: true
           windowsPool: VSEngSS-MicroBuild2022-1ES
-          includeMacOS: false
+          EnableMacOSBuild: false
           RunTests: false
 
     - template: /azure-pipelines/prepare-insertion-stages.yml@self
       parameters:
         ArchiveSymbols: false
+        RealSign: ${{ parameters.RealSign }}
 
     - stage: insertion
       displayName: VS insertion
@@ -48,15 +53,6 @@ extends:
         - checkout: self
           clean: true
           fetchDepth: 1
-        - task: UseDotNet@2
-          displayName: ⚙️ Install .NET SDK
-          inputs:
-            packageType: sdk
-            version: 6.x
-        - task: NuGetAuthenticate@1
-          displayName: 🔏 Authenticate NuGet feeds
-          inputs:
-            forceReinstallCredentialProvider: true
         - download: current
           artifact: Variables-Windows
           displayName: 🔻 Download Variables-Windows artifact
@@ -65,9 +61,13 @@ extends:
         - download: current
           artifact: VSInsertion-Windows
           displayName: 🔻 Download VSInsertion-Windows artifact
-        - script: dotnet nuget push VSInsertion-windows\*.nupkg -s https://pkgs.dev.azure.com/devdiv/_packaging/VS/nuget/v3/index.json -k azdo --skip-duplicate
+        - task: 1ES.PublishNuget@1
           displayName: 📦 Push CoreXT packages to VS feed
-          workingDirectory: $(Pipeline.Workspace)
+          inputs:
+            packagesToPush: '$(Pipeline.Workspace)/VSInsertion-Windows/*.nupkg'
+            packageParentPath: $(Pipeline.Workspace)/VSInsertion-Windows
+            allowPackageConflicts: true
+            publishVstsFeed: VS
         - task: MicroBuildInsertVsPayload@4
           displayName: 🏭 Insert VS Payload
           inputs:
@@ -78,7 +78,7 @@ extends:
               This PR is for **validation purposes only** for !$(System.PullRequest.PullRequestId). **Do not complete**.
             CustomScriptExecutionCommand: src/VSSDK/NuGet/AllowUnstablePackages.ps1
             InsertionBuildPolicy: Request Perf DDRITs
-            InsertionReviewers: $(Build.RequestedForEmail)
+            InsertionReviewers: $(Build.RequestedFor)
             AutoCompletePR: false
         - powershell: |
             $insertionPRId = azure-pipelines/Get-InsertionPRId.ps1

@@ -114,7 +114,7 @@ public partial class AsyncReaderWriterLock : IDisposable
     /// The source of the <see cref="Completion"/> task, which transitions to completed after
     /// the <see cref="Complete"/> method is called and all issued locks have been released.
     /// </summary>
-    private readonly TaskCompletionSource<object?> completionSource = new TaskCompletionSource<object?>();
+    private readonly TaskCompletionSource<object?> completionSource = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
 
     /// <summary>
     /// The queue of callbacks to invoke when the currently held write lock is totally released.
@@ -838,9 +838,7 @@ public partial class AsyncReaderWriterLock : IDisposable
             this.issuedReadLocks.Count == 0 && this.issuedUpgradeableReadLocks.Count == 0 && this.issuedWriteLocks.Count == 0 &&
             this.waitingReaders.Count == 0 && this.waitingUpgradeableReaders.Count == 0 && this.waitingWriters.Count == 0)
         {
-            // We must use another task to asynchronously transition this so we don't inadvertently execute continuations inline
-            // while we're holding a lock.
-            Task.Run(delegate { this.completionSource.TrySetResult(null); });
+            this.completionSource.TrySetResult(null);
         }
     }
 
