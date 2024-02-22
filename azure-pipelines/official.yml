@@ -67,6 +67,8 @@ extends:
           exclusionsFile: $(System.DefaultWorkingDirectory)\azure-pipelines\PoliCheckExclusions.xml
         suppression:
           suppressionFile: $(System.DefaultWorkingDirectory)\azure-pipelines\falsepositives.gdnsuppress
+      mbpresteps:
+      - template: /azure-pipelines/install-dependencies.yml@self
       stages:
       - stage: Build
         variables:
@@ -102,6 +104,8 @@ extends:
         sourceAnalysisPool: VSEngSS-MicroBuild2022-1ES
         suppression:
           suppressionFile: $(System.DefaultWorkingDirectory)\azure-pipelines\falsepositives.gdnsuppress
+      mbpresteps:
+      - template: /azure-pipelines/install-dependencies.yml@self
       stages:
       - stage: Build
         variables:
