@@ -47,7 +47,7 @@ parameters:
 - name: EnableAPIScan
   displayName: Include APIScan with Compliance tools
   type: boolean
-  default: false # enable when we get it passing
+  default: true
 
 resources:
   repositories:
