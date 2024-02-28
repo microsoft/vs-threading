@@ -5,7 +5,7 @@
   "tsaStamp": "DevDiv",
   "tsaEnvironment": "PROD",
   "notificationAliases": [
-     "vsidemicrobuild@microsoft.com"
+     "andarno@microsoft.com"
   ],
   "codebaseAdmins": [
       "REDMOND\\andarno"
