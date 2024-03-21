@@ -148,6 +148,12 @@ public partial class JoinableTaskContext : IDisposable
     private JoinableTaskFactory? nonJoinableFactory;
 
     /// <summary>
+    /// A special JoinableTaskFactory to detect main thread blocking tasks.
+    /// </summary>
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    private NonPostJoinableTaskFactory? nonPostJoinableTaskFactory;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="JoinableTaskContext"/> class
     /// assuming the current thread is the main thread and
     /// <see cref="SynchronizationContext.Current"/> will provide the means to switch
@@ -383,6 +389,61 @@ public partial class JoinableTaskContext : IDisposable
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Registers a callback when the current JoinableTask is blocking the UI thread.
+    /// </summary>
+    /// <typeparam name="TState">The type of state used by the callback.</typeparam>
+    /// <param name="action">A callback method.</param>
+    /// <param name="state">A state passing to the callback method.</param>
+    /// <returns>A disposable which can be used to unregister the callback.</returns>
+    public IDisposable OnMainThreadBlocked<TState>(Action<TState> action, TState state)
+    {
+        Requires.NotNull(action, nameof(action));
+
+        JoinableTask? ambientTask = this.AmbientTask;
+        if (ambientTask is null)
+        {
+            // when it is called outside of a JoinableTask, it would never block main thread in the future, so we would not want to waste time further.
+            return EmptyDisposable.Instance;
+        }
+
+        var cancellation = new DisposeToCancel();
+        CancellationToken cancellationToken = cancellation.CancellationToken;
+
+        // chain a task to ensure we would clean up all things when the ambient task is completed.
+        // A completed task would not block the main thread further.
+        _ = ambientTask.Task.ContinueWith(
+            static (_, s) => ((DisposeToCancel)s!).Dispose(),
+            cancellation,
+            cancellationToken,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
+
+        if (this.nonPostJoinableTaskFactory is null)
+        {
+            Interlocked.CompareExchange(ref this.nonPostJoinableTaskFactory, new NonPostJoinableTaskFactory(this), null);
+        }
+
+        _ = this.nonPostJoinableTaskFactory.WhenBlockingMainThreadAsync(cancellationToken)
+            .ContinueWith(
+                static (_, s) =>
+                {
+                    (JoinableTaskContext me, DisposeToCancel cancellationSource, Action<TState> callback, TState callState) = ((JoinableTaskContext, DisposeToCancel, Action<TState>, TState))s!;
+                    JoinableTask? ambientTask = me.AmbientTask;
+                    if (ambientTask?.IsCompleted == false)
+                    {
+                        cancellationSource.Dispose();
+                        callback(callState);
+                    }
+                },
+                (this, cancellation, action, state),
+                cancellationToken,
+                TaskContinuationOptions.OnlyOnRanToCompletion | TaskContinuationOptions.LazyCancellation,
+                TaskScheduler.Default);
+
+        return cancellation;
     }
 
     /// <summary>
@@ -906,6 +967,99 @@ public partial class JoinableTaskContext : IDisposable
 
                 this.node = null;
             }
+        }
+    }
+
+    /// <summary>
+    /// Represents a disposable which does nothing.
+    /// </summary>
+    private class EmptyDisposable : IDisposable, IDisposableObservable
+    {
+        public bool IsDisposed => true;
+
+        internal static IDisposable Instance { get; } = new EmptyDisposable();
+
+        public void Dispose()
+        {
+        }
+    }
+
+    /// <summary>
+    /// Implements a disposable which triggers a cancellation token when it is disposed.
+    /// </summary>
+    private class DisposeToCancel : IDisposable
+    {
+        private CancellationTokenSource? cancellationTokenSource = new();
+
+        internal CancellationToken CancellationToken => this.cancellationTokenSource?.Token ?? throw new ObjectDisposedException(nameof(DisposeToCancel));
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref this.cancellationTokenSource, null) is CancellationTokenSource cancellationTokenSource)
+            {
+                cancellationTokenSource.Cancel();
+                cancellationTokenSource.Dispose();
+            }
+        }
+    }
+
+    /// <summary>
+    /// A special JoinableTaskFactory, which does not allow tasks to be scheduled when the UI thread is pumping messages.
+    /// This allows us to detect whether a task is blocking UI thread, because it would only be able to run under this condition.
+    /// </summary>
+    private class NonPostJoinableTaskFactory : JoinableTaskFactory
+    {
+        internal NonPostJoinableTaskFactory(JoinableTaskContext owner)
+            : base(owner)
+        {
+        }
+
+        internal Task WhenBlockingMainThreadAsync(CancellationToken cancellationToken)
+        {
+            TaskCompletionSource<bool> taskCompletion = new();
+            JoinableTask detectionTask;
+
+            // By default SwitchToMainThreadAsync would not use the exact JoinableTaskFactory we want to use here, but would use the one from ambient task, so we have to do extra mile to create the child task.
+            // However, we must suppress relevance, otherwise, the SwitchToMainThreadAsync would post to the UI thread queue twice through both factories. This will defeat all the reason we create the special factory.
+            using (this.Context.SuppressRelevance())
+            {
+                detectionTask = this.RunAsync(() =>
+                {
+                    // a simpler code inside is just to await this.SwitchToMainThreadAsync(alwaysYield: true, cancellationToken)
+                    // alwaysYield is necessary to ensure we don't execute immediately when it is called on the main thread.
+                    // however, this also leads an extra yield to handle cancellation token. Also, this would throw an extra cancellation exception.
+                    // While we can suppress the exception with NoThrowAwaitable(), it would lead us to queue the continuation one more time in the case the cancellation is triggered, which is a waste.
+                    // This leads the extra code done below.
+                    MainThreadAwaiter awaiter = this.SwitchToMainThreadAsync(cancellationToken).NoThrowAwaitable().GetAwaiter();
+
+                    awaiter.UnsafeOnCompleted(() =>
+                    {
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            taskCompletion.SetCanceled();
+                        }
+                        else
+                        {
+                            taskCompletion.SetResult(true);
+                        }
+
+                        // ensure the cancellation registration is disposed.
+                        awaiter.GetResult();
+                    });
+
+                    return taskCompletion.Task;
+                });
+            }
+
+            // the detection task must be joined to the current task to ensure JTF dependencies to work (after we suppress relevance earlier).
+            _ = detectionTask.JoinAsync();
+
+            return taskCompletion.Task;
+        }
+
+        protected internal override void PostToUnderlyingSynchronizationContext(SendOrPostCallback callback, object state)
+        {
+            return;
         }
     }
 }

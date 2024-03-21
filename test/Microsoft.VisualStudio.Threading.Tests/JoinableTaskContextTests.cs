@@ -4,9 +4,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using Microsoft;
 using Microsoft.VisualStudio.Threading;
 using Xunit;
 using Xunit.Abstractions;
@@ -702,6 +704,627 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
 
         Assert.NotNull(checkTask);
         checkTask!.Wait();
+    }
+
+    [Fact]
+    public void OnMainThreadBlockedReturnsDisposedObjectWithNoTask()
+    {
+        IDisposable disposable = this.Context.OnMainThreadBlocked<object?>(_ => { }, null);
+        Assert.NotNull(disposable);
+        Assert.True(disposable is IDisposableObservable { IsDisposed: true });
+    }
+
+    [Fact]
+    public void OnMainThreadBlockedNotCalledWhenMainThreadNotBlocked()
+    {
+        bool isCalled = false;
+        Task? spinOff = null;
+
+        this.SimulateUIThread(() =>
+        {
+            spinOff = Task.Run(async () =>
+            {
+                await this.Context.Factory.RunAsync(async () =>
+                {
+                    IDisposable disposable = this.Context.OnMainThreadBlocked<object?>(_ => { isCalled = true; }, null);
+                    await Task.Delay(10);
+                });
+            });
+
+            return Task.CompletedTask;
+        });
+
+        spinOff!.Wait();
+        Assert.False(isCalled);
+    }
+
+    [Fact]
+    public void OnMainThreadBlockedInJoinableTaskRun()
+    {
+        bool isCalled = false;
+
+        this.SimulateUIThread(() =>
+        {
+            this.Context.Factory.Run(async () =>
+            {
+                var taskCompletionSource = new TaskCompletionSource<bool>();
+                IDisposable disposable = this.Context.OnMainThreadBlocked(
+                    s =>
+                    {
+                        isCalled = true;
+                        s.SetResult(true);
+                    },
+                    taskCompletionSource);
+                await taskCompletionSource.Task;
+            });
+
+            return Task.CompletedTask;
+        });
+
+        Assert.True(isCalled);
+    }
+
+    [Fact]
+    public void OnMainThreadBlockedInJoinableTaskRunChildTask()
+    {
+        bool isCalled = false;
+
+        this.SimulateUIThread(() =>
+        {
+            this.Context.Factory.Run(async () =>
+            {
+                var taskCompletionSource = new TaskCompletionSource<bool>();
+                await this.Context.Factory.RunAsync(() =>
+                {
+                    _ = this.Context.OnMainThreadBlocked(
+                        s =>
+                        {
+                            isCalled = true;
+                            s.SetResult(true);
+                        },
+                        taskCompletionSource);
+                    return taskCompletionSource.Task;
+                });
+            });
+
+            return Task.CompletedTask;
+        });
+
+        Assert.True(isCalled);
+    }
+
+    [Fact]
+    public void OnMainThreadBlockedInJoinableTaskRunChildTaskOnBackgroundThread()
+    {
+        bool isCalled = false;
+
+        this.SimulateUIThread(() =>
+        {
+            this.Context.Factory.Run(async () =>
+            {
+                await TaskScheduler.Default;
+                var taskCompletionSource = new TaskCompletionSource<bool>();
+                await this.Context.Factory.RunAsync(() =>
+                {
+                    _ = this.Context.OnMainThreadBlocked(
+                        s =>
+                        {
+                            isCalled = true;
+                            s.SetResult(true);
+                        },
+                        taskCompletionSource);
+                    return taskCompletionSource.Task;
+                });
+            });
+
+            return Task.CompletedTask;
+        });
+
+        Assert.True(isCalled);
+    }
+
+    [Fact]
+    public void OnMainThreadBlockedInJoinableTaskRunChildTaskWhenWaited()
+    {
+        bool isCalled = false;
+
+        this.SimulateUIThread(() =>
+        {
+            this.Context.Factory.Run(async () =>
+            {
+                JoinableTask? childTask = null;
+                var taskCompletionSource = new TaskCompletionSource<bool>();
+
+                using (this.Context.SuppressRelevance())
+                {
+                    childTask = this.Context.Factory.RunAsync(async () =>
+                    {
+                        await TaskScheduler.Default;
+                        _ = this.Context.OnMainThreadBlocked(
+                            s =>
+                            {
+                                isCalled = true;
+                                s.SetResult(true);
+                            },
+                            taskCompletionSource);
+                        await taskCompletionSource.Task;
+                    });
+                }
+
+                await Task.Delay(20);
+                Assert.False(isCalled);
+
+                await childTask;
+            });
+
+            return Task.CompletedTask;
+        });
+
+        Assert.True(isCalled);
+    }
+
+    [Fact]
+    public void OnMainThreadBlockedInJoinableTaskRunChildTaskWhenWaited2()
+    {
+        bool isCalled = false;
+
+        var taskCompletionSource = new TaskCompletionSource<bool>();
+
+        JoinableTask spinOffTask;
+        spinOffTask = this.Context.Factory.RunAsync(async () =>
+        {
+            await TaskScheduler.Default;
+            _ = this.Context.OnMainThreadBlocked(
+                s =>
+                {
+                    isCalled = true;
+                    s.SetResult(true);
+                },
+                taskCompletionSource);
+            await taskCompletionSource.Task;
+        });
+
+        this.SimulateUIThread(async () =>
+        {
+            await Task.Delay(20);
+            Assert.False(isCalled);
+
+            this.Context.Factory.Run(async () =>
+            {
+                Assert.False(isCalled);
+
+                await spinOffTask;
+            });
+        });
+
+        Assert.True(isCalled);
+    }
+
+    [Fact]
+    public void OnMainThreadBlockedNotCalledAfterDisposing()
+    {
+        bool isCalled = false;
+
+        this.SimulateUIThread(() =>
+        {
+            this.Context.Factory.Run(async () =>
+            {
+                JoinableTask? childTask = null;
+                var taskCompletionSource = new TaskCompletionSource<bool>();
+                IDisposable? registration = null;
+
+                using (this.Context.SuppressRelevance())
+                {
+                    childTask = this.Context.Factory.RunAsync(async () =>
+                    {
+                        registration = this.Context.OnMainThreadBlocked<object?>(
+                            _ =>
+                            {
+                                isCalled = true;
+                            },
+                            null);
+                        await taskCompletionSource.Task;
+                    });
+                }
+
+                await Task.Delay(20);
+                Assert.False(isCalled);
+
+                registration?.Dispose();
+                await Task.Delay(20);
+
+                taskCompletionSource.TrySetResult(true);
+                await childTask;
+            });
+
+            return Task.CompletedTask;
+        });
+
+        Assert.False(isCalled);
+    }
+
+    [Fact]
+    public void OnMainThreadBlockedFineToDisposeMultipleTimes()
+    {
+        bool isCalled = false;
+
+        this.SimulateUIThread(() =>
+        {
+            this.Context.Factory.Run(async () =>
+            {
+                JoinableTask? childTask = null;
+                var taskCompletionSource = new TaskCompletionSource<bool>();
+                IDisposable? registration = null;
+
+                using (this.Context.SuppressRelevance())
+                {
+                    childTask = this.Context.Factory.RunAsync(async () =>
+                    {
+                        registration = this.Context.OnMainThreadBlocked<object?>(
+                            _ =>
+                            {
+                                isCalled = true;
+                            },
+                            null);
+                        await taskCompletionSource.Task;
+                    });
+                }
+
+                await Task.Delay(20);
+                Assert.False(isCalled);
+
+                Assert.NotNull(registration);
+
+                registration.Dispose();
+                registration.Dispose();
+
+                await Task.Delay(20);
+
+                registration.Dispose();
+
+                taskCompletionSource.TrySetResult(true);
+                await childTask;
+            });
+
+            return Task.CompletedTask;
+        });
+
+        Assert.False(isCalled);
+    }
+
+    [Fact, Trait("GC", "true")]
+    public void OnMainThreadBlockedNotLeakingObject()
+    {
+        TaskCompletionSource<bool> stopTask = new TaskCompletionSource<bool>();
+
+        WeakReference state = SpinOffTask(stopTask.Task, out JoinableTask newTask);
+
+        // MainThreadAwaiter always queues the cancelation callback through ThreadPool.QueueUserWorkItem to make it difficult to control when the cancellation is handled.
+        Thread.Sleep(20);
+
+        GC.Collect();
+        Assert.False(state.IsAlive);
+
+        stopTask.SetResult(true);
+        newTask.Join();
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // mem leak detection requires literally popping locals with strong refs off the stack
+        WeakReference SpinOffTask(Task waitingTask, out JoinableTask newTask)
+        {
+            object? state = new();
+            WeakReference weakState = new WeakReference(state);
+            IDisposable? registration = null;
+            var nowBlocking = new AsyncManualResetEvent();
+
+            newTask = this.Context.Factory.RunAsync(async () =>
+            {
+                await TaskScheduler.Default;
+                registration = this.Context.OnMainThreadBlocked(s => { }, state);
+                state = null;
+
+                Thread.MemoryBarrier();
+                nowBlocking.Set();
+
+                await waitingTask;
+            });
+
+            nowBlocking.WaitAsync().Wait();
+
+            state = null;
+            registration?.Dispose();
+
+            Thread.MemoryBarrier();
+            return weakState;
+        }
+    }
+
+    [Fact, Trait("GC", "true")]
+    public void OnMainThreadBlockedNotLeakingObjectWhenTaskIsCompleted()
+    {
+        WeakReference state = SpinOffTask(out JoinableTask newTask);
+
+        // MainThreadAwaiter always queues the cancelation callback through ThreadPool.QueueUserWorkItem to make it difficult to control when the cancellation is handled.
+        Thread.Sleep(20);
+
+        GC.Collect();
+        Assert.False(state.IsAlive);
+
+        newTask.Join();
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // mem leak detection requires literally popping locals with strong refs off the stack
+        WeakReference SpinOffTask(out JoinableTask newTask)
+        {
+            object? state = new();
+            WeakReference weakState = new WeakReference(state);
+            var callbackIsSet = new AsyncManualResetEvent();
+
+            newTask = this.Context.Factory.RunAsync(async () =>
+            {
+                await TaskScheduler.Default;
+
+                _ = this.Context.OnMainThreadBlocked(s => { }, state);
+                state = null;
+                Thread.MemoryBarrier();
+
+                callbackIsSet.Set();
+
+                await Task.Yield();
+            });
+
+            callbackIsSet.WaitAsync().Wait();
+
+            state = null;
+            Thread.MemoryBarrier();
+
+            newTask.Join();
+            return weakState;
+        }
+    }
+
+    [Fact, Trait("GC", "true")]
+    public void OnMainThreadBlockedNotLeakingDisposeCancellation()
+    {
+        WeakReference state = SpinOffTask(out JoinableTask newTask);
+
+        // MainThreadAwaiter always queues the cancelation callback through ThreadPool.QueueUserWorkItem to make it difficult to control when the cancellation is handled.
+        Thread.Sleep(20);
+
+        GC.Collect();
+        Assert.False(state.IsAlive);
+
+        newTask.Join();
+
+        [MethodImpl(MethodImplOptions.NoInlining)] // mem leak detection requires literally popping locals with strong refs off the stack
+        WeakReference SpinOffTask(out JoinableTask newTask)
+        {
+            WeakReference? weakState = null;
+            newTask = this.Context.Factory.RunAsync(async () =>
+            {
+                await TaskScheduler.Default;
+
+                weakState = new WeakReference(this.Context.OnMainThreadBlocked<object?>(s => { }, null));
+
+                await Task.Yield();
+            });
+
+            newTask.Join();
+
+            Assert.NotNull(weakState);
+            return weakState;
+        }
+    }
+
+    [Fact]
+    public void WaitUnlessBlockingMainThreadAsyncReturnsCompletedTask()
+    {
+        var taskCompletionSource = new TaskCompletionSource<bool>();
+        taskCompletionSource.SetResult(true);
+
+        var cancellationSource = new CancellationTokenSource();
+        Assert.Equal(taskCompletionSource.Task.WaitUnlessBlockingMainThreadAsync(this.Context, cancellationSource.Token), taskCompletionSource.Task);
+    }
+
+    [Fact]
+    public void WaitUnlessBlockingMainThreadAsyncReturnsTaskUnderSimpleCondition()
+    {
+        var taskCompletionSource = new TaskCompletionSource<bool>();
+        Assert.Equal(taskCompletionSource.Task.WaitUnlessBlockingMainThreadAsync(this.Context, CancellationToken.None), taskCompletionSource.Task);
+    }
+
+    [Fact]
+    public void WaitUnlessBlockingMainThreadAsyncCancellable()
+    {
+        var taskCompletionSource = new TaskCompletionSource<bool>();
+
+        var cancellationSource = new CancellationTokenSource();
+        Task waitingTask = taskCompletionSource.Task.WaitUnlessBlockingMainThreadAsync(this.Context, cancellationSource.Token);
+
+        Assert.False(waitingTask.IsCompleted);
+        cancellationSource.Cancel();
+
+        try
+        {
+            waitingTask.GetAwaiter().GetResult();
+            Assert.Fail("Expect to throw.");
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    [Fact]
+    public void WaitUnlessBlockingMainThreadAsyncCancellableInsideJTF()
+    {
+        JoinableTask task = this.Context.Factory.RunAsync(async () =>
+        {
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+
+            var cancellationSource = new CancellationTokenSource();
+            Task waitingTask = taskCompletionSource.Task.WaitUnlessBlockingMainThreadAsync(this.Context, cancellationSource.Token);
+
+            Assert.False(waitingTask.IsCompleted);
+            cancellationSource.Cancel();
+
+            try
+            {
+                await waitingTask;
+                Assert.Fail("Expect to throw.");
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        });
+
+        task.Join();
+    }
+
+    [Fact]
+    public void WaitUnlessBlockingMainThreadAsyncCanComplete()
+    {
+        var taskCompletionSource = new TaskCompletionSource<bool>();
+
+        var cancellationSource = new CancellationTokenSource();
+        Task waitingTask = taskCompletionSource.Task.WaitUnlessBlockingMainThreadAsync(this.Context, cancellationSource.Token);
+
+        Assert.False(waitingTask.IsCompleted);
+        taskCompletionSource.SetResult(true);
+
+        waitingTask.Wait(TestTimeout);
+    }
+
+    [Fact]
+    public void WaitUnlessBlockingMainThreadAsyncCanCompleteInsideJTF()
+    {
+        this.Context.Factory.Run(async () =>
+        {
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+
+            var cancellationSource = new CancellationTokenSource();
+            Task waitingTask = taskCompletionSource.Task.WaitUnlessBlockingMainThreadAsync(this.Context, cancellationSource.Token);
+
+            Assert.False(waitingTask.IsCompleted);
+            taskCompletionSource.SetResult(true);
+
+            await waitingTask;
+        });
+    }
+
+    [Fact]
+    public void WaitUnlessBlockingMainThreadAsyncAbortWithinMainThreadBlockingStack()
+    {
+        this.SimulateUIThread(() =>
+        {
+            this.Context.Factory.Run(async () =>
+            {
+                var taskCompletionSource = new TaskCompletionSource<bool>();
+                try
+                {
+                    await taskCompletionSource.Task.WaitUnlessBlockingMainThreadAsync(this.Context, CancellationToken.None);
+                    Assert.Fail("Expect to throw.");
+                }
+                catch (OperationCanceledException)
+                {
+                }
+            });
+
+            return Task.CompletedTask;
+        });
+    }
+
+    [Fact]
+    public void WaitUnlessBlockingMainThreadAsyncAbortWithinMainThreadBlockingStack2()
+    {
+        this.SimulateUIThread(() =>
+        {
+            this.Context.Factory.Run(async () =>
+            {
+                var taskCompletionSource = new TaskCompletionSource<bool>();
+                var cancellationSource = new CancellationTokenSource();
+                try
+                {
+                    await taskCompletionSource.Task.WaitUnlessBlockingMainThreadAsync(this.Context, cancellationSource.Token);
+                    Assert.Fail("Expect to throw.");
+                }
+                catch (OperationCanceledException)
+                {
+                }
+            });
+
+            return Task.CompletedTask;
+        });
+    }
+
+    [Fact]
+    public void WaitUnlessBlockingMainThreadAsyncAbortWhenMainThreadingBlockedLater()
+    {
+        JoinableTask firstTask = this.Context.Factory.RunAsync(async () =>
+        {
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var cancellationSource = new CancellationTokenSource();
+            try
+            {
+                await taskCompletionSource.Task.WaitUnlessBlockingMainThreadAsync(this.Context, cancellationSource.Token);
+                Assert.Fail("Expect to throw.");
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        });
+
+        Assert.False(firstTask.IsCompleted);
+
+        this.SimulateUIThread(() =>
+        {
+            firstTask.Join();
+            return Task.CompletedTask;
+        });
+    }
+
+    [Fact]
+    public void WaitUnlessBlockingMainThreadAsyncAbortWhenMainThreadingBlockedLaterAwaited()
+    {
+        JoinableTask firstTask = this.Context.Factory.RunAsync(async () =>
+        {
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            var cancellationSource = new CancellationTokenSource();
+            try
+            {
+                await taskCompletionSource.Task.WaitUnlessBlockingMainThreadAsync(this.Context, cancellationSource.Token);
+                Assert.Fail("Expect to throw.");
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        });
+
+        Assert.False(firstTask.IsCompleted);
+
+        this.SimulateUIThread(() =>
+        {
+            this.Context.Factory.Run(async () => await firstTask);
+            return Task.CompletedTask;
+        });
+    }
+
+    [Fact]
+    public void WaitUnlessBlockingMainThreadAsyncTaskCompletedFirst()
+    {
+        var taskCompletionSource = new TaskCompletionSource<bool>();
+        var cancellationSource = new CancellationTokenSource();
+
+        JoinableTask firstTask = this.Context.Factory.RunAsync(async () =>
+        {
+            await taskCompletionSource.Task.WaitUnlessBlockingMainThreadAsync(this.Context, cancellationSource.Token);
+        });
+
+        Assert.False(firstTask.IsCompleted);
+
+        this.SimulateUIThread(() =>
+        {
+            taskCompletionSource.SetResult(true);
+            this.Context.Factory.Run(async () => await firstTask);
+            return Task.CompletedTask;
+        });
     }
 
     [Fact]
