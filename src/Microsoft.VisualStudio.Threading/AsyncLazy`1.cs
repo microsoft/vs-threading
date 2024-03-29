@@ -245,12 +245,7 @@ public class AsyncLazy<T>
             resumableAwaiter?.Resume();
         }
 
-        if (!this.value.IsCompleted)
-        {
-            this.joinableTask?.JoinAsync(cancellationToken).Forget();
-        }
-
-        return this.value.WithCancellation(cancellationToken);
+        return this.joinableTask?.JoinAsync(continueOnCapturedContext: false, cancellationToken) ?? this.value.WithCancellation(cancellationToken);
     }
 
     /// <summary>
