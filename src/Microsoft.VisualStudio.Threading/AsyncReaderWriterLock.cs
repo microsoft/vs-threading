@@ -1066,6 +1066,7 @@ public partial class AsyncReaderWriterLock : IDisposable
     private bool TryIssueLock(Awaiter awaiter, bool previouslyQueued, bool skipPendingWriteLockCheck = false)
     {
         bool issued = false;
+        bool isOrdinaryNestedLock = false; // ordinary nested lock is a nested lock always granted immediately. We don't need write ETW event to reduce noise in traces.
 
         lock (this.syncObject)
         {
@@ -1108,10 +1109,12 @@ public partial class AsyncReaderWriterLock : IDisposable
                                 }
 
                                 issued = true;
+                                isOrdinaryNestedLock = true;
                             }
                             else if (hasRead || hasUpgradeableRead)
                             {
                                 issued = true;
+                                isOrdinaryNestedLock = true;
                             }
 
                             break;
@@ -1119,6 +1122,7 @@ public partial class AsyncReaderWriterLock : IDisposable
                             if (hasUpgradeableRead || hasWrite)
                             {
                                 issued = true;
+                                isOrdinaryNestedLock = true;
                             }
                             else if (hasRead)
                             {
@@ -1137,6 +1141,7 @@ public partial class AsyncReaderWriterLock : IDisposable
                             if (hasWrite)
                             {
                                 issued = true;
+                                isOrdinaryNestedLock = true;
                             }
                             else if (hasRead && !hasUpgradeableRead)
                             {
@@ -1170,7 +1175,10 @@ public partial class AsyncReaderWriterLock : IDisposable
 
         if (issued)
         {
-            this.etw.Issued(awaiter);
+            if (!isOrdinaryNestedLock)
+            {
+                this.etw.Issued(awaiter);
+            }
         }
         else
         {
