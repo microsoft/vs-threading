@@ -2717,9 +2717,11 @@ public partial class AsyncReaderWriterLock : IDisposable
         {
             Requires.NotNull(d, nameof(d));
 
+            int? requestId = null;
             if (ThreadingEventSource.Instance.IsEnabled())
             {
-                ThreadingEventSource.Instance.PostExecutionStart(d.GetHashCode(), false);
+                requestId = JoinableTaskFactory.SingleExecuteProtector.GetNextRequestId();
+                ThreadingEventSource.Instance.PostExecutionStart(requestId.Value, false);
             }
 
             // Take special care to minimize allocations and overhead by avoiding implicit delegates and closures.
@@ -2727,12 +2729,12 @@ public partial class AsyncReaderWriterLock : IDisposable
             // nor any other local variables, which means the only allocations from this call
             // are our Tuple and the ThreadPool's bare-minimum necessary to track the work.
             ThreadPool.QueueUserWorkItem(
-                s =>
+                static s =>
                 {
-                    var tuple = (Tuple<NonConcurrentSynchronizationContext, SendOrPostCallback, object>)s!;
-                    tuple.Item1.PostHelper(tuple.Item2, tuple.Item3);
+                    var tuple = (Tuple<NonConcurrentSynchronizationContext, SendOrPostCallback, object, int?>)s!;
+                    tuple.Item1.PostHelper(tuple.Item2, tuple.Item3, tuple.Item4);
                 },
-                Tuple.Create(this, d, state));
+                Tuple.Create(this, d, state, requestId));
         }
 
         /// <inheritdoc/>
@@ -2769,7 +2771,7 @@ public partial class AsyncReaderWriterLock : IDisposable
         /// We use async void instead of async Task because the caller will never
         /// use the result, and this way the compiler doesn't have to create the Task object.
         /// </remarks>
-        private async void PostHelper(SendOrPostCallback d, object state)
+        private async void PostHelper(SendOrPostCallback d, object state, int? requestId)
         {
             bool delegateInvoked = false;
             try
@@ -2779,9 +2781,9 @@ public partial class AsyncReaderWriterLock : IDisposable
                 try
                 {
                     SynchronizationContext.SetSynchronizationContext(this);
-                    if (ThreadingEventSource.Instance.IsEnabled())
+                    if (ThreadingEventSource.Instance.IsEnabled() && requestId.HasValue)
                     {
-                        ThreadingEventSource.Instance.PostExecutionStop(d.GetHashCode());
+                        ThreadingEventSource.Instance.PostExecutionStop(requestId.Value);
                     }
 
                     delegateInvoked = true; // set now, before the delegate might throw.

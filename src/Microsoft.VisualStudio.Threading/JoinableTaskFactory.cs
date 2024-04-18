@@ -1067,9 +1067,19 @@ public partial class JoinableTaskFactory
         internal static readonly WaitCallback ExecuteOnceWaitCallback = state => ((SingleExecuteProtector)state!).TryExecute();
 
         /// <summary>
+        /// Tracks the next request ID to assign to <see cref="requestId"/> for a new object.
+        /// </summary>
+        private static int nextRequestId;
+
+        /// <summary>
         /// The job that created this wrapper.
         /// </summary>
         private JoinableTask? job;
+
+        /// <summary>
+        /// The ID to use when calling <see cref="ThreadingEventSource.PostExecutionStop(int)"/>.
+        /// </summary>
+        private int? requestId;
 
         private bool raiseTransitionComplete;
 
@@ -1117,6 +1127,17 @@ public partial class JoinableTaskFactory
                 return this.WalkAsyncReturnStackFrames().First(); // Top frame of the return callstack.
             }
         }
+
+        /// <summary>
+        /// Returns a unique value for use when calling <see cref="ThreadingEventSource.PostExecutionStart(int, bool)"/>
+        /// and <see cref="ThreadingEventSource.PostExecutionStop(int)"/>.
+        /// </summary>
+        /// <returns>The unique value.</returns>
+        /// <remarks>
+        /// Values may be negative or zero if more than <see cref="int.MaxValue"/> IDs have been created.
+        /// Values may be reused if more than 2^32 IDs have been created.
+        /// </remarks>
+        internal static int GetNextRequestId() => Interlocked.Increment(ref nextRequestId);
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SingleExecuteProtector"/> class.
@@ -1209,13 +1230,21 @@ public partial class JoinableTaskFactory
             }
         }
 
-        internal void RaiseTransitioningEvents()
+        internal void RaiseTransitioningEvents(bool mainThreadAffinitized, bool synchronouslyBlockingMainThread)
         {
-            Assumes.False(this.raiseTransitionComplete); // if this method is called twice, that's the sign of a problem.
-            RoslynDebug.Assert(this.job is object);
+            if (ThreadingEventSource.Instance.IsEnabled())
+            {
+                this.requestId = GetNextRequestId();
+                ThreadingEventSource.Instance.PostExecutionStart(this.requestId.Value, mainThreadAffinitized);
+            }
 
-            this.raiseTransitionComplete = true;
-            this.job.Factory.OnTransitioningToMainThread(this.job);
+            if (mainThreadAffinitized && !synchronouslyBlockingMainThread)
+            {
+                Assumes.False(this.raiseTransitionComplete); // if this method is called twice, that's the sign of a problem.
+                this.raiseTransitionComplete = true;
+                RoslynDebug.Assert(this.job is object);
+                this.job.Factory.OnTransitioningToMainThread(this.job);
+            }
         }
 
         /// <summary>
@@ -1259,9 +1288,9 @@ public partial class JoinableTaskFactory
         /// </summary>
         private void OnExecuting()
         {
-            if (ThreadingEventSource.Instance.IsEnabled())
+            if (ThreadingEventSource.Instance.IsEnabled() && this.requestId is int requestId)
             {
-                ThreadingEventSource.Instance.PostExecutionStop(this.GetHashCode());
+                ThreadingEventSource.Instance.PostExecutionStop(requestId);
             }
 
             // While raising the event, automatically remove the handlers since we'll only
