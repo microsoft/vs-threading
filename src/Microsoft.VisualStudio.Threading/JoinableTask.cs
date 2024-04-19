@@ -737,15 +737,7 @@ public partial class JoinableTask : IJoinableTaskDependent
                 bool backgroundThreadQueueUpdated = false;
                 wrapper = SingleExecuteProtector.Create(this, d, state);
 
-                if (ThreadingEventSource.Instance.IsEnabled())
-                {
-                    ThreadingEventSource.Instance.PostExecutionStart(wrapper.GetHashCode(), mainThreadAffinitized);
-                }
-
-                if (mainThreadAffinitized && !synchronouslyBlockingMainThread)
-                {
-                    wrapper.RaiseTransitioningEvents();
-                }
+                wrapper.RaiseTransitioningEvents(mainThreadAffinitized, synchronouslyBlockingMainThread);
 
                 lock (this.JoinableTaskContext.SyncContextLock)
                 {
