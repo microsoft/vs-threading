@@ -50,40 +50,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <returns>A task that completes after the asynchronous operation completes and the join is reverted, with the result of the operation.</returns>
         public new Task<T> JoinAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            if (this.IsCompleted)
-            {
-                Assumes.True(this.Task.IsCompleted);
-                return this.Task;
-            }
-
-            if (!cancellationToken.CanBeCanceled)
-            {
-                // A completed or failed JoinableTask will remove itself from parent dependency chains, so we don't repeat it which requires the sync lock.
-                _ = this.AmbientJobJoinsThis();
-                return this.Task;
-            }
-            else
-            {
-                return JoinSlowAsync(this, cancellationToken);
-            }
-
-            static async Task<T> JoinSlowAsync(JoinableTask<T> me, CancellationToken cancellationToken)
-            {
-                // No need to dispose of this except in cancellation case.
-                JoinableTaskCollection.JoinRelease dependency = me.AmbientJobJoinsThis();
-
-                try
-                {
-                    await me.Task.WithCancellation(continueOnCapturedContext: AwaitShouldCaptureSyncContext, cancellationToken).ConfigureAwait(AwaitShouldCaptureSyncContext);
-                    return await me.Task.ConfigureAwait(AwaitShouldCaptureSyncContext);
-                }
-                catch (OperationCanceledException)
-                {
-                    dependency.Dispose();
-                    throw;
-                }
-            }
+            return this.JoinAsync(continueOnCapturedContext: AwaitShouldCaptureSyncContext, cancellationToken);
         }
 
         /// <summary>
@@ -100,7 +67,7 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <summary>
-        /// Gets an awaiter that is equivalent to calling <see cref="JoinAsync"/>.
+        /// Gets an awaiter that is equivalent to calling <see cref="JoinAsync(CancellationToken)"/>.
         /// </summary>
         /// <returns>A task whose result is the result of the asynchronous operation.</returns>
         public new TaskAwaiter<T> GetAwaiter()
@@ -112,6 +79,51 @@ namespace Microsoft.VisualStudio.Threading
         {
             base.CompleteOnCurrentThread();
             return this.Task.GetAwaiter().GetResult();
+        }
+
+        /// <summary>
+        /// Joins any main thread affinity of the caller with the asynchronous operation to avoid deadlocks
+        /// in the event that the main thread ultimately synchronously blocks waiting for the operation to complete.
+        /// </summary>
+        /// <param name="continueOnCapturedContext">A value indicating whether *internal* continuations required to respond to cancellation should run on the current <see cref="SynchronizationContext"/>.</param>
+        /// <param name="cancellationToken">A cancellation token that will exit this method before the task is completed.</param>
+        /// <returns>A task that completes after the asynchronous operation completes and the join is reverted, with the result of the operation.</returns>
+        internal Task<T> JoinAsync(bool continueOnCapturedContext, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (this.IsCompleted)
+            {
+                Assumes.True(this.Task.IsCompleted);
+                return this.Task;
+            }
+
+            if (!cancellationToken.CanBeCanceled)
+            {
+                // A completed or failed JoinableTask will remove itself from parent dependency chains, so we don't repeat it which requires the sync lock.
+                _ = this.AmbientJobJoinsThis();
+                return this.Task;
+            }
+            else
+            {
+                return JoinSlowAsync(this, continueOnCapturedContext, cancellationToken);
+            }
+
+            static async Task<T> JoinSlowAsync(JoinableTask<T> me, bool continueOnCapturedContext, CancellationToken cancellationToken)
+            {
+                // No need to dispose of this except in cancellation case.
+                JoinableTaskCollection.JoinRelease dependency = me.AmbientJobJoinsThis();
+
+                try
+                {
+                    await me.Task.WithCancellation(continueOnCapturedContext, cancellationToken).ConfigureAwait(continueOnCapturedContext);
+                    return await me.Task.ConfigureAwait(continueOnCapturedContext);
+                }
+                catch (OperationCanceledException)
+                {
+                    dependency.Dispose();
+                    throw;
+                }
+            }
         }
 
         /// <inheritdoc/>
