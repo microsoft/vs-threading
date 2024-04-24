@@ -3,9 +3,6 @@ trigger:
   branches:
     include:
     - main
-    - 'v16.*'
-    - 'v17.*'
-    - 'validate/*'
   paths:
     exclude:
     - .github/
