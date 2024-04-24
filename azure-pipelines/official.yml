@@ -12,14 +12,6 @@ trigger:
     - doc/
     - '*.md'
     - .vscode/
-schedules:
-- cron: "0 3 * * *" # Daily @ 8 PM PST
-  displayName: Daily vs-insertion
-  branches:
-    include:
-    - main
-    - 'v16.*'
-    - 'v17.*'
 
 parameters:
 - name: SignTypeSelection
