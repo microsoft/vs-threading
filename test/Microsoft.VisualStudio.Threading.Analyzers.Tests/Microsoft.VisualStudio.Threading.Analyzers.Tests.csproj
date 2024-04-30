@@ -29,8 +29,6 @@
     <PackageReference Include="Microsoft.VisualStudio.Interop" />
     <PackageReference Include="Microsoft.VisualStudio.Shell.15.0" IncludeAssets="runtime" />
     <PackageReference Include="Microsoft.VisualStudio.Shell.Framework" IncludeAssets="runtime" />
-    <PackageReference Include="System.Drawing.Common" />
-    <PackageReference Include="System.Threading.Tasks.Dataflow" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="Xunit.SkippableFact" />

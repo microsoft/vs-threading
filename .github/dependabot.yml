@@ -9,3 +9,4 @@ updates:
     interval: weekly
   ignore:
   - dependency-name: Microsoft.CodeAnalysis* # We intentionally target older VS versions.
+  - dependency-name: Microsoft.Bcl.AsyncInterfaces # We want to match the minimum target .NET runtime
