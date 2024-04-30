@@ -91,6 +91,7 @@ public class TestBaseTests : TestBase
     }
 
     [SkippableFact]
+    [Trait("TestCategory", "FailsInCloudTest")]
     public async Task ExecuteInIsolation_PassingTest()
     {
         if (await this.ExecuteInIsolationAsync())
@@ -120,6 +121,7 @@ public class TestBaseTests : TestBase
 
 #if NETFRAMEWORK
     [StaFact]
+    [Trait("TestCategory", "FailsInCloudTest")]
     public async Task ExecuteInIsolation_PassingOnSTA()
     {
         if (await this.ExecuteInIsolationAsync())

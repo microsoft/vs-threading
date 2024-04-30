@@ -231,6 +231,7 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
     }
 
     [SkippableFact]
+    [Trait("TestCategory", "FailsInCloudTest")]
     public async Task NoMemoryLeakForManyLocks()
     {
         if (await this.ExecuteInIsolationAsync())

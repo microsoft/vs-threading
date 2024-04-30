@@ -544,6 +544,7 @@ public class AsyncQueueTests : TestBase
     }
 
     [SkippableFact, Trait("GC", "true")]
+    [Trait("TestCategory", "FailsInCloudTest")]
     public void UnusedQueueGCPressure()
     {
         if (this.ExecuteInIsolation())
