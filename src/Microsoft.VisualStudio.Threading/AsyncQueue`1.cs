@@ -82,7 +82,7 @@ public class AsyncQueue<T> : ThreadingTools.ICancellationNotification
     }
 
     /// <summary>
-    /// Gets a value indicating whether the queue has completed.
+    /// Gets a value indicating whether the queue is both empty and had <see cref="Complete" /> invoked.
     /// </summary>
     /// <remarks>
     /// This is arguably redundant with <see cref="Completion"/>.IsCompleted, but this property
@@ -101,7 +101,7 @@ public class AsyncQueue<T> : ThreadingTools.ICancellationNotification
     }
 
     /// <summary>
-    /// Gets a task that transitions to a completed state when <see cref="Complete"/> is called.
+    /// Gets a task that transitions to a completed state when <see cref="Complete"/> is called and the queue is empty.
     /// </summary>
     public Task Completion
     {
@@ -142,6 +142,11 @@ public class AsyncQueue<T> : ThreadingTools.ICancellationNotification
     /// <summary>
     /// Signals that no further elements will be enqueued.
     /// </summary>
+    /// <remarks>
+    /// This method will return immediately.
+    /// Elements enqueued before calling this method may still be dequeued.
+    /// <see cref="IsCompleted" /> will return true only after this method has been called and the queue is empty.
+    /// </remarks>
     public void Complete()
     {
         lock (this.SyncRoot)
