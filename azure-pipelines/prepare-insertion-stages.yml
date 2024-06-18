@@ -64,4 +64,4 @@ stages:
       - template: WIFtoPATauth.yml
         parameters:
           wifServiceConnectionName: azure-public/vside package push
-          deadPATServiceConnectionId: 207efd62-fd0f-43e7-aeae-17c4febcc660 # azure-public/vs-impl
+          deadPATServiceConnectionId: 42175e93-c771-4a4f-a132-3cca78f44b3b # azure-public/vssdk
