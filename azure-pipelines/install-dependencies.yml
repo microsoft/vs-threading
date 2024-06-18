@@ -7,13 +7,20 @@ parameters:
   default: true
 
 steps:
+# If nuget.config pulls from the azure-public account, we need to authenticate when building on the devdiv account.
+- ${{ if eq(variables['system.collectionId'], '011b8bdf-6d56-4f87-be0d-0092136884d9') }}:
+  - task: NuGetToolInstaller@1
+    displayName: 🔧 Install NuGet
+    inputs:
+      versionSpec: 6.x
+  - task: MicroBuildNuGetAuthenticate@0
+    displayName: 🔏 Authenticate azure-public NuGet feeds
+    inputs:
+      nugetFeeds: https://pkgs.dev.azure.com/azure-public/vside/_packaging/msft_consumption/nuget/v3/index.json
+      azureSubscription: azure-public/vside package pull
 
 - task: NuGetAuthenticate@1
-  displayName: 🔏 Authenticate NuGet feeds
-  inputs:
-    ${{ if eq(variables['system.collectionId'], '011b8bdf-6d56-4f87-be0d-0092136884d9') }}:
-      nuGetServiceConnections: azure-public/msft_consumption # Only necessary for GitHub-hosted repos
-    forceReinstallCredentialProvider: true
+  displayName: 🔏 Authenticate devdiv NuGet feeds
 
 - powershell: |
     $AccessToken = '$(System.AccessToken)' # Avoid specifying the access token directly on the init.ps1 command line to avoid it showing up in errors
