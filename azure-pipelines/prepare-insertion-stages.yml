@@ -61,3 +61,7 @@ stages:
       - download: current
         artifact: deployables-Windows
         displayName: 🔻 Download deployables-Windows artifact
+      - template: WIFtoPATauth.yml
+        parameters:
+          wifServiceConnectionName: azure-public/vside package push
+          deadPATServiceConnectionId: 42175e93-c771-4a4f-a132-3cca78f44b3b # azure-public/vssdk
