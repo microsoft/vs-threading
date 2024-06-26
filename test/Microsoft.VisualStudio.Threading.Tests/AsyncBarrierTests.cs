@@ -42,6 +42,38 @@ public class AsyncBarrierTests : TestBase
         await this.MultipleParticipantsHelperAsync(100, 50);
     }
 
+    [Fact]
+    public async Task SignalAndWait_PrecanceledButReady()
+    {
+        AsyncBarrier barrier = new(1);
+        CancellationToken precanceled = new(canceled: true);
+        OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await barrier.SignalAndWait(precanceled)).WithCancellation(this.TimeoutToken);
+        Assert.Equal(precanceled, ex.CancellationToken);
+    }
+
+    [Fact]
+    public async Task SignalAndWait_PrecanceledWhileWaiting()
+    {
+        AsyncBarrier barrier = new(2);
+        CancellationToken precanceled = new(canceled: true);
+        OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await barrier.SignalAndWait(precanceled)).WithCancellation(this.TimeoutToken);
+        Assert.Equal(precanceled, ex.CancellationToken);
+    }
+
+    [Fact]
+    public async Task SignalAndWait_CanceledLeavesSignalBehind()
+    {
+        AsyncBarrier barrier = new(2);
+        CancellationTokenSource cts = new();
+        Task waiter1 = barrier.SignalAndWait(cts.Token).AsTask();
+        cts.Cancel();
+        OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waiter1).WithCancellation(this.TimeoutToken);
+        Assert.Equal(cts.Token, ex.CancellationToken);
+
+        // Now test that the second awaiter gets in, even though the first was canceled.
+        await barrier.SignalAndWait().WithCancellation(this.TimeoutToken);
+    }
+
     /// <summary>
     /// Verifies that with multiple threads constantly fulfilling the participant count
     /// and resetting and fulfilling it again, it still performs as expected.
