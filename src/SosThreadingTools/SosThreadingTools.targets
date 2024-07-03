@@ -26,6 +26,12 @@
     <GenerateNuspecDependsOn>StampAndIncludeGalleryManifest;$(GenerateNuspecDependsOn)</GenerateNuspecDependsOn>
   </PropertyGroup>
 
+  <ItemGroup>
+    <FilesToSign Include="$(TargetDir)$(DnneNativeBinaryName).dll">
+      <StrongName />
+    </FilesToSign>
+  </ItemGroup>
+
   <Target Name="PackBuildOutputs" DependsOnTargets="DebugSymbolsProjectOutputGroup">
     <ItemGroup>
       <TfmSpecificPackageFile Include="$(TargetPath)" PackagePath="tools\$(RuntimeIdentifier)\" />
