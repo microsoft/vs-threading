@@ -48,6 +48,10 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="cancellationToken">A cancellation token that will exit this method before the task is completed.</param>
         /// <returns>A task that completes after the asynchronous operation completes and the join is reverted, with the result of the operation.</returns>
+        /// <exception cref="OperationCanceledException">Thrown when <paramref name="cancellationToken"/> is canceled.</exception>
+        /// <remarks>
+        /// Any exception thrown by the asynchronous operation is propagated out to the caller of this method.
+        /// </remarks>
         public new Task<T> JoinAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             return this.JoinAsync(continueOnCapturedContext: AwaitShouldCaptureSyncContext, cancellationToken);
@@ -59,6 +63,10 @@ namespace Microsoft.VisualStudio.Threading
         /// </summary>
         /// <param name="cancellationToken">A cancellation token that will exit this method before the task is completed.</param>
         /// <returns>The result of the asynchronous operation.</returns>
+        /// <exception cref="OperationCanceledException">Thrown when <paramref name="cancellationToken"/> is canceled.</exception>
+        /// <remarks>
+        /// Any exception thrown by the asynchronous operation is propagated out to the caller of this method.
+        /// </remarks>
         public new T Join(CancellationToken cancellationToken = default(CancellationToken))
         {
             base.Join(cancellationToken);
