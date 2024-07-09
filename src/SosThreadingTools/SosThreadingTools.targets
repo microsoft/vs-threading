@@ -23,16 +23,25 @@
 
   <PropertyGroup>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);PackBuildOutputs</TargetsForTfmSpecificContentInPackage>
-    <GenerateNuspecDependsOn>StampAndIncludeGalleryManifest;$(GenerateNuspecDependsOn)</GenerateNuspecDependsOn>
   </PropertyGroup>
 
+  <ItemGroup>
+    <GalleryManifest Include="$(IntermediateOutputPath)GalleryManifest.xml" Condition="'$(RuntimeIdentifier)'=='win-x64'" />
+  </ItemGroup>
   <ItemGroup>
     <FilesToSign Include="$(TargetDir)$(DnneNativeBinaryName).dll">
       <StrongName />
     </FilesToSign>
+    <FilesToSign Include="@(GalleryManifest)">
+      <Authenticode>MicrosoftXmlSHA2</Authenticode>
+      <StrongName />
+    </FilesToSign>
+  </ItemGroup>
+  <ItemGroup>
+    <SignFilesDependsOn Include="StampAndIncludeGalleryManifest" />
   </ItemGroup>
 
-  <Target Name="PackBuildOutputs" DependsOnTargets="DebugSymbolsProjectOutputGroup">
+  <Target Name="PackBuildOutputs" DependsOnTargets="DebugSymbolsProjectOutputGroup;StampAndIncludeGalleryManifest">
     <ItemGroup>
       <TfmSpecificPackageFile Include="$(TargetPath)" PackagePath="tools\$(RuntimeIdentifier)\" />
       <TfmSpecificPackageFile Include="$(TargetDir)$(TargetName).runtimeconfig.json" PackagePath="tools\$(RuntimeIdentifier)\" />
@@ -40,14 +49,14 @@
       <TfmSpecificPackageFile Include="$(TargetDir)*.dll" PackagePath="tools\$(RuntimeIdentifier)\" />
     </ItemGroup>
   </Target>
-  <Target Name="StampAndIncludeGalleryManifest" DependsOnTargets="GetBuildVersion" BeforeTargets="_GetPackageFiles">
+  <Target Name="StampAndIncludeGalleryManifest" DependsOnTargets="GetBuildVersion" Condition="'@(GalleryManifest)'!=''">
     <ReplaceFileText
       InputFilename="GalleryManifest.xml"
-      OutputFilename="$(IntermediateOutputPath)GalleryManifest.xml"
+      OutputFilename="@(GalleryManifest)"
       MatchExpression="\$Version\$"
       ReplacementText="$(BuildVersion)" />
     <ItemGroup>
-      <None Include="$(IntermediateOutputPath)GalleryManifest.xml" Pack="true" PackagePath="" />
+      <TfmSpecificPackageFile Include="@(GalleryManifest)" PackagePath="" />
     </ItemGroup>
   </Target>
 </Project>
