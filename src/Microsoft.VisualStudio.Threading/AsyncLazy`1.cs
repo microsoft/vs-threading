@@ -384,7 +384,7 @@ public class AsyncLazy<T>
     /// </returns>
     /// <remarks>
     /// <para>Calling this method will put this object into a disposed state where future calls to obtain the value will throw <see cref="ObjectDisposedException"/>.</para>
-    /// <para>If the value has already been produced and implements <see cref="IDisposable"/>, <see cref="IAsyncDisposable"/>,  or <see cref="System.IAsyncDisposable"/> it will be disposed of.
+    /// <para>If the value has already been produced and implements <see cref="IDisposable"/>, <see cref="IAsyncDisposable"/>, or <see cref="System.IAsyncDisposable"/> it will be disposed of.
     /// If the value factory has already started but has not yet completed, its value will be disposed of when the value factory completes.</para>
     /// <para>If prior calls to obtain the value are in flight when this method is called, those calls <em>may</em> complete and their callers may obtain the value, although <see cref="IDisposable.Dispose"/>
     /// may have been or will soon be called on the value, leading those users to experience a <see cref="ObjectDisposedException"/>.</para>
@@ -394,6 +394,7 @@ public class AsyncLazy<T>
     /// </remarks>
     public async Task DisposeValueAsync()
     {
+        JoinableTask<T>? localJoinableTask = null;
         Task<T>? localValueTask = null;
         object? localValue = default;
         lock (this.syncObject)
@@ -417,6 +418,7 @@ public class AsyncLazy<T>
                     // We'll schedule the value for disposal outside the lock so it can be synchronous with the value factory,
                     // but will not execute within our lock.
                     localValueTask = this.value;
+                    localJoinableTask = this.joinableTask;
                     break;
             }
 
@@ -431,7 +433,11 @@ public class AsyncLazy<T>
             this.valueFactory = null;
         }
 
-        if (localValueTask is not null)
+        if (localJoinableTask is not null)
+        {
+            localValue = await localJoinableTask;
+        }
+        else if (localValueTask is not null)
         {
             localValue = await localValueTask.ConfigureAwait(false);
         }
