@@ -752,6 +752,31 @@ public class AsyncLazyTests : TestBase
         await this.AssertDisposedLazyAsync(lazy);
     }
 
+    [Fact]
+    public void DisposeValue_MidFactoryThatContestsForMainThread()
+    {
+        JoinableTaskContext context = this.InitializeJTCAndSC();
+
+        AsyncLazy<object> lazy = new(
+            async delegate
+            {
+                // Ensure the caller keeps control of the UI thread,
+                // so that the request for the main thread comes in when it's controlled by others.
+                await Task.Yield();
+                await context.Factory.SwitchToMainThreadAsync(this.TimeoutToken);
+                return new();
+            },
+            context.Factory);
+
+        Task<object> lazyFactory = lazy.GetValueAsync(this.TimeoutToken);
+
+        // Make a JTF blocking call on the main thread that won't return until the factory completes.
+        context.Factory.Run(async delegate
+        {
+            await lazy.DisposeValueAsync().WithCancellation(this.TimeoutToken);
+        });
+    }
+
     [Fact(Skip = "Hangs. This test documents a deadlock scenario that is not fixed (by design, IIRC).")]
     public async Task ValueFactoryRequiresReadLockHeldByOther()
     {
