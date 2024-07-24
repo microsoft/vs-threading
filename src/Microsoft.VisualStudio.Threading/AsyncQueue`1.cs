@@ -161,6 +161,7 @@ public class AsyncQueue<T> : ThreadingTools.ICancellationNotification
     /// Adds an element to the tail of the queue.
     /// </summary>
     /// <param name="value">The value to add.</param>
+    /// <exception cref="InvalidOperationException">Thrown if <see cref="Complete" /> has already been called. Use <see cref="TryEnqueue" /> to avoid an exception in this case.</exception>
     public void Enqueue(T value)
     {
         if (!this.TryEnqueue(value))
