@@ -145,6 +145,9 @@ public class JoinableTaskCollection : IJoinableTaskDependent, IEnumerable<Joinab
     /// Joins the caller's context to this collection till the collection is empty.
     /// </summary>
     /// <returns>A task that completes when this collection is empty.</returns>
+    /// <remarks>
+    /// Any exceptions thrown by the tasks in this collection are <em>not</em> propagated to the returned task.
+    /// </remarks>
     public Task JoinTillEmptyAsync() => this.JoinTillEmptyAsync(CancellationToken.None);
 
     /// <summary>
@@ -152,6 +155,9 @@ public class JoinableTaskCollection : IJoinableTaskDependent, IEnumerable<Joinab
     /// </summary>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A task that completes when this collection is empty, or is canceled when <paramref name="cancellationToken"/> is canceled.</returns>
+    /// <remarks>
+    /// Any exceptions thrown by the tasks in this collection are <em>not</em> propagated to the returned task.
+    /// </remarks>
     public async Task JoinTillEmptyAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
