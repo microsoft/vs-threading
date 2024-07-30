@@ -568,6 +568,10 @@ public partial class JoinableTask : IJoinableTaskDependent
     /// the caller's access to the Main thread propagates to this JoinableTask so that it may also access the main thread.
     /// </summary>
     /// <param name="cancellationToken">A cancellation token that will exit this method before the task is completed.</param>
+    /// <exception cref="OperationCanceledException">Thrown when <paramref name="cancellationToken"/> is canceled.</exception>
+    /// <remarks>
+    /// Any exception thrown by the asynchronous operation is propagated out to the caller of this method.
+    /// </remarks>
     public void Join(CancellationToken cancellationToken = default(CancellationToken))
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -599,6 +603,10 @@ public partial class JoinableTask : IJoinableTaskDependent
     /// before the async operation has completed.
     /// </param>
     /// <returns>A task that completes after the asynchronous operation completes and the join is reverted.</returns>
+    /// <exception cref="OperationCanceledException">Thrown when <paramref name="cancellationToken"/> is canceled.</exception>
+    /// <remarks>
+    /// Any exception thrown by the asynchronous operation is propagated out to the caller of this method.
+    /// </remarks>
     public Task JoinAsync(CancellationToken cancellationToken = default(CancellationToken))
     {
         cancellationToken.ThrowIfCancellationRequested();
