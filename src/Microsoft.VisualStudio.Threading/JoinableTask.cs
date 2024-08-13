@@ -927,10 +927,14 @@ public partial class JoinableTask : IJoinableTaskDependent
             {
                 if (!this.IsCompleteRequested)
                 {
+                    // This must be done *before* setting IsCompleteRequested so that the TaskId property will still return the value we need.
+                    ulong? taskId = this.token?.TaskId;
+
                     this.IsCompleteRequested = true;
-                    if (this.token?.TaskId is ulong taskId)
+
+                    if (taskId.HasValue)
                     {
-                        this.JoinableTaskContext.RemoveSerializableIdentifier(taskId);
+                        this.JoinableTaskContext.RemoveSerializableIdentifier(taskId.Value);
                     }
 
                     if (this.mainThreadQueue is object)
