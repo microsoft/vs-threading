@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using Microsoft;
 using Microsoft.VisualStudio.Threading;
 using Xunit;
 using Xunit.Abstractions;
@@ -716,6 +717,58 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
     {
         IDisposable disposable = this.Context;
         disposable.Dispose();
+    }
+
+    [Fact]
+    public void Ctor_ExplicitNullSyncContext()
+    {
+        this.SimulateUIThread(async delegate
+        {
+            Thread mainThread = Thread.CurrentThread;
+            Assumes.NotNull(SynchronizationContext.Current);
+            JoinableTaskContext jtc = JoinableTaskContext.CreateNoOpContext();
+            await TaskScheduler.Default.SwitchTo(alwaysYield: true); // Get off the main thread.
+            Assert.NotSame(mainThread, Thread.CurrentThread);
+
+            // Verify that switching to the main thread is a no-op.
+            Thread threadpoolThread = Thread.CurrentThread;
+            await jtc.Factory.SwitchToMainThreadAsync(this.TimeoutToken);
+            Assert.Same(threadpoolThread, Thread.CurrentThread);
+        });
+    }
+
+    [Fact]
+    public void Ctor_NullSyncContextArg_AmbientSyncContext()
+    {
+        this.SimulateUIThread(async delegate
+        {
+            Thread mainThread = Thread.CurrentThread;
+            Assumes.NotNull(SynchronizationContext.Current);
+            JoinableTaskContext jtc = new(null, null);
+            await TaskScheduler.Default.SwitchTo(alwaysYield: true); // Get off the main thread.
+            Assert.NotSame(mainThread, Thread.CurrentThread);
+
+            // Verify that switching to the main thread works.
+            await jtc.Factory.SwitchToMainThreadAsync(this.TimeoutToken);
+            Assert.Same(mainThread, Thread.CurrentThread);
+        });
+    }
+
+    [Fact]
+    public void Ctor_Default()
+    {
+        this.SimulateUIThread(async delegate
+        {
+            Thread mainThread = Thread.CurrentThread;
+            Assumes.NotNull(SynchronizationContext.Current);
+            JoinableTaskContext jtc = new();
+            await TaskScheduler.Default.SwitchTo(alwaysYield: true); // Get off the main thread.
+            Assert.NotSame(mainThread, Thread.CurrentThread);
+
+            // Verify that switching to the main thread works.
+            await jtc.Factory.SwitchToMainThreadAsync(this.TimeoutToken);
+            Assert.Same(mainThread, Thread.CurrentThread);
+        });
     }
 
     protected override JoinableTaskContext CreateJoinableTaskContext()

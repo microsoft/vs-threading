@@ -584,6 +584,42 @@ namespace Microsoft.VisualStudio.Threading.Analyzers {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Specify &apos;SynchronizationContext.Current&apos; explicitly.
+        /// </summary>
+        internal static string VSTHRD115_CodeFix_Suppress_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD115_CodeFix_Suppress_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Use &apos;JoinableTaskContext.CreateNoOpContext&apos; instead..
+        /// </summary>
+        internal static string VSTHRD115_CodeFix_UseFactory_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD115_CodeFix_UseFactory_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Avoid creating JoinableTaskContext with &apos;null&apos; as the value for the SynchronizationContext because behavior varies by the value of SynchronizationContext.Current.
+        /// </summary>
+        internal static string VSTHRD115_MessageFormat {
+            get {
+                return ResourceManager.GetString("VSTHRD115_MessageFormat", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Avoid creating JoinableTaskContext with null SynchronizationContext.
+        /// </summary>
+        internal static string VSTHRD115_Title {
+            get {
+                return ResourceManager.GetString("VSTHRD115_Title", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Use &quot;Async&quot; suffix in names of methods that return an awaitable type.
         /// </summary>
         internal static string VSTHRD200_AddAsync_MessageFormat {

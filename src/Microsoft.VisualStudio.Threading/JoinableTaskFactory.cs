@@ -130,7 +130,7 @@ public partial class JoinableTaskFactory
     }
 
     /// <summary>
-    /// Gets an awaitable whose continuations execute on the synchronization context that this instance was initialized with,
+    /// Gets an awaitable whose continuations execute on the main thread,
     /// in such a way as to mitigate both deadlocks and reentrancy.
     /// </summary>
     /// <param name="cancellationToken">
@@ -159,6 +159,10 @@ public partial class JoinableTaskFactory
     /// }
     /// </code>
     /// </example>
+    /// <para>
+    /// When the owning <see cref="JoinableTaskContext"/> is created with a <see langword="null" /> <see cref="SynchronizationContext"/>,
+    /// this method has no effect and the caller will continue execution on its original thread.
+    /// </para>
     /// </remarks>
     public MainThreadAwaitable SwitchToMainThreadAsync(CancellationToken cancellationToken = default(CancellationToken))
     {
