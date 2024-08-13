@@ -11,6 +11,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers;
 /// </summary>
 internal static class Types
 {
+    private const string VSThreadingNamespace = "Microsoft.VisualStudio.Threading";
+
     internal static class BclAsyncDisposable
     {
         internal const string FullName = "System.IAsyncDisposable";
@@ -131,6 +133,10 @@ internal static class Types
     internal static class JoinableTaskContext
     {
         internal const string TypeName = "JoinableTaskContext";
+
+        internal const string FullName = $"{VSThreadingNamespace}.{TypeName}";
+
+        internal const string CreateNoOpContext = "CreateNoOpContext";
     }
 
     internal static class JoinableTask

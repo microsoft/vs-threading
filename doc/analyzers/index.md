@@ -28,6 +28,7 @@ ID | Title | Severity | Supports | Default diagnostic severity
 [VSTHRD112](VSTHRD112.md) | Implement `System.IAsyncDisposable` | Advisory | | Info
 [VSTHRD113](VSTHRD113.md) | Check for `System.IAsyncDisposable` | Advisory | | Info
 [VSTHRD114](VSTHRD114.md) | Avoid returning null from a `Task`-returning method. | Advisory | | Warning
+[VSTHRD115](VSTHRD115.md) | Avoid creating a JoinableTaskContext with an explicit `null` `SynchronizationContext` | Advisory | | Warning
 [VSTHRD200](VSTHRD200.md) | Use `Async` naming convention | Guideline | [VSTHRD103](VSTHRD103.md) | Warning
 
 ## Severity descriptions

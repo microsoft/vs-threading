@@ -12,6 +12,9 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Rename;
 using Microsoft.CodeAnalysis.Simplification;
+using CSSyntax = Microsoft.CodeAnalysis.CSharp.Syntax;
+using VB = Microsoft.CodeAnalysis.VisualBasic;
+using VBSyntax = Microsoft.CodeAnalysis.VisualBasic.Syntax;
 
 namespace Microsoft.VisualStudio.Threading.Analyzers;
 
@@ -329,6 +332,22 @@ internal static class FixUtils
     internal static async Task<SyntaxTree> GetSyntaxTreeOrThrowAsync(this Document document, CancellationToken cancellationToken) => await document.GetSyntaxTreeAsync(cancellationToken) ?? throw new InvalidOperationException("No syntax tree could be obtained from the document.");
 
     internal static async Task<SyntaxNode> GetSyntaxRootOrThrowAsync(this Document document, CancellationToken cancellationToken) => await document.GetSyntaxRootAsync(cancellationToken) ?? throw new InvalidOperationException("No syntax root could be obtained from the document.");
+
+    internal static (SyntaxNode? Creation, SyntaxNode[]? Arguments) FindObjectCreationSyntax(SyntaxNode startFrom)
+    {
+        if (startFrom is CSharpSyntaxNode && startFrom.FirstAncestorOrSelf<CSSyntax.ObjectCreationExpressionSyntax>() is { } csCreation)
+        {
+            return (csCreation, csCreation.ArgumentList?.Arguments.ToArray());
+        }
+        else if (startFrom is VB.VisualBasicSyntaxNode && startFrom.FirstAncestorOrSelf<VBSyntax.ObjectCreationExpressionSyntax>() is { } vbCreation)
+        {
+            return (vbCreation, vbCreation.ArgumentList?.Arguments.ToArray());
+        }
+        else
+        {
+            return (null, null);
+        }
+    }
 
     private static CSharpSyntaxNode UpdateStatementsForAsyncMethod(CSharpSyntaxNode body, SemanticModel? semanticModel, bool hasResultValue, CancellationToken cancellationToken)
     {

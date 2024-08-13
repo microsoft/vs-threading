@@ -153,6 +153,17 @@ public partial class JoinableTaskContext : IDisposable
     /// <see cref="SynchronizationContext.Current"/> will provide the means to switch
     /// to the main thread from another thread.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// When <see cref="SynchronizationContext.Current"/> is <see langword="null"/> at the time this constructor is invoked,
+    /// requests to switch to the main thread using <see cref="JoinableTaskFactory.SwitchToMainThreadAsync(CancellationToken)"/>
+    /// will not result in any thread switch.
+    /// This is appropriate for unit test environments where there is no main thread to switch to or processes
+    /// which otherwise do not define a main thread.
+    /// <em>Thread safety concern:</em> When configured without a synchronization context, code that requests the main thread
+    /// as a means of avoiding concurrency may malfunction due to data race conditions.
+    /// </para>
+    /// </remarks>
     public JoinableTaskContext()
         : this(Thread.CurrentThread, SynchronizationContext.Current)
     {
@@ -163,10 +174,19 @@ public partial class JoinableTaskContext : IDisposable
     /// </summary>
     /// <param name="mainThread">
     /// The thread to switch to in <see cref="JoinableTaskFactory.SwitchToMainThreadAsync(CancellationToken)"/>.
-    /// If omitted, the current thread will be assumed to be the main thread.
+    /// If <see langword="null" />, the current thread will be assumed to be the main thread.
     /// </param>
     /// <param name="synchronizationContext">
-    /// The synchronization context to use to switch to the main thread.
+    /// <para>The synchronization context to use to switch to the main thread.</para>
+    /// <para>
+    /// If <see langword="null" /> is specified (or the argument is omitted), the current synchronization context will be used.
+    /// If <see cref="SynchronizationContext.Current"/> is also <see langword="null" />,
+    /// requests to switch to the main thread using <see cref="JoinableTaskFactory.SwitchToMainThreadAsync(CancellationToken)"/> will not result in any thread switch.
+    /// This is appropriate for unit test environments where there is no main thread to switch to or processes
+    /// which otherwise do not define a main thread.
+    /// <em>Thread safety concern:</em> When configured without a synchronization context, code that requests the main thread
+    /// as a means of avoiding concurrency may malfunction due to data race conditions.
+    /// </para>
     /// </param>
     public JoinableTaskContext(Thread? mainThread = null, SynchronizationContext? synchronizationContext = null)
     {
@@ -279,6 +299,41 @@ public partial class JoinableTaskContext : IDisposable
             Debugger.NotifyOfCrossThreadDependency();
 
             return NoMessagePumpSyncContext.Default;
+        }
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="JoinableTaskContext"/> class
+    /// that is configured to no-op on calls to <see cref="JoinableTaskFactory.SwitchToMainThreadAsync(CancellationToken)"/>.
+    /// </summary>
+    /// <returns>A new instance of <see cref="JoinableTaskContext"/>.</returns>
+    /// <remarks>
+    /// <para>
+    /// This method is equivalent to calling the <see cref="JoinableTaskContext()"/> constructor
+    /// with the <see cref="SynchronizationContext.Current"/> property first set to <see langword="null"/>.
+    /// This entry point however will have the same behavior regardless of the value of <see cref="SynchronizationContext.Current"/>.
+    /// </para>
+    /// <para>
+    /// The caller's thread will still be captured for use by such properties as
+    /// <see cref="MainThread"/> and <see cref="IsOnMainThread"/>.
+    /// These properties generally have no effect except as used by application-specific code beyond this library.
+    /// </para>
+    /// <para>
+    /// This method is useful for creating a <see cref="JoinableTaskContext"/> in a unit test environment
+    /// or in a process that does not have a main thread, but which includes code that requires an instance
+    /// of <see cref="JoinableTaskContext"/> or <see cref="JoinableTaskFactory"/>.
+    /// Such code can receive the instance returned by this method and use it in a normal way but no main thread switches will be honored.
+    /// </para>
+    /// <para>
+    /// <em>Thread safety concern:</em> Because main thread switches will not be honored, code that requests the main thread
+    /// as a means of avoiding concurrency may malfunction due to data race conditions.
+    /// </para>
+    /// </remarks>
+    public static JoinableTaskContext CreateNoOpContext()
+    {
+        using (((SynchronizationContext?)null).Apply())
+        {
+            return new JoinableTaskContext();
         }
     }
 
