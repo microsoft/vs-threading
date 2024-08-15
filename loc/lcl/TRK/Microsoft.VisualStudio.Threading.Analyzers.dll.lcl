@@ -3,6 +3,7 @@
   <OwnedComments>
     <Cmt Name="Dev" />
     <Cmt Name="LcxAdmin" />
+    <Cmt Name="Loc" />
     <Cmt Name="RCCX" />
   </OwnedComments>
   <Settings Name="@vsLocTools@\default.lss" Type="Lss" />
@@ -576,6 +577,42 @@
           <Val><![CDATA[Avoid returning a null Task]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
             <Val><![CDATA[Null Görev döndürmekten kaçının]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";VSTHRD115_CodeFix_Suppress_Title" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Specify 'SynchronizationContext.Current' explicitly]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA['SynchronizationContext.Current' değerini açıkça belirtin]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";VSTHRD115_CodeFix_UseFactory_Title" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Use 'JoinableTaskContext.CreateNoOpContext' instead.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Bunun yerine 'JoinableTaskContext.CreateNoOpContext' kullanın.]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";VSTHRD115_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Avoid creating JoinableTaskContext with 'null' as the value for the SynchronizationContext because behavior varies by the value of SynchronizationContext.Current]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Davranış SynchronizationContext.Current değerine göre değiştiğinden SynchronizationContext değeri olarak 'null' ile JoinableTaskContext oluşturmaktan kaçının]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";VSTHRD115_Title" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Avoid creating JoinableTaskContext with null SynchronizationContext]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Null SynchronizationContext ile JoinableTaskContext oluşturmaktan kaçının]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
