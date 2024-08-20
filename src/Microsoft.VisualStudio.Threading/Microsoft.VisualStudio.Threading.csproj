@@ -54,7 +54,7 @@
          but we reference the project to add a package dependency so users of this library will automatically get the analyzers. -->
     <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.csproj"
                       PrivateAssets="none"
-                      Condition="'$(ExcludeRestorePackageImports)' != ''"  />
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
   <Import Project="OptProf.targets" Condition=" '$(TargetFramework)' == 'net472' " />
 </Project>

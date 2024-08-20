@@ -32,6 +32,10 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <IncludeSymbols Condition=" '$(DebugType)' != 'embedded' ">true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+    <!-- Avoid file write collisions when building multiple times with the MSBuild Project Cache plugin active. -->
+    <MSBuildCacheIdenticalDuplicateOutputPatterns>**</MSBuildCacheIdenticalDuplicateOutputPatterns>
+    <MSBuildCacheLogDirectory>$(RepoRootPath)obj\MSBuildCache</MSBuildCacheLogDirectory>
   </PropertyGroup>
 
   <ItemGroup>

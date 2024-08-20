@@ -9,6 +9,11 @@
     <CodeAnalysisVersion Condition="'$(IsTestProject)'=='true'">4.4.0</CodeAnalysisVersion>
     <CodefixTestingVersion>1.1.1</CodefixTestingVersion>
     <MicrosoftDiagnosticsRuntimeVersion>3.1.456501</MicrosoftDiagnosticsRuntimeVersion>
+
+    <!-- In Azure pipelines, use Pipeline Caching as the cache storage backend. Otherwise, use the local cache. -->
+    <MSBuildCachePackageName Condition="'$(TF_BUILD)' != ''">Microsoft.MSBuildCache.AzurePipelines</MSBuildCachePackageName>
+    <MSBuildCachePackageName Condition="'$(MSBuildCachePackageName)' == ''">Microsoft.MSBuildCache.Local</MSBuildCachePackageName>
+    <MSBuildCachePackageVersion>0.1.287-preview</MSBuildCachePackageVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="DNNE" Version="2.0.6" />
@@ -47,9 +52,11 @@
     <PackageVersion Include="xunit" Version="2.9.0" />
   </ItemGroup>
   <ItemGroup>
+    <GlobalPackageReference Include="$(MSBuildCachePackageName)" Version="$(MSBuildCachePackageVersion)" />
     <GlobalPackageReference Include="CSharpIsNullAnalyzer" Version="0.1.593" />
     <GlobalPackageReference Include="DotNetAnalyzers.DocumentationAnalyzers" Version="1.0.0-beta.59" />
     <GlobalPackageReference Include="IsExternalInit" Version="1.0.3" />
+    <GlobalPackageReference Include="Microsoft.MSBuildCache.SharedCompilation" Version="$(MSBuildCachePackageVersion)" />
     <GlobalPackageReference Include="Microsoft.VisualStudio.Internal.MicroBuild.VisualStudio" Version="$(MicroBuildVersion)" />
     <GlobalPackageReference Include="Nerdbank.GitVersioning" Version="3.6.139" />
     <GlobalPackageReference Include="StyleCop.Analyzers.Unstable" Version="1.2.0.556" />
