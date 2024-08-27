@@ -59,4 +59,5 @@
       <TransitiveFrameworkReference Remove="Microsoft.WindowsDesktop.App.WPF" />
     </ItemGroup>
   </Target>
+  <Sdk Name="Microsoft.Build.RunVSTest" Version="1.0.319" />
 </Project>
