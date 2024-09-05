@@ -355,3 +355,5 @@ MigrationBackup/
 
 # Analysis results
 *.sarif
+
+MSBuildCacheLogs/
