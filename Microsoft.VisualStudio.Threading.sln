@@ -20,8 +20,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		version.json = version.json
 	EndProjectSection
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher", "test\Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher\Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.csproj", "{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.VisualStudio.Threading", "src\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj", "{D9BB9FB6-3833-44E8-B7A7-DE729FCE214D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.VisualStudio.Threading.Tests", "test\Microsoft.VisualStudio.Threading.Tests\Microsoft.VisualStudio.Threading.Tests.csproj", "{CBEDB102-ABAE-40B1-AF3F-A6226DB6713D}"
@@ -75,14 +73,6 @@ Global
 		{620ED702-B6DA-4454-BF3E-5494D3652724}.Release|Any CPU.Build.0 = Release|Any CPU
 		{620ED702-B6DA-4454-BF3E-5494D3652724}.Release|NonWindows.ActiveCfg = Release|Any CPU
 		{620ED702-B6DA-4454-BF3E-5494D3652724}.Release|NonWindows.Build.0 = Release|Any CPU
-		{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}.Debug|NonWindows.ActiveCfg = Debug|Any CPU
-		{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}.Debug|NonWindows.Build.0 = Debug|Any CPU
-		{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}.Release|NonWindows.ActiveCfg = Release|Any CPU
-		{4961AA84-088C-46C0-BAC0-F9E87A9F03A7}.Release|NonWindows.Build.0 = Release|Any CPU
 		{D9BB9FB6-3833-44E8-B7A7-DE729FCE214D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D9BB9FB6-3833-44E8-B7A7-DE729FCE214D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D9BB9FB6-3833-44E8-B7A7-DE729FCE214D}.Debug|NonWindows.ActiveCfg = Debug|Any CPU
@@ -144,7 +134,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{536F3F9A-B457-43B8-BC93-CE1C16959037} = {96134B19-FB32-4FA0-A565-BD4247D1E5B2}
 		{620ED702-B6DA-4454-BF3E-5494D3652724} = {C1DAF484-769B-4C5E-9DD1-A4CFAA66E938}
-		{4961AA84-088C-46C0-BAC0-F9E87A9F03A7} = {C1DAF484-769B-4C5E-9DD1-A4CFAA66E938}
 		{D9BB9FB6-3833-44E8-B7A7-DE729FCE214D} = {96134B19-FB32-4FA0-A565-BD4247D1E5B2}
 		{CBEDB102-ABAE-40B1-AF3F-A6226DB6713D} = {C1DAF484-769B-4C5E-9DD1-A4CFAA66E938}
 		{BA4643D8-E6B2-4DED-882F-4827F3AB6AB0} = {C1DAF484-769B-4C5E-9DD1-A4CFAA66E938}

@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net6.0</TargetFrameworks>
+    <TargetFramework>net6.0</TargetFramework>
     <IsTestProject>true</IsTestProject>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
@@ -11,9 +11,6 @@
   <ItemGroup Condition=" '$(TargetFrameworkIdentifier)' == '.NETFramework' ">
     <Reference Include="WindowsBase" />
   </ItemGroup>
-  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-    <TargetFrameworks>$(TargetFrameworks);net6.0-windows;net472</TargetFrameworks>
-  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.csproj" />
     <ProjectReference Include="..\..\src\Microsoft.VisualStudio.Threading.Analyzers.CSharp\Microsoft.VisualStudio.Threading.Analyzers.CSharp.csproj" />

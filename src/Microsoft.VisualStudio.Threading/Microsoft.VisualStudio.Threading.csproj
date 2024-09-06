@@ -1,16 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net6.0;net472</TargetFrameworks>
+    <TargetFramework>net6.0</TargetFramework>
 
     <Summary>Async synchronization primitives, async collections, TPL and dataflow extensions.</Summary>
     <Description>Async synchronization primitives, async collections, TPL and dataflow extensions. The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This package is applicable to any .NET application (not just Visual Studio).</Description>
     <PackageTags>Threading Async Lock Synchronization Threadsafe</PackageTags>
 
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-    <TargetFrameworks>$(TargetFrameworks);net6.0-windows</TargetFrameworks>
-    <UseWPF Condition=" '$(TargetFramework)' != 'net6.0' ">true</UseWPF>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Update="Strings.resx">
