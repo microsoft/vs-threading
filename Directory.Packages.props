@@ -13,7 +13,7 @@
     <!-- In Azure pipelines, use Pipeline Caching as the cache storage backend. Otherwise, use the local cache. -->
     <MSBuildCachePackageName Condition="'$(TF_BUILD)' != ''">Microsoft.MSBuildCache.AzurePipelines</MSBuildCachePackageName>
     <MSBuildCachePackageName Condition="'$(MSBuildCachePackageName)' == ''">Microsoft.MSBuildCache.Local</MSBuildCachePackageName>
-    <MSBuildCachePackageVersion>0.1.287-preview</MSBuildCachePackageVersion>
+    <MSBuildCachePackageVersion>0.1.299-preview-g80e683f480</MSBuildCachePackageVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="DNNE" Version="2.0.6" />
