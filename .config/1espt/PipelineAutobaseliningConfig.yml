@@ -10,8 +10,14 @@ pipelines:
           lastModifiedDate: 2024-09-06
         armory:
           lastModifiedDate: 2024-09-06
+        policheck:
+          lastModifiedDate: 2024-09-07
+        psscriptanalyzer:
+          lastModifiedDate: 2024-09-07
       binary:
         credscan:
           lastModifiedDate: 2024-09-06
         binskim:
           lastModifiedDate: 2024-09-06
+        spotbugs:
+          lastModifiedDate: 2024-09-07
