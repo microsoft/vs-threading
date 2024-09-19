@@ -128,6 +128,26 @@ public class RarelyRemoveItemSetTests : TestBase
     }
 
     [Fact]
+    public void RemoveFromTwoEnumeration()
+    {
+        var value1 = new GenericParameterHelper(1);
+        var value2 = new GenericParameterHelper(2);
+        this.list.Add(value1);
+        this.list.Add(value2);
+
+        this.list.Remove(value1);
+        this.list.Remove(value2);
+
+        int count = 0;
+        foreach (GenericParameterHelper item in this.list.EnumerateAndClear())
+        {
+            count++;
+        }
+
+        Assert.Equal(0, count);
+    }
+
+    [Fact]
     public void RemoveFromMultiple()
     {
         var values = new GenericParameterHelper[5];
