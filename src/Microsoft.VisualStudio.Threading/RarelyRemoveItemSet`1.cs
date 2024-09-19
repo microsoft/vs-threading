@@ -205,7 +205,7 @@ internal struct RarelyRemoveItemSet<T>
 
                     case IndexBeforeFirstArrayElement:
                         this.currentIndex = 0;
-                        return true;
+                        return this.count > 0;
                 }
             }
 
