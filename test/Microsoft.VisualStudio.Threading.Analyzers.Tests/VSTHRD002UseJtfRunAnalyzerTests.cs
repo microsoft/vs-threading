@@ -539,6 +539,34 @@ class Test {
     }
 
     [Fact]
+    public async Task ConfiguredTask_GetAwaiter_GetResult_ShouldReportWarning()
+    {
+        var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void F() {
+        var task = Task.Run(() => 1);
+        task.ConfigureAwait(false).GetAwaiter().[|GetResult|]();
+    }
+}
+";
+        var withFix = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    async Task FAsync() {
+        var task = Task.Run(() => 1);
+        await task.ConfigureAwait(false);
+    }
+}
+";
+        await CSVerify.VerifyCodeFixAsync(test, withFix);
+    }
+
+    [Fact]
     public async Task ValueTask_GetAwaiter_GetResult_ShouldReportWarning()
     {
         var test = @"
@@ -565,6 +593,34 @@ class Test {
 ";
         DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(8, 27, 8, 36);
         await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
+
+    [Fact]
+    public async Task ConfiguredValueTask_GetAwaiter_GetResult_ShouldReportWarning()
+    {
+        var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void F() {
+        ValueTask task = default;
+        task.ConfigureAwait(false).GetAwaiter().[|GetResult|]();
+    }
+}
+";
+        var withFix = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    async Task FAsync() {
+        ValueTask task = default;
+        await task.ConfigureAwait(false);
+    }
+}
+";
+        await CSVerify.VerifyCodeFixAsync(test, withFix);
     }
 
     [Fact]
