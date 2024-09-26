@@ -3,6 +3,7 @@
   <OwnedComments>
     <Cmt Name="Dev" />
     <Cmt Name="LcxAdmin" />
+    <Cmt Name="Loc" />
     <Cmt Name="Rccx" />
   </OwnedComments>
   <Settings Name="@vsLocTools@\default.lss" Type="Lss" />
