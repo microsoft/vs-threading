@@ -1,0 +1,20 @@
+{
+  "path": "Q:\\.tools\\.nuget\\packages\\microsoft.msbuildcache.azureblobstorage\\0.1.300-preview-gdd0e3732cc\\build\\net472\\Microsoft.MSBuildCache.AzureBlobStorage.dll",
+  "settings": {
+    "LogDirectory": "",
+    "CacheUniverse": "",
+    "MaxConcurrentCacheContentOperations": "",
+    "LocalCacheRootPath": "",
+    "LocalCacheSizeInMegabytes": "",
+    "IgnoredInputPatterns": "",
+    "IgnoredOutputPatterns": "*.assets.cache;*assemblyreference.cache",
+    "IdenticalDuplicateOutputPatterns": "",
+    "RemoteCacheIsReadOnly": "",
+    "AsyncCachePublishing": "",
+    "AsyncCacheMaterialization": "",
+    "AllowFileAccessAfterProjectFinishProcessPatterns": "\\**\\vctip.exe",
+    "AllowFileAccessAfterProjectFinishFilePatterns": "",
+    "AllowProcessCloseAfterProjectFinishProcessPatterns": "\\**\\mspdbsrv.exe",
+    "GlobalPropertiesToIgnore": "MSBuildCacheCredentialsType;MSBuildCacheBlobUri;MSBuildCacheManagedIdentityClientId;MSBuildCacheInteractiveAuthTokenDirectory;CurrentSolutionConfigurationContents;ShouldUnsetParentConfigurationAndPlatform;BuildingInsideVisualStudio;BuildingSolutionFile;SolutionDir;SolutionExt;SolutionFileName;SolutionName;SolutionPath;_MSDeployUserAgent;MSBuildCacheEnabled;MSBuildCacheLogDirectory;MSBuildCacheCacheUniverse;MSBuildCacheMaxConcurrentCacheContentOperations;MSBuildCacheLocalCacheRootPath;MSBuildCacheLocalCacheSizeInMegabytes;MSBuildCacheIgnoredInputPatterns;MSBuildCacheIgnoredOutputPatterns;MSBuildCacheIdenticalDuplicateOutputPatterns;MSBuildCacheRemoteCacheIsReadOnly;MSBuildCacheAsyncCachePublishing;MSBuildCacheAsyncCacheMaterialization;MSBuildCacheAllowFileAccessAfterProjectFinishProcessPatterns;MSBuildCacheAllowFileAccessAfterProjectFinishFilePatterns;MSBuildCacheAllowProcessCloseAfterProjectFinishProcessPatterns;MSBuildCacheGlobalPropertiesToIgnore;MSBuildCachePackageName;MSBuildCachePackageVersion;IsGraphBuild;UseHostCompilerIfAvailable;LangID;LangName;DefineExplicitDefaults;EnableCaching;VSIDEResolvedNonMSBuildProjectOutputs;DevEnvDir"
+  }
+}
