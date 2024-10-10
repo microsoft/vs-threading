@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project>
+  <PropertyGroup Condition="'$(EnableBlobCaching)'=='true'">
+    <EnableCaching>true</EnableCaching>
+    <MSBuildCacheBlobUri>https://msbprojcachedevbox.blob.core.windows.net/</MSBuildCacheBlobUri>
+    <MSBuildCachePackageName>microsoft.msbuildcache.azureblobstorage</MSBuildCachePackageName>
+    <MSBuildCacheGlobalPropertiesToIgnore>TF_BUILD;EnableBlobCaching;EnableCaching;MSBuildCacheCredentialsType;MSBuildCacheBlobUri;MSBuildCacheManagedIdentityClientId;MSBuildCacheInteractiveAuthTokenDirectory;CurrentSolutionConfigurationContents;ShouldUnsetParentConfigurationAndPlatform;BuildingInsideVisualStudio;BuildingSolutionFile;SolutionDir;SolutionExt;SolutionFileName;SolutionName;SolutionPath;_MSDeployUserAgent;MSBuildCacheEnabled;MSBuildCacheLogDirectory;MSBuildCacheCacheUniverse;MSBuildCacheMaxConcurrentCacheContentOperations;MSBuildCacheLocalCacheRootPath;MSBuildCacheLocalCacheSizeInMegabytes;MSBuildCacheIgnoredInputPatterns;MSBuildCacheIgnoredOutputPatterns;MSBuildCacheIdenticalDuplicateOutputPatterns;MSBuildCacheRemoteCacheIsReadOnly;MSBuildCacheAsyncCachePublishing;MSBuildCacheAsyncCacheMaterialization;MSBuildCacheAllowFileAccessAfterProjectFinishProcessPatterns;MSBuildCacheAllowFileAccessAfterProjectFinishFilePatterns;MSBuildCacheAllowProcessCloseAfterProjectFinishProcessPatterns;MSBuildCacheGlobalPropertiesToIgnore;MSBuildCachePackageName;MSBuildCachePackageVersion;IsGraphBuild;UseHostCompilerIfAvailable;LangID;LangName;DefineExplicitDefaults;VSIDEResolvedNonMSBuildProjectOutputs;DevEnvDir</MSBuildCacheGlobalPropertiesToIgnore>
+  </PropertyGroup>
   <!-- https://learn.microsoft.com/nuget/consume-packages/central-package-management -->
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
