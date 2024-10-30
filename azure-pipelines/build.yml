@@ -4,6 +4,12 @@ parameters:
 ##### Feel free to adjust their default value as needed.
 
 # Whether this repo uses OptProf to optimize the built binaries.
+# When enabling this, be sure to update these files:
+# - OptProf.targets: InstallationPath and match TestCase selection with what's in the VS repo.
+# - The project file(s) for the libraries to optimize must import OptProf.targets (for multi-targeted projects, only import it for ONE target).
+# - OptProf.yml: Search for LibraryName (or your library's name) and verify that those names are appropriate.
+# - OptProf_part2.yml: Search for LibraryName (or your library's name) and verify that those names are appropriate.
+# and create pipelines for OptProf.yml, OptProf_part2.yml
 - name: EnableOptProf
   type: boolean
   default: true
@@ -65,6 +71,11 @@ parameters:
   type: boolean
   default: true
 
+# Whether this is a special one-off build for inserting into VS for a validation insertion PR (that will never be merged).
+- name: SkipCodesignVerify
+  type: boolean
+  default: false
+
 - name: EnableAPIScan
   type: boolean
   default: false
@@ -85,11 +96,11 @@ parameters:
 - name: linuxPool
   type: object
   default:
-    vmImage: ubuntu-20.04
+    vmImage: ubuntu-22.04
 - name: macOSPool
   type: object
   default:
-    vmImage: macOS-12
+    vmImage: macOS-14
 
 jobs:
 - job: Windows
@@ -191,6 +202,7 @@ jobs:
       parameters:
         EnableOptProf: ${{ parameters.EnableOptProf }}
         IsOptProf: ${{ parameters.IsOptProf }}
+        SkipCodesignVerify: ${{ parameters.SkipCodesignVerify }}
 
 - ${{ if not(parameters.IsOptProf) }}:
   - ${{ if parameters.EnableLinuxBuild }}:
@@ -263,6 +275,15 @@ jobs:
       - macOS
     pool: ${{ parameters.windowsPool }} # Use Windows agent because PublishSymbols task requires it (https://github.com/microsoft/azure-pipelines-tasks/issues/13821).
     condition: succeededOrFailed()
+    ${{ if eq(variables['system.collectionId'], '011b8bdf-6d56-4f87-be0d-0092136884d9') }}:
+      templateContext:
+        outputParentDirectory: $(Build.ArtifactStagingDirectory)
+        outputs:
+          - output: pipelineArtifact
+            displayName: 📢 Publish symbols-legacy
+            targetPath: $(Build.ArtifactStagingDirectory)/symbols-legacy
+            artifactName: symbols-legacy
+            condition: succeededOrFailed()
     steps:
     - checkout: self
       fetchDepth: 0 # avoid shallow clone so nbgv can do its work.
