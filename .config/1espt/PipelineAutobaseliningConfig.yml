@@ -18,9 +18,10 @@ pipelines:
         credscan:
           lastModifiedDate: 2024-09-06
         binskim:
-          lastModifiedDate: 2024-09-06
+          lastModifiedDate: 2024-12-02
         spotbugs:
           lastModifiedDate: 2024-09-07
+    usedNonDefaultBranch: true
   13635:
     retail:
       source:
