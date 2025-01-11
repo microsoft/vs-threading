@@ -614,7 +614,7 @@ public partial class JoinableTaskContext : IDisposable
     {
         if (parentToken is not null)
         {
-#if NET6_0_OR_GREATER
+#if NET
             ReadOnlySpan<char> taskIdChars = this.GetOurTaskId(parentToken);
 #else
             string taskIdChars = this.GetOurTaskId(parentToken.AsSpan()).ToString();

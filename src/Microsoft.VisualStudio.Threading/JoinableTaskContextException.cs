@@ -42,6 +42,9 @@ public class JoinableTaskContextException : Exception
     /// <summary>
     /// Initializes a new instance of the <see cref="JoinableTaskContextException"/> class.
     /// </summary>
+#if NET
+    [Obsolete]
+#endif
     protected JoinableTaskContextException(
         System.Runtime.Serialization.SerializationInfo info,
         System.Runtime.Serialization.StreamingContext context)
