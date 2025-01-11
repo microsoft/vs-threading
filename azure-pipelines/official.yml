@@ -91,7 +91,7 @@ extends:
               os: Linux
             macOSPool:
               name: Azure Pipelines
-              vmImage: macOS-12
+              vmImage: macOS-14
               os: macOS
             EnableMacOSBuild: ${{ parameters.EnableMacOSBuild }}
             RunTests: ${{ parameters.RunTests }}
@@ -124,10 +124,7 @@ extends:
               os: Linux
             macOSPool:
               name: Azure Pipelines
-              vmImage: macOS-12
+              vmImage: macOS-14
               os: macOS
             EnableMacOSBuild: ${{ parameters.EnableMacOSBuild }}
             RunTests: ${{ parameters.RunTests }}
-      - template: /azure-pipelines/prepare-insertion-stages.yml@self
-        parameters:
-          RealSign: false

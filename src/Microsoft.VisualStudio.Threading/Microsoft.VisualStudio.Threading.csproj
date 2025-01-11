@@ -1,16 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0;net6.0;net472</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net8.0;net472</TargetFrameworks>
 
     <Summary>Async synchronization primitives, async collections, TPL and dataflow extensions.</Summary>
-    <Description>Async synchronization primitives, async collections, TPL and dataflow extensions. The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This package is applicable to any .NET application (not just Visual Studio).</Description>
+    <Description>Async synchronization primitives, async collections, TPL and dataflow extensions.
+      The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This
+      package is applicable to any .NET application (not just Visual Studio).</Description>
     <PackageTags>Threading Async Lock Synchronization Threadsafe</PackageTags>
 
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-    <TargetFrameworks>$(TargetFrameworks);net6.0-windows</TargetFrameworks>
-    <UseWPF Condition=" '$(TargetFramework)' != 'net6.0' ">true</UseWPF>
+    <TargetFrameworks>$(TargetFrameworks);net8.0-windows</TargetFrameworks>
+    <UseWPF Condition=" '$(TargetFramework)' != 'net8.0' ">true</UseWPF>
   </PropertyGroup>
   <ItemGroup>
     <EmbeddedResource Update="Strings.resx">
@@ -42,19 +44,25 @@
   <ItemGroup>
     <PackageReference Include="Nullable" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="all" />
-    <PackageReference Include="System.Memory" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
-    <PackageReference Include="System.Threading.Tasks.Extensions" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <PackageReference Include="System.Memory"
+      Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <PackageReference Include="System.Threading.Tasks.Extensions"
+      Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces"
+      Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
     <PackageReference Include="Microsoft.VisualStudio.Validation" />
-    <PackageReference Include="Microsoft.Win32.Registry" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
+    <PackageReference Include="Microsoft.Win32.Registry"
+      Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
     <PackageReference Include="Microsoft.Windows.CsWin32" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>
     <!-- We don't consume the analyzers in this library itself,
-         but we reference the project to add a package dependency so users of this library will automatically get the analyzers. -->
-    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.csproj"
-                      PrivateAssets="none"
-                      Condition="'$(ExcludeRestorePackageImports)' != ''"  />
+         but we reference the project to add a package dependency so users of this library will
+    automatically get the analyzers. -->
+    <ProjectReference
+      Include="..\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.csproj"
+      PrivateAssets="none"
+      Condition="'$(ExcludeRestorePackageImports)' != ''" />
   </ItemGroup>
   <Import Project="OptProf.targets" Condition=" '$(TargetFramework)' == 'net472' " />
 </Project>

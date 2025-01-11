@@ -1,25 +1,30 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net6.0</TargetFrameworks>
+    <TargetFrameworks>net8.0</TargetFrameworks>
     <IsTestProject>true</IsTestProject>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
     <NoWarn>$(NoWarn);NU1701</NoWarn>
     <DefineConstants Condition="'$(TargetFramework)'=='net472'">$(DefineConstants);WINDOWS</DefineConstants>
-    <UsesWpf Condition="'$(TargetFramework)'=='net6.0-windows'">true</UsesWpf>
+    <UsesWpf Condition="'$(TargetFramework)'=='net8.0-windows'">true</UsesWpf>
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetFrameworkIdentifier)' == '.NETFramework' ">
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-    <TargetFrameworks>$(TargetFrameworks);net6.0-windows;net472</TargetFrameworks>
+    <TargetFrameworks>$(TargetFrameworks);net8.0-windows;net472</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.csproj" />
-    <ProjectReference Include="..\..\src\Microsoft.VisualStudio.Threading.Analyzers.CSharp\Microsoft.VisualStudio.Threading.Analyzers.CSharp.csproj" />
-    <ProjectReference Include="..\..\src\Microsoft.VisualStudio.Threading.Analyzers.VisualBasic\Microsoft.VisualStudio.Threading.Analyzers.VisualBasic.csproj" />
-    <ProjectReference Include="..\..\src\Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.csproj" />
-    <ProjectReference Include="..\..\src\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj" />
+    <ProjectReference
+      Include="..\..\src\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.csproj" />
+    <ProjectReference
+      Include="..\..\src\Microsoft.VisualStudio.Threading.Analyzers.CSharp\Microsoft.VisualStudio.Threading.Analyzers.CSharp.csproj" />
+    <ProjectReference
+      Include="..\..\src\Microsoft.VisualStudio.Threading.Analyzers.VisualBasic\Microsoft.VisualStudio.Threading.Analyzers.VisualBasic.csproj" />
+    <ProjectReference
+      Include="..\..\src\Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.csproj" />
+    <ProjectReference
+      Include="..\..\src\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" />
@@ -34,7 +39,9 @@
     <PackageReference Include="Xunit.SkippableFact" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="..\..\src\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\build\AdditionalFiles\**" LinkBase="BuiltIn.AdditionalFiles">
+    <EmbeddedResource
+      Include="..\..\src\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\build\AdditionalFiles\**"
+      LinkBase="BuiltIn.AdditionalFiles">
       <LogicalName>AdditionalFiles.%(FileName)%(Extension)</LogicalName>
     </EmbeddedResource>
     <EmbeddedResource Include="AdditionalFiles\**">
@@ -48,12 +55,15 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Update="..\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\build\AdditionalFiles\VSTHRD010.MainThreadSwitchingMethods.txt">
+    <EmbeddedResource
+      Update="..\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\build\AdditionalFiles\VSTHRD010.MainThreadSwitchingMethods.txt">
       <CustomToolNamespace>AdditionalFiles</CustomToolNamespace>
     </EmbeddedResource>
   </ItemGroup>
-  <Target Name="RemoveWindowsFramework" AfterTargets="ResolvePackageAssets" Condition="'$(TargetFramework)'=='net6.0'">
-    <!-- Our dependency of VS SDK is just for test assets. We have no real Windows dependency. But NuGet doesn't allow us to express that. -->
+  <Target Name="RemoveWindowsFramework" AfterTargets="ResolvePackageAssets"
+    Condition="'$(TargetFramework)'=='net8.0'">
+    <!-- Our dependency of VS SDK is just for test assets. We have no real Windows dependency. But
+    NuGet doesn't allow us to express that. -->
     <ItemGroup>
       <TransitiveFrameworkReference Remove="Microsoft.WindowsDesktop.App" />
       <TransitiveFrameworkReference Remove="Microsoft.WindowsDesktop.App.WPF" />
