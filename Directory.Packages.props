@@ -7,7 +7,7 @@
     <MicroBuildVersion>2.0.165</MicroBuildVersion>
     <CodeAnalysisVersion>3.11.0</CodeAnalysisVersion>
     <CodeAnalysisVersion Condition="'$(IsTestProject)'=='true'">4.4.0</CodeAnalysisVersion>
-    <CodefixTestingVersion>1.1.1</CodefixTestingVersion>
+    <CodefixTestingVersion>1.1.2</CodefixTestingVersion>
     <MicrosoftDiagnosticsRuntimeVersion>3.1.456501</MicrosoftDiagnosticsRuntimeVersion>
   </PropertyGroup>
   <ItemGroup>
