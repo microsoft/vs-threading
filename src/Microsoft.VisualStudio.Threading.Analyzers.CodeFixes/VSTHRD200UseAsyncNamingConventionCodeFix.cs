@@ -53,10 +53,7 @@ public class VSTHRD200UseAsyncNamingConventionCodeFix : CodeFixProvider
             this.newName = newName;
         }
 
-        public override string Title => string.Format(
-            CultureInfo.CurrentCulture,
-            Strings.VSTHRD200_CodeFix_Title,
-            this.newName);
+        public override string Title => new LocalizableResourceString(nameof(Strings.VSTHRD200_CodeFix_Title), Strings.ResourceManager, typeof(Strings), this.newName).ToString();
 
         /// <inheritdoc />
         public override string? EquivalenceKey => null;

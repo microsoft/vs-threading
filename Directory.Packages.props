@@ -9,12 +9,13 @@
     <CodeAnalysisVersion Condition="'$(IsTestProject)'=='true'">4.4.0</CodeAnalysisVersion>
     <CodefixTestingVersion>1.1.2</CodefixTestingVersion>
     <MicrosoftDiagnosticsRuntimeVersion>3.1.456501</MicrosoftDiagnosticsRuntimeVersion>
+    <CodeAnalysisAnalyzerVersion>3.11.0-beta1.24527.2</CodeAnalysisAnalyzerVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="DNNE" Version="2.0.6" />
     <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="6.0.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis" Version="$(CodeAnalysisVersion)" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.3" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="$(CodeAnalysisAnalyzerVersion)" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Common" Version="$(CodeAnalysisVersion)" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="$(CodeAnalysisVersion)" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" Version="$(CodefixTestingVersion)" />
@@ -49,7 +50,7 @@
     <PackageVersion Include="xunit" Version="2.9.0" />
   </ItemGroup>
   <ItemGroup>
-    <!-- Put repo-specific GlobalPackageReference items in this group. -->
+    <GlobalPackageReference Include="Microsoft.CodeAnalysis.ResxSourceGenerator" Version="$(CodeAnalysisAnalyzerVersion)" />
   </ItemGroup>
   <ItemGroup Label="Library.Template">
     <GlobalPackageReference Include="CSharpIsNullAnalyzer" Version="0.1.593" />
