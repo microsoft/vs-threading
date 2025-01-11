@@ -16,11 +16,11 @@ public class VSTHRD200UseAsyncNamingConventionAnalyzer : DiagnosticAnalyzer
 {
     public const string Id = "VSTHRD200";
 
-    internal const string NewNameKey = "NewName";
+    public const string NewNameKey = "NewName";
 
-    internal const string MandatoryAsyncSuffix = "Async";
+    public const string MandatoryAsyncSuffix = "Async";
 
-    internal static readonly DiagnosticDescriptor AddAsyncDescriptor = new DiagnosticDescriptor(
+    public static readonly DiagnosticDescriptor AddAsyncDescriptor = new DiagnosticDescriptor(
         id: Id,
         title: new LocalizableResourceString(nameof(Strings.VSTHRD200_Title), Strings.ResourceManager, typeof(Strings)),
         messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD200_AddAsync_MessageFormat), Strings.ResourceManager, typeof(Strings)),
@@ -29,7 +29,7 @@ public class VSTHRD200UseAsyncNamingConventionAnalyzer : DiagnosticAnalyzer
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
-    internal static readonly DiagnosticDescriptor RemoveAsyncDescriptor = new DiagnosticDescriptor(
+    public static readonly DiagnosticDescriptor RemoveAsyncDescriptor = new DiagnosticDescriptor(
         id: Id,
         title: new LocalizableResourceString(nameof(Strings.VSTHRD200_Title), Strings.ResourceManager, typeof(Strings)),
         messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD200_RemoveAsync_MessageFormat), Strings.ResourceManager, typeof(Strings)),

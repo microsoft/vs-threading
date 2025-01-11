@@ -57,7 +57,7 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
     /// <summary>
     /// The descriptor to use for diagnostics reported in synchronous methods.
     /// </summary>
-    internal static readonly DiagnosticDescriptor DescriptorSync = new DiagnosticDescriptor(
+    public static readonly DiagnosticDescriptor DescriptorSync = new DiagnosticDescriptor(
         id: Id,
         title: new LocalizableResourceString(nameof(Strings.VSTHRD010_Title), Strings.ResourceManager, typeof(Strings)),
         messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD010_MessageFormat_Sync), Strings.ResourceManager, typeof(Strings)),
@@ -70,7 +70,7 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
     /// <summary>
     /// The descriptor to use for diagnostics reported in async methods.
     /// </summary>
-    internal static readonly DiagnosticDescriptor DescriptorAsync = new DiagnosticDescriptor(
+    public static readonly DiagnosticDescriptor DescriptorAsync = new DiagnosticDescriptor(
         id: Id,
         title: new LocalizableResourceString(nameof(Strings.VSTHRD010_Title), Strings.ResourceManager, typeof(Strings)),
         messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD010_MessageFormat_Async), Strings.ResourceManager, typeof(Strings)),

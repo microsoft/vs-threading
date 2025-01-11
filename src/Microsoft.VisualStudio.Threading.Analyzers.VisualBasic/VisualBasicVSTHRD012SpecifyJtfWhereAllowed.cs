@@ -9,5 +9,5 @@ namespace Microsoft.VisualStudio.Threading.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.VisualBasic)]
 public sealed class VisualBasicVSTHRD012SpecifyJtfWhereAllowed : AbstractVSTHRD012SpecifyJtfWhereAllowed
 {
-    private protected override LanguageUtils LanguageUtils => VisualBasicUtils.Instance;
+    protected override LanguageUtils LanguageUtils => VisualBasicUtils.Instance;
 }

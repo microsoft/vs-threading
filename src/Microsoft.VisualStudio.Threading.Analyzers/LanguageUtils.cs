@@ -7,15 +7,15 @@ using Microsoft.CodeAnalysis.Operations;
 
 namespace Microsoft.VisualStudio.Threading.Analyzers;
 
-internal abstract class LanguageUtils
+public abstract class LanguageUtils
 {
-    internal abstract Location? GetLocationOfBaseTypeName(INamedTypeSymbol symbol, INamedTypeSymbol baseType, Compilation compilation, CancellationToken cancellationToken);
+    public abstract Location? GetLocationOfBaseTypeName(INamedTypeSymbol symbol, INamedTypeSymbol baseType, Compilation compilation, CancellationToken cancellationToken);
 
-    internal abstract SyntaxNode IsolateMethodName(IInvocationOperation invocation);
+    public abstract SyntaxNode IsolateMethodName(IInvocationOperation invocation);
 
-    internal abstract SyntaxNode IsolateMethodName(IObjectCreationOperation objectCreation);
+    public abstract SyntaxNode IsolateMethodName(IObjectCreationOperation objectCreation);
 
-    internal abstract bool MethodReturnsNullableReferenceType(IMethodSymbol method);
+    public abstract bool MethodReturnsNullableReferenceType(IMethodSymbol method);
 
-    internal abstract bool IsAsyncMethod(SyntaxNode syntaxNode);
+    public abstract bool IsAsyncMethod(SyntaxNode syntaxNode);
 }

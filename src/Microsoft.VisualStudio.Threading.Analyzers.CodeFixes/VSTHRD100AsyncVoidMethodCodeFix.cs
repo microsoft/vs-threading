@@ -41,7 +41,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers;
 public class VSTHRD100AsyncVoidMethodCodeFix : CodeFixProvider
 {
     private static readonly ImmutableArray<string> ReusableFixableDiagnosticIds = ImmutableArray.Create(
-        VSTHRD100AsyncVoidMethodAnalyzer.Descriptor.Id);
+        VSTHRD100AsyncVoidMethodAnalyzer.Id);
 
     /// <inheritdoc />
     public override ImmutableArray<string> FixableDiagnosticIds => ReusableFixableDiagnosticIds;

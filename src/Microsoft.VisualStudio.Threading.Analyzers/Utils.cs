@@ -15,9 +15,9 @@ using Microsoft.CodeAnalysis.Operations;
 
 namespace Microsoft.VisualStudio.Threading.Analyzers;
 
-internal static class Utils
+public static class Utils
 {
-    internal static Action<SyntaxNodeAnalysisContext> DebuggableWrapper(Action<SyntaxNodeAnalysisContext> handler)
+    public static Action<SyntaxNodeAnalysisContext> DebuggableWrapper(Action<SyntaxNodeAnalysisContext> handler)
     {
         return ctxt =>
         {
@@ -36,7 +36,7 @@ internal static class Utils
         };
     }
 
-    internal static Action<SymbolAnalysisContext> DebuggableWrapper(Action<SymbolAnalysisContext> handler)
+    public static Action<SymbolAnalysisContext> DebuggableWrapper(Action<SymbolAnalysisContext> handler)
     {
         return ctxt =>
         {
@@ -55,7 +55,7 @@ internal static class Utils
         };
     }
 
-    internal static Action<CodeBlockAnalysisContext> DebuggableWrapper(Action<CodeBlockAnalysisContext> handler)
+    public static Action<CodeBlockAnalysisContext> DebuggableWrapper(Action<CodeBlockAnalysisContext> handler)
     {
         return ctxt =>
         {
@@ -74,7 +74,7 @@ internal static class Utils
         };
     }
 
-    internal static Action<OperationAnalysisContext> DebuggableWrapper(Action<OperationAnalysisContext> handler)
+    public static Action<OperationAnalysisContext> DebuggableWrapper(Action<OperationAnalysisContext> handler)
     {
         return ctxt =>
         {
@@ -93,7 +93,7 @@ internal static class Utils
         };
     }
 
-    internal static Action<OperationBlockStartAnalysisContext> DebuggableWrapper(Action<OperationBlockStartAnalysisContext> handler)
+    public static Action<OperationBlockStartAnalysisContext> DebuggableWrapper(Action<OperationBlockStartAnalysisContext> handler)
     {
         return ctxt =>
         {
@@ -133,7 +133,7 @@ internal static class Utils
     /// <summary>
     /// Gets a semantic model for the given <see cref="SyntaxTree"/>.
     /// </summary>
-    internal static bool TryGetNewOrExistingSemanticModel(this SyntaxNodeAnalysisContext context, SyntaxTree syntaxTree, [NotNullWhen(true)] out SemanticModel? semanticModel)
+    public static bool TryGetNewOrExistingSemanticModel(this SyntaxNodeAnalysisContext context, SyntaxTree syntaxTree, [NotNullWhen(true)] out SemanticModel? semanticModel)
     {
         // Avoid calling GetSemanticModel unless we need it since it's much more expensive to create a new one than to reuse one.
         semanticModel =
@@ -143,12 +143,12 @@ internal static class Utils
         return semanticModel is object;
     }
 
-    internal static bool IsEqualToOrDerivedFrom(ITypeSymbol? type, ITypeSymbol expectedType)
+    public static bool IsEqualToOrDerivedFrom(ITypeSymbol? type, ITypeSymbol expectedType)
     {
         return EqualityComparer<ITypeSymbol?>.Default.Equals(type?.OriginalDefinition, expectedType) || IsDerivedFrom(type, expectedType);
     }
 
-    internal static bool IsDerivedFrom(ITypeSymbol? type, ITypeSymbol expectedType)
+    public static bool IsDerivedFrom(ITypeSymbol? type, ITypeSymbol expectedType)
     {
         type = type?.BaseType;
         while (type is object)
@@ -170,7 +170,7 @@ internal static class Utils
     /// </summary>
     /// <param name="symbol">The input symbol.</param>
     /// <returns>The type represented by the input symbol; or <see langword="null" /> if could not figure out the type.</returns>
-    internal static ITypeSymbol? ResolveTypeFromSymbol(ISymbol symbol)
+    public static ITypeSymbol? ResolveTypeFromSymbol(ISymbol symbol)
     {
         ITypeSymbol? type = null;
         switch (symbol?.Kind)
@@ -210,7 +210,7 @@ internal static class Utils
     /// <param name="symbol">The symbol whose namespace membership is being tested.</param>
     /// <param name="namespaces">A sequence of namespaces from global to most precise. For example: [System, Threading, Tasks].</param>
     /// <returns><see langword="true" /> if the symbol belongs to the given namespace; otherwise <see langword="false" />.</returns>
-    internal static bool BelongsToNamespace(this ISymbol symbol, IReadOnlyList<string> namespaces)
+    public static bool BelongsToNamespace(this ISymbol symbol, IReadOnlyList<string> namespaces)
     {
         if (namespaces is null)
         {
@@ -236,7 +236,7 @@ internal static class Utils
         return currentNamespace?.IsGlobalNamespace ?? false;
     }
 
-    internal static IBlockOperation? GetContainingFunctionBlock(IOperation operation)
+    public static IBlockOperation? GetContainingFunctionBlock(IOperation operation)
     {
         IOperation? previousAncestor = operation;
         IOperation? ancestor = previousAncestor;
@@ -255,7 +255,7 @@ internal static class Utils
         return previousAncestor as IBlockOperation;
     }
 
-    internal static ISymbol GetContainingFunction(IOperation operation, ISymbol operationBlockContainingSymbol)
+    public static ISymbol GetContainingFunction(IOperation operation, ISymbol operationBlockContainingSymbol)
     {
         for (IOperation? current = operation; current is object; current = current.Parent)
         {
@@ -272,7 +272,7 @@ internal static class Utils
         return operationBlockContainingSymbol;
     }
 
-    internal static bool HasAsyncCompatibleReturnType([NotNullWhen(true)] this IMethodSymbol? methodSymbol) => IsAsyncCompatibleReturnType(methodSymbol?.ReturnType);
+    public static bool HasAsyncCompatibleReturnType([NotNullWhen(true)] this IMethodSymbol? methodSymbol) => IsAsyncCompatibleReturnType(methodSymbol?.ReturnType);
 
     /// <summary>
     /// Determines whether a type could be used with the async modifier as a method return type.
@@ -284,7 +284,7 @@ internal static class Utils
     /// that follows the proper pattern. But being an async-compatible type in this sense is a type that can be returned from a method carrying the async keyword modifier,
     /// in that the type is either the special Task type, or offers an async method builder of its own.
     /// </remarks>
-    internal static bool IsAsyncCompatibleReturnType([NotNullWhen(true)] this ITypeSymbol? typeSymbol)
+    public static bool IsAsyncCompatibleReturnType([NotNullWhen(true)] this ITypeSymbol? typeSymbol)
     {
         if (typeSymbol is null)
         {
@@ -301,7 +301,7 @@ internal static class Utils
             && symbol.BelongsToNamespace(Namespaces.SystemCollectionsGeneric);
     }
 
-    internal static bool IsLazyOfT([NotNullWhen(true)] INamedTypeSymbol? constructedType)
+    public static bool IsLazyOfT([NotNullWhen(true)] INamedTypeSymbol? constructedType)
     {
         return constructedType is object
             && constructedType.ContainingNamespace?.Name == nameof(System)
@@ -310,7 +310,7 @@ internal static class Utils
             && constructedType.Arity > 0; // could be Lazy<T> or Lazy<T, TMetadata>
     }
 
-    internal static bool IsTask([NotNullWhen(true)] ITypeSymbol? typeSymbol) => typeSymbol?.Name == nameof(Task) && typeSymbol.BelongsToNamespace(Namespaces.SystemThreadingTasks);
+    public static bool IsTask([NotNullWhen(true)] ITypeSymbol? typeSymbol) => typeSymbol?.Name == nameof(Task) && typeSymbol.BelongsToNamespace(Namespaces.SystemThreadingTasks);
 
     /// <summary>
     /// Gets a value indicating whether a method is async or is ready to be async by having an async-compatible return type.
@@ -319,16 +319,16 @@ internal static class Utils
     /// A method might be async but not have an async compatible return type if it returns void and is an "async void" method.
     /// However, a non-async void method is *not* considered async ready and gets a false value returned from this method.
     /// </remarks>
-    internal static bool IsAsyncReady(this IMethodSymbol methodSymbol) => methodSymbol.IsAsync || methodSymbol.HasAsyncCompatibleReturnType();
+    public static bool IsAsyncReady(this IMethodSymbol methodSymbol) => methodSymbol.IsAsync || methodSymbol.HasAsyncCompatibleReturnType();
 
-    internal static bool HasAsyncAlternative(this IMethodSymbol methodSymbol, CancellationToken cancellationToken)
+    public static bool HasAsyncAlternative(this IMethodSymbol methodSymbol, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         return methodSymbol.ContainingType.GetMembers(methodSymbol.Name + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix)
             .Any(alt => IsXAtLeastAsPublicAsY(alt, methodSymbol));
     }
 
-    internal static bool IsXAtLeastAsPublicAsY(ISymbol x, ISymbol y)
+    public static bool IsXAtLeastAsPublicAsY(ISymbol x, ISymbol y)
     {
         if (y.DeclaredAccessibility == x.DeclaredAccessibility ||
             x.DeclaredAccessibility == Accessibility.Public)
@@ -363,7 +363,7 @@ internal static class Utils
     /// or an explicit interface implementation of a public interface;
     /// otherwise <see langword="false" />.
     /// </returns>
-    internal static bool IsPublic([NotNullWhen(true)] ISymbol? symbol)
+    public static bool IsPublic([NotNullWhen(true)] ISymbol? symbol)
     {
         if (symbol is null)
         {
@@ -399,22 +399,22 @@ internal static class Utils
         }
     }
 
-    internal static bool IsEntrypointMethod([NotNullWhen(true)] ISymbol? symbol, SemanticModel? semanticModel, CancellationToken cancellationToken)
+    public static bool IsEntrypointMethod([NotNullWhen(true)] ISymbol? symbol, SemanticModel? semanticModel, CancellationToken cancellationToken)
     {
         return semanticModel?.Compilation is object && IsEntrypointMethod(symbol, semanticModel.Compilation, cancellationToken);
     }
 
-    internal static bool IsEntrypointMethod([NotNullWhen(true)] ISymbol? symbol, Compilation compilation, CancellationToken cancellationToken)
+    public static bool IsEntrypointMethod([NotNullWhen(true)] ISymbol? symbol, Compilation compilation, CancellationToken cancellationToken)
     {
         return compilation.GetEntryPoint(cancellationToken)?.Equals(symbol, SymbolEqualityComparer.Default) ?? false;
     }
 
-    internal static bool IsObsolete(this ISymbol symbol)
+    public static bool IsObsolete(this ISymbol symbol)
     {
         return symbol.GetAttributes().Any(a => a.AttributeClass?.Name == nameof(ObsoleteAttribute) && a.AttributeClass.BelongsToNamespace(Namespaces.System));
     }
 
-    internal static IEnumerable<ITypeSymbol> FindInterfacesImplemented(this ISymbol? symbol)
+    public static IEnumerable<ITypeSymbol> FindInterfacesImplemented(this ISymbol? symbol)
     {
         if (symbol is null)
         {
@@ -430,7 +430,7 @@ internal static class Utils
         return interfaceImplementations;
     }
 
-    internal static string GetFullName(ISymbol symbol)
+    public static string GetFullName(ISymbol symbol)
     {
         if (symbol is null)
         {
@@ -458,20 +458,20 @@ internal static class Utils
         return sb.ToString();
     }
 
-    internal static void Deconstruct<T1, T2>(this Tuple<T1, T2> tuple, out T1 item1, out T2 item2)
+    public static void Deconstruct<T1, T2>(this Tuple<T1, T2> tuple, out T1 item1, out T2 item2)
     {
         item1 = tuple.Item1;
         item2 = tuple.Item2;
     }
 
-    internal static void Deconstruct<T1, T2, T3>(this Tuple<T1, T2, T3> tuple, out T1 item1, out T2 item2, out T3 item3)
+    public static void Deconstruct<T1, T2, T3>(this Tuple<T1, T2, T3> tuple, out T1 item1, out T2 item2, out T3 item3)
     {
         item1 = tuple.Item1;
         item2 = tuple.Item2;
         item3 = tuple.Item3;
     }
 
-    internal static void Deconstruct<T1, T2, T3, T4>(this Tuple<T1, T2, T3, T4> tuple, out T1 item1, out T2 item2, out T3 item3, out T4 item4)
+    public static void Deconstruct<T1, T2, T3, T4>(this Tuple<T1, T2, T3, T4> tuple, out T1 item1, out T2 item2, out T3 item3, out T4 item4)
     {
         item1 = tuple.Item1;
         item2 = tuple.Item2;
@@ -479,7 +479,7 @@ internal static class Utils
         item4 = tuple.Item4;
     }
 
-    internal static string GetHelpLink(string analyzerId)
+    public static string GetHelpLink(string analyzerId)
     {
         return $"https://github.com/Microsoft/vs-threading/blob/main/doc/analyzers/{analyzerId}.md";
     }
@@ -492,7 +492,7 @@ internal static class Utils
     /// <param name="positionForLookup">The position in the document that must have access to any candidate <see cref="CancellationToken"/>.</param>
     /// <param name="cancellationToken">A token that represents lost interest in this inquiry.</param>
     /// <returns>Candidate <see cref="CancellationToken"/> symbols.</returns>
-    internal static IEnumerable<ISymbol> FindCancellationToken(SemanticModel? semanticModel, int positionForLookup, CancellationToken cancellationToken)
+    public static IEnumerable<ISymbol> FindCancellationToken(SemanticModel? semanticModel, int positionForLookup, CancellationToken cancellationToken)
     {
         if (semanticModel is null)
         {
@@ -517,7 +517,7 @@ internal static class Utils
     /// <param name="semanticModel">The semantic model of the document that must be able to access the methods.</param>
     /// <param name="methodAsString">The fully-qualified name of the method.</param>
     /// <returns>An enumeration of method symbols with a matching name.</returns>
-    internal static IEnumerable<IMethodSymbol> FindMethodGroup(SemanticModel? semanticModel, string methodAsString)
+    public static IEnumerable<IMethodSymbol> FindMethodGroup(SemanticModel? semanticModel, string methodAsString)
     {
         if (semanticModel is null)
         {
@@ -548,7 +548,7 @@ internal static class Utils
     /// <param name="semanticModel">The semantic model of the document that must be able to access the methods.</param>
     /// <param name="method">The fully-qualified name of the method.</param>
     /// <returns>An enumeration of method symbols with a matching name.</returns>
-    internal static IEnumerable<IMethodSymbol> FindMethodGroup(SemanticModel semanticModel, CommonInterest.QualifiedMember method)
+    public static IEnumerable<IMethodSymbol> FindMethodGroup(SemanticModel semanticModel, CommonInterest.QualifiedMember method)
     {
         if (semanticModel is null)
         {
@@ -568,7 +568,7 @@ internal static class Utils
     /// <param name="positionForLookup">The position in the document where the value must be accessible.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>An enumeration of symbols that can provide a value of the required type, together with a flag indicating whether they are accessible using "local" syntax (i.e. the symbol is a local variable or a field on the enclosing type).</returns>
-    internal static IEnumerable<Tuple<bool, ISymbol>> FindInstanceOf(INamedTypeSymbol typeSymbol, SemanticModel semanticModel, int positionForLookup, CancellationToken cancellationToken)
+    public static IEnumerable<Tuple<bool, ISymbol>> FindInstanceOf(INamedTypeSymbol typeSymbol, SemanticModel semanticModel, int positionForLookup, CancellationToken cancellationToken)
     {
         if (typeSymbol is null)
         {
@@ -611,7 +611,7 @@ internal static class Utils
         }
     }
 
-    internal static T? FirstAncestor<T>(this SyntaxNode startingNode, IReadOnlyCollection<Type> doNotPassNodeTypes)
+    public static T? FirstAncestor<T>(this SyntaxNode startingNode, IReadOnlyCollection<Type> doNotPassNodeTypes)
         where T : SyntaxNode
     {
         if (doNotPassNodeTypes is null)
@@ -638,7 +638,7 @@ internal static class Utils
         return default(T);
     }
 
-    internal static Tuple<string?, string?> SplitOffLastElement(string? qualifiedName)
+    public static Tuple<string?, string?> SplitOffLastElement(string? qualifiedName)
     {
         if (qualifiedName is null)
         {
@@ -659,9 +659,9 @@ internal static class Utils
     /// </summary>
     /// <param name="parameterSymbol">The parameter.</param>
     /// <returns><see langword="true" /> if the parameter takes a <see cref="CancellationToken"/>; <see langword="false" /> otherwise.</returns>
-    internal static bool IsCancellationTokenParameter(IParameterSymbol parameterSymbol) => parameterSymbol?.Type.Name == nameof(CancellationToken) && parameterSymbol.Type.BelongsToNamespace(Namespaces.SystemThreading);
+    public static bool IsCancellationTokenParameter(IParameterSymbol parameterSymbol) => parameterSymbol?.Type.Name == nameof(CancellationToken) && parameterSymbol.Type.BelongsToNamespace(Namespaces.SystemThreading);
 
-    internal static ISymbol? GetUnderlyingSymbol(IOperation? operation)
+    public static ISymbol? GetUnderlyingSymbol(IOperation? operation)
     {
         return operation switch
         {
@@ -672,9 +672,9 @@ internal static class Utils
         };
     }
 
-    internal static bool IsSameSymbol(IOperation? op1, IOperation? op2) => GetUnderlyingSymbol(op1)?.Equals(GetUnderlyingSymbol(op2), SymbolEqualityComparer.Default) ?? false;
+    public static bool IsSameSymbol(IOperation? op1, IOperation? op2) => GetUnderlyingSymbol(op1)?.Equals(GetUnderlyingSymbol(op2), SymbolEqualityComparer.Default) ?? false;
 
-    internal static IOperation FindFinalAncestor(IOperation operation)
+    public static IOperation FindFinalAncestor(IOperation operation)
     {
         while (operation.Parent is object)
         {
@@ -684,7 +684,7 @@ internal static class Utils
         return operation;
     }
 
-    internal static T? FindAncestor<T>(IOperation? operation)
+    public static T? FindAncestor<T>(IOperation? operation)
         where T : class, IOperation
     {
         while (operation is object)
@@ -700,7 +700,7 @@ internal static class Utils
         return default;
     }
 
-    internal static ISymbol? FindContainingNamedOrAssemblySymbol(this ISymbol? symbol)
+    public static ISymbol? FindContainingNamedOrAssemblySymbol(this ISymbol? symbol)
     {
         ISymbol? candidate = symbol;
         while (candidate is not null)

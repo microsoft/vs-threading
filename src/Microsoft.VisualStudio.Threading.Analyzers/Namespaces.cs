@@ -5,75 +5,75 @@ using System.Collections.Generic;
 
 namespace Microsoft.VisualStudio.Threading.Analyzers;
 
-internal static class Namespaces
+public static class Namespaces
 {
-    internal static readonly IReadOnlyList<string> System = new[]
+    public static readonly IReadOnlyList<string> System = new[]
     {
         nameof(System),
     };
 
-    internal static readonly IReadOnlyList<string> SystemCollectionsGeneric = new[]
+    public static readonly IReadOnlyList<string> SystemCollectionsGeneric = new[]
     {
         nameof(System),
         nameof(global::System.Collections),
         nameof(global::System.Collections.Generic),
     };
 
-    internal static readonly IReadOnlyList<string> SystemThreading = new[]
+    public static readonly IReadOnlyList<string> SystemThreading = new[]
     {
         nameof(System),
         nameof(global::System.Threading),
     };
 
-    internal static readonly IReadOnlyList<string> SystemDiagnostics = new[]
+    public static readonly IReadOnlyList<string> SystemDiagnostics = new[]
     {
         nameof(System),
         nameof(global::System.Diagnostics),
     };
 
-    internal static readonly IReadOnlyList<string> SystemThreadingTasks = new[]
+    public static readonly IReadOnlyList<string> SystemThreadingTasks = new[]
     {
         nameof(System),
         nameof(global::System.Threading),
         nameof(global::System.Threading.Tasks),
     };
 
-    internal static readonly IReadOnlyList<string> SystemRuntimeCompilerServices = new[]
+    public static readonly IReadOnlyList<string> SystemRuntimeCompilerServices = new[]
     {
         nameof(System),
         nameof(global::System.Runtime),
         nameof(global::System.Runtime.CompilerServices),
     };
 
-    internal static readonly IReadOnlyList<string> SystemRuntimeInteropServices = new[]
+    public static readonly IReadOnlyList<string> SystemRuntimeInteropServices = new[]
     {
         nameof(System),
         nameof(global::System.Runtime),
         nameof(global::System.Runtime.InteropServices),
     };
 
-    internal static readonly IReadOnlyList<string> SystemWindowsThreading = new[]
+    public static readonly IReadOnlyList<string> SystemWindowsThreading = new[]
     {
         nameof(System),
         nameof(global::System.Windows),
         "Threading",
     };
 
-    internal static readonly IReadOnlyList<string> MicrosoftVisualStudioThreading = new[]
+    public static readonly IReadOnlyList<string> MicrosoftVisualStudioThreading = new[]
     {
         "Microsoft",
         "VisualStudio",
         "Threading",
     };
 
-    internal static readonly IReadOnlyList<string> MicrosoftVisualStudioShell = new[]
+    public static readonly IReadOnlyList<string> MicrosoftVisualStudioShell = new[]
     {
         "Microsoft",
         "VisualStudio",
         "Shell",
     };
 
-    internal static readonly IReadOnlyList<string> MicrosoftVisualStudioShellInterop = new[]
+    public static readonly IReadOnlyList<string> MicrosoftVisualStudioShellInterop = new[]
     {
         "Microsoft",
         "VisualStudio",

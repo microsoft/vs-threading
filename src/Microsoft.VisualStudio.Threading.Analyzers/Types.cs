@@ -9,243 +9,243 @@ namespace Microsoft.VisualStudio.Threading.Analyzers;
 /// Identifiers used to identify various types so that we can avoid adding dependency only if absolutely needed.
 /// <devremarks>For each predefine value here, please update the unit test to detect if values go out of sync with the real types they represent.</devremarks>
 /// </summary>
-internal static class Types
+public static class Types
 {
     private const string VSThreadingNamespace = "Microsoft.VisualStudio.Threading";
 
-    internal static class BclAsyncDisposable
+    public static class BclAsyncDisposable
     {
-        internal const string FullName = "System.IAsyncDisposable";
+        public const string FullName = "System.IAsyncDisposable";
 
-        internal const string PackageId = "Microsoft.Bcl.AsyncInterfaces";
+        public const string PackageId = "Microsoft.Bcl.AsyncInterfaces";
     }
 
-    internal static class IAsyncDisposable
+    public static class IAsyncDisposable
     {
-        internal const string FullName = "Microsoft.VisualStudio.Threading.IAsyncDisposable";
+        public const string FullName = "Microsoft.VisualStudio.Threading.IAsyncDisposable";
     }
 
-    internal static class AwaitExtensions
+    public static class AwaitExtensions
     {
         /// <summary>
         /// The full name of the AwaitExtensions type.
         /// </summary>
-        internal const string TypeName = "AwaitExtensions";
+        public const string TypeName = "AwaitExtensions";
 
         /// <summary>
         /// The name of the ConfigureAwaitRunInline method.
         /// </summary>
-        internal const string ConfigureAwaitRunInline = "ConfigureAwaitRunInline";
+        public const string ConfigureAwaitRunInline = "ConfigureAwaitRunInline";
 
-        internal static readonly IReadOnlyList<string> Namespace = Namespaces.MicrosoftVisualStudioThreading;
+        public static readonly IReadOnlyList<string> Namespace = Namespaces.MicrosoftVisualStudioThreading;
     }
 
     /// <summary>
     /// Contains the names of types and members within TplExtensions.
     /// </summary>
-    internal static class TplExtensions
+    public static class TplExtensions
     {
         /// <summary>
         /// The full name of the TplExtensions type.
         /// </summary>
-        internal const string TypeName = "TplExtensions";
+        public const string TypeName = "TplExtensions";
 
         /// <summary>
         /// The name of the InvokeAsync method.
         /// </summary>
-        internal const string InvokeAsync = "InvokeAsync";
+        public const string InvokeAsync = "InvokeAsync";
 
         /// <summary>
         /// The name of the CompletedTask field.
         /// </summary>
-        internal const string CompletedTask = "CompletedTask";
+        public const string CompletedTask = "CompletedTask";
 
         /// <summary>
         /// The name of the CanceledTask field.
         /// </summary>
-        internal const string CanceledTask = "CanceledTask";
+        public const string CanceledTask = "CanceledTask";
 
         /// <summary>
         /// The name of the TrueTask field.
         /// </summary>
-        internal const string TrueTask = "TrueTask";
+        public const string TrueTask = "TrueTask";
 
         /// <summary>
         /// The name of the FalseTask field.
         /// </summary>
-        internal const string FalseTask = "FalseTask";
+        public const string FalseTask = "FalseTask";
 
-        internal static readonly IReadOnlyList<string> Namespace = Namespaces.MicrosoftVisualStudioThreading;
+        public static readonly IReadOnlyList<string> Namespace = Namespaces.MicrosoftVisualStudioThreading;
     }
 
     /// <summary>
     /// Contains descriptors for the AsyncEventHandler type.
     /// </summary>
-    internal static class AsyncEventHandler
+    public static class AsyncEventHandler
     {
         /// <summary>
         /// The full name of the AsyncEventHandler type.
         /// </summary>
-        internal const string TypeName = "AsyncEventHandler";
+        public const string TypeName = "AsyncEventHandler";
 
-        internal static readonly IReadOnlyList<string> Namespace = Namespaces.MicrosoftVisualStudioThreading;
+        public static readonly IReadOnlyList<string> Namespace = Namespaces.MicrosoftVisualStudioThreading;
     }
 
-    internal static class AsyncMethodBuilderAttribute
+    public static class AsyncMethodBuilderAttribute
     {
-        internal const string TypeName = nameof(System.Runtime.CompilerServices.AsyncMethodBuilderAttribute);
+        public const string TypeName = nameof(System.Runtime.CompilerServices.AsyncMethodBuilderAttribute);
 
-        internal static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeCompilerServices;
+        public static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeCompilerServices;
     }
 
     /// <summary>
     /// Contains descriptors for the JoinableTaskFactory type.
     /// </summary>
-    internal static class JoinableTaskFactory
+    public static class JoinableTaskFactory
     {
-        internal const string TypeName = "JoinableTaskFactory";
+        public const string TypeName = "JoinableTaskFactory";
 
-        internal const string FullName = "Microsoft.VisualStudio.Threading." + TypeName;
+        public const string FullName = "Microsoft.VisualStudio.Threading." + TypeName;
 
         /// <summary>
         /// The name of the SwitchToMainThreadAsync method.
         /// </summary>
-        internal const string SwitchToMainThreadAsync = "SwitchToMainThreadAsync";
+        public const string SwitchToMainThreadAsync = "SwitchToMainThreadAsync";
 
-        internal const string Run = "Run";
+        public const string Run = "Run";
 
-        internal const string RunAsync = "RunAsync";
+        public const string RunAsync = "RunAsync";
 
-        internal static readonly IReadOnlyList<string> Namespace = Namespaces.MicrosoftVisualStudioThreading;
+        public static readonly IReadOnlyList<string> Namespace = Namespaces.MicrosoftVisualStudioThreading;
     }
 
     /// <summary>
     /// Contains descriptors for the JoinableTaskCollection type.
     /// </summary>
-    internal static class JoinableTaskCollection
+    public static class JoinableTaskCollection
     {
-        internal const string TypeName = "JoinableTaskCollection";
+        public const string TypeName = "JoinableTaskCollection";
     }
 
     /// <summary>
     /// Contains descriptors for the JoinableTaskContext type.
     /// </summary>
-    internal static class JoinableTaskContext
+    public static class JoinableTaskContext
     {
-        internal const string TypeName = "JoinableTaskContext";
+        public const string TypeName = "JoinableTaskContext";
 
-        internal const string FullName = $"{VSThreadingNamespace}.{TypeName}";
+        public const string FullName = $"{VSThreadingNamespace}.{TypeName}";
 
-        internal const string CreateNoOpContext = "CreateNoOpContext";
+        public const string CreateNoOpContext = "CreateNoOpContext";
     }
 
-    internal static class JoinableTask
+    public static class JoinableTask
     {
-        internal const string TypeName = "JoinableTask";
+        public const string TypeName = "JoinableTask";
 
-        internal const string Join = "Join";
+        public const string Join = "Join";
 
-        internal const string JoinAsync = "JoinAsync";
+        public const string JoinAsync = "JoinAsync";
     }
 
-    internal static class SynchronizationContext
+    public static class SynchronizationContext
     {
-        internal const string TypeName = nameof(System.Threading.SynchronizationContext);
+        public const string TypeName = nameof(System.Threading.SynchronizationContext);
 
-        internal const string Post = nameof(System.Threading.SynchronizationContext.Post);
+        public const string Post = nameof(System.Threading.SynchronizationContext.Post);
 
-        internal const string Send = nameof(System.Threading.SynchronizationContext.Send);
+        public const string Send = nameof(System.Threading.SynchronizationContext.Send);
     }
 
-    internal static class ThreadHelper
+    public static class ThreadHelper
     {
-        internal const string TypeName = "ThreadHelper";
+        public const string TypeName = "ThreadHelper";
 
-        internal const string Invoke = "Invoke";
+        public const string Invoke = "Invoke";
 
-        internal const string InvokeAsync = "InvokeAsync";
+        public const string InvokeAsync = "InvokeAsync";
 
-        internal const string BeginInvoke = "BeginInvoke";
+        public const string BeginInvoke = "BeginInvoke";
 
-        internal const string CheckAccess = "CheckAccess";
+        public const string CheckAccess = "CheckAccess";
     }
 
-    internal static class Dispatcher
+    public static class Dispatcher
     {
-        internal const string TypeName = "Dispatcher";
+        public const string TypeName = "Dispatcher";
 
-        internal const string Invoke = "Invoke";
+        public const string Invoke = "Invoke";
 
-        internal const string BeginInvoke = "BeginInvoke";
+        public const string BeginInvoke = "BeginInvoke";
 
-        internal const string InvokeAsync = "InvokeAsync";
+        public const string InvokeAsync = "InvokeAsync";
     }
 
-    internal static class Task
+    public static class Task
     {
-        internal const string TypeName = nameof(System.Threading.Tasks.Task);
+        public const string TypeName = nameof(System.Threading.Tasks.Task);
 
-        internal const string FullName = "System.Threading.Tasks." + TypeName;
+        public const string FullName = "System.Threading.Tasks." + TypeName;
 
-        internal const string CompletedTask = nameof(System.Threading.Tasks.Task.CompletedTask);
+        public const string CompletedTask = nameof(System.Threading.Tasks.Task.CompletedTask);
 
-        internal const string WhenAll = "WhenAll";
+        public const string WhenAll = "WhenAll";
 
-        internal static readonly IReadOnlyList<string> Namespace = Namespaces.SystemThreadingTasks;
+        public static readonly IReadOnlyList<string> Namespace = Namespaces.SystemThreadingTasks;
     }
 
-    internal static class ConfiguredTaskAwaitable
+    public static class ConfiguredTaskAwaitable
     {
-        internal const string TypeName = nameof(System.Runtime.CompilerServices.ConfiguredTaskAwaitable);
+        public const string TypeName = nameof(System.Runtime.CompilerServices.ConfiguredTaskAwaitable);
 
-        internal const string FullName = "System.Runtime.CompilerServices." + TypeName;
+        public const string FullName = "System.Runtime.CompilerServices." + TypeName;
 
-        internal static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeCompilerServices;
+        public static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeCompilerServices;
     }
 
-    internal static class ValueTask
+    public static class ValueTask
     {
-        internal const string TypeName = nameof(ValueTask);
+        public const string TypeName = nameof(ValueTask);
 
-        internal const string FullName = "System.Threading.Tasks." + TypeName;
+        public const string FullName = "System.Threading.Tasks." + TypeName;
 
-        internal static readonly IReadOnlyList<string> Namespace = Namespaces.SystemThreadingTasks;
+        public static readonly IReadOnlyList<string> Namespace = Namespaces.SystemThreadingTasks;
     }
 
-    internal static class ConfiguredValueTaskAwaitable
+    public static class ConfiguredValueTaskAwaitable
     {
-        internal const string TypeName = nameof(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable);
+        public const string TypeName = nameof(System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable);
 
-        internal const string FullName = "System.Runtime.CompilerServices." + TypeName;
+        public const string FullName = "System.Runtime.CompilerServices." + TypeName;
 
-        internal static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeCompilerServices;
+        public static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeCompilerServices;
     }
 
-    internal static class CoClassAttribute
+    public static class CoClassAttribute
     {
-        internal const string TypeName = nameof(System.Runtime.InteropServices.CoClassAttribute);
+        public const string TypeName = nameof(System.Runtime.InteropServices.CoClassAttribute);
 
-        internal static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeInteropServices;
+        public static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeInteropServices;
     }
 
-    internal static class ComImportAttribute
+    public static class ComImportAttribute
     {
-        internal const string TypeName = nameof(System.Runtime.InteropServices.ComImportAttribute);
+        public const string TypeName = nameof(System.Runtime.InteropServices.ComImportAttribute);
 
-        internal static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeInteropServices;
+        public static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeInteropServices;
     }
 
-    internal static class InterfaceTypeAttribute
+    public static class InterfaceTypeAttribute
     {
-        internal const string TypeName = nameof(System.Runtime.InteropServices.InterfaceTypeAttribute);
+        public const string TypeName = nameof(System.Runtime.InteropServices.InterfaceTypeAttribute);
 
-        internal static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeInteropServices;
+        public static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeInteropServices;
     }
 
-    internal static class TypeLibTypeAttribute
+    public static class TypeLibTypeAttribute
     {
-        internal const string TypeName = "TypeLibTypeAttribute";
+        public const string TypeName = "TypeLibTypeAttribute";
 
-        internal static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeInteropServices;
+        public static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeInteropServices;
     }
 }

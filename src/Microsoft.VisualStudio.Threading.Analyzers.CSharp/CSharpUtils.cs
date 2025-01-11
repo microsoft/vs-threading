@@ -13,7 +13,7 @@ using Microsoft.CodeAnalysis.Operations;
 
 namespace Microsoft.VisualStudio.Threading.Analyzers;
 
-internal sealed class CSharpUtils : LanguageUtils
+public sealed class CSharpUtils : LanguageUtils
 {
     public static readonly CSharpUtils Instance = new CSharpUtils();
 
@@ -21,7 +21,7 @@ internal sealed class CSharpUtils : LanguageUtils
     {
     }
 
-    internal static ExpressionSyntax IsolateMethodName(InvocationExpressionSyntax invocation)
+    public static ExpressionSyntax IsolateMethodName(InvocationExpressionSyntax invocation)
     {
         if (invocation is null)
         {
@@ -40,7 +40,7 @@ internal sealed class CSharpUtils : LanguageUtils
     /// </summary>
     /// <param name="syntaxNode">The syntax node to begin the search from.</param>
     /// <returns>The containing function, and metadata for it.</returns>
-    internal static ContainingFunctionData GetContainingFunction(CSharpSyntaxNode? syntaxNode)
+    public static ContainingFunctionData GetContainingFunction(CSharpSyntaxNode? syntaxNode)
     {
         while (syntaxNode is object)
         {
@@ -114,7 +114,7 @@ internal sealed class CSharpUtils : LanguageUtils
         return default(ContainingFunctionData);
     }
 
-    internal static bool IsOnLeftHandOfAssignment(SyntaxNode syntaxNode)
+    public static bool IsOnLeftHandOfAssignment(SyntaxNode syntaxNode)
     {
         SyntaxNode? parent = null;
         while ((parent = syntaxNode.Parent) is object)
@@ -130,7 +130,7 @@ internal sealed class CSharpUtils : LanguageUtils
         return false;
     }
 
-    internal static IEnumerable<ExpressionSyntax> FindAssignedValuesWithin(SyntaxNode container, SemanticModel semanticModel, ISymbol variable, CancellationToken cancellationToken)
+    public static IEnumerable<ExpressionSyntax> FindAssignedValuesWithin(SyntaxNode container, SemanticModel semanticModel, ISymbol variable, CancellationToken cancellationToken)
     {
         if (semanticModel is null)
         {
@@ -176,7 +176,7 @@ internal sealed class CSharpUtils : LanguageUtils
         }
     }
 
-    internal static MemberAccessExpressionSyntax MemberAccess(IReadOnlyList<string> qualifiers, SimpleNameSyntax simpleName)
+    public static MemberAccessExpressionSyntax MemberAccess(IReadOnlyList<string> qualifiers, SimpleNameSyntax simpleName)
     {
         if (qualifiers is null)
         {
@@ -206,7 +206,7 @@ internal sealed class CSharpUtils : LanguageUtils
     /// <summary>
     /// Determines whether an expression appears inside a C# "nameof" pseudo-method.
     /// </summary>
-    internal static bool IsWithinNameOf([NotNullWhen(true)] SyntaxNode? syntaxNode)
+    public static bool IsWithinNameOf([NotNullWhen(true)] SyntaxNode? syntaxNode)
     {
         InvocationExpressionSyntax? invocation = syntaxNode?.FirstAncestorOrSelf<InvocationExpressionSyntax>();
         return invocation is object
@@ -214,7 +214,7 @@ internal sealed class CSharpUtils : LanguageUtils
             && invocation.ArgumentList.Arguments.Count == 1;
     }
 
-    internal override Location? GetLocationOfBaseTypeName(INamedTypeSymbol symbol, INamedTypeSymbol baseType, Compilation compilation, CancellationToken cancellationToken)
+    public override Location? GetLocationOfBaseTypeName(INamedTypeSymbol symbol, INamedTypeSymbol baseType, Compilation compilation, CancellationToken cancellationToken)
     {
         foreach (SyntaxReference? syntaxReference in symbol.DeclaringSyntaxReferences)
         {
@@ -238,7 +238,7 @@ internal sealed class CSharpUtils : LanguageUtils
         return symbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax(cancellationToken)?.GetLocation();
     }
 
-    internal override SyntaxNode IsolateMethodName(IInvocationOperation invocation)
+    public override SyntaxNode IsolateMethodName(IInvocationOperation invocation)
     {
         if (invocation.Syntax is InvocationExpressionSyntax invocationExpression)
         {
@@ -248,7 +248,7 @@ internal sealed class CSharpUtils : LanguageUtils
         return invocation.Syntax;
     }
 
-    internal override SyntaxNode IsolateMethodName(IObjectCreationOperation objectCreation)
+    public override SyntaxNode IsolateMethodName(IObjectCreationOperation objectCreation)
     {
         if (objectCreation.Syntax is ObjectCreationExpressionSyntax { Type: { } type })
         {
@@ -258,7 +258,7 @@ internal sealed class CSharpUtils : LanguageUtils
         return objectCreation.Syntax;
     }
 
-    internal override bool MethodReturnsNullableReferenceType(IMethodSymbol methodSymbol)
+    public override bool MethodReturnsNullableReferenceType(IMethodSymbol methodSymbol)
     {
         SyntaxReference? syntaxReference = methodSymbol.DeclaringSyntaxReferences.FirstOrDefault();
         if (syntaxReference is null)
@@ -281,7 +281,7 @@ internal sealed class CSharpUtils : LanguageUtils
         return returnType is not null && returnType.IsKind(SyntaxKind.NullableType);
     }
 
-    internal override bool IsAsyncMethod(SyntaxNode syntaxNode)
+    public override bool IsAsyncMethod(SyntaxNode syntaxNode)
     {
         SyntaxTokenList? modifiers = syntaxNode switch
         {
@@ -294,9 +294,9 @@ internal sealed class CSharpUtils : LanguageUtils
         return modifiers?.Any(SyntaxKind.AsyncKeyword) is true;
     }
 
-    internal readonly struct ContainingFunctionData
+    public readonly struct ContainingFunctionData
     {
-        internal ContainingFunctionData(CSharpSyntaxNode function, bool isAsync, ParameterListSyntax? parameterList, CSharpSyntaxNode? blockOrExpression, Func<BlockSyntax, CSharpSyntaxNode> bodyReplacement)
+        public ContainingFunctionData(CSharpSyntaxNode function, bool isAsync, ParameterListSyntax? parameterList, CSharpSyntaxNode? blockOrExpression, Func<BlockSyntax, CSharpSyntaxNode> bodyReplacement)
         {
             this.Function = function;
             this.IsAsync = isAsync;
@@ -305,14 +305,14 @@ internal sealed class CSharpUtils : LanguageUtils
             this.BodyReplacement = bodyReplacement;
         }
 
-        internal CSharpSyntaxNode Function { get; }
+        public CSharpSyntaxNode Function { get; }
 
-        internal bool IsAsync { get; }
+        public bool IsAsync { get; }
 
-        internal ParameterListSyntax? ParameterList { get; }
+        public ParameterListSyntax? ParameterList { get; }
 
-        internal CSharpSyntaxNode? BlockOrExpression { get; }
+        public CSharpSyntaxNode? BlockOrExpression { get; }
 
-        internal Func<BlockSyntax, CSharpSyntaxNode> BodyReplacement { get; }
+        public Func<BlockSyntax, CSharpSyntaxNode> BodyReplacement { get; }
     }
 }

@@ -19,20 +19,20 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace Microsoft.VisualStudio.Threading.Analyzers;
 
-internal static class CommonInterest
+public static class CommonInterest
 {
-    internal static readonly Regex FileNamePatternForLegacyThreadSwitchingMembers = new Regex(@"^vs-threading\.LegacyThreadSwitchingMembers(\..*)?.txt$", FileNamePatternRegexOptions);
-    internal static readonly Regex FileNamePatternForMembersRequiringMainThread = new Regex(@"^vs-threading\.MembersRequiringMainThread(\..*)?.txt$", FileNamePatternRegexOptions);
-    internal static readonly Regex FileNamePatternForMethodsThatAssertMainThread = new Regex(@"^vs-threading\.MainThreadAssertingMethods(\..*)?.txt$", FileNamePatternRegexOptions);
-    internal static readonly Regex FileNamePatternForMethodsThatSwitchToMainThread = new Regex(@"^vs-threading\.MainThreadSwitchingMethods(\..*)?.txt$", FileNamePatternRegexOptions);
+    public static readonly Regex FileNamePatternForLegacyThreadSwitchingMembers = new Regex(@"^vs-threading\.LegacyThreadSwitchingMembers(\..*)?.txt$", FileNamePatternRegexOptions);
+    public static readonly Regex FileNamePatternForMembersRequiringMainThread = new Regex(@"^vs-threading\.MembersRequiringMainThread(\..*)?.txt$", FileNamePatternRegexOptions);
+    public static readonly Regex FileNamePatternForMethodsThatAssertMainThread = new Regex(@"^vs-threading\.MainThreadAssertingMethods(\..*)?.txt$", FileNamePatternRegexOptions);
+    public static readonly Regex FileNamePatternForMethodsThatSwitchToMainThread = new Regex(@"^vs-threading\.MainThreadSwitchingMethods(\..*)?.txt$", FileNamePatternRegexOptions);
 
-    internal static readonly IEnumerable<SyncBlockingMethod> JTFSyncBlockers = new[]
+    public static readonly IEnumerable<SyncBlockingMethod> JTFSyncBlockers = new[]
     {
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.MicrosoftVisualStudioThreading, Types.JoinableTaskFactory.TypeName), Types.JoinableTaskFactory.Run), Types.JoinableTaskFactory.RunAsync),
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.MicrosoftVisualStudioThreading, Types.JoinableTask.TypeName), Types.JoinableTask.Join), Types.JoinableTask.JoinAsync),
     };
 
-    internal static readonly IEnumerable<SyncBlockingMethod> ProblematicSyncBlockingMethods = new[]
+    public static readonly IEnumerable<SyncBlockingMethod> ProblematicSyncBlockingMethods = new[]
     {
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemThreadingTasks, nameof(Task)), nameof(Task.Wait)), null),
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemThreadingTasks, nameof(Task)), nameof(Task.WaitAll)), null),
@@ -43,24 +43,24 @@ internal static class CommonInterest
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemRuntimeCompilerServices, nameof(ConfiguredValueTaskAwaitable.ConfiguredValueTaskAwaiter)), nameof(ConfiguredValueTaskAwaitable.ConfiguredValueTaskAwaiter.GetResult)), null),
     };
 
-    internal static readonly IEnumerable<SyncBlockingMethod> SyncBlockingMethods = JTFSyncBlockers.Concat(ProblematicSyncBlockingMethods).Concat(new[]
+    public static readonly IEnumerable<SyncBlockingMethod> SyncBlockingMethods = JTFSyncBlockers.Concat(ProblematicSyncBlockingMethods).Concat(new[]
     {
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.MicrosoftVisualStudioShellInterop, "IVsTask"), "Wait"), extensionMethodNamespace: Namespaces.MicrosoftVisualStudioShell),
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.MicrosoftVisualStudioShellInterop, "IVsTask"), "GetResult"), extensionMethodNamespace: Namespaces.MicrosoftVisualStudioShell),
     });
 
-    internal static readonly IReadOnlyList<SyncBlockingMethod> SyncBlockingProperties = new[]
+    public static readonly IReadOnlyList<SyncBlockingMethod> SyncBlockingProperties = new[]
     {
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemThreadingTasks, nameof(Task)), nameof(Task<int>.Result)), null),
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemThreadingTasks, nameof(ValueTask)), nameof(ValueTask<int>.Result)), null),
     };
 
-    internal static readonly IEnumerable<QualifiedMember> ThreadAffinityTestingMethods = new[]
+    public static readonly IEnumerable<QualifiedMember> ThreadAffinityTestingMethods = new[]
     {
         new QualifiedMember(new QualifiedType(Namespaces.MicrosoftVisualStudioShell, Types.ThreadHelper.TypeName), Types.ThreadHelper.CheckAccess),
     };
 
-    internal static readonly ImmutableArray<QualifiedMember> TaskConfigureAwait = ImmutableArray.Create(
+    public static readonly ImmutableArray<QualifiedMember> TaskConfigureAwait = ImmutableArray.Create(
         new QualifiedMember(new QualifiedType(Types.Task.Namespace, Types.Task.TypeName), nameof(Task.ConfigureAwait)),
         new QualifiedMember(new QualifiedType(Types.AwaitExtensions.Namespace, Types.AwaitExtensions.TypeName), Types.AwaitExtensions.ConfigureAwaitRunInline));
 
@@ -79,7 +79,7 @@ internal static class CommonInterest
     /// </summary>
     private static readonly char[] QualifiedIdentifierSeparators = new[] { '.' };
 
-    internal static IEnumerable<QualifiedMember> ReadMethods(AnalyzerOptions analyzerOptions, Regex fileNamePattern, CancellationToken cancellationToken)
+    public static IEnumerable<QualifiedMember> ReadMethods(AnalyzerOptions analyzerOptions, Regex fileNamePattern, CancellationToken cancellationToken)
     {
         foreach (string line in ReadAdditionalFiles(analyzerOptions, fileNamePattern, cancellationToken))
         {
@@ -87,7 +87,7 @@ internal static class CommonInterest
         }
     }
 
-    internal static IEnumerable<TypeMatchSpec> ReadTypesAndMembers(AnalyzerOptions analyzerOptions, Regex fileNamePattern, CancellationToken cancellationToken)
+    public static IEnumerable<TypeMatchSpec> ReadTypesAndMembers(AnalyzerOptions analyzerOptions, Regex fileNamePattern, CancellationToken cancellationToken)
     {
         foreach (string line in ReadAdditionalFiles(analyzerOptions, fileNamePattern, cancellationToken))
         {
@@ -116,7 +116,7 @@ internal static class CommonInterest
         }
     }
 
-    internal static IEnumerable<string> ReadAdditionalFiles(AnalyzerOptions analyzerOptions, Regex fileNamePattern, CancellationToken cancellationToken)
+    public static IEnumerable<string> ReadAdditionalFiles(AnalyzerOptions analyzerOptions, Regex fileNamePattern, CancellationToken cancellationToken)
     {
         if (analyzerOptions is null)
         {
@@ -136,7 +136,7 @@ internal static class CommonInterest
         return docs.SelectMany(ReadLinesFromAdditionalFile);
     }
 
-    internal static bool Contains(this ImmutableArray<QualifiedMember> methods, ISymbol symbol)
+    public static bool Contains(this ImmutableArray<QualifiedMember> methods, ISymbol symbol)
     {
         foreach (QualifiedMember method in methods)
         {
@@ -149,7 +149,7 @@ internal static class CommonInterest
         return false;
     }
 
-    internal static bool Contains(this ImmutableArray<TypeMatchSpec> types, [NotNullWhen(true)] ITypeSymbol? typeSymbol, ISymbol? memberSymbol)
+    public static bool Contains(this ImmutableArray<TypeMatchSpec> types, [NotNullWhen(true)] ITypeSymbol? typeSymbol, ISymbol? memberSymbol)
     {
         TypeMatchSpec matching = default(TypeMatchSpec);
         foreach (TypeMatchSpec type in types)
@@ -171,7 +171,7 @@ internal static class CommonInterest
         return !matching.IsEmpty && !matching.InvertedLogic;
     }
 
-    internal static CommonInterest.AwaitableTypeTester CollectAwaitableTypes(Compilation compilation, CancellationToken cancellationToken)
+    public static CommonInterest.AwaitableTypeTester CollectAwaitableTypes(Compilation compilation, CancellationToken cancellationToken)
     {
         HashSet<ITypeSymbol> awaitableTypes = new(SymbolEqualityComparer.Default);
         void AddAwaitableType(ITypeSymbol type)
@@ -238,7 +238,7 @@ internal static class CommonInterest
         return new AwaitableTypeTester(awaitableTypes);
     }
 
-    internal static bool IsAwaitable(this ITypeSymbol? typeSymbol)
+    public static bool IsAwaitable(this ITypeSymbol? typeSymbol)
     {
         if (typeSymbol is null)
         {
@@ -256,7 +256,7 @@ internal static class CommonInterest
         return false;
     }
 
-    internal static bool IsAwaitable(this ITypeSymbol? typeSymbol, SemanticModel semanticModel, int position)
+    public static bool IsAwaitable(this ITypeSymbol? typeSymbol, SemanticModel semanticModel, int position)
     {
         if (typeSymbol is null)
         {
@@ -275,7 +275,7 @@ internal static class CommonInterest
         return false;
     }
 
-    internal static IOperation? GetContainingFunction(this IOperation? operation)
+    public static IOperation? GetContainingFunction(this IOperation? operation)
     {
         while (operation?.Parent is not null)
         {
@@ -298,7 +298,7 @@ internal static class CommonInterest
         return null;
     }
 
-    internal static bool ConformsToAwaiterPattern(ITypeSymbol typeSymbol)
+    public static bool ConformsToAwaiterPattern(ITypeSymbol typeSymbol)
     {
         if (typeSymbol is null)
         {
@@ -324,7 +324,7 @@ internal static class CommonInterest
         return false;
     }
 
-    internal static IEnumerable<string> ReadLinesFromAdditionalFile(SourceText text)
+    public static IEnumerable<string> ReadLinesFromAdditionalFile(SourceText text)
     {
         if (text is null)
         {
@@ -342,7 +342,7 @@ internal static class CommonInterest
         }
     }
 
-    internal static QualifiedMember ParseAdditionalFileMethodLine(string line)
+    public static QualifiedMember ParseAdditionalFileMethodLine(string line)
     {
         Match? match = null;
         try
@@ -391,9 +391,9 @@ internal static class CommonInterest
         return true;
     }
 
-    internal readonly struct TypeMatchSpec
+    public readonly struct TypeMatchSpec
     {
-        internal TypeMatchSpec(QualifiedType type, QualifiedMember member, bool inverted)
+        public TypeMatchSpec(QualifiedType type, QualifiedMember member, bool inverted)
         {
             this.InvertedLogic = inverted;
             this.Type = type;
@@ -408,37 +408,37 @@ internal static class CommonInterest
         /// <summary>
         /// Gets a value indicating whether this entry appeared in a file with a leading "!" character.
         /// </summary>
-        internal bool InvertedLogic { get; }
+        public bool InvertedLogic { get; }
 
         /// <summary>
         /// Gets the type described by this entry.
         /// </summary>
-        internal QualifiedType Type { get; }
+        public QualifiedType Type { get; }
 
         /// <summary>
         /// Gets the member described by this entry.
         /// </summary>
-        internal QualifiedMember Member { get; }
+        public QualifiedMember Member { get; }
 
         /// <summary>
         /// Gets a value indicating whether a member match is reuqired.
         /// </summary>
-        internal bool IsMember => this.Member.Name is object;
+        public bool IsMember => this.Member.Name is object;
 
         /// <summary>
         /// Gets a value indicating whether the typename is a wildcard.
         /// </summary>
-        internal bool IsWildcard => this.Type.Name == "*";
+        public bool IsWildcard => this.Type.Name == "*";
 
         /// <summary>
         /// Gets a value indicating whether this is an uninitialized (default) instance.
         /// </summary>
-        internal bool IsEmpty => this.Type.Namespace is null;
+        public bool IsEmpty => this.Type.Namespace is null;
 
         /// <summary>
         /// Tests whether a given symbol matches the description of a type (independent of its <see cref="InvertedLogic"/> property).
         /// </summary>
-        internal bool IsMatch([NotNullWhen(true)] ITypeSymbol? typeSymbol, ISymbol? memberSymbol)
+        public bool IsMatch([NotNullWhen(true)] ITypeSymbol? typeSymbol, ISymbol? memberSymbol)
         {
             if (typeSymbol is null)
             {
@@ -464,7 +464,7 @@ internal static class CommonInterest
         }
     }
 
-    internal readonly struct QualifiedType
+    public readonly struct QualifiedType
     {
         public QualifiedType(IReadOnlyList<string> containingTypeNamespace, string typeName)
         {
@@ -485,7 +485,7 @@ internal static class CommonInterest
         public override string ToString() => string.Join(".", this.Namespace.Concat(new[] { this.Name }));
     }
 
-    internal readonly struct QualifiedMember
+    public readonly struct QualifiedMember
     {
         public QualifiedMember(QualifiedType containingType, string methodName)
         {
@@ -507,7 +507,7 @@ internal static class CommonInterest
     }
 
     [DebuggerDisplay("{" + nameof(Method) + "} -> {" + nameof(AsyncAlternativeMethodName) + "}")]
-    internal readonly struct SyncBlockingMethod
+    public readonly struct SyncBlockingMethod
     {
         public SyncBlockingMethod(QualifiedMember method, string? asyncAlternativeMethodName = null, IReadOnlyList<string>? extensionMethodNamespace = null)
         {
@@ -523,16 +523,16 @@ internal static class CommonInterest
         public IReadOnlyList<string>? ExtensionMethodNamespace { get; }
     }
 
-    internal class AwaitableTypeTester
+    public class AwaitableTypeTester
     {
         private readonly HashSet<ITypeSymbol> awaitableTypes;
 
-        internal AwaitableTypeTester(HashSet<ITypeSymbol> awaitableTypes)
+        public AwaitableTypeTester(HashSet<ITypeSymbol> awaitableTypes)
         {
             this.awaitableTypes = awaitableTypes;
         }
 
-        internal bool IsAwaitableType(ITypeSymbol typeSymbol)
+        public bool IsAwaitableType(ITypeSymbol typeSymbol)
         {
             if (this.awaitableTypes.Contains(typeSymbol))
             {

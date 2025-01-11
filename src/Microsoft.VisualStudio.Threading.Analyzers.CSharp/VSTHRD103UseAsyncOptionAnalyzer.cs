@@ -35,11 +35,11 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
 {
     public const string Id = "VSTHRD103";
 
-    internal const string AsyncMethodKeyName = "AsyncMethodName";
+    public const string AsyncMethodKeyName = "AsyncMethodName";
 
-    internal const string ExtensionMethodNamespaceKeyName = "ExtensionMethodNamespace";
+    public const string ExtensionMethodNamespaceKeyName = "ExtensionMethodNamespace";
 
-    internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
+    public static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
         id: Id,
         title: new LocalizableResourceString(nameof(Strings.VSTHRD103_Title), Strings.ResourceManager, typeof(Strings)),
         messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD103_MessageFormat), Strings.ResourceManager, typeof(Strings)),
@@ -48,7 +48,7 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
-    internal static readonly DiagnosticDescriptor DescriptorNoAlternativeMethod = new DiagnosticDescriptor(
+    public static readonly DiagnosticDescriptor DescriptorNoAlternativeMethod = new DiagnosticDescriptor(
         id: Id,
         title: new LocalizableResourceString(nameof(Strings.VSTHRD103_Title), Strings.ResourceManager, typeof(Strings)),
         messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD103_MessageFormat_UseAwaitInstead), Strings.ResourceManager, typeof(Strings)),

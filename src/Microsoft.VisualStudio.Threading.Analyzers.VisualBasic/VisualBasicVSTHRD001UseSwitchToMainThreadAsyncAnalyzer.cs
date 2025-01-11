@@ -9,5 +9,5 @@ namespace Microsoft.VisualStudio.Threading.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.VisualBasic)]
 public sealed class VisualBasicVSTHRD001UseSwitchToMainThreadAsyncAnalyzer : AbstractVSTHRD001UseSwitchToMainThreadAsyncAnalyzer
 {
-    private protected override LanguageUtils LanguageUtils => VisualBasicUtils.Instance;
+    protected override LanguageUtils LanguageUtils => VisualBasicUtils.Instance;
 }

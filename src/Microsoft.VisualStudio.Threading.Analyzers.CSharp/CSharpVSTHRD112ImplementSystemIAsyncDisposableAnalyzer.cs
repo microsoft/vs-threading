@@ -9,6 +9,6 @@ namespace Microsoft.VisualStudio.Threading.Analyzers
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public sealed class CSharpVSTHRD112ImplementSystemIAsyncDisposableAnalyzer : AbstractVSTHRD112ImplementSystemIAsyncDisposableAnalyzer
     {
-        private protected override LanguageUtils LanguageUtils => CSharpUtils.Instance;
+        protected override LanguageUtils LanguageUtils => CSharpUtils.Instance;
     }
 }
