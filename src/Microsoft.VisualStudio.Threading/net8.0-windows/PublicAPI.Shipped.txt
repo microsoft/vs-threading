@@ -354,7 +354,7 @@ override Microsoft.VisualStudio.Threading.DelegatingJoinableTaskFactory.OnTransi
 override Microsoft.VisualStudio.Threading.DelegatingJoinableTaskFactory.OnTransitioningToMainThread(Microsoft.VisualStudio.Threading.JoinableTask! joinableTask) -> void
 override Microsoft.VisualStudio.Threading.DelegatingJoinableTaskFactory.PostToUnderlyingSynchronizationContext(System.Threading.SendOrPostCallback! callback, object! state) -> void
 override Microsoft.VisualStudio.Threading.DelegatingJoinableTaskFactory.WaitSynchronously(System.Threading.Tasks.Task! task) -> void
-override Microsoft.VisualStudio.Threading.NoMessagePumpSyncContext.Wait(System.IntPtr[]! waitHandles, bool waitAll, int millisecondsTimeout) -> int
+override Microsoft.VisualStudio.Threading.NoMessagePumpSyncContext.Wait(nint[]! waitHandles, bool waitAll, int millisecondsTimeout) -> int
 override Microsoft.VisualStudio.Threading.SingleThreadedSynchronizationContext.CreateCopy() -> System.Threading.SynchronizationContext!
 override Microsoft.VisualStudio.Threading.SingleThreadedSynchronizationContext.Post(System.Threading.SendOrPostCallback! d, object? state) -> void
 override Microsoft.VisualStudio.Threading.SingleThreadedSynchronizationContext.Send(System.Threading.SendOrPostCallback! d, object? state) -> void
