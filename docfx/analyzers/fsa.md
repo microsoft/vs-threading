@@ -6,4 +6,4 @@ Diagnostics reported by such an analyzer will appear in a full build log. They m
 
 To ensure the diagnostics are always visible, even when documents are open, select the "Enable full Solution Analysis" option, as shown below:
 
-![Visual Studio Options -> Text Editor -> C# -> Advanced -> Enable full solution analysis option](images/fsa.png)
+![Visual Studio Options -> Text Editor -> C# -> Advanced -> Enable full solution analysis option](../images/fsa.png)

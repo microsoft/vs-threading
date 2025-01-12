@@ -1,7 +1,4 @@
-3 Threading Rules
-=================
-
-## Background
+# 3 Threading Rules
 
 In Visual Studio 2013, we consolidated all our lessons learned from writing a complex,
 multi-threaded component of Visual Studio into a small and simple set of
@@ -15,7 +12,10 @@ extensions](cookbook_vs.md)).
 
 The rules are listed below with minimal examples. For a more thorough explanation with more examples, check out [this slideshow](https://www.slideshare.net/slideshow/the-3-vs-threading-rules/78280010).
 
-### Rule #1. If a method has certain thread apartment requirements (STA or MTA) it must either:
+### <a name="Rule1"></a> Rule #1. Use `JTF.SwitchToMainThreadAsync`
+
+If a method has certain thread apartment requirements (STA or MTA) it must either:
+
    1. Have an asynchronous signature, and asynchronously marshal to the appropriate
    thread if it isn't originally invoked on a compatible thread. The recommended
    means of switching to the main thread is:
@@ -34,7 +34,9 @@ The rules are listed below with minimal examples. For a more thorough explanatio
         another thread (blocking while that work is done) except by using the second rule (below).
         Synchronous blocks in general are to be avoided whenever possible.
 
-### Rule #2. When an implementation of an already-shipped public API must call asynchronous code and block for its completion, it must do so by following this simple pattern:
+### <a name="Rule2"></a> Rule #2. Use `JTF.Run`
+
+When an implementation of an already-shipped public API must call asynchronous code and block for its completion, it must do so by following this simple pattern:
 
 ```csharp
 joinableTaskFactoryInstance.Run(async delegate
@@ -43,7 +45,9 @@ joinableTaskFactoryInstance.Run(async delegate
 });
 ```
 
-### Rule #3. If ever awaiting work that was started earlier, that work must be *joined*.
+### <a name="Rule3"></a> Rule #3. Use `JTF.RunAsync`
+
+If ever awaiting work that was started earlier, that work must be *joined*.
 
 For example, one service kicks off some asynchronous work that may later become synchronously blocking:
 
@@ -73,23 +77,25 @@ done immediately after kicking off an asynchronous operation.
 In particular, no method should call `Task.Wait()` or `Task.Result` on
 an incomplete `Task`.
 
-### Additional "honorable mention" rules: (Not JTF related)
+### <a name="Rule4"></a> Rule #4. Avoid `async void`
 
-### Rule #4. Never define `async void` methods. Make the methods return `Task` instead.
-   - Exceptions thrown from `async void` methods always crash the process.
-   - Callers don't even have the option to `await` the result.
-   - Exceptions can't be reported to telemetry by the caller.
-   - It's impossible for your VS package to responsibly block in `Package.Close`
-     till your `async` work is done when it was kicked off this way.
-   - Be cautious: `async delegate` or `async () =>` become `async void`
-     methods when passed to a method that accepts `Action` delegates. Only
-     pass `async` delegates to methods that accept `Func<Task>` or
-     `Func<Task<T>>` parameters.
+(This one is more of an "honorable mention" rule, as it is not JTF related.)
 
-Frequently Asked Questions
----------------
+Never define `async void` methods. Make the methods return `Task` instead.
 
-##### Do I need to follow these rules?
+- Exceptions thrown from `async void` methods always crash the process.
+- Callers don't even have the option to `await` the result.
+- Exceptions can't be reported to telemetry by the caller.
+- It's impossible for your VS package to responsibly block in `Package.Close`
+   till your `async` work is done when it was kicked off this way.
+- Be cautious: `async delegate` or `async () =>` become `async void`
+   methods when passed to a method that accepts `Action` delegates. Only
+   pass `async` delegates to methods that accept `Func<Task>` or
+   `Func<Task<T>>` parameters.
+
+## Frequently Asked Questions
+
+### Do I need to follow these rules?
 
 All code that runs in Visual Studio itself should follow these rules.
 These rules have been reviewed by several senior and principal developers
@@ -99,7 +105,7 @@ would do well to follow them in managed code where possible.
 Any other GUI app that invokes asynchronous code that it must occasionally
 block the UI thread on is also recommended to follow these rules.
 
-##### Why should a method that has a dependency on a specific (kind of) thread be async?
+### Why should a method that has a dependency on a specific (kind of) thread be async?
 
 Efficiency and responsiveness: Switching threads means that the original
 thread either can do something else productive (e.g., execute more work from
@@ -115,7 +121,7 @@ requires, whether it's thread-safe, etc. The implementation can change
 over time to add or remove thread affinity, or to switch from locking to
 scheduling for thread safety, etc.
 
-##### Why do I need to use `JoinableTaskFactory.Run` to synchronously block on asynchronous work rather than just calling `Task.Wait()` or `Task.Result`?
+### Why do I need to use `JoinableTaskFactory.Run` to synchronously block on asynchronous work rather than just calling `Task.Wait()` or `Task.Result`?
 
 If you're on the main thread, because `Task.Wait` or `Task.Result` will often
 deadlock because you're now synchronously blocking the main thread for
@@ -135,7 +141,7 @@ In contrast, when you use `JoinableTaskFactory.Run`, main thread deadlocks
 and threadpool exhaustion are automatically mitigated by reusing the
 blocking thread to execute the continuations.
 
-##### Why not rely on COM marshaling to switch to the main thread when necessary?
+### Why not rely on COM marshaling to switch to the main thread when necessary?
 
 There are several reasons for this:
 
@@ -200,7 +206,7 @@ There are several reasons for this:
    not very satisfying after days of investigation. And the owner of
    that code may refuse to fix their code and you'll have to fix yours anyway.
 
-##### How do these rules protect me from re-entering random code on the main thread?
+### How do these rules protect me from re-entering random code on the main thread?
 
 By always using asynchronous mechanisms to marshal to the UI thread, you're
 effectively send a `PostMessage` to the UI thread, which will not re-enter
@@ -218,7 +224,7 @@ main thread. That is, using this method to get to the UI thread just works:
 it avoids both deadlocks and undesirable reentrancy. The only time it
 deadlocks is when the threading rules listed above are not being followed.
 
-##### Am I protected from other code re-entering my own code while it executes on the main thread?
+### Am I protected from other code re-entering my own code while it executes on the main thread?
 
 Yes, somewhat. When you call `JoinableTaskFactory.Run` with an async delegate,
 when your delegate yields (using await) the message pump is temporarily
@@ -236,7 +242,7 @@ disabling the message pump yourself, it's usually not a good idea because
 3rd party code you may be calling could be relying on a functioning message
 pump.
 
-##### I'm trying to analyze a hang around code that uses `JoinableTaskFactory`, but since transitions are asynchronous the active threads' call stacks don't tell the whole story. How can I find the cause and fix the hang?
+### I'm trying to analyze a hang around code that uses `JoinableTaskFactory`, but since transitions are asynchronous the active threads' call stacks don't tell the whole story. How can I find the cause and fix the hang?
 
 Debugging async hangs in general is lacking debugger tooling support at
 the moment. The debugger and Windows teams are working to improve that
@@ -250,11 +256,11 @@ attach WinDBG to the process and dump out incomplete async methods' states.
 This can be tedious, but we have a script in this file that you can use
 to make it much easier: [Async hang debugging][AsyncHangDebugging]
 
-##### What is threadpool exhaustion, and why is it bad?
+### What is threadpool exhaustion, and why is it bad?
 
 See our [threadpool starvation](threadpool_starvation.md) doc.
 
-##### I'm writing an async method that isn't in a `JoinableTask`. Should I use `JTF.SwitchToMainThreadAsync()` to get to the UI thread?
+### I'm writing an async method that isn't in a `JoinableTask`. Should I use `JTF.SwitchToMainThreadAsync()` to get to the UI thread?
 
 Yes. `JoinableTaskFactory.SwitchToMainThreadAsync()` works great outside
 a `JoinableTask`. It simply posts the continuation to the main thread for
@@ -281,13 +287,13 @@ focus on the fact that at this point, your code needs the main thread and
 call `JTF.SwitchToMainThreadAsync()`. This allows your caller to set the
 priority via the `JoinableTask` it may call your code within.
 
-##### What message priority is used to switch to (or resume on) the main thread, and can this be changed?
+### What message priority is used to switch to (or resume on) the main thread, and can this be changed?
 
 `JoinableTaskFactory`'s default behavior is to switch to the main thread using
 `SynchronizationContext.Post`, which typically posts a message to the main thread,
 which puts it below RPC and above user input in priority.
 
-[How to use a different priority for switching to the main thread in VS](cookbook_vs.md#how-to-switch-to-or-use-the-ui-thread-with-background-priority)
+[How to use a different priority for switching to the main thread in VS](cookbook_vs.md#how-to-switch-to-or-use-the-ui-thread-with-a-specific-priority)
 
 The following describes how to replace the mechanism for getting to the
 UI thread in a host-independent way:

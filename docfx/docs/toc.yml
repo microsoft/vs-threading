@@ -1,5 +1,10 @@
 items:
-- name: Features
-  href: features.md
-- name: Getting Started
-  href: getting-started.md
+- href: getting-started.md
+- href: features.md
+- href: threading_rules.md
+- href: cookbook_vs.md
+- href: testing_vs.md
+- href: library_with_jtf.md
+- href: threadpool_starvation.md
+- href: async_hang.md
+- href: dumpasync.md

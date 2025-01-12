@@ -2,4 +2,4 @@
 
 Static code analyzers to detect common mistakes or potential issues regarding threading and async coding.
 
-[Diagnostic analyzer rules](https://github.com/microsoft/vs-threading/blob/main/doc/analyzers/index.md).
+[Diagnostic analyzer rules](https://microsoft.github.io/vs-threading/analyzers/index.html).

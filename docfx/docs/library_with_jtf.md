@@ -124,4 +124,4 @@ Note that when you create your own default instance of JoinableTaskContext (i.e.
 If your library is app-agnostic (such that it cannot use an app-specific mechanism to obtain an instance of `JoinableTaskContext`) and has no good singleton class on which the app can set the `JoinableTaskContext` instance for the entire library's use, the last option is simply to take a `JoinableTaskContext` instance as a parameter when you need it.
 
 For example, [the `AsyncLazy<T>` constructor accepts a `JoinableTaskFactory` as an optional parameter](https://github.com/Microsoft/vs-threading/blob/027bff027c829cab6be54dbd15551d763199ebf0/src/Microsoft.VisualStudio.Threading/AsyncLazy.cs#L60).
-When you make the `JoinableTaskContext`/`JoinableTaskFactory` argument optional, the [VSTHRD012](analyzers/VSTHRD012.md) rule can guide your library's users to specify it if they have it available.
+When you make the `JoinableTaskContext`/`JoinableTaskFactory` argument optional, the [VSTHRD012](../analyzers/VSTHRD012.md) rule can guide your library's users to specify it if they have it available.

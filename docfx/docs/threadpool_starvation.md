@@ -31,7 +31,7 @@ We use [PerfView](https://aka.ms/perfview) for these investigations.
 
 First, consider how we might come to suspect that thread pool starvation is to blame for a performance or responsiveness problem in the application. In PerfView if we were looking at a sluggish scenario with the CPU Stacks window, we might observe this:
 
-![PerfView CPU Stacks view showing large columns of no CPU activity](images/cpu_stacks_showing_threadpool_starvation.png)
+![PerfView CPU Stacks view showing large columns of no CPU activity](../images/cpu_stacks_showing_threadpool_starvation.png)
 
 Notice how the `When` column shows several vertical columns of time where there is little or no CPU activity. This is a good indication that we have either excessive lock contention or thread pool exhaustion.
 
@@ -39,7 +39,7 @@ Notice how the `When` column shows several vertical columns of time where there 
 
 Recent versions of Visual Studio raise an ETW event called `Microsoft-VisualStudio-Common/vs_core_perf_threadpoolstarvation` when thread pool starvation is detected. This is a sure clue of the problem and can give you a time range within the trace to focus your investigation.
 
-![PerfView showing the VS ETW event that indicates thread pool starvation](images/vs_threadpoolstarvation_event.jpg)
+![PerfView showing the VS ETW event that indicates thread pool starvation](../images/vs_threadpoolstarvation_event.jpg)
 
 ### Investigation steps
 
@@ -49,7 +49,7 @@ While the CLR has thread pool ETW events to indicate thread starvation, these ev
 1. In the Thread Time Stacks window, set the Start and End fields to the time range where you had a responsiveness problem.
 1. Make sure symbols for the `clr` module are loaded.
 1. In the "By Name" tab, find the `clr!ThreadpoolMgr::ExecuteWorkRequest` frame and invoke the "Include Items" command. This will add the frame to the `IncPats` field and filter all frames and stacks to those found on threadpool threads.
-1. Also in the "By Name" tab, find the `BLOCKED_TIME` row and invoke the "Show Callers" command. ![PerfView By Name tab showing BLOCKED_TIME](images/blocked_time.png) This will show all stacks that led to any thread pool thread waiting instead of executing on the CPU. ![PerfView Callers of BLOCKED_TIME](images/blocked_time_callers.png)
+1. Also in the "By Name" tab, find the `BLOCKED_TIME` row and invoke the "Show Callers" command. ![PerfView By Name tab showing BLOCKED_TIME](../images/blocked_time.png) This will show all stacks that led to any thread pool thread waiting instead of executing on the CPU. ![PerfView Callers of BLOCKED_TIME](../images/blocked_time_callers.png)
 
 Take a look at the stacks where the most threads or the most time is spent blocked. This is the code where you should focus your effort to remove the synchronous block. Common mitigations include:
 

@@ -1,5 +1,9 @@
 items:
 - name: Docs
   href: docs/
+- name: Analyzers
+  href: analyzers/
 - name: API
   href: api/
+- name: GitHub
+  href: https://github.com/microsoft/vs-threading
