@@ -13,6 +13,10 @@
 			"groupName": "xunit"
 		},
 		{
+			"matchPackageNames": ["xunit.runner.visualstudio"],
+			"allowedVersions": "<3.0"
+		},
+		{
 			"matchDatasources": ["dotnet-version", "docker"],
 			"matchDepNames": ["dotnet-sdk", "mcr.microsoft.com/dotnet/sdk"],
 			"groupName": "Dockerfile and global.json updates"
