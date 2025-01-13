@@ -103,7 +103,7 @@ public class VSTHRD103UseAsyncOptionCodeFix : CodeFixProvider
             get
             {
                 return !string.IsNullOrEmpty(this.AlternativeAsyncMethod)
-                    ? string.Format(CultureInfo.CurrentCulture, Strings.AwaitXInstead, this.AlternativeAsyncMethod)
+                    ? new LocalizableResourceString(nameof(Strings.AwaitXInstead), Strings.ResourceManager, typeof(string), this.AlternativeAsyncMethod!).ToString()
                     : Strings.UseAwaitInstead;
             }
         }

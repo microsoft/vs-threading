@@ -18,7 +18,7 @@ internal sealed class VisualBasicUtils : LanguageUtils
     {
     }
 
-    internal override Location? GetLocationOfBaseTypeName(INamedTypeSymbol symbol, INamedTypeSymbol baseType, Compilation compilation, CancellationToken cancellationToken)
+    public override Location? GetLocationOfBaseTypeName(INamedTypeSymbol symbol, INamedTypeSymbol baseType, Compilation compilation, CancellationToken cancellationToken)
     {
         foreach (SyntaxReference? syntaxReference in symbol.DeclaringSyntaxReferences)
         {
@@ -79,21 +79,21 @@ internal sealed class VisualBasicUtils : LanguageUtils
         return symbol.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax(cancellationToken)?.GetLocation();
     }
 
-    internal override SyntaxNode IsolateMethodName(IInvocationOperation invocation)
+    public override SyntaxNode IsolateMethodName(IInvocationOperation invocation)
     {
         return invocation.Syntax;
     }
 
-    internal override SyntaxNode IsolateMethodName(IObjectCreationOperation objectCreation)
+    public override SyntaxNode IsolateMethodName(IObjectCreationOperation objectCreation)
     {
         return objectCreation.Syntax;
     }
 
-    internal override bool MethodReturnsNullableReferenceType(IMethodSymbol methodSymbol)
+    public override bool MethodReturnsNullableReferenceType(IMethodSymbol methodSymbol)
     {
         // VB.NET doesn't support nullable reference types
         return false;
     }
 
-    internal override bool IsAsyncMethod(SyntaxNode syntaxNode) => syntaxNode is MethodBlockSyntax methodDeclaration && methodDeclaration.BlockStatement.Modifiers.Any(SyntaxKind.AsyncKeyword);
+    public override bool IsAsyncMethod(SyntaxNode syntaxNode) => syntaxNode is MethodBlockSyntax methodDeclaration && methodDeclaration.BlockStatement.Modifiers.Any(SyntaxKind.AsyncKeyword);
 }

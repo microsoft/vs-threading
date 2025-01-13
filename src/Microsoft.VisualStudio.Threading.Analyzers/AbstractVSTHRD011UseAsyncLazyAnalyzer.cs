@@ -14,7 +14,7 @@ public abstract class AbstractVSTHRD011UseAsyncLazyAnalyzer : DiagnosticAnalyzer
 {
     public const string Id = "VSTHRD011";
 
-    internal static readonly DiagnosticDescriptor LazyOfTaskDescriptor = new DiagnosticDescriptor(
+    public static readonly DiagnosticDescriptor LazyOfTaskDescriptor = new DiagnosticDescriptor(
         id: Id,
         title: new LocalizableResourceString(nameof(Strings.VSTHRD011_Title), Strings.ResourceManager, typeof(Strings)),
         messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD011_MessageFormat), Strings.ResourceManager, typeof(Strings)),
@@ -23,7 +23,7 @@ public abstract class AbstractVSTHRD011UseAsyncLazyAnalyzer : DiagnosticAnalyzer
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    internal static readonly DiagnosticDescriptor SyncBlockInValueFactoryDescriptor = new DiagnosticDescriptor(
+    public static readonly DiagnosticDescriptor SyncBlockInValueFactoryDescriptor = new DiagnosticDescriptor(
         id: Id,
         title: new LocalizableResourceString(nameof(Strings.VSTHRD011_Title), Strings.ResourceManager, typeof(Strings)),
         messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD011b_MessageFormat), Strings.ResourceManager, typeof(Strings)),
@@ -38,7 +38,7 @@ public abstract class AbstractVSTHRD011UseAsyncLazyAnalyzer : DiagnosticAnalyzer
         get { return ImmutableArray.Create(LazyOfTaskDescriptor, SyncBlockInValueFactoryDescriptor); }
     }
 
-    private protected abstract LanguageUtils LanguageUtils { get; }
+    protected abstract LanguageUtils LanguageUtils { get; }
 
     /// <inheritdoc />
     public override void Initialize(AnalysisContext context)

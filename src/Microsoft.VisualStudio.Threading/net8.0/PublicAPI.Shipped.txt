@@ -196,7 +196,6 @@ Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellatio
 Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken.Token.get -> System.Threading.CancellationToken
 Microsoft.VisualStudio.Threading.DelegatingJoinableTaskFactory
 Microsoft.VisualStudio.Threading.DelegatingJoinableTaskFactory.DelegatingJoinableTaskFactory(Microsoft.VisualStudio.Threading.JoinableTaskFactory! innerFactory) -> void
-Microsoft.VisualStudio.Threading.DispatcherExtensions
 Microsoft.VisualStudio.Threading.HangReportContribution
 Microsoft.VisualStudio.Threading.HangReportContribution.Content.get -> string!
 Microsoft.VisualStudio.Threading.HangReportContribution.ContentName.get -> string?
@@ -354,7 +353,7 @@ override Microsoft.VisualStudio.Threading.DelegatingJoinableTaskFactory.OnTransi
 override Microsoft.VisualStudio.Threading.DelegatingJoinableTaskFactory.OnTransitioningToMainThread(Microsoft.VisualStudio.Threading.JoinableTask! joinableTask) -> void
 override Microsoft.VisualStudio.Threading.DelegatingJoinableTaskFactory.PostToUnderlyingSynchronizationContext(System.Threading.SendOrPostCallback! callback, object! state) -> void
 override Microsoft.VisualStudio.Threading.DelegatingJoinableTaskFactory.WaitSynchronously(System.Threading.Tasks.Task! task) -> void
-override Microsoft.VisualStudio.Threading.NoMessagePumpSyncContext.Wait(System.IntPtr[]! waitHandles, bool waitAll, int millisecondsTimeout) -> int
+override Microsoft.VisualStudio.Threading.NoMessagePumpSyncContext.Wait(nint[]! waitHandles, bool waitAll, int millisecondsTimeout) -> int
 override Microsoft.VisualStudio.Threading.SingleThreadedSynchronizationContext.CreateCopy() -> System.Threading.SynchronizationContext!
 override Microsoft.VisualStudio.Threading.SingleThreadedSynchronizationContext.Post(System.Threading.SendOrPostCallback! d, object? state) -> void
 override Microsoft.VisualStudio.Threading.SingleThreadedSynchronizationContext.Send(System.Threading.SendOrPostCallback! d, object? state) -> void
@@ -370,7 +369,6 @@ static Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombineWith(
 static Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombineWith(this System.Threading.CancellationToken original, params System.Threading.CancellationToken[]! others) -> Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken
 static Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken.operator !=(Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken left, Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken right) -> bool
 static Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken.operator ==(Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken left, Microsoft.VisualStudio.Threading.CancellationTokenExtensions.CombinedCancellationToken right) -> bool
-static Microsoft.VisualStudio.Threading.DispatcherExtensions.WithPriority(this Microsoft.VisualStudio.Threading.JoinableTaskFactory! joinableTaskFactory, System.Windows.Threading.Dispatcher! dispatcher, System.Windows.Threading.DispatcherPriority priority) -> Microsoft.VisualStudio.Threading.JoinableTaskFactory!
 static Microsoft.VisualStudio.Threading.NoMessagePumpSyncContext.Default.get -> System.Threading.SynchronizationContext!
 static Microsoft.VisualStudio.Threading.ReentrantSemaphore.Create(int initialCount = 1, Microsoft.VisualStudio.Threading.JoinableTaskContext? joinableTaskContext = null, Microsoft.VisualStudio.Threading.ReentrantSemaphore.ReentrancyMode mode = Microsoft.VisualStudio.Threading.ReentrantSemaphore.ReentrancyMode.NotAllowed) -> Microsoft.VisualStudio.Threading.ReentrantSemaphore!
 static Microsoft.VisualStudio.Threading.SpecializedSyncContext.Apply(System.Threading.SynchronizationContext? syncContext, bool checkForChangesOnRevert = true) -> Microsoft.VisualStudio.Threading.SpecializedSyncContext
@@ -513,4 +511,3 @@ Microsoft.VisualStudio.Threading.AsyncLazy<T>.RevertRelevance.Dispose() -> void
 Microsoft.VisualStudio.Threading.AsyncLazy<T>.SuppressRecursiveFactoryDetection.get -> bool
 Microsoft.VisualStudio.Threading.AsyncLazy<T>.SuppressRecursiveFactoryDetection.init -> void
 Microsoft.VisualStudio.Threading.AsyncLazy<T>.SuppressRelevance() -> Microsoft.VisualStudio.Threading.AsyncLazy<T>.RevertRelevance
-

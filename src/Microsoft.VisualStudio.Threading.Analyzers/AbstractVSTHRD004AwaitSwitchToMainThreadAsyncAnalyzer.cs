@@ -27,7 +27,7 @@ public abstract class AbstractVSTHRD004AwaitSwitchToMainThreadAsyncAnalyzer : Di
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(Descriptor);
 
-    private protected abstract LanguageUtils LanguageUtils { get; }
+    protected abstract LanguageUtils LanguageUtils { get; }
 
     public override void Initialize(AnalysisContext context)
     {

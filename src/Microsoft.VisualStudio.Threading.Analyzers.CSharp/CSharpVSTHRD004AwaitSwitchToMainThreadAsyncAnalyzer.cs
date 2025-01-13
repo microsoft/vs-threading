@@ -9,5 +9,5 @@ namespace Microsoft.VisualStudio.Threading.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class CSharpVSTHRD004AwaitSwitchToMainThreadAsyncAnalyzer : AbstractVSTHRD004AwaitSwitchToMainThreadAsyncAnalyzer
 {
-    private protected override LanguageUtils LanguageUtils => CSharpUtils.Instance;
+    protected override LanguageUtils LanguageUtils => CSharpUtils.Instance;
 }

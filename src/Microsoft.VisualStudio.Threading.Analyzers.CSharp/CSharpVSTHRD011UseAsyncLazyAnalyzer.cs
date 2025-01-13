@@ -9,5 +9,5 @@ namespace Microsoft.VisualStudio.Threading.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class CSharpVSTHRD011UseAsyncLazyAnalyzer : AbstractVSTHRD011UseAsyncLazyAnalyzer
 {
-    private protected override LanguageUtils LanguageUtils => CSharpUtils.Instance;
+    protected override LanguageUtils LanguageUtils => CSharpUtils.Instance;
 }

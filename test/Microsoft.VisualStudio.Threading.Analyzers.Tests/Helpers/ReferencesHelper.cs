@@ -10,8 +10,8 @@ internal static class ReferencesHelper
 {
 #if NETFRAMEWORK
     public static ReferenceAssemblies DefaultReferences = ReferenceAssemblies.NetFramework.Net471.Default
-#elif NET6_0
-    public static ReferenceAssemblies DefaultReferences = ReferenceAssemblies.Net.Net60
+#elif NET8_0
+    public static ReferenceAssemblies DefaultReferences = ReferenceAssemblies.Net.Net80
 #else
 #error Fix TFM conditions
 #endif

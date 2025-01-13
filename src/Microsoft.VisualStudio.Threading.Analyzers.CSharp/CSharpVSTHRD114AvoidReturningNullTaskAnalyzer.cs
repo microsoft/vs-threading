@@ -9,5 +9,5 @@ namespace Microsoft.VisualStudio.Threading.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class CSharpVSTHRD114AvoidReturningNullTaskAnalyzer : AbstractVSTHRD114AvoidReturningNullTaskAnalyzer
 {
-    private protected override LanguageUtils LanguageUtils => CSharpUtils.Instance;
+    protected override LanguageUtils LanguageUtils => CSharpUtils.Instance;
 }

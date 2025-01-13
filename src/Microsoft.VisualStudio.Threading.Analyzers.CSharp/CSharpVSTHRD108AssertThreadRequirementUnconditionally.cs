@@ -9,5 +9,5 @@ namespace Microsoft.VisualStudio.Threading.Analyzers;
 [DiagnosticAnalyzer(LanguageNames.CSharp)]
 public sealed class CSharpVSTHRD108AssertThreadRequirementUnconditionally : AbstractVSTHRD108AssertThreadRequirementUnconditionally
 {
-    private protected override LanguageUtils LanguageUtils => CSharpUtils.Instance;
+    protected override LanguageUtils LanguageUtils => CSharpUtils.Instance;
 }

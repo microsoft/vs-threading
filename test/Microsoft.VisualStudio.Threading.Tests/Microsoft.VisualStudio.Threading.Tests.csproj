@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net6.0</TargetFrameworks>
+    <TargetFrameworks>net8.0</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsTestProject>true</IsTestProject>
 
@@ -10,7 +10,7 @@
     <DefineConstants Condition=" '$(TargetFramework)' == 'net472' ">$(DefineConstants);ISOLATED_TEST_SUPPORT</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-    <TargetFrameworks>$(TargetFrameworks);net472;net6.0-windows</TargetFrameworks>
+    <TargetFrameworks>$(TargetFrameworks);net472;net8.0-windows</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\src\Microsoft.VisualStudio.Threading\InternalUtilities.cs">
@@ -22,7 +22,8 @@
     <Compile Include="..\..\src\Microsoft.VisualStudio.Threading\RarelyRemoveItemSet`1.cs">
       <Link>RarelyRemoveItemSet`1.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\Microsoft.VisualStudio.Threading\RoslynDebug.cs" Link="RoslynDebug.cs" />
+    <Compile Include="..\..\src\Microsoft.VisualStudio.Threading\RoslynDebug.cs"
+      Link="RoslynDebug.cs" />
     <Compile Include="..\..\src\Microsoft.VisualStudio.Threading\WeakKeyDictionary`2.cs">
       <Link>WeakKeyDictionary`2.cs</Link>
     </Compile>
@@ -38,7 +39,8 @@
     <PackageReference Include="xunit" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj" />
+    <ProjectReference
+      Include="..\..\src\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net472' ">
     <Reference Include="System.Configuration" />
@@ -46,7 +48,8 @@
     <ProjectReference Include="..\IsolatedTestHost\IsolatedTestHost.csproj">
       <Private>true</Private>
     </ProjectReference>
-    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher\Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.csproj">
+    <ProjectReference
+      Include="..\Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher\Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <Private>true</Private>
     </ProjectReference>

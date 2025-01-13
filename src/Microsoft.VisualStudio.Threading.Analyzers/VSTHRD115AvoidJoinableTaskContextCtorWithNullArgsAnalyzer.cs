@@ -19,13 +19,13 @@ public class VSTHRD115AvoidJoinableTaskContextCtorWithNullArgsAnalyzer : Diagnos
 {
     public const string Id = "VSTHRD115";
 
-    internal const string UsesDefaultThreadPropertyName = "UsesDefaultThread";
+    public const string UsesDefaultThreadPropertyName = "UsesDefaultThread";
 
-    internal const string NodeTypePropertyName = "NodeType";
+    public const string NodeTypePropertyName = "NodeType";
 
-    internal const string NodeTypeArgument = "Argument";
+    public const string NodeTypeArgument = "Argument";
 
-    internal const string NodeTypeCreation = "Creation";
+    public const string NodeTypeCreation = "Creation";
 
     internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
         id: Id,
