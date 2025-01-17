@@ -44,3 +44,17 @@ pipelines:
           lastModifiedDate: 2025-01-13
         armory:
           lastModifiedDate: 2025-01-13
+  25079:
+    retail:
+      source:
+        credscan:
+          lastModifiedDate: 2025-01-17
+        eslint:
+          lastModifiedDate: 2025-01-17
+        armory:
+          lastModifiedDate: 2025-01-17
+      binary:
+        credscan:
+          lastModifiedDate: 2025-01-17
+        binskim:
+          lastModifiedDate: 2025-01-17
