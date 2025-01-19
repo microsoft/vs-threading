@@ -3,6 +3,7 @@
   <OwnedComments>
     <Cmt Name="Dev" />
     <Cmt Name="LcxAdmin" />
+    <Cmt Name="Loc" />
     <Cmt Name="RCCX" />
   </OwnedComments>
   <Settings Name="@vsLocTools@\default.lss" Type="Lss" />
@@ -244,10 +245,13 @@
     <Disp Icon="Ver" Disp="true" LocTbl="false" Path=" \ ;Version \ 8 \ 0" />
     <Item ItemId=";Comments" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text">
-        <Val><![CDATA[Async synchronization primitives, async collections, TPL and dataflow extensions. The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This package is applicable to any .NET application (not just Visual Studio).]]></Val>
+        <Val><![CDATA[Async synchronization primitives, async collections, TPL and dataflow extensions.]D;]A;      The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This]D;]A;      package is applicable to any .NET application (not just Visual Studio).]]></Val>
         <Tgt Cat="Text" Stat="Loc" Orig="New">
-          <Val><![CDATA[Asynchrone Synchronisierungsprimitive, asynchrone Auflistungen, TPL-und Datenfluss-Erweiterungen. Die JoinableTaskFactory ermöglicht die synchrone Blockierung des UI-Threads für asynchrone Arbeit. Dieses Paket gilt für alle .NET-Anwendungen (nicht nur für Visual Studio).]]></Val>
+          <Val><![CDATA[Asynchrone Synchronisierungsprimitiven, asynchrone Sammlungen, TPL und Dataflowerweiterungen.]D;]A;      Die JoinableTaskFactory ermöglicht die synchrone Blockierung des UI-Threads für asynchrone Arbeit. Dieses]D;]A;      -Paket gilt für jede .NET-Anwendung (nicht nur Visual Studio).]]></Val>
         </Tgt>
+        <Prev Cat="Text">
+          <Val><![CDATA[Async synchronization primitives, async collections, TPL and dataflow extensions. The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This package is applicable to any .NET application (not just Visual Studio).]]></Val>
+        </Prev>
       </Str>
       <Disp Icon="Str" />
     </Item>

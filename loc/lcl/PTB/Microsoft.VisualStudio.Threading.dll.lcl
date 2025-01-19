@@ -3,6 +3,7 @@
   <OwnedComments>
     <Cmt Name="Dev" />
     <Cmt Name="LcxAdmin" />
+    <Cmt Name="Loc" />
     <Cmt Name="RCCX" />
   </OwnedComments>
   <Settings Name="@vsLocTools@\default.lss" Type="Lss" />
@@ -244,10 +245,13 @@
     <Disp Icon="Ver" Disp="true" LocTbl="false" Path=" \ ;Version \ 8 \ 0" />
     <Item ItemId=";Comments" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text">
-        <Val><![CDATA[Async synchronization primitives, async collections, TPL and dataflow extensions. The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This package is applicable to any .NET application (not just Visual Studio).]]></Val>
+        <Val><![CDATA[Async synchronization primitives, async collections, TPL and dataflow extensions.]D;]A;      The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This]D;]A;      package is applicable to any .NET application (not just Visual Studio).]]></Val>
         <Tgt Cat="Text" Stat="Loc" Orig="New">
-          <Val><![CDATA[Sincronização Async primitivas, coleções assíncronas, TPL e extensões de fluxo de dados. A JoinableTaskFactory permite o bloqueio sincronizado da thread da UI para o trabalho assíncrono. Este pacote é aplicável a qualquer aplicativo .NET (não apenas ao Visual Studio).]]></Val>
+          <Val><![CDATA[Sincronização Async primitivas, coleções assíncronas, TPL e extensões de fluxo de dados.]D;]A;      A JoinableTaskFactory permite o bloqueio sincronizado da thread da UI para o trabalho assíncrono. Essa ]D;]A;      Esse pacote é aplicável a qualquer aplicativo .NET (não apenas ao Visual Studio).]]></Val>
         </Tgt>
+        <Prev Cat="Text">
+          <Val><![CDATA[Async synchronization primitives, async collections, TPL and dataflow extensions. The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This package is applicable to any .NET application (not just Visual Studio).]]></Val>
+        </Prev>
       </Str>
       <Disp Icon="Str" />
     </Item>
