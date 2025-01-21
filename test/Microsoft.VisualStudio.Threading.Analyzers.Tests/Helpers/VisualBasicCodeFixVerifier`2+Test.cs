@@ -37,7 +37,7 @@ public static partial class VisualBasicCodeFixVerifier<TAnalyzer, TCodeFix>
 #if WINDOWS
                     project = project.AddMetadataReference(MetadataReference.CreateFromFile(typeof(Dispatcher).Assembly.Location));
 #else
-                    Skip.If(true);
+                    Assert.SkipWhen(true, "N/A on non-Windows");
 #endif
                 }
 

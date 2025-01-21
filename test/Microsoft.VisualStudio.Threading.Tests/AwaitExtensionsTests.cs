@@ -11,8 +11,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 using Microsoft.Win32;
-using Xunit;
-using Xunit.Abstractions;
 
 #pragma warning disable CA1416 // Validate platform compatibility
 
@@ -383,10 +381,10 @@ public partial class AwaitExtensionsTests : TestBase
         await Assert.ThrowsAsync<ArgumentNullException>(() => AwaitExtensions.WaitForExitAsync(null!));
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task WaitForExitAsync_ExitCode()
     {
-        Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+        Assert.SkipUnless(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Windows only");
         Process p = Process.Start(
             new ProcessStartInfo("cmd.exe", "/c exit /b 55")
             {
@@ -397,10 +395,10 @@ public partial class AwaitExtensionsTests : TestBase
         Assert.Equal(55, exitCode);
     }
 
-    [SkippableFact]
+    [Fact]
     public void WaitForExitAsync_AlreadyExited()
     {
-        Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+        Assert.SkipUnless(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Windows only");
         Process p = Process.Start(
             new ProcessStartInfo("cmd.exe", "/c exit /b 55")
             {
@@ -613,10 +611,10 @@ public partial class AwaitExtensionsTests : TestBase
         }
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task AwaitRegKeyChange()
     {
-        Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+        Assert.SkipUnless(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Windows only");
         using (var test = new RegKeyTest())
         {
             Task changeWatcherTask = test.Key.WaitForChangeAsync();
@@ -626,10 +624,10 @@ public partial class AwaitExtensionsTests : TestBase
         }
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task AwaitRegKeyChange_TwoAtOnce_SameKeyHandle()
     {
-        Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+        Assert.SkipUnless(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Windows only");
         using (var test = new RegKeyTest())
         {
             Task changeWatcherTask1 = test.Key.WaitForChangeAsync();
@@ -641,10 +639,10 @@ public partial class AwaitExtensionsTests : TestBase
         }
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task AwaitRegKeyChange_NoChange()
     {
-        Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+        Assert.SkipUnless(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Windows only");
         using (var test = new RegKeyTest())
         {
             Task changeWatcherTask = test.Key.WaitForChangeAsync(cancellationToken: test.FinishedToken);
@@ -656,10 +654,10 @@ public partial class AwaitExtensionsTests : TestBase
         }
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task AwaitRegKeyChange_WatchSubtree()
     {
-        Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+        Assert.SkipUnless(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Windows only");
         using (var test = new RegKeyTest())
         {
             using (RegistryKey? subKey = test.CreateSubKey())
@@ -671,10 +669,10 @@ public partial class AwaitExtensionsTests : TestBase
         }
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task AwaitRegKeyChange_KeyDeleted()
     {
-        Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+        Assert.SkipUnless(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Windows only");
         using (var test = new RegKeyTest())
         {
             using (RegistryKey? subKey = test.CreateSubKey())
@@ -686,10 +684,10 @@ public partial class AwaitExtensionsTests : TestBase
         }
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task AwaitRegKeyChange_NoWatchSubtree()
     {
-        Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+        Assert.SkipUnless(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Windows only");
         using (var test = new RegKeyTest())
         {
             using (RegistryKey? subKey = test.CreateSubKey())
@@ -705,10 +703,10 @@ public partial class AwaitExtensionsTests : TestBase
         }
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task AwaitRegKeyChange_Canceled()
     {
-        Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+        Assert.SkipUnless(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Windows only");
         using (var test = new RegKeyTest())
         {
             var cts = new CancellationTokenSource();
@@ -727,10 +725,10 @@ public partial class AwaitExtensionsTests : TestBase
         }
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task AwaitRegKeyChange_KeyDisposedWhileWatching()
     {
-        Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+        Assert.SkipUnless(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Windows only");
         Task watchingTask;
         using (var test = new RegKeyTest())
         {
@@ -741,10 +739,10 @@ public partial class AwaitExtensionsTests : TestBase
         await watchingTask;
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task AwaitRegKeyChange_CanceledAndImmediatelyDisposed()
     {
-        Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+        Assert.SkipUnless(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Windows only");
         Task watchingTask;
         CancellationToken expectedCancellationToken;
         using (var test = new RegKeyTest())
@@ -764,10 +762,10 @@ public partial class AwaitExtensionsTests : TestBase
         }
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task AwaitRegKeyChange_CallingThreadDestroyed()
     {
-        Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+        Assert.SkipUnless(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Windows only");
         using (var test = new RegKeyTest())
         {
             // Start watching and be certain the thread that started watching is destroyed.
@@ -789,10 +787,10 @@ public partial class AwaitExtensionsTests : TestBase
         }
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task AwaitRegKeyChange_DoesNotPreventAppTerminationOnWin7()
     {
-        Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+        Assert.SkipUnless(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Windows only");
         string testExePath = Path.Combine(
             AppDomain.CurrentDomain.BaseDirectory!,
             "..",

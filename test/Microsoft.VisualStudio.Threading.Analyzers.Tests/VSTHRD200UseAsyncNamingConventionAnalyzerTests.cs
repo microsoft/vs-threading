@@ -244,7 +244,7 @@ class Test {
                 Sources = { test },
                 OutputKind = OutputKind.ConsoleApplication,
             },
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -268,7 +268,7 @@ class Test {
                 Sources = { test },
                 OutputKind = OutputKind.ConsoleApplication,
             },
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -293,7 +293,7 @@ class Test {
                 Sources = { test },
                 OutputKind = OutputKind.ConsoleApplication,
             },
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]

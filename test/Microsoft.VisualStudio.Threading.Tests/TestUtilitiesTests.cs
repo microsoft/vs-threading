@@ -3,7 +3,6 @@
 
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
-using Xunit;
 
 public class TestUtilitiesTests
 {

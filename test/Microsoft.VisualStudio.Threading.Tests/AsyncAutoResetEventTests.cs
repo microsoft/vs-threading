@@ -5,13 +5,12 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
-using Xunit;
 
 public class AsyncAutoResetEventTests : TestBase
 {
     private AsyncAutoResetEvent evt;
 
-    public AsyncAutoResetEventTests(Xunit.Abstractions.ITestOutputHelper logger)
+    public AsyncAutoResetEventTests(ITestOutputHelper logger)
         : base(logger)
     {
         this.evt = new AsyncAutoResetEvent();
@@ -200,7 +199,7 @@ public class AsyncAutoResetEventTests : TestBase
     /// <summary>
     /// Verifies that long-lived, uncanceled CancellationTokens do not result in leaking memory.
     /// </summary>
-    [SkippableFact(Skip = "It always fails after xunit 2.8 update.")]
+    [Fact(Skip = "It always fails after xunit 2.8 update.")]
     [Trait("GC", "true")]
     [Trait("TestCategory", "FailsInCloudTest")]
     public async Task WaitAsync_WithCancellationToken_DoesNotLeakWhenNotCanceled()
@@ -222,7 +221,7 @@ public class AsyncAutoResetEventTests : TestBase
     /// <summary>
     /// Verifies that canceled CancellationTokens do not result in leaking memory.
     /// </summary>
-    [SkippableFact(Skip = "It always fails after xunit 2.8 update.")]
+    [Fact(Skip = "It always fails after xunit 2.8 update.")]
     [Trait("GC", "true")]
     [Trait("TestCategory", "FailsInCloudTest")]
     public async Task WaitAsync_WithCancellationToken_DoesNotLeakWhenCanceled()

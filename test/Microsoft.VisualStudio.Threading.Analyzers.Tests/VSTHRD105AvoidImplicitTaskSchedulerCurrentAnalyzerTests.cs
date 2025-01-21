@@ -25,7 +25,7 @@ class Test {
             TestCode = test,
             ExpectedDiagnostics = { expected },
             TestBehaviors = TestBehaviors.SkipGeneratedCodeCheck,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -47,7 +47,7 @@ class Test {
             TestCode = test,
             ExpectedDiagnostics = { expected },
             TestBehaviors = TestBehaviors.SkipGeneratedCodeCheck,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]

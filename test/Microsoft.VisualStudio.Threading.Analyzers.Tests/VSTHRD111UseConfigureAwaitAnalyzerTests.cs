@@ -50,13 +50,13 @@ class Test {
             TestCode = test,
             FixedCode = fixFalse,
             CodeActionEquivalenceKey = false.ToString(),
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
         await new CSVerify.Test
         {
             TestCode = test,
             FixedCode = fixTrue,
             CodeActionEquivalenceKey = true.ToString(),
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -104,13 +104,13 @@ class Test {
             TestCode = test,
             FixedCode = fixFalse,
             CodeActionEquivalenceKey = false.ToString(),
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
         await new CSVerify.Test
         {
             TestCode = test,
             FixedCode = fixTrue,
             CodeActionEquivalenceKey = true.ToString(),
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -158,12 +158,12 @@ class Test {
             TestCode = test,
             FixedCode = fixFalse,
             CodeActionEquivalenceKey = false.ToString(),
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
         await new CSVerify.Test
         {
             TestCode = test,
             FixedCode = fixTrue,
             CodeActionEquivalenceKey = true.ToString(),
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 }

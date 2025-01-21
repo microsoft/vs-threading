@@ -10,9 +10,6 @@ using System.Threading.Tasks;
 using Microsoft;
 using Microsoft.VisualStudio.Threading;
 
-using Xunit;
-using Xunit.Abstractions;
-
 using NamedSyncContext = AwaitExtensionsTests.NamedSyncContext;
 
 public class AsyncLazyTests : TestBase

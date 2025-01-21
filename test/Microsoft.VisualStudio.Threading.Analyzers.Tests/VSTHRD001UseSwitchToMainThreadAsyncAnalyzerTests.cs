@@ -53,7 +53,7 @@ class Test {
         await CSVerify.VerifyAnalyzerAsync(test, CSVerify.Diagnostic().WithLocation(0));
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task DispatcherInvoke_ProducesDiagnostic()
     {
         var test = @"
@@ -68,10 +68,10 @@ class Test {
 
         var t = new CSVerify.Test { TestCode = test, IncludeWindowsBase = true };
         t.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithLocation(0));
-        await t.RunAsync();
+        await t.RunAsync(TestContext.Current.CancellationToken);
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task DispatcherBeginInvoke_ProducesDiagnostic()
     {
         var test = @"
@@ -87,10 +87,10 @@ class Test {
 
         var t = new CSVerify.Test { TestCode = test, IncludeWindowsBase = true };
         t.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithLocation(0));
-        await t.RunAsync();
+        await t.RunAsync(TestContext.Current.CancellationToken);
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task DispatcherInvokeAsync_ProducesDiagnostic()
     {
         var test = @"
@@ -105,7 +105,7 @@ class Test {
 
         var t = new CSVerify.Test { TestCode = test, IncludeWindowsBase = true };
         t.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithLocation(0));
-        await t.RunAsync();
+        await t.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]

@@ -151,7 +151,7 @@ class Program {
                 Sources = { test },
                 OutputKind = OutputKind.ConsoleApplication,
             },
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]

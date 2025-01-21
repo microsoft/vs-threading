@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.Threading;
-using Xunit;
 
 public class InternalUtilitiesTests
 {

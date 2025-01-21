@@ -5,8 +5,6 @@ using System;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
-using Xunit;
-using Xunit.Abstractions;
 
 public class SingleThreadedSynchronizationContextTests : TestBase
 {

@@ -1,5 +1,7 @@
-[*.cs]
+﻿[*.cs]
 # xUnit1030: Test methods should not call ConfigureAwait(false)
 dotnet_diagnostic.xUnit1030.severity = none
 # xUnit1031: Test methods should not use blocking task operations
 dotnet_diagnostic.xUnit1031.severity = none
+# xUnit1051: Calls to methods which accept CancellationToken should use TestContext.Current.CancellationToken
+dotnet_diagnostic.xUnit1051.severity = suggestion

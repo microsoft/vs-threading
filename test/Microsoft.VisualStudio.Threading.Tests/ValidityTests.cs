@@ -3,7 +3,6 @@
 
 using System.Reflection;
 using Microsoft.VisualStudio.Threading;
-using Xunit;
 
 public class ValidityTests
 {

@@ -23,7 +23,7 @@ class Test
         await new CSVerify.Test
         {
             TestCode = csharpTest,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
 
         var vbTest = @"
 Imports System.Threading.Tasks
@@ -37,7 +37,7 @@ End Class
         await new VerifyVB.Test
         {
             TestCode = vbTest,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -57,7 +57,7 @@ class Test
         await new CSVerify.Test
         {
             TestCode = csharpTest,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
 
         var vbTest = @"
 Imports System.Threading.Tasks
@@ -71,7 +71,7 @@ End Class
         await new VerifyVB.Test
         {
             TestCode = vbTest,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -88,7 +88,7 @@ class Test
         await new CSVerify.Test
         {
             TestCode = test,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -108,7 +108,7 @@ class Test
         await new CSVerify.Test
         {
             TestCode = csharpTest,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
 
         var vbTest = @"
 Imports System.Threading.Tasks
@@ -122,7 +122,7 @@ End Class
         await new VerifyVB.Test
         {
             TestCode = vbTest,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -143,7 +143,7 @@ class Test
         await new CSVerify.Test
         {
             TestCode = test,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -163,7 +163,7 @@ class Test
         await new CSVerify.Test
         {
             TestCode = test,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -188,7 +188,7 @@ class Test
         await new CSVerify.Test
         {
             TestCode = test,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -211,7 +211,7 @@ class Test
         await new CSVerify.Test
         {
             TestCode = test,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -234,7 +234,7 @@ class Test
         await new CSVerify.Test
         {
             TestCode = test,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -257,7 +257,7 @@ class Test
         await new CSVerify.Test
         {
             TestCode = csharpTest,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -280,7 +280,7 @@ class Test
         await new CSVerify.Test
         {
             TestCode = csharpTest,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -319,6 +319,6 @@ class Test
         await new CSVerify.Test
         {
             TestCode = csharpTest,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 }

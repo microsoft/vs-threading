@@ -1165,7 +1165,7 @@ class OtherClass
 ";
 
         var test = new CSVerify.Test { TestState = { Sources = { source1, source2 } } };
-        await test.RunAsync();
+        await test.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -1214,7 +1214,7 @@ public static class Boom {
             },
         };
 
-        await test.RunAsync();
+        await test.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]

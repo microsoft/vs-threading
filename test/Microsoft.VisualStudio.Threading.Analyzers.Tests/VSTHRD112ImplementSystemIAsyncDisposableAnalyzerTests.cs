@@ -149,7 +149,7 @@ partial class Test : VsThreadingAsyncDisposable, BclAsyncDisposable
             FixedState = { Sources = { fix1, fix2 } },
         };
 
-        await test.RunAsync();
+        await test.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -223,7 +223,7 @@ End Class";
             FixedState = { Sources = { fix1, fix2 } },
         };
 
-        await test.RunAsync();
+        await test.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]

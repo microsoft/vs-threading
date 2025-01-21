@@ -6,8 +6,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
-using Xunit;
-using Xunit.Abstractions;
 
 public class ThreadingToolsTests : TestBase
 {
@@ -118,7 +116,7 @@ public class ThreadingToolsTests : TestBase
         Assert.Same(tcs.Task, tcs.Task.WithCancellation(cts.Token));
     }
 
-    [SkippableFact]
+    [Fact]
     public void WithCancellationAndPrecancelledToken()
     {
         var tcs = new TaskCompletionSource<object>();

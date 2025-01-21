@@ -5,8 +5,6 @@ using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Microsoft.VisualStudio.Threading;
-using Xunit;
-using Xunit.Abstractions;
 
 public class RarelyRemoveItemSetTests : TestBase
 {

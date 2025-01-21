@@ -7,8 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
 using Microsoft.VisualStudio.Threading;
-using Xunit;
-using Xunit.Abstractions;
 
 public class TplExtensionsTests : TestBase
 {
@@ -160,7 +158,7 @@ public class TplExtensionsTests : TestBase
     }
 
     /// <summary>
-    /// Verifies that an <see cref="IValueTaskSource"/> can be recycled after calling <see cref="TplExtensions.Forget(ValueTask)"/>.
+    /// Verifies that an <see cref="IValueTaskSource"/> can be recycled after calling <see cref="Microsoft.VisualStudio.Threading.TplExtensions.Forget(ValueTask)"/>.
     /// </summary>
     [Fact]
     public async Task ValueTask_Forget()
@@ -172,7 +170,7 @@ public class TplExtensionsTests : TestBase
     }
 
     /// <summary>
-    /// Verifies that an <see cref="IValueTaskSource{T}"/> can be recycled after calling <see cref="TplExtensions.Forget{T}(ValueTask{T})"/>.
+    /// Verifies that an <see cref="IValueTaskSource{T}"/> can be recycled after calling <see cref="Microsoft.VisualStudio.Threading.TplExtensions.Forget{T}(ValueTask{T})"/>.
     /// </summary>
     [Fact]
     public async Task ValueTask_OfT_Forget()

@@ -709,7 +709,7 @@ class TestClient {
 
         verifyTest.TestState.Sources.AddRange(test);
         verifyTest.FixedState.Sources.AddRange(withFix);
-        await verifyTest.RunAsync();
+        await verifyTest.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]

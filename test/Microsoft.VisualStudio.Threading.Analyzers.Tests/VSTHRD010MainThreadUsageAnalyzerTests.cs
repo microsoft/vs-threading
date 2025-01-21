@@ -59,7 +59,7 @@ class Test {
             TestCode = test,
             ExpectedDiagnostics = { expected },
             FixedCode = fix,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -94,7 +94,7 @@ class Test {
             TestCode = test,
             ExpectedDiagnostics = { expected },
             FixedCode = fix,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     /// <summary>
@@ -138,7 +138,7 @@ class Test {
             ExpectedDiagnostics = { CSVerify.Diagnostic(DescriptorSync).WithSpan(8, 13, 8, 24).WithArguments("IVsSolution", "Test.VerifyOnUIThread") },
             FixedCode = fix,
             CodeActionIndex = CodeFixIndex.SwitchToMainThreadAsync,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -179,7 +179,7 @@ class Test {
             TestCode = test,
             ExpectedDiagnostics = { expected },
             FixedCode = fix,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -212,7 +212,7 @@ class Test {
             TestCode = test,
             ExpectedDiagnostics = { expected },
             FixedCode = fix,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact(Skip = "Started failing after CodeAnalysis upgrade that caught a bug in the code fix. #1364")]
@@ -285,7 +285,7 @@ class Test {
             ExpectedDiagnostics = { expected },
             FixedCode = fix1,
             CodeActionIndex = CodeFixIndex.VerifyOnUIThread,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
 
         await new CSVerify.Test
         {
@@ -293,7 +293,7 @@ class Test {
             ExpectedDiagnostics = { expected },
             FixedCode = fix2,
             CodeActionIndex = CodeFixIndex.ThrowIfNotOnUIThreadIndex1,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -358,7 +358,7 @@ class Test {
             ExpectedDiagnostics = { CSVerify.Diagnostic(DescriptorSync).WithSpan(8, 13, 8, 24).WithArguments("IVsSolution", "Test.VerifyOnUIThread") },
             FixedCode = fix,
             CodeActionIndex = CodeFixIndex.ThrowIfNotOnUIThreadIndex0,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact(Skip = "Not yet supported. See https://github.com/Microsoft/vs-threading/issues/38")]
@@ -587,7 +587,7 @@ class Test {
             },
             FixedCode = fix,
             CodeActionIndex = CodeFixIndex.VerifyOnUIThread,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -791,7 +791,7 @@ class Test {
             ExpectedDiagnostics = { CSVerify.Diagnostic(DescriptorSync).WithSpan(11, 17, 11, 28).WithArguments("IVsSolution", "Test.VerifyOnUIThread") },
             FixedCode = fix,
             CodeActionIndex = CodeFixIndex.VerifyOnUIThread,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -842,7 +842,7 @@ class Test {
             ExpectedDiagnostics = { CSVerify.Diagnostic(DescriptorSync).WithSpan(12, 17, 12, 28).WithArguments("IVsSolution", "Test.VerifyOnUIThread") },
             FixedCode = fix,
             CodeActionIndex = CodeFixIndex.VerifyOnUIThread,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -915,7 +915,7 @@ class Test {
             ExpectedDiagnostics = { CSVerify.Diagnostic(DescriptorSync).WithSpan(11, 17, 11, 28).WithArguments("IVsSolution", "Test.VerifyOnUIThread") },
             FixedCode = fix,
             CodeActionIndex = CodeFixIndex.VerifyOnUIThread,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -1327,7 +1327,7 @@ class Test : AsyncPackage {
             },
             FixedCode = fix,
             CodeActionIndex = CodeFixIndex.NotThreadHelper,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -1370,7 +1370,7 @@ class Test : AsyncPackage {
             TestCode = test,
             ExpectedDiagnostics = { expected },
             FixedCode = fix,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -1460,7 +1460,7 @@ class Test : AsyncPackage {
             ExpectedDiagnostics = { CSVerify.Diagnostic(DescriptorAsync).WithSpan(13, 65, 13, 76).WithArguments("IVsShell", "JoinableTaskFactory.SwitchToMainThreadAsync") },
             FixedCode = fix,
             CodeActionIndex = CodeFixIndex.NotThreadHelper,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -1513,7 +1513,7 @@ class Test : AsyncPackage {
             ExpectedDiagnostics = { CSVerify.Diagnostic(DescriptorAsync).WithSpan(17, 65, 17, 76).WithArguments("IVsShell", "JoinableTaskFactory.SwitchToMainThreadAsync") },
             FixedCode = fix,
             CodeActionIndex = CodeFixIndex.MySwitchingMethodAsync,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -1727,7 +1727,7 @@ class A
             TestCode = test,
             ExpectedDiagnostics = { expected },
             FixedCode = fix,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -1772,7 +1772,7 @@ class A
             TestCode = test,
             ExpectedDiagnostics = { expected },
             FixedCode = fix,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -1811,7 +1811,7 @@ class A
             TestCode = test,
             ExpectedDiagnostics = { expected },
             FixedCode = fix,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]

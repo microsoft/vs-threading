@@ -60,7 +60,7 @@ class Test {
         };
 
         verifyTest.ExpectedDiagnostics.AddRange(expected);
-        await verifyTest.RunAsync();
+        await verifyTest.RunAsync(TestContext.Current.CancellationToken);
     }
 
     /// <summary>

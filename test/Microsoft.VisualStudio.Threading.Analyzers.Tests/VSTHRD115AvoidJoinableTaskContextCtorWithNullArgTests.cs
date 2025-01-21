@@ -42,7 +42,7 @@ public class VSTHRD115AvoidJoinableTaskContextCtorWithNullArgTests
             TestCode = test,
             FixedCode = withFix,
             CodeActionEquivalenceKey = VSTHRD115AvoidJoinableTaskContextCtorWithNullArgsCodeFix.SuppressWarningEquivalenceKey,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public class VSTHRD115AvoidJoinableTaskContextCtorWithNullArgTests
             TestCode = test,
             FixedCode = withFix,
             CodeActionEquivalenceKey = VSTHRD115AvoidJoinableTaskContextCtorWithNullArgsCodeFix.SuppressWarningEquivalenceKey,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -96,7 +96,7 @@ public class VSTHRD115AvoidJoinableTaskContextCtorWithNullArgTests
             TestCode = test,
             FixedCode = withFix,
             CodeActionEquivalenceKey = VSTHRD115AvoidJoinableTaskContextCtorWithNullArgsCodeFix.SuppressWarningEquivalenceKey,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -115,7 +115,7 @@ public class VSTHRD115AvoidJoinableTaskContextCtorWithNullArgTests
             TestCode = test,
             FixedCode = test, // no fix offered
             CodeActionEquivalenceKey = VSTHRD115AvoidJoinableTaskContextCtorWithNullArgsCodeFix.UseFactoryMethodEquivalenceKey,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -142,6 +142,6 @@ public class VSTHRD115AvoidJoinableTaskContextCtorWithNullArgTests
             TestCode = test,
             FixedCode = withFix,
             CodeActionEquivalenceKey = VSTHRD115AvoidJoinableTaskContextCtorWithNullArgsCodeFix.UseFactoryMethodEquivalenceKey,
-        }.RunAsync();
+        }.RunAsync(TestContext.Current.CancellationToken);
     }
 }

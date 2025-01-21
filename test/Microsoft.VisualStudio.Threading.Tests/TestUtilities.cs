@@ -11,8 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft;
 using Microsoft.VisualStudio.Threading;
-using Xunit;
-using Xunit.Abstractions;
+using Xunit.Sdk;
 
 internal static class TestUtilities
 {
@@ -69,7 +68,7 @@ internal static class TestUtilities
             concurrency = Environment.ProcessorCount;
         }
 
-        Skip.If(Environment.ProcessorCount < concurrency, $"The test machine does not have enough CPU cores to exercise a concurrency level of {concurrency}");
+        Assert.SkipWhen(Environment.ProcessorCount < concurrency, $"The test machine does not have enough CPU cores to exercise a concurrency level of {concurrency}");
 
         // We use a barrier to guarantee that all threads are fully ready to
         // execute the provided function at precisely the same time.
@@ -248,7 +247,8 @@ internal static class TestUtilities
                 switch (t.Result)
                 {
                     case IsolatedTestHost.ExitCode.TestSkipped:
-                        throw new SkipException("Test skipped. See output of isolated task for details.");
+                        throw SkipException.ForSkip("Test skipped. See output of isolated task for details.");
+                        throw Assumes.NotReachable();
                     case IsolatedTestHost.ExitCode.TestPassed:
                     default:
                         Assert.Equal(IsolatedTestHost.ExitCode.TestPassed, t.Result);
@@ -259,7 +259,7 @@ internal static class TestUtilities
             },
             TaskScheduler.Default);
 #else
-        return Task.FromException<bool>(new SkipException("Test isolation is not yet supported on this platform."));
+        return Task.FromException<bool>(SkipException.ForSkip("Test isolation is not yet supported on this platform."));
 #endif
     }
 

@@ -11,8 +11,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft;
 using Microsoft.VisualStudio.Threading;
-using Xunit;
-using Xunit.Abstractions;
 
 public class JoinableTaskTests : JoinableTaskTestBase
 {
@@ -2977,7 +2975,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
         hiPriFactory.DoModalLoopTillEmptyAndTaskCompleted(outer.Task, this.TimeoutToken);
     }
 
-    [SkippableFact]
+    [Fact]
     public void NestedFactoriesCanBeCollected()
     {
         WeakReference weakOuterFactory = this.NestedFactoriesCanBeCollected_Helper();
@@ -4491,7 +4489,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
         });
 
         outerFactory.DoModalLoopTillEmptyAndTaskCompleted(outer.Task, this.TimeoutToken);
-        Skip.IfNot(outer.IsCompleted, "this is a product defect, but this test assumes this works to test something else.");
+        Assert.SkipUnless(outer.IsCompleted, "this is a product defect, but this test assumes this works to test something else.");
 
         // Allow the dispatcher to drain all messages that may be holding references.
         SynchronizationContext.Current!.Post(s => this.testFrame.Continue = false, null);
