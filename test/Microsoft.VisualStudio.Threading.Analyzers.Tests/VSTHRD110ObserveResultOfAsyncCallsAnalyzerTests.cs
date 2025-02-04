@@ -485,4 +485,34 @@ public async ValueTask DisposeAsync()
 
         await CSVerify.VerifyAnalyzerAsync(test);
     }
+
+    [Fact]
+    public async Task LocalVoidFunctionWithinAsyncTaskMethod()
+    {
+        string test = /* lang=c#-test */ """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task DoOperationAsync()
+                {
+                    DoOperationInner();
+
+                    void DoOperationInner()
+                    {
+                        [|HelperAsync()|];
+                    }
+                }
+
+                void DoOperation()
+                {
+                    [|HelperAsync()|];
+                }
+
+                Task HelperAsync() => Task.CompletedTask;
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 }
