@@ -215,7 +215,7 @@ class Test {
         }.RunAsync();
     }
 
-    [Fact(Skip = "Started failing after CodeAnalysis upgrade that caught a bug in the code fix. #1364")]
+    [Fact]
     public async Task TransitiveNoCheck_InCtor()
     {
         var test = @"
@@ -522,7 +522,7 @@ class Test {
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
-    [Fact(Skip = "Started failing after CodeAnalysis upgrade that caught a bug in the code fix. #1364")]
+    [Fact]
     public async Task RequiresUIThreadTransitive_MultipleInMember()
     {
         var test = @"
