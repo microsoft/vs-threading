@@ -247,6 +247,33 @@ class Test {
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
+    [Fact(Skip = "Won't fix")]
+    public async Task GetAwaiterWithIncompatibleParameters()
+    {
+        string test = /* lang=c#-test */ """
+            using System;
+            using System.Collections.Generic;
+            using System.Runtime.CompilerServices;
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                void Foo()
+                {
+                    var stack = new Stack<(int, int)>();
+                    stack.Pop();
+                }
+            }
+
+            internal static class Extensions
+            {
+                internal static TaskAwaiter<(T1, T2)> GetAwaiter<T1, T2>(this (Task<T1>, Task<T2>) tasks) => throw new NotImplementedException();
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
     [Fact]
     public async Task ConfigureAwait_ProducesDiagnostics()
     {
