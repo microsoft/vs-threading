@@ -8,7 +8,7 @@
     <CodeAnalysisVersion>3.11.0</CodeAnalysisVersion>
     <CodeAnalysisVersion Condition="'$(IsTestProject)'=='true'">4.4.0</CodeAnalysisVersion>
     <CodefixTestingVersion>1.1.2</CodefixTestingVersion>
-    <MicrosoftDiagnosticsRuntimeVersion>3.1.456501</MicrosoftDiagnosticsRuntimeVersion>
+    <MicrosoftDiagnosticsRuntimeVersion>3.1.525101</MicrosoftDiagnosticsRuntimeVersion>
     <CodeAnalysisAnalyzerVersion>3.11.0-beta1.24527.2</CodeAnalysisAnalyzerVersion>
   </PropertyGroup>
   <ItemGroup>
