@@ -4,9 +4,9 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
-    <MicroBuildVersion>2.0.171</MicroBuildVersion>
+    <MicroBuildVersion>2.0.181</MicroBuildVersion>
     <CodeAnalysisVersion>3.11.0</CodeAnalysisVersion>
-    <CodeAnalysisVersion Condition="'$(IsTestProject)'=='true'">4.4.0</CodeAnalysisVersion>
+    <CodeAnalysisVersionForTests>4.4.0</CodeAnalysisVersionForTests>
     <CodefixTestingVersion>1.1.2</CodefixTestingVersion>
     <MicrosoftDiagnosticsRuntimeVersion>3.1.525101</MicrosoftDiagnosticsRuntimeVersion>
     <CodeAnalysisAnalyzerVersion>3.11.0-beta1.24527.2</CodeAnalysisAnalyzerVersion>
@@ -42,6 +42,12 @@
     <PackageVersion Include="Xunit.Combinatorial" Version="1.6.24" />
     <PackageVersion Include="Xunit.SkippableFact" Version="1.4.13" />
     <PackageVersion Include="Xunit.StaFact" Version="1.1.11" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(IsTestProject)'=='true'">
+    <PackageVersion Update="Microsoft.CodeAnalysis" Version="$(CodeAnalysisVersionForTests)" />
+    <PackageVersion Update="Microsoft.CodeAnalysis.Common" Version="$(CodeAnalysisVersionForTests)" />
+    <PackageVersion Update="Microsoft.CodeAnalysis.CSharp" Version="$(CodeAnalysisVersionForTests)" />
+    <PackageVersion Update="Microsoft.CodeAnalysis.VisualBasic" Version="$(CodeAnalysisVersionForTests)" />
   </ItemGroup>
   <ItemGroup Label="Library.Template">
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
