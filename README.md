@@ -5,7 +5,7 @@
 
 ## Microsoft.VisualStudio.Threading
 
-[![NuGet package](https://img.shields.io/nuget/v/Microsoft.VisualStudio.Threading.svg)](https://nuget.org/packages/Microsoft.VisualStudio.Threading)
+[![NuGet package](https://img.shields.io/nuget/v/Microsoft.VisualStudio.Threading.svg)](https://www.nuget.org/packages/Microsoft.VisualStudio.Threading)
 
 Async synchronization primitives, async collections, TPL and dataflow extensions. The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This package is applicable to any .NET application (not just Visual Studio).
 
@@ -15,7 +15,7 @@ Async synchronization primitives, async collections, TPL and dataflow extensions
 
 ## Microsoft.VisualStudio.Threading.Analyzers
 
-[![NuGet package](https://img.shields.io/nuget/v/Microsoft.VisualStudio.Threading.Analyzers.svg)](https://nuget.org/packages/Microsoft.VisualStudio.Threading.Analyzers)
+[![NuGet package](https://img.shields.io/nuget/v/Microsoft.VisualStudio.Threading.Analyzers.svg)](https://www.nuget.org/packages/Microsoft.VisualStudio.Threading.Analyzers)
 
 Static code analyzer to detect common mistakes or potential issues regarding threading and async coding.
 
