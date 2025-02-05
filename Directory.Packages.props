@@ -27,7 +27,7 @@
     <PackageVersion Include="Microsoft.Diagnostics.Runtime.Utilities" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
     <PackageVersion Include="Microsoft.Diagnostics.Runtime" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
     <PackageVersion Include="Microsoft.VisualStudio.Interop" Version="17.4.33103.184" />
-    <PackageVersion Include="Microsoft.VisualStudio.Shell.15.0" Version="17.4.33103.184" />
+    <PackageVersion Include="Microsoft.VisualStudio.Shell.15.0" Version="17.13.40000" />
     <PackageVersion Include="Microsoft.VisualStudio.Shell.Framework" Version="17.4.33103.184" />
     <PackageVersion Include="Microsoft.VisualStudio.Validation" Version="17.8.8" />
     <PackageVersion Include="Microsoft.Win32.Registry" Version="5.0.0" />
