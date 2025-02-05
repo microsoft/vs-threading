@@ -47,6 +47,10 @@
 			"matchPackageNames": ["Microsoft.VisualStudio.*"],
 			"matchUpdateTypes": ["patch"],
 			"enabled": false
+		},
+		{
+			"matchJsonata": [ "sharedVariableName='CodeAnalysisVersion'" ],
+			"enabled": false
 		}
 	]
 }
