@@ -279,7 +279,7 @@ public static class CommonInterest
     {
         while (operation?.Parent is not null)
         {
-            if (operation.Parent is IAnonymousFunctionOperation or IMethodBodyOperation)
+            if (operation.Parent is IAnonymousFunctionOperation or IMethodBodyOperation or ILocalFunctionOperation)
             {
                 return operation.Parent;
             }
