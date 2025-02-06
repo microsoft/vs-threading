@@ -52,5 +52,13 @@
 			"matchJsonata": [ "sharedVariableName='CodeAnalysisVersion'" ],
 			"enabled": false
 		}
+	],
+	"customManagers": [
+		{
+			"customType": "regex",
+			"datasourceTemplate": "nuget",
+			"fileMatch": ["test/Microsoft.VisualStudio.Threading.Analyzers.Tests/Helpers/ReferencesHelper.cs"],
+			"matchStrings": ["PackageIdentity\\(\"(?<packageName>[^\"]+)\", \"(?<currentValue>[^\"]+)\"\\)"]
+		}
 	]
 }
