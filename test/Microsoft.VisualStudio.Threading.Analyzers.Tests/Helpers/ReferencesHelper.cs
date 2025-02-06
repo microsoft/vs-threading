@@ -16,8 +16,8 @@ internal static class ReferencesHelper
 #error Fix TFM conditions
 #endif
         .WithPackages(ImmutableArray.Create(
-            new PackageIdentity("System.Collections.Immutable", "5.0.0"),
-            new PackageIdentity("System.Threading.Tasks.Extensions", "4.5.4"),
+            new PackageIdentity("System.Collections.Immutable", "6.0.0"),
+            new PackageIdentity("System.Threading.Tasks.Extensions", "4.6.0"),
             new PackageIdentity("Microsoft.Bcl.AsyncInterfaces", "6.0.0")));
 
     internal static readonly ImmutableArray<string> VSSDKPackageReferences = ImmutableArray.Create(new string[]
