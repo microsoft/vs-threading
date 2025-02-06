@@ -47,7 +47,7 @@ public class NoMessagePumpSyncContext : SynchronizationContext
     /// <returns>
     /// The array index of the object that satisfied the wait.
     /// </returns>
-    public override int Wait(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout)
+    public override unsafe int Wait(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout)
     {
         Requires.NotNull(waitHandles, nameof(waitHandles));
 
@@ -61,7 +61,10 @@ public class NoMessagePumpSyncContext : SynchronizationContext
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 #endif
         {
-            return (int)PInvoke.WaitForMultipleObjects(MemoryMarshal.Cast<IntPtr, HANDLE>(waitHandles), waitAll, (uint)millisecondsTimeout);
+            fixed (IntPtr* pHandles = waitHandles)
+            {
+                return (int)PInvoke.WaitForMultipleObjects((uint)waitHandles.Length, (HANDLE*)pHandles, waitAll, (uint)millisecondsTimeout);
+            }
         }
         else
         {
