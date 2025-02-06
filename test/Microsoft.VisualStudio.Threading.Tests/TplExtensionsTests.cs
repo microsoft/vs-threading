@@ -9,6 +9,7 @@ using System.Threading.Tasks.Sources;
 using Microsoft.VisualStudio.Threading;
 using Xunit;
 using Xunit.Abstractions;
+using TplExtensions = Microsoft.VisualStudio.Threading.TplExtensions;
 
 public class TplExtensionsTests : TestBase
 {
