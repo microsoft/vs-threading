@@ -49,4 +49,4 @@ Guideline | 200-299 | Code that deviates from best practices and may limit the b
 
 Some analyzers' behavior can be configured. See our [configuration](configuration.md) topic for more information.
 
-[1]: https://nuget.org/packages/microsoft.visualstudio.threading.analyzers
+[1]: https://www.nuget.org/packages/microsoft.visualstudio.threading.analyzers
