@@ -25,7 +25,7 @@ While several project types have specific .editorconfig files defined in this fo
 Libraries that may run in any process, whether they have a main thread or not, should code themselves defensively to avoid any dependency on the main thread so that applications that do not follow `JoinableTaskFactory` rules can avoid deadlocks even when synchronously blocking their main thread using `Task.Wait()` on code running inside your library.
 In particular, shared libraries of general interest should _always_ use `.ConfigureAwait(false)` when awaiting on tasks.
 
-[Learn more about authoring libraries following best threading practices](https://microsoft.github.io/vs-threading/docs/library_with_jtf.md).
+[Learn more about authoring libraries following best threading practices](https://microsoft.github.io/vs-threading/docs/library_with_jtf.html).
 
 ### Libraries that run inside a JoinableTaskFactory-compliant application
 
