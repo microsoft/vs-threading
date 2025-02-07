@@ -481,7 +481,7 @@ public static class Utils
 
     public static string GetHelpLink(string analyzerId)
     {
-        return $"https://github.com/Microsoft/vs-threading/blob/main/doc/analyzers/{analyzerId}.md";
+        return $"https://microsoft.github.io/vs-threading/analyzers/{analyzerId}.html";
     }
 
     /// <summary>

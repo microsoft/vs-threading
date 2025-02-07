@@ -2,6 +2,8 @@
 
 Async synchronization primitives, async collections, TPL and dataflow extensions. The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This package is applicable to any .NET application (not just Visual Studio).
 
+[Full documentation](https://microsoft.github.io/vs-threading/docs/getting-started.html).
+
 ## Features
 
 * Async versions of many threading synchronization primitives

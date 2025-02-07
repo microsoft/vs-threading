@@ -26,7 +26,7 @@ You should generally use the latest version available, without regard to the ver
 
 There are [many rules](index.md) in the analyzer package.
 The default severity levels for the various rules are not appropriate for every type of project.
-To get the best default severity levels for your project type, please review [these editorconfig recommendations](editorconfigs/README.md) and apply them to your project.
+To get the best default severity levels for your project type, please review [these editorconfig recommendations](https://github.com/microsoft/vs-threading/blob/main/doc/editorconfigs/README.md) and apply them to your project.
 
 Some analyzers allow for [specialized configuration](configuration.md) that allows you to tailor them to your specific application or library to provide even more value to your team.
 
