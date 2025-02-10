@@ -370,7 +370,7 @@ internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
                         {
                             if (visitedObjects.Add(stackObject.Address))
                             {
-                                ClrObject joinableTaskObject = stackObject.Type is null ? runtime.Heap.GetObject(stackObject.Address) : runtime.Heap.GetObject(stackObject.Address, stackObject.Type);
+                                var joinableTaskObject = new ClrObject(stackObject.Address, stackObject.Type);
                                 int state = joinableTaskObject.ReadField<int>("state");
                                 if ((state & 0x10) == 0x10)
                                 {
