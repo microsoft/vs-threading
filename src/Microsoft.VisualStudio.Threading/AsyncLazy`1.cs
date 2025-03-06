@@ -224,6 +224,10 @@ public class AsyncLazy<T>
                             // to synchronously block the Main thread waiting for the result
                             // without leading to deadlocks.
                             this.joinableTask = this.jobFactory.RunAsync(valueFactory);
+
+                            // this ensures that this.joinableTask must be committed before this.value
+                            Thread.MemoryBarrier();
+
                             this.value = this.joinableTask.Task;
                         }
                         else
@@ -244,6 +248,9 @@ public class AsyncLazy<T>
             // Allow the original value factory to actually run.
             resumableAwaiter?.Resume();
         }
+
+        // this ensures that this.joinableTask cannot be retrieved before the conditional check using this.value
+        Thread.MemoryBarrier();
 
         return this.joinableTask?.JoinAsync(continueOnCapturedContext: false, cancellationToken) ?? this.value.WithCancellation(cancellationToken);
     }
