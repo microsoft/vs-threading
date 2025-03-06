@@ -9,7 +9,7 @@
     <CodeAnalysisVersionForTests>4.12.0</CodeAnalysisVersionForTests>
     <CodefixTestingVersion>1.1.2</CodefixTestingVersion>
     <MicrosoftDiagnosticsRuntimeVersion>3.0.442202</MicrosoftDiagnosticsRuntimeVersion>
-    <CodeAnalysisAnalyzerVersion>3.11.0-beta1.24527.2</CodeAnalysisAnalyzerVersion>
+    <CodeAnalysisAnalyzerVersion>3.11.0</CodeAnalysisAnalyzerVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="DNNE" Version="2.0.7" />
