@@ -5,6 +5,7 @@
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <IncludeSymbols>false</IncludeSymbols>
     <NoWarn>$(NoWarn);NU5128</NoWarn>
+    <MicroBuild_LocalizeOutputAssembly>false</MicroBuild_LocalizeOutputAssembly>
   </PropertyGroup>
 
   <ItemGroup>
