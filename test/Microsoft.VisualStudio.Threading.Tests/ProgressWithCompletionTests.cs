@@ -162,7 +162,7 @@ public class ProgressWithCompletionTests : TestBase
         }
         else
         {
-            var progressTask = Task.Run(progressFactory);
+            Task<ProgressWithCompletion<GenericParameterHelper>> progressTask = Task.Run(progressFactory);
             progressTask.WaitWithoutInlining();
             progress = progressTask.Result;
         }

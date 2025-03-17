@@ -534,7 +534,7 @@ public class TplExtensionsTests : TestBase
     public async Task NoThrowAwaitable_ValueTaskT_Succeeds()
     {
         var barrier = new TaskCompletionSource<object?>();
-        var result = new object();
+        object result = new object();
         var tcs = new TaskCompletionSource<object>();
         var test = Task.Run(async () =>
         {
@@ -885,7 +885,7 @@ public class TplExtensionsTests : TestBase
     [Fact]
     public async Task ToApmOfTWithNoTaskState()
     {
-        var state = new object();
+        object state = new object();
         var tcs = new TaskCompletionSource<int>();
         IAsyncResult? beginResult = null;
 
@@ -912,7 +912,7 @@ public class TplExtensionsTests : TestBase
     [Fact]
     public async Task ToApmOfTWithMatchingTaskState()
     {
-        var state = new object();
+        object state = new object();
         var tcs = new TaskCompletionSource<int>(state);
         IAsyncResult? beginResult = null;
 
@@ -939,7 +939,7 @@ public class TplExtensionsTests : TestBase
     [Fact]
     public async Task ToApmWithNoTaskState()
     {
-        var state = new object();
+        object state = new object();
         var tcs = new TaskCompletionSource<object?>();
         IAsyncResult? beginResult = null;
 
@@ -966,7 +966,7 @@ public class TplExtensionsTests : TestBase
     [Fact]
     public async Task ToApmWithMatchingTaskState()
     {
-        var state = new object();
+        object state = new object();
         var tcs = new TaskCompletionSource<object?>(state);
         IAsyncResult? beginResult = null;
 

@@ -61,7 +61,7 @@ internal struct ListOfOftenOne<T> : IEnumerable<T>
         do
         {
             priorValue = Volatile.Read(ref this.value);
-            var newValue = Combine(priorValue, value);
+            object newValue = Combine(priorValue, value);
             fieldBeforeExchange = Interlocked.CompareExchange(ref this.value, newValue, priorValue);
         }
         while (priorValue != fieldBeforeExchange);
@@ -77,7 +77,7 @@ internal struct ListOfOftenOne<T> : IEnumerable<T>
         do
         {
             priorValue = Volatile.Read(ref this.value);
-            var newValue = Remove(priorValue, value);
+            object? newValue = Remove(priorValue, value);
             fieldBeforeExchange = Interlocked.CompareExchange(ref this.value, newValue, priorValue);
         }
         while (priorValue != fieldBeforeExchange);
