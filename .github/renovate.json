@@ -3,6 +3,7 @@
 	"extends": [
 		"github>microsoft/vs-renovate-presets:microbuild",
 		"github>microsoft/vs-renovate-presets:vs_main_dependencies",
+		"github>microsoft/vs-renovate-presets:dotnet_packages_LTS",
 		"github>microsoft/vs-renovate-presets:xunitv2"
 	],
 	"packageRules": [
