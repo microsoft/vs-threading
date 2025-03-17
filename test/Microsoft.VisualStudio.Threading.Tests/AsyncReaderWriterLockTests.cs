@@ -4228,7 +4228,7 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
             lck.SetLockData(null);
             Assert.Null(lck.GetLockData());
 
-            var value1 = new object();
+            object value1 = new object();
             lck.SetLockData(value1);
             Assert.Equal(value1, lck.GetLockData());
 
@@ -4236,7 +4236,7 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
             {
                 Assert.Null(lck.GetLockData());
 
-                var value2 = new object();
+                object value2 = new object();
                 lck.SetLockData(value2);
                 Assert.Equal(value2, lck.GetLockData());
             }

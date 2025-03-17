@@ -78,7 +78,7 @@ public class AsyncSemaphoreTests : TestBase
         // The second wave cannot enter the semaphore until space is available.
         for (int i = 0; i < initialCount; i++)
         {
-            var nextContestedIndex = initialCount + i;
+            int nextContestedIndex = initialCount + i;
             releasers[nextContestedIndex] = this.lck.EnterAsync();
             Assert.False(releasers[nextContestedIndex].IsCompleted);
             releasers[i].Result.Dispose(); // exit the semaphore with a previously assigned one.
@@ -108,7 +108,7 @@ public class AsyncSemaphoreTests : TestBase
         // The second wave cannot enter the semaphore until space is available.
         for (int i = 0; i < initialCount; i++)
         {
-            var nextContestedIndex = initialCount + i;
+            int nextContestedIndex = initialCount + i;
             releasers[nextContestedIndex] = this.lck.EnterAsync();
             Assert.False(releasers[nextContestedIndex].IsCompleted);
         }

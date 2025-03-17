@@ -78,7 +78,7 @@ internal static class InternalUtilities
 
         do
         {
-            var state = GetStateMachineFieldValueOnSuffix(stateMachine, "__state");
+            object? state = GetStateMachineFieldValueOnSuffix(stateMachine, "__state");
             yield return string.Format(
                 CultureInfo.CurrentCulture,
                 "{2}{0} (state: {1}, address: 0x{3:X8})",
@@ -194,13 +194,13 @@ internal static class InternalUtilities
     {
         Requires.NotNull(stateMachine, nameof(stateMachine));
 
-        var builder = GetStateMachineFieldValueOnSuffix(stateMachine, "__builder");
+        object? builder = GetStateMachineFieldValueOnSuffix(stateMachine, "__builder");
         if (builder is null)
         {
             yield break;
         }
 
-        var task = GetFieldValue(builder, "m_task");
+        object? task = GetFieldValue(builder, "m_task");
         if (task is null)
         {
             // Probably this builder is an instance of "AsyncTaskMethodBuilder", so we need to get its inner "AsyncTaskMethodBuilder<VoidTaskResult>"
@@ -224,7 +224,7 @@ internal static class InternalUtilities
             yield break;
         }
 
-        var continuationObject = continuationField.GetValue(task);
+        object? continuationObject = continuationField.GetValue(task);
         if (continuationObject is null)
         {
             yield break;
@@ -232,7 +232,7 @@ internal static class InternalUtilities
 
         if (continuationObject is IEnumerable items)
         {
-            foreach (var item in items)
+            foreach (object? item in items)
             {
                 Delegate? action = item as Delegate ?? GetFieldValue(item!, "m_action") as Delegate;
                 if (action is object)
