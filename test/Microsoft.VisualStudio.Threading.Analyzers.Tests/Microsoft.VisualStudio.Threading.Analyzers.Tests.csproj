@@ -34,7 +34,7 @@
     <PackageReference Include="Xunit.SkippableFact" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="..\..\src\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\build\AdditionalFiles\**"
+    <EmbeddedResource Include="..\..\src\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\buildTransitive\AdditionalFiles\**"
       LinkBase="BuiltIn.AdditionalFiles">
       <LogicalName>AdditionalFiles.%(FileName)%(Extension)</LogicalName>
     </EmbeddedResource>
