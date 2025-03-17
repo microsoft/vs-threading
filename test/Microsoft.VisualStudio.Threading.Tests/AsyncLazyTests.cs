@@ -390,7 +390,7 @@ public class AsyncLazyTests : TestBase
     public async Task ToStringForCreatedValue()
     {
         var lazy = new AsyncLazy<int>(() => Task.FromResult<int>(3));
-        var value = await lazy.GetValueAsync();
+        int value = await lazy.GetValueAsync();
         string result = lazy.ToString();
         Assert.Equal(value.ToString(CultureInfo.InvariantCulture), result);
     }
@@ -485,7 +485,7 @@ public class AsyncLazyTests : TestBase
             // the Main thread waiting for it to complete.
             // This will deadlock unless the AsyncLazy joins
             // the value factory's async pump with the currently blocking one.
-            var value = await lazy.GetValueAsync();
+            object value = await lazy.GetValueAsync();
             Assert.NotNull(value);
         });
 
@@ -523,7 +523,7 @@ public class AsyncLazyTests : TestBase
             },
             passJtfToLazyCtor ? asyncPump : null); // mix it up to exercise all the code paths in the ctor.
 
-        var backgroundRequest = Task.Run(async delegate
+        Task<object> backgroundRequest = Task.Run(async delegate
         {
             return await lazy.GetValueAsync();
         });
@@ -532,7 +532,7 @@ public class AsyncLazyTests : TestBase
         Task<object>? foregroundRequest = lazy.GetValueAsync();
 
         SingleThreadedTestSynchronizationContext.IFrame? frame = SingleThreadedTestSynchronizationContext.NewFrame();
-        var combinedTask = Task.WhenAll(foregroundRequest, backgroundRequest);
+        Task<object[]> combinedTask = Task.WhenAll(foregroundRequest, backgroundRequest);
         combinedTask.WithTimeout(UnexpectedTimeout).ContinueWith(_ => frame.Continue = false, TaskScheduler.Default);
         SingleThreadedTestSynchronizationContext.PushFrame(ctxt, frame);
 
@@ -571,7 +571,7 @@ public class AsyncLazyTests : TestBase
             },
             asyncPump);
 
-        var backgroundRequest = Task.Run(async delegate
+        Task<object> backgroundRequest = Task.Run(async delegate
         {
             return await lazy.GetValueAsync();
         });
@@ -579,8 +579,8 @@ public class AsyncLazyTests : TestBase
         Thread.Sleep(AsyncDelay); // Give the background thread time to call GetValueAsync(), but it doesn't yield (when the test was written).
         asyncPump.Run(async delegate
         {
-            var foregroundValue = await lazy.GetValueAsync(this.TimeoutToken);
-            var backgroundValue = await backgroundRequest;
+            object foregroundValue = await lazy.GetValueAsync(this.TimeoutToken);
+            object backgroundValue = await backgroundRequest;
             Assert.Same(foregroundValue, backgroundValue);
         });
     }
@@ -614,14 +614,14 @@ public class AsyncLazyTests : TestBase
             },
             asyncPump);
 
-        var backgroundRequest = Task.Run(async delegate
+        Task<object> backgroundRequest = Task.Run(async delegate
         {
             return await lazy.GetValueAsync();
         });
 
         Thread.Sleep(AsyncDelay); // Give the background thread time to call GetValueAsync(), but it doesn't yield (when the test was written).
-        var foregroundValue = lazy.GetValue(this.TimeoutToken);
-        var backgroundValue = asyncPump.Run(() => backgroundRequest);
+        object foregroundValue = lazy.GetValue(this.TimeoutToken);
+        object backgroundValue = asyncPump.Run(() => backgroundRequest);
         Assert.Same(foregroundValue, backgroundValue);
     }
 

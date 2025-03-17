@@ -69,7 +69,7 @@ public class JoinableTaskContextTests : JoinableTaskTestBase
                 {
                     Tuple<TimeSpan, int, Guid>? tuple = await hangQueue.DequeueAsync(ct);
                     TimeSpan duration = tuple.Item1;
-                    var iterations = tuple.Item2;
+                    int iterations = tuple.Item2;
                     Guid id = tuple.Item3;
                     Assert.True(lastDuration == TimeSpan.Zero || lastDuration < duration);
                     Assert.Equal(lastIteration + 1, iterations);

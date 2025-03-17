@@ -1,63 +1,13 @@
 {
 	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
-	"extends": ["config:recommended"],
-	"semanticCommits": "disabled",
-	"labels": ["dependencies"],
+	"extends": [
+		"github>microsoft/vs-renovate-presets:microbuild",
+		"github>microsoft/vs-renovate-presets:vs_main_dependencies",
+		"github>microsoft/vs-renovate-presets:xunitv2"
+	],
 	"packageRules": [
 		{
-			"matchPackageNames": ["nbgv", "nerdbank.gitversioning"],
-			"groupName": "nbgv and nerdbank.gitversioning updates"
-		},
-		{
-			"matchPackageNames": ["xunit*"],
-			"groupName": "xunit"
-		},
-		{
-			"matchPackageNames": ["xunit.runner.visualstudio"],
-			"allowedVersions": "<3.0"
-		},
-		{
-			"matchPackageNames": ["xunit.combinatorial"],
-			"allowedVersions": "<2.0"
-		},
-		{
-			"matchDatasources": ["dotnet-version", "docker"],
-			"matchDepNames": ["dotnet-sdk", "mcr.microsoft.com/dotnet/sdk"],
-			"groupName": "Dockerfile and global.json updates"
-		},
-		{
-			"matchPackageNames": ["*"],
-			"allowedVersions": "!/-g[a-f0-9]+$/"
-		},
-		{
-			"matchPackageNames": [
-				"System.Collections.Immutable",
-				"System.Composition*",
-				"System.Diagnostics.DiagnosticSource",
-				"System.IO.Pipelines",
-				"System.Reflection.Metadata",
-				"System.Text.Json",
-				"System.Threading.Tasks.Dataflow",
-				"Microsoft.Bcl.AsyncInterfaces"
-			],
-			"allowedVersions": "<9.0",
-			"groupName": "Included in .NET runtime"
-		},
-		{
-			"matchPackageNames": ["Microsoft.VisualStudio.Internal.MicroBuild*"],
-			"groupName": "microbuild"
-		},
-		{
-			"matchPackageNames": ["Microsoft.VisualStudio.*"],
-			"groupName": "Visual Studio SDK"
-		},
-		{
-			"matchPackageNames": ["Microsoft.VisualStudio.*"],
-			"matchUpdateTypes": ["patch"],
-			"enabled": false
-		},
-		{
-			"matchJsonata": [ "sharedVariableName='CodeAnalysisVersion'" ],
+			"matchJsonata": ["sharedVariableName='CodeAnalysisVersion'"],
 			"enabled": false
 		}
 	],
@@ -65,8 +15,12 @@
 		{
 			"customType": "regex",
 			"datasourceTemplate": "nuget",
-			"fileMatch": ["test/Microsoft.VisualStudio.Threading.Analyzers.Tests/Helpers/ReferencesHelper.cs"],
-			"matchStrings": ["PackageIdentity\\(\"(?<packageName>[^\"]+)\", \"(?<currentValue>[^\"]+)\"\\)"]
+			"fileMatch": [
+				"test/Microsoft.VisualStudio.Threading.Analyzers.Tests/Helpers/ReferencesHelper.cs"
+			],
+			"matchStrings": [
+				"PackageIdentity\\(\"(?<packageName>[^\"]+)\", \"(?<currentValue>[^\"]+)\"\\)"
+			]
 		}
 	]
 }

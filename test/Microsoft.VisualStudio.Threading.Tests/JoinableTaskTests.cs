@@ -48,7 +48,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
     [Fact]
     public void LeaveAndReturnToMainThread()
     {
-        var fullyCompleted = false;
+        bool fullyCompleted = false;
         this.asyncPump.Run(async delegate
         {
             Assert.Equal(this.originalThreadManagedId, Environment.CurrentManagedThreadId);
@@ -238,7 +238,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
         Exception? delegateFailure = null;
 
         var asyncLocal = new System.Threading.AsyncLocal<object>();
-        var asyncLocalValue = new object();
+        object asyncLocalValue = new object();
 
         // The point of this test is to verify that the transitioning/transitioned
         // methods on the JoinableTaskFactory can see into the AsyncLocal<T>.Value
@@ -2235,7 +2235,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
         }).Result;
 
         Assert.False(joinable.Task.IsCompleted);
-        var result = joinable.Join();
+        int result = joinable.Join();
         Assert.Equal<int>(5, result);
         Assert.True(taskFinished);
         Assert.True(joinable.Task.IsCompleted);
@@ -2631,7 +2631,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
     public void JoinWorkStealingRetainsThreadAffinityBackground()
     {
         bool synchronousCompletionStarting = false;
-        var asyncTask = Task.Run(delegate
+        Task<JoinableTask> asyncTask = Task.Run(delegate
         {
             return this.asyncPump.RunAsync(async delegate
             {
@@ -4006,7 +4006,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
     public void IsCompletedTrueDoesNotLock()
     {
         using var context = new JoinableTaskContext();
-        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(context)!;
+        object syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(context)!;
         Assert.NotNull(syncContextLock);
 
         JoinableTask joinableTask = context.Factory.RunAsync(() => Task.CompletedTask);
@@ -4038,7 +4038,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
     public void JoinCompletedDoesNotLock()
     {
         using var context = new JoinableTaskContext();
-        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(context)!;
+        object syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(context)!;
         Assert.NotNull(syncContextLock);
 
         JoinableTask joinableTask = context.Factory.RunAsync(() => Task.CompletedTask);
@@ -4070,7 +4070,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
     public void JoinAsyncCompletedDoesNotLock()
     {
         using var context = new JoinableTaskContext();
-        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(context)!;
+        object syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(context)!;
         Assert.NotNull(syncContextLock);
 
         JoinableTask joinableTask = context.Factory.RunAsync(() => Task.CompletedTask);
@@ -4106,7 +4106,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
     public void GetAwaiterCompletedDoesNotLock()
     {
         using var context = new JoinableTaskContext();
-        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(context)!;
+        object syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(context)!;
         Assert.NotNull(syncContextLock);
 
         JoinableTask joinableTask = context.Factory.RunAsync(() => Task.CompletedTask);
@@ -4140,7 +4140,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
     public void JoinCompletedTDoesNotLock()
     {
         using var context = new JoinableTaskContext();
-        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(context)!;
+        object syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(context)!;
         Assert.NotNull(syncContextLock);
 
         JoinableTask<int> joinableTask = context.Factory.RunAsync(() => Task.FromResult(0));
@@ -4172,7 +4172,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
     public void JoinAsyncCompletedTDoesNotLock()
     {
         using var context = new JoinableTaskContext();
-        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(context)!;
+        object syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(context)!;
         Assert.NotNull(syncContextLock);
 
         JoinableTask<int> joinableTask = context.Factory.RunAsync(() => Task.FromResult(0));
@@ -4210,7 +4210,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
     public void GetAwaiterCompletedTDoesNotLock()
     {
         using var context = new JoinableTaskContext();
-        var syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(context)!;
+        object syncContextLock = typeof(JoinableTaskContext).GetProperty("SyncContextLock", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(context)!;
         Assert.NotNull(syncContextLock);
 
         JoinableTask<int> joinableTask = context.Factory.RunAsync(() => Task.FromResult(0));
@@ -4520,7 +4520,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
 
     private void RunFuncOfTaskHelper()
     {
-        var initialThread = Environment.CurrentManagedThreadId;
+        int initialThread = Environment.CurrentManagedThreadId;
         this.asyncPump.Run(async delegate
         {
             Assert.Equal(initialThread, Environment.CurrentManagedThreadId);
@@ -4531,7 +4531,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
 
     private void RunFuncOfTaskOfTHelper()
     {
-        var initialThread = Environment.CurrentManagedThreadId;
+        int initialThread = Environment.CurrentManagedThreadId;
         var expectedResult = new GenericParameterHelper();
         GenericParameterHelper actualResult = this.asyncPump.Run(async delegate
         {
