@@ -8,7 +8,6 @@
     <CodeAnalysisVersion>3.11.0</CodeAnalysisVersion>
     <CodeAnalysisVersionForTests>4.13.0</CodeAnalysisVersionForTests>
     <CodefixTestingVersion>1.1.2</CodefixTestingVersion>
-    <MicrosoftDiagnosticsRuntimeVersion>3.0.442202</MicrosoftDiagnosticsRuntimeVersion>
     <CodeAnalysisAnalyzerVersion>3.11.0-beta1.24527.2</CodeAnalysisAnalyzerVersion>
   </PropertyGroup>
   <ItemGroup>
@@ -24,8 +23,8 @@
     <PackageVersion Include="Microsoft.CodeAnalysis.VisualBasic" Version="$(CodeAnalysisVersion)" />
     <PackageVersion Include="Microsoft.CodeAnalysis.VisualBasic.CodeFix.Testing" Version="$(CodefixTestingVersion)" />
     <PackageVersion Include="Microsoft.CodeAnalysis.VisualBasic.CodeFix.Testing.XUnit" Version="$(CodefixTestingVersion)" />
-    <PackageVersion Include="Microsoft.Diagnostics.Runtime.Utilities" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
-    <PackageVersion Include="Microsoft.Diagnostics.Runtime" Version="$(MicrosoftDiagnosticsRuntimeVersion)" />
+    <PackageVersion Include="Microsoft.Diagnostics.Runtime.Utilities" Version="3.0.442202" />
+    <PackageVersion Include="Microsoft.Diagnostics.Runtime" Version="3.1.512801" />
     <PackageVersion Include="Microsoft.VisualStudio.Interop" Version="17.12.40391" />
     <PackageVersion Include="Microsoft.VisualStudio.Shell.15.0" Version="17.12.40392" />
     <PackageVersion Include="Microsoft.VisualStudio.Shell.Framework" Version="17.12.40391" />
