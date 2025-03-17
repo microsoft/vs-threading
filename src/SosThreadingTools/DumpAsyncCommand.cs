@@ -35,7 +35,7 @@ internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
 
             ChainStateMachinesBasedOnTaskContinuations(knownStateMachines);
             ChainStateMachinesBasedOnJointableTasks(allStateMachines);
-            this.MarkThreadingBlockTasks(allStateMachines);
+            this.MarkThreadingBlockTasks(heap, allStateMachines);
             MarkUIThreadDependingTasks(allStateMachines);
             FixBrokenDependencies(allStateMachines);
 
@@ -348,7 +348,7 @@ internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
         }
     }
 
-    private void MarkThreadingBlockTasks(List<AsyncStateMachine> allStateMachines)
+    private void MarkThreadingBlockTasks(ClrHeap heap, List<AsyncStateMachine> allStateMachines)
     {
         foreach (ClrRuntime runtime in this.Runtimes)
         {
@@ -365,12 +365,13 @@ internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
                     foreach (ClrStackRoot stackRoot in thread.EnumerateStackRoots())
                     {
                         ClrObject stackObject = stackRoot.Object;
-                        if (string.Equals(stackObject.Type?.Name, "Microsoft.VisualStudio.Threading.JoinableTask", StringComparison.Ordinal) ||
-                            string.Equals(stackObject.Type?.BaseType?.Name, "Microsoft.VisualStudio.Threading.JoinableTask", StringComparison.Ordinal))
+                        if (stackObject.Type is not null &&
+                            (string.Equals(stackObject.Type.Name, "Microsoft.VisualStudio.Threading.JoinableTask", StringComparison.Ordinal) ||
+                            string.Equals(stackObject.Type.BaseType?.Name, "Microsoft.VisualStudio.Threading.JoinableTask", StringComparison.Ordinal)))
                         {
                             if (visitedObjects.Add(stackObject.Address))
                             {
-                                var joinableTaskObject = new ClrObject(stackObject.Address, stackObject.Type);
+                                ClrObject joinableTaskObject = heap.GetObject(stackObject.Address, stackObject.Type);
                                 int state = joinableTaskObject.ReadField<int>("state");
                                 if ((state & 0x10) == 0x10)
                                 {
