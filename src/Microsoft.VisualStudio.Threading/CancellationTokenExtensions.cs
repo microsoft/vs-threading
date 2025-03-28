@@ -115,6 +115,11 @@ public static class CancellationTokenExtensions
                 // Before this point we've checked every condition that would allow us to avoid it.
                 var cancelableTokens = new CancellationToken[cancelableTokensCount];
                 int i = 0;
+                if (original.CanBeCanceled)
+                {
+                    cancelableTokens[i++] = original;
+                }
+
                 foreach (CancellationToken other in others)
                 {
                     if (other.CanBeCanceled)
