@@ -1,11 +1,6 @@
 Cookbook for Visual Studio
 ==========================
 
-Important for CPS extension authors and clients: please
-replace all references to `ThreadHelper.JoinableTaskFactory` with
-`this.ThreadHandling.AsyncPump`, where `this.ThreadHandling` is an `[Import]
-IThreadHandling`.
-
 ## Initial setup
 
 - Add a reference to [Microsoft.VisualStudio.Threading][NuPkg].
