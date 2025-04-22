@@ -1058,7 +1058,9 @@ public partial class JoinableTaskFactory
     /// A delegate wrapper that ensures the delegate is only invoked at most once.
     /// </summary>
     [DebuggerDisplay("{DelegateLabel}")]
+#pragma warning disable VSOnly // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
     internal class SingleExecuteProtector : IPendingExecutionRequestState
+#pragma warning restore VSOnly // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
     {
         /// <summary>
         /// Executes the delegate if it has not already executed.
