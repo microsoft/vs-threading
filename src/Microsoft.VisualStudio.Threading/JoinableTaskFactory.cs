@@ -1058,7 +1058,9 @@ public partial class JoinableTaskFactory
     /// A delegate wrapper that ensures the delegate is only invoked at most once.
     /// </summary>
     [DebuggerDisplay("{DelegateLabel}")]
-    internal class SingleExecuteProtector
+#pragma warning disable VSOnly // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+    internal class SingleExecuteProtector : IPendingExecutionRequestState
+#pragma warning restore VSOnly // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
     {
         /// <summary>
         /// Executes the delegate if it has not already executed.
@@ -1111,6 +1113,11 @@ public partial class JoinableTaskFactory
             Requires.NotNull(job, nameof(job));
             this.job = job;
         }
+
+        /// <summary>
+        /// Gets a value indicating whether the current request has been completed, and can be skipped.
+        /// </summary>
+        bool IPendingExecutionRequestState.IsCompleted => this.HasBeenExecuted;
 
         /// <summary>
         /// Gets a value indicating whether this instance has already executed.
