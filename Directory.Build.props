@@ -35,6 +35,11 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <LangVersion Condition="'$(MSBuildProjectExtension)'=='.csproj'">13</LangVersion>
+    <LangVersion Condition="'$(MSBuildProjectExtension)'=='.vbproj'">16.9</LangVersion>
+  </PropertyGroup>
+
   <ItemGroup>
     <None Include="$(RepoRootPath)obj/NOTICE" Pack="true" PackagePath="" Visible="false" Condition=" Exists('$(RepoRootPath)obj/NOTICE') " />
   </ItemGroup>
@@ -53,4 +58,6 @@
       <PackageReleaseNotes Condition="'$(RepositoryUrl)'!=''">$(RepositoryUrl)/releases/tag/v$(Version)</PackageReleaseNotes>
     </PropertyGroup>
   </Target>
+
+  <Import Project="azure-pipelines\NuGetSbom.props" />
 </Project>
