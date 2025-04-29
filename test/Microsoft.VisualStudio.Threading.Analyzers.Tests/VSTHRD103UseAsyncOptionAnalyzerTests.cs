@@ -1339,6 +1339,30 @@ class Test {
         await CSVerify.VerifyAnalyzerAsync(test);
     }
 
+    [Fact]
+    public async Task DoNotRaiseForDistinctSyncMethod()
+    {
+        string test = @"
+using System.Threading.Tasks;
+
+class SomeClass {
+    Task Method(){
+        Bar(10, 11);
+        return Task.CompletedTask;
+    }
+
+    Task<int> Foo() => Task.FromResult(11);
+    async Task<int> BarAsync(int id) {
+        var number = await Foo();
+        return Bar(id, number);
+    }
+    int Bar(int id, int number) => id * number;
+}
+";
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
     private DiagnosticResult CreateDiagnostic(int line, int column, int length, string methodName)
         => CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithSpan(line, column, line, column + length).WithArguments(methodName);
 
