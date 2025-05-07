@@ -16,7 +16,7 @@
 		{
 			"customType": "regex",
 			"datasourceTemplate": "nuget",
-			"fileMatch": [
+			"managerFilePatterns": [
 				"test/Microsoft.VisualStudio.Threading.Analyzers.Tests/Helpers/ReferencesHelper.cs"
 			],
 			"matchStrings": [
