@@ -17,7 +17,7 @@
 			"customType": "regex",
 			"datasourceTemplate": "nuget",
 			"managerFilePatterns": [
-				"/test/Microsoft.VisualStudio.Threading.Analyzers.Tests/Helpers/ReferencesHelper.cs/"
+				"test/Microsoft.VisualStudio.Threading.Analyzers.Tests/Helpers/ReferencesHelper.cs"
 			],
 			"matchStrings": [
 				"PackageIdentity\\(\"(?<packageName>[^\"]+)\", \"(?<currentValue>[^\"]+)\"\\)"
