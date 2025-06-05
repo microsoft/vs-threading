@@ -153,7 +153,8 @@ public abstract class ReentrantSemaphore : IDisposable
     /// </param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A task that completes with the result of <paramref name="operation"/>, after the semaphore has been exited.</returns>
-    public abstract Task ExecuteAsync(Func<Task> operation, CancellationToken cancellationToken = default);
+    public Task ExecuteAsync(Func<Task> operation, CancellationToken cancellationToken = default)
+        => this.ExecuteAsync(operation, null, cancellationToken);
 
     /// <summary>
     /// Executes a given operation within the semaphore.
@@ -167,7 +168,37 @@ public abstract class ReentrantSemaphore : IDisposable
     /// </param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A task that completes with the result of <paramref name="operation"/>, after the semaphore has been exited.</returns>
-    public abstract ValueTask<T> ExecuteAsync<T>(Func<ValueTask<T>> operation, CancellationToken cancellationToken = default);
+    public ValueTask<T> ExecuteAsync<T>(Func<ValueTask<T>> operation, CancellationToken cancellationToken = default)
+        => this.ExecuteValueTaskAsync<T>(operation, null, cancellationToken);
+
+    /// <summary>
+    /// Executes a given operation within the semaphore.
+    /// </summary>
+    /// <param name="operation">
+    /// The delegate to invoke once the semaphore is entered. If a <see cref="JoinableTaskContext"/> was supplied to the constructor,
+    /// this delegate will execute on the main thread if this is invoked on the main thread, otherwise it will be invoked on the
+    /// threadpool. When no <see cref="JoinableTaskContext"/> is supplied to the constructor, this delegate will execute on the
+    /// caller's context.
+    /// </param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A task that completes with the result of <paramref name="operation"/>, after the semaphore has been exited.</returns>
+    public Task ExecuteAsync(Func<object?, Task> operation, object? state, CancellationToken cancellationToken = default)
+        => this.ExecuteAsync((object)operation, state, cancellationToken);
+
+    /// <summary>
+    /// Executes a given operation within the semaphore.
+    /// </summary>
+    /// <typeparam name="T">The type of value returned by the operation.</typeparam>
+    /// <param name="operation">
+    /// The delegate to invoke once the semaphore is entered. If a <see cref="JoinableTaskContext"/> was supplied to the constructor,
+    /// this delegate will execute on the main thread if this is invoked on the main thread, otherwise it will be invoked on the
+    /// threadpool. When no <see cref="JoinableTaskContext"/> is supplied to the constructor, this delegate will execute on the
+    /// caller's context.
+    /// </param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A task that completes with the result of <paramref name="operation"/>, after the semaphore has been exited.</returns>
+    public ValueTask<T> ExecuteAsync<T>(Func<object?, ValueTask<T>> operation, object? state, CancellationToken cancellationToken = default)
+        => this.ExecuteValueTaskAsync<T>(operation, state, cancellationToken);
 
     /// <summary>
     /// Conceals evidence that the caller has entered this <see cref="ReentrantSemaphore"/> till its result is disposed.
@@ -190,6 +221,33 @@ public abstract class ReentrantSemaphore : IDisposable
         this.Dispose(true);
         GC.SuppressFinalize(this);
     }
+
+    /// <summary>
+    /// Executes a given operation within the semaphore.
+    /// </summary>
+    /// <param name="operation">
+    /// The delegate to invoke once the semaphore is entered. If a <see cref="JoinableTaskContext"/> was supplied to the constructor,
+    /// this delegate will execute on the main thread if this is invoked on the main thread, otherwise it will be invoked on the
+    /// threadpool. When no <see cref="JoinableTaskContext"/> is supplied to the constructor, this delegate will execute on the
+    /// caller's context.
+    /// </param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A task that completes with the result of <paramref name="operation"/>, after the semaphore has been exited.</returns>
+    private protected abstract Task ExecuteAsync(object operation, object? state, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Executes a given operation within the semaphore.
+    /// </summary>
+    /// <typeparam name="T">The type of value returned by the operation.</typeparam>
+    /// <param name="operation">
+    /// The delegate to invoke once the semaphore is entered. If a <see cref="JoinableTaskContext"/> was supplied to the constructor,
+    /// this delegate will execute on the main thread if this is invoked on the main thread, otherwise it will be invoked on the
+    /// threadpool. When no <see cref="JoinableTaskContext"/> is supplied to the constructor, this delegate will execute on the
+    /// caller's context.
+    /// </param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>A task that completes with the result of <paramref name="operation"/>, after the semaphore has been exited.</returns>
+    private protected abstract ValueTask<T> ExecuteValueTaskAsync<T>(object operation, object? state, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Disposes managed and unmanaged resources held by this instance.
@@ -317,7 +375,7 @@ public abstract class ReentrantSemaphore : IDisposable
         }
 
         /// <inheritdoc />
-        public override async Task ExecuteAsync(Func<Task> operation, CancellationToken cancellationToken = default)
+        private protected override async Task ExecuteAsync(object operation, object? state, CancellationToken cancellationToken = default)
         {
             Requires.NotNull(operation, nameof(operation));
 
@@ -371,7 +429,14 @@ public abstract class ReentrantSemaphore : IDisposable
                         }
                     }
 
-                    await operation().ConfigureAwaitRunInline();
+                    if (operation is Func<Task> func)
+                    {
+                        await func().ConfigureAwaitRunInline();
+                    }
+                    else
+                    {
+                        await ((Func<object?, Task>)operation)(state).ConfigureAwaitRunInline();
+                    }
                 });
             }
             finally
@@ -381,7 +446,7 @@ public abstract class ReentrantSemaphore : IDisposable
         }
 
         /// <inheritdoc />
-        public override async ValueTask<T> ExecuteAsync<T>(Func<ValueTask<T>> operation, CancellationToken cancellationToken = default)
+        private protected override async ValueTask<T> ExecuteValueTaskAsync<T>(object operation, object? state, CancellationToken cancellationToken = default)
         {
             Requires.NotNull(operation, nameof(operation));
 
@@ -432,7 +497,14 @@ public abstract class ReentrantSemaphore : IDisposable
                         }
                     }
 
-                    return await operation().ConfigureAwait(true);
+                    if (operation is Func<ValueTask<T>> func)
+                    {
+                        return await func().ConfigureAwait(true);
+                    }
+                    else
+                    {
+                        return await ((Func<object?, ValueTask<T>>)operation)(state).ConfigureAwait(true);
+                    }
                 });
             }
             finally
@@ -470,7 +542,7 @@ public abstract class ReentrantSemaphore : IDisposable
         }
 
         /// <inheritdoc />
-        public override async Task ExecuteAsync(Func<Task> operation, CancellationToken cancellationToken = default)
+        private protected override async Task ExecuteAsync(object operation, object? state, CancellationToken cancellationToken = default)
         {
             Requires.NotNull(operation, nameof(operation));
             this.ThrowIfFaulted();
@@ -529,7 +601,15 @@ public abstract class ReentrantSemaphore : IDisposable
                     }
 
                     this.reentrancyDetection.Value = ownedBox = new StrongBox<bool>(true);
-                    await operation().ConfigureAwaitRunInline();
+
+                    if (operation is Func<Task> func)
+                    {
+                        await func().ConfigureAwaitRunInline();
+                    }
+                    else
+                    {
+                        await ((Func<object?, Task>)operation)(state).ConfigureAwaitRunInline();
+                    }
                 });
             }
             finally
@@ -546,7 +626,7 @@ public abstract class ReentrantSemaphore : IDisposable
         }
 
         /// <inheritdoc />
-        public override async ValueTask<T> ExecuteAsync<T>(Func<ValueTask<T>> operation, CancellationToken cancellationToken = default)
+        private protected override async ValueTask<T> ExecuteValueTaskAsync<T>(object operation, object? state, CancellationToken cancellationToken = default)
         {
             Requires.NotNull(operation, nameof(operation));
             this.ThrowIfFaulted();
@@ -604,7 +684,15 @@ public abstract class ReentrantSemaphore : IDisposable
                     }
 
                     this.reentrancyDetection.Value = ownedBox = new StrongBox<bool>(true);
-                    return await operation().ConfigureAwait(true);
+
+                    if (operation is Func<ValueTask<T>> func)
+                    {
+                        return await func().ConfigureAwait(true);
+                    }
+                    else
+                    {
+                        return await ((Func<object?, ValueTask<T>>)operation)(state).ConfigureAwait(true);
+                    }
                 });
             }
             finally
