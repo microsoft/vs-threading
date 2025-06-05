@@ -26,14 +26,14 @@ public static class CommonInterest
     public static readonly Regex FileNamePatternForMethodsThatAssertMainThread = new Regex(@"^vs-threading\.MainThreadAssertingMethods(\..*)?.txt$", FileNamePatternRegexOptions);
     public static readonly Regex FileNamePatternForMethodsThatSwitchToMainThread = new Regex(@"^vs-threading\.MainThreadSwitchingMethods(\..*)?.txt$", FileNamePatternRegexOptions);
 
-    public static readonly IEnumerable<SyncBlockingMethod> JTFSyncBlockers = new[]
-    {
+    public static readonly IEnumerable<SyncBlockingMethod> JTFSyncBlockers =
+    [
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.MicrosoftVisualStudioThreading, Types.JoinableTaskFactory.TypeName), Types.JoinableTaskFactory.Run), Types.JoinableTaskFactory.RunAsync),
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.MicrosoftVisualStudioThreading, Types.JoinableTask.TypeName), Types.JoinableTask.Join), Types.JoinableTask.JoinAsync),
-    };
+    ];
 
-    public static readonly IEnumerable<SyncBlockingMethod> ProblematicSyncBlockingMethods = new[]
-    {
+    public static readonly IEnumerable<SyncBlockingMethod> ProblematicSyncBlockingMethods =
+    [
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemThreadingTasks, nameof(Task)), nameof(Task.Wait)), null),
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemThreadingTasks, nameof(Task)), nameof(Task.WaitAll)), null),
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemThreadingTasks, nameof(Task)), nameof(Task.WaitAny)), null),
@@ -41,24 +41,24 @@ public static class CommonInterest
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemRuntimeCompilerServices, nameof(TaskAwaiter)), nameof(TaskAwaiter.GetResult)), null),
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemRuntimeCompilerServices, nameof(ValueTaskAwaiter)), nameof(ValueTaskAwaiter.GetResult)), null),
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemRuntimeCompilerServices, nameof(ConfiguredValueTaskAwaitable.ConfiguredValueTaskAwaiter)), nameof(ConfiguredValueTaskAwaitable.ConfiguredValueTaskAwaiter.GetResult)), null),
-    };
+    ];
 
-    public static readonly IEnumerable<SyncBlockingMethod> SyncBlockingMethods = JTFSyncBlockers.Concat(ProblematicSyncBlockingMethods).Concat(new[]
-    {
+    public static readonly IEnumerable<SyncBlockingMethod> SyncBlockingMethods = JTFSyncBlockers.Concat(ProblematicSyncBlockingMethods).Concat(
+    [
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.MicrosoftVisualStudioShellInterop, "IVsTask"), "Wait"), extensionMethodNamespace: Namespaces.MicrosoftVisualStudioShell),
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.MicrosoftVisualStudioShellInterop, "IVsTask"), "GetResult"), extensionMethodNamespace: Namespaces.MicrosoftVisualStudioShell),
-    });
+    ]);
 
-    public static readonly IReadOnlyList<SyncBlockingMethod> SyncBlockingProperties = new[]
-    {
+    public static readonly ImmutableArray<SyncBlockingMethod> SyncBlockingProperties =
+    [
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemThreadingTasks, nameof(Task)), nameof(Task<int>.Result)), null),
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemThreadingTasks, nameof(ValueTask)), nameof(ValueTask<int>.Result)), null),
-    };
+    ];
 
-    public static readonly IEnumerable<QualifiedMember> ThreadAffinityTestingMethods = new[]
-    {
+    public static readonly IEnumerable<QualifiedMember> ThreadAffinityTestingMethods =
+    [
         new QualifiedMember(new QualifiedType(Namespaces.MicrosoftVisualStudioShell, Types.ThreadHelper.TypeName), Types.ThreadHelper.CheckAccess),
-    };
+    ];
 
     public static readonly ImmutableArray<QualifiedMember> TaskConfigureAwait = ImmutableArray.Create(
         new QualifiedMember(new QualifiedType(Types.Task.Namespace, Types.Task.TypeName), nameof(Task.ConfigureAwait)),
@@ -77,7 +77,7 @@ public static class CommonInterest
     /// <summary>
     /// An array with '.' as its only element.
     /// </summary>
-    private static readonly char[] QualifiedIdentifierSeparators = new[] { '.' };
+    private static readonly char[] QualifiedIdentifierSeparators = ['.'];
 
     public static IEnumerable<QualifiedMember> ReadMethods(AnalyzerOptions analyzerOptions, Regex fileNamePattern, CancellationToken cancellationToken)
     {
@@ -421,7 +421,7 @@ public static class CommonInterest
         public QualifiedMember Member { get; }
 
         /// <summary>
-        /// Gets a value indicating whether a member match is reuqired.
+        /// Gets a value indicating whether a member match is required.
         /// </summary>
         public bool IsMember => this.Member.Name is object;
 
@@ -433,7 +433,7 @@ public static class CommonInterest
         /// <summary>
         /// Gets a value indicating whether this is an uninitialized (default) instance.
         /// </summary>
-        public bool IsEmpty => this.Type.Namespace is null;
+        public bool IsEmpty => this.Type.Name is null;
 
         /// <summary>
         /// Tests whether a given symbol matches the description of a type (independent of its <see cref="InvertedLogic"/> property).
@@ -466,13 +466,13 @@ public static class CommonInterest
 
     public readonly struct QualifiedType
     {
-        public QualifiedType(IReadOnlyList<string> containingTypeNamespace, string typeName)
+        public QualifiedType(ImmutableArray<string> containingTypeNamespace, string typeName)
         {
             this.Namespace = containingTypeNamespace;
             this.Name = typeName;
         }
 
-        public IReadOnlyList<string> Namespace { get; }
+        public ImmutableArray<string> Namespace { get; }
 
         public string Name { get; }
 
@@ -482,7 +482,7 @@ public static class CommonInterest
                 && symbol.BelongsToNamespace(this.Namespace);
         }
 
-        public override string ToString() => string.Join(".", this.Namespace.Concat(new[] { this.Name }));
+        public override string ToString() => string.Join(".", this.Namespace.Concat([this.Name]));
     }
 
     public readonly struct QualifiedMember
@@ -509,7 +509,7 @@ public static class CommonInterest
     [DebuggerDisplay("{" + nameof(Method) + "} -> {" + nameof(AsyncAlternativeMethodName) + "}")]
     public readonly struct SyncBlockingMethod
     {
-        public SyncBlockingMethod(QualifiedMember method, string? asyncAlternativeMethodName = null, IReadOnlyList<string>? extensionMethodNamespace = null)
+        public SyncBlockingMethod(QualifiedMember method, string? asyncAlternativeMethodName = null, ImmutableArray<string>? extensionMethodNamespace = null)
         {
             this.Method = method;
             this.AsyncAlternativeMethodName = asyncAlternativeMethodName;
@@ -520,7 +520,7 @@ public static class CommonInterest
 
         public string? AsyncAlternativeMethodName { get; }
 
-        public IReadOnlyList<string>? ExtensionMethodNamespace { get; }
+        public ImmutableArray<string>? ExtensionMethodNamespace { get; }
     }
 
     public class AwaitableTypeTester
