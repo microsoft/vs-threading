@@ -611,4 +611,89 @@ public async ValueTask DisposeAsync()
 
         await CSVerify.VerifyAnalyzerAsync(test);
     }
+
+    [Fact]
+    public async Task MoqLikeScenario_ProducesNoDiagnostic()
+    {
+        string test = """
+            using System;
+            using System.Linq.Expressions;
+            using System.Threading.Tasks;
+
+            interface ILogger
+            {
+                Task InfoAsync(string message);
+            }
+
+            class Mock<T>
+            {
+                public void Verify(Expression<Func<T, Task>> expression, Times times, string message)
+                {
+                }
+            }
+
+            enum Times
+            {
+                Never
+            }
+
+            class Test
+            {
+                void TestMethod()
+                {
+                    var mock = new Mock<ILogger>();
+                    mock.Verify(x => x.InfoAsync("test"), Times.Never, "No Log should have been written");
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DirectTaskCall_StillProducesDiagnostic()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                void TestMethod()
+                {
+                    // This should still trigger VSTHRD110 - direct call not in expression
+                    [|TaskReturningMethod()|];
+                }
+
+                Task TaskReturningMethod() => Task.CompletedTask;
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task ExpressionAssignment_ProducesNoDiagnostic()
+    {
+        string test = """
+            using System;
+            using System.Linq.Expressions;
+            using System.Threading.Tasks;
+
+            interface ILogger
+            {
+                Task InfoAsync(string message);
+            }
+
+            class Test
+            {
+                void TestMethod()
+                {
+                    // Assignment to Expression<> variable should not trigger VSTHRD110
+                    Expression<Func<ILogger, Task>> expr = x => x.InfoAsync("test");
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 }

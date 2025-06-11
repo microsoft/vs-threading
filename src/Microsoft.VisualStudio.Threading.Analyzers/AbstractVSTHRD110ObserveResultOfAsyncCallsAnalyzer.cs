@@ -124,18 +124,33 @@ public abstract class AbstractVSTHRD110ObserveResultOfAsyncCallsAnalyzer : Diagn
     /// <returns>True if the lambda is being converted to an Expression; false otherwise.</returns>
     private static bool IsLambdaConvertedToExpression(IAnonymousFunctionOperation lambda)
     {
-        // Check if the lambda's parent is a conversion operation
-        if (lambda.Parent is IConversionOperation conversion)
+        // Walk up from the lambda to find conversion or argument operations
+        IOperation? current = lambda.Parent;
+        while (current is not null)
         {
-            // Check if the target type is Expression<> or a related expression tree type
-            return IsExpressionTreeType(conversion.Type);
-        }
+            // Check if the lambda's parent is a conversion operation
+            if (current is IConversionOperation conversion)
+            {
+                // Check if the target type is Expression<> or a related expression tree type
+                return IsExpressionTreeType(conversion.Type);
+            }
 
-        // Check if the lambda is being passed as an argument to a method expecting Expression<>
-        if (lambda.Parent is IArgumentOperation argument &&
-            argument.Parameter?.Type is INamedTypeSymbol parameterType)
-        {
-            return IsExpressionTreeType(parameterType);
+            // Check if the lambda is being passed as an argument to a method expecting Expression<>
+            if (current is IArgumentOperation argument &&
+                argument.Parameter?.Type is INamedTypeSymbol parameterType)
+            {
+                return IsExpressionTreeType(parameterType);
+            }
+
+            // Allow certain operations to be skipped (like parentheses)
+            if (current is IParenthesizedOperation)
+            {
+                current = current.Parent;
+                continue;
+            }
+
+            // Stop walking up at other operation types to avoid false positives
+            break;
         }
 
         return false;
