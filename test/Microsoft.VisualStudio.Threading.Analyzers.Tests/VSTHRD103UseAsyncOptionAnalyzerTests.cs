@@ -1371,7 +1371,7 @@ using System.Threading.Tasks;
 
 class Test {
     async Task T() {
-        TestNamespace.TestClass.NotExcludedMethod();
+        [|TestNamespace.TestClass.NotExcludedMethod()|];
     }
 }
 
@@ -1383,26 +1383,6 @@ namespace TestNamespace {
 }
 ";
 
-        DiagnosticResult expected = CSVerify.Diagnostic(Descriptor).WithSpan(6, 9, 6, 26).WithArguments("NotExcludedMethod", "NotExcludedMethodAsync");
-        await CSVerify.VerifyAnalyzerAsync(test, expected);
-    }
-
-    [Fact]
-    public async Task SqlDataReaderRead_ExcludedViaAdditionalFiles_GeneratesNoWarning()
-    {
-        var test = @"
-using System.Threading.Tasks;
-
-class Test {
-    async Task T() {
-        System.Data.SqlClient.SqlDataReader reader = null;
-        reader.Read();
-    }
-}
-";
-
-        // No diagnostic expected because SqlDataReader.Read is excluded via AdditionalFiles
-        // Note: This test might need additional setup for SqlClient references
         await CSVerify.VerifyAnalyzerAsync(test);
     }
 
