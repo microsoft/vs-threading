@@ -7,7 +7,7 @@ using Microsoft.VisualStudio.Threading;
 
 public class SuppressRelevanceSample
 {
-    private readonly ReentrantSemaphore semaphore = ReentrantSemaphore.Create(mode: ReentrantSemaphore.ReentrancyMode.NotAllowed);
+    private readonly ReentrantSemaphore semaphore = ReentrantSemaphore.Create(1, null, ReentrantSemaphore.ReentrancyMode.NotAllowed);
 
     #region SuppressRelevance
     public async Task DoSomethingAsync()

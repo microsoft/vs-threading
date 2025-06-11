@@ -7,14 +7,18 @@
 
   <ItemGroup>
     <ProjectReference Include="..\src\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj" />
-    <!-- <ProjectReference Include="$(RepoRootPath)src\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.csproj">
+    <ProjectReference Include="$(RepoRootPath)src\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Analyzer</OutputItemType>
+    </ProjectReference>
+    <ProjectReference Include="$(RepoRootPath)src\Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Analyzer</OutputItemType>
     </ProjectReference>
     <ProjectReference Include="$(RepoRootPath)src\Microsoft.VisualStudio.Threading.Analyzers.CSharp\Microsoft.VisualStudio.Threading.Analyzers.CSharp.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <OutputItemType>Analyzer</OutputItemType>
-    </ProjectReference> -->
+    </ProjectReference>
   </ItemGroup>
 
 </Project>
