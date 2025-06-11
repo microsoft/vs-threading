@@ -1371,7 +1371,7 @@ using System.Threading.Tasks;
 
 class Test {
     async Task T() {
-        [|TestNamespace.TestClass.NotExcludedMethod()|];
+        TestNamespace.TestClass.{|#0:NotExcludedMethod|}();
     }
 }
 
@@ -1383,7 +1383,7 @@ namespace TestNamespace {
 }
 ";
 
-        await CSVerify.VerifyAnalyzerAsync(test);
+        await CSVerify.VerifyAnalyzerAsync(test, CSVerify.Diagnostic(Descriptor).WithLocation(0).WithArguments("NotExcludedMethod", "NotExcludedMethodAsync"));
     }
 
     private DiagnosticResult CreateDiagnostic(int line, int column, int length, string methodName)
