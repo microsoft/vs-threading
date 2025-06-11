@@ -414,6 +414,7 @@ public partial class AsyncReaderWriterLock : IDisposable
     /// a canceled token will cause the code that is waiting for the lock to resume with an <see cref="OperationCanceledException"/>.
     /// </param>
     /// <returns>An awaitable object whose result is the lock releaser.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when <see cref="Complete"/> has been called and this is a new top-level lock request.</exception>
     public Awaitable ReadLockAsync(CancellationToken cancellationToken = default(CancellationToken))
     {
         return new Awaitable(this, LockKind.Read, LockFlags.None, cancellationToken);
@@ -428,13 +429,14 @@ public partial class AsyncReaderWriterLock : IDisposable
     /// a canceled token will cause the code that is waiting for the lock to resume with an <see cref="OperationCanceledException"/>.
     /// </param>
     /// <returns>An awaitable object whose result is the lock releaser.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when <see cref="Complete"/> has been called and this is a new top-level lock request.</exception>
     public Awaitable UpgradeableReadLockAsync(CancellationToken cancellationToken = default(CancellationToken))
     {
         return new Awaitable(this, LockKind.UpgradeableRead, LockFlags.None, cancellationToken);
     }
 
     /// <summary>
-    /// Obtains a read lock, asynchronously awaiting for the lock if it is not immediately available.
+    /// Obtains an upgradeable read lock, asynchronously awaiting for the lock if it is not immediately available.
     /// </summary>
     /// <param name="options">Modifications to normal lock behavior.</param>
     /// <param name="cancellationToken">
@@ -443,6 +445,7 @@ public partial class AsyncReaderWriterLock : IDisposable
     /// a canceled token will cause the code that is waiting for the lock to resume with an <see cref="OperationCanceledException"/>.
     /// </param>
     /// <returns>An awaitable object whose result is the lock releaser.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when <see cref="Complete"/> has been called and this is a new top-level lock request.</exception>
     public Awaitable UpgradeableReadLockAsync(LockFlags options, CancellationToken cancellationToken = default(CancellationToken))
     {
         return new Awaitable(this, LockKind.UpgradeableRead, options, cancellationToken);
@@ -457,6 +460,7 @@ public partial class AsyncReaderWriterLock : IDisposable
     /// a canceled token will cause the code that is waiting for the lock to resume with an <see cref="OperationCanceledException"/>.
     /// </param>
     /// <returns>An awaitable object whose result is the lock releaser.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when <see cref="Complete"/> has been called and this is a new top-level lock request.</exception>
     public Awaitable WriteLockAsync(CancellationToken cancellationToken = default(CancellationToken))
     {
         return new Awaitable(this, LockKind.Write, LockFlags.None, cancellationToken);
@@ -472,6 +476,7 @@ public partial class AsyncReaderWriterLock : IDisposable
     /// a canceled token will cause the code that is waiting for the lock to resume with an <see cref="OperationCanceledException"/>.
     /// </param>
     /// <returns>An awaitable object whose result is the lock releaser.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when <see cref="Complete"/> has been called and this is a new top-level lock request.</exception>
     public Awaitable WriteLockAsync(LockFlags options, CancellationToken cancellationToken = default(CancellationToken))
     {
         return new Awaitable(this, LockKind.Write, options, cancellationToken);
