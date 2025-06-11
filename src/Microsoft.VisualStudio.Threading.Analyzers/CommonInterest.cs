@@ -25,6 +25,7 @@ public static class CommonInterest
     public static readonly Regex FileNamePatternForMembersRequiringMainThread = new Regex(@"^vs-threading\.MembersRequiringMainThread(\..*)?.txt$", FileNamePatternRegexOptions);
     public static readonly Regex FileNamePatternForMethodsThatAssertMainThread = new Regex(@"^vs-threading\.MainThreadAssertingMethods(\..*)?.txt$", FileNamePatternRegexOptions);
     public static readonly Regex FileNamePatternForMethodsThatSwitchToMainThread = new Regex(@"^vs-threading\.MainThreadSwitchingMethods(\..*)?.txt$", FileNamePatternRegexOptions);
+    public static readonly Regex FileNamePatternForSyncMethodsToExcludeFromVSTHRD103 = new Regex(@"^vs-threading\.SyncMethodsToExcludeFromVSTHRD103(\..*)?.txt$", FileNamePatternRegexOptions);
 
     public static readonly IEnumerable<SyncBlockingMethod> JTFSyncBlockers = new[]
     {
