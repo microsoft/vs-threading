@@ -1386,7 +1386,6 @@ namespace TestNamespace {
         await CSVerify.VerifyAnalyzerAsync(test);
     }
 
-
     private DiagnosticResult CreateDiagnostic(int line, int column, int length, string methodName)
         => CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithSpan(line, column, line, column + length).WithArguments(methodName);
 

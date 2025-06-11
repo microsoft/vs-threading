@@ -96,7 +96,7 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
             var memberAccessSyntax = (MemberAccessExpressionSyntax)context.Node;
             if (IsInTaskReturningMethodOrDelegate(context))
             {
-                InspectMemberAccess(context, memberAccessSyntax.Name, CommonInterest.SyncBlockingProperties);
+                this.InspectMemberAccess(context, memberAccessSyntax.Name, CommonInterest.SyncBlockingProperties);
             }
         }
 
@@ -110,7 +110,7 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
                     MemberBindingExpressionSyntax bindingExpr => bindingExpr.Name,
                     _ => conditionalAccessSyntax.WhenNotNull,
                 };
-                InspectMemberAccess(context, rightSide, CommonInterest.SyncBlockingProperties);
+                this.InspectMemberAccess(context, rightSide, CommonInterest.SyncBlockingProperties);
             }
         }
 
@@ -120,7 +120,7 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
             {
                 var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
                 var memberAccessSyntax = invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax;
-                if (memberAccessSyntax is not null && InspectMemberAccess(context, memberAccessSyntax.Name, CommonInterest.SyncBlockingMethods))
+                if (memberAccessSyntax is not null && this.InspectMemberAccess(context, memberAccessSyntax.Name, CommonInterest.SyncBlockingMethods))
                 {
                     // Don't return double-diagnostics.
                     return;
