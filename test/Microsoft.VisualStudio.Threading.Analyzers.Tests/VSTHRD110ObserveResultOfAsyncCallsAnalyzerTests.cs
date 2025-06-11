@@ -542,4 +542,73 @@ public async ValueTask DisposeAsync()
 
         await CSVerify.VerifyAnalyzerAsync(test);
     }
+
+    [Fact]
+    public async Task ExpressionLambda_ProducesNoDiagnostic()
+    {
+        string test = """
+            using System;
+            using System.Linq.Expressions;
+            using System.Threading.Tasks;
+
+            interface ILogger
+            {
+                Task InfoAsync(string message);
+            }
+
+            class MockVerifier
+            {
+                public static void Verify<T>(Expression<Func<T, Task>> expression)
+                {
+                }
+            }
+
+            class Test
+            {
+                void TestMethod()
+                {
+                    var logger = new MockLogger();
+                    MockVerifier.Verify<ILogger>(x => x.InfoAsync("test"));
+                }
+            }
+
+            class MockLogger : ILogger
+            {
+                public Task InfoAsync(string message) => Task.CompletedTask;
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task ExpressionFuncLambda_ProducesNoDiagnostic()
+    {
+        string test = """
+            using System;
+            using System.Linq.Expressions;
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                void TestMethod()
+                {
+                    SomeMethod(x => x.InfoAsync("test"));
+                }
+
+                void SomeMethod(Expression<Func<ILogger, Task>> expression)
+                {
+                }
+
+                Task InfoAsync(string message) => Task.CompletedTask;
+            }
+
+            interface ILogger
+            {
+                Task InfoAsync(string message);
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 }
