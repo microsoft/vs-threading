@@ -27,3 +27,12 @@ async Task DoAsync()
     await file.ReadAsync(buffer, 0, 10);
 }
 ```
+
+## Configuration
+
+This analyzer can be configured to exclude specific APIs from generating diagnostics.
+Some APIs may have async versions that are less efficient or inappropriate for certain use cases.
+
+See our [configuration](configuration.md) topic to learn how to exclude specific methods
+using the `vs-threading.SyncMethodsToExcludeFromVSTHRD103.txt` file.
+```

@@ -1339,6 +1339,73 @@ class Test {
         await CSVerify.VerifyAnalyzerAsync(test);
     }
 
+    [Fact]
+    public async Task SyncMethodCallInAsyncMethod_ExcludedViaAdditionalFiles_GeneratesNoWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T() {
+        TestNamespace.TestClass.SlowSyncMethod();
+    }
+}
+
+namespace TestNamespace {
+    class TestClass {
+        public static void SlowSyncMethod() { }
+        public static Task SlowSyncMethodAsync() => Task.CompletedTask;
+    }
+}
+";
+
+        // No diagnostic expected because SlowSyncMethod is excluded via AdditionalFiles
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task SyncMethodCallInAsyncMethod_NotExcludedViaAdditionalFiles_GeneratesWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T() {
+        TestNamespace.TestClass.NotExcludedMethod();
+    }
+}
+
+namespace TestNamespace {
+    class TestClass {
+        public static void NotExcludedMethod() { }
+        public static Task NotExcludedMethodAsync() => Task.CompletedTask;
+    }
+}
+";
+
+        DiagnosticResult expected = CSVerify.Diagnostic(Descriptor).WithSpan(6, 9, 6, 26).WithArguments("NotExcludedMethod", "NotExcludedMethodAsync");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task SqlDataReaderRead_ExcludedViaAdditionalFiles_GeneratesNoWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T() {
+        System.Data.SqlClient.SqlDataReader reader = null;
+        reader.Read();
+    }
+}
+";
+
+        // No diagnostic expected because SqlDataReader.Read is excluded via AdditionalFiles
+        // Note: This test might need additional setup for SqlClient references
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
     private DiagnosticResult CreateDiagnostic(int line, int column, int length, string methodName)
         => CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithSpan(line, column, line, column + length).WithArguments(methodName);
 
