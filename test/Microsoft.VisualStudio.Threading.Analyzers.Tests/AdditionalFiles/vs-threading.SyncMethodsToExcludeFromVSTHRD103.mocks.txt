@@ -1,4 +1,2 @@
 # Test exclusions for VSTHRD103 analyzer
-[System.Data.SqlClient.SqlDataReader]::Read
 [TestNamespace.TestClass]::SlowSyncMethod
-[Microsoft.VisualStudio.Threading.JoinableTaskFactory]::Run

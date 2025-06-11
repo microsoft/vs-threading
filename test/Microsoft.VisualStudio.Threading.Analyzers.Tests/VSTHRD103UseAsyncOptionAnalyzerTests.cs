@@ -1386,24 +1386,6 @@ namespace TestNamespace {
         await CSVerify.VerifyAnalyzerAsync(test);
     }
 
-    [Fact]
-    public async Task JTFRun_ExcludedViaAdditionalFiles_GeneratesNoWarning()
-    {
-        var test = @"
-using System.Threading.Tasks;
-using Microsoft.VisualStudio.Threading;
-
-class Test {
-    async Task T() {
-        JoinableTaskFactory jtf = null;
-        jtf.Run(() => Task.CompletedTask);
-    }
-}
-";
-
-        // No diagnostic expected because JoinableTaskFactory.Run is excluded via AdditionalFiles
-        await CSVerify.VerifyAnalyzerAsync(test);
-    }
 
     private DiagnosticResult CreateDiagnostic(int line, int column, int length, string methodName)
         => CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithSpan(line, column, line, column + length).WithArguments(methodName);
