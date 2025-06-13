@@ -1,8 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System.Collections.Generic;
-
 namespace Microsoft.VisualStudio.Threading.Analyzers;
 
 /// <summary>
@@ -37,7 +35,7 @@ public static class Types
         /// </summary>
         public const string ConfigureAwaitRunInline = "ConfigureAwaitRunInline";
 
-        public static readonly IReadOnlyList<string> Namespace = Namespaces.MicrosoftVisualStudioThreading;
+        public static readonly ImmutableArray<string> Namespace = Namespaces.MicrosoftVisualStudioThreading;
     }
 
     /// <summary>
@@ -75,7 +73,7 @@ public static class Types
         /// </summary>
         public const string FalseTask = "FalseTask";
 
-        public static readonly IReadOnlyList<string> Namespace = Namespaces.MicrosoftVisualStudioThreading;
+        public static readonly ImmutableArray<string> Namespace = Namespaces.MicrosoftVisualStudioThreading;
     }
 
     /// <summary>
@@ -88,14 +86,14 @@ public static class Types
         /// </summary>
         public const string TypeName = "AsyncEventHandler";
 
-        public static readonly IReadOnlyList<string> Namespace = Namespaces.MicrosoftVisualStudioThreading;
+        public static readonly ImmutableArray<string> Namespace = Namespaces.MicrosoftVisualStudioThreading;
     }
 
     public static class AsyncMethodBuilderAttribute
     {
         public const string TypeName = nameof(System.Runtime.CompilerServices.AsyncMethodBuilderAttribute);
 
-        public static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeCompilerServices;
+        public static readonly ImmutableArray<string> Namespace = Namespaces.SystemRuntimeCompilerServices;
     }
 
     /// <summary>
@@ -116,7 +114,7 @@ public static class Types
 
         public const string RunAsync = "RunAsync";
 
-        public static readonly IReadOnlyList<string> Namespace = Namespaces.MicrosoftVisualStudioThreading;
+        public static readonly ImmutableArray<string> Namespace = Namespaces.MicrosoftVisualStudioThreading;
     }
 
     /// <summary>
@@ -191,7 +189,7 @@ public static class Types
 
         public const string WhenAll = "WhenAll";
 
-        public static readonly IReadOnlyList<string> Namespace = Namespaces.SystemThreadingTasks;
+        public static readonly ImmutableArray<string> Namespace = Namespaces.SystemThreadingTasks;
     }
 
     public static class ConfiguredTaskAwaitable
@@ -200,7 +198,7 @@ public static class Types
 
         public const string FullName = "System.Runtime.CompilerServices." + TypeName;
 
-        public static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeCompilerServices;
+        public static readonly ImmutableArray<string> Namespace = Namespaces.SystemRuntimeCompilerServices;
     }
 
     public static class ValueTask
@@ -209,7 +207,7 @@ public static class Types
 
         public const string FullName = "System.Threading.Tasks." + TypeName;
 
-        public static readonly IReadOnlyList<string> Namespace = Namespaces.SystemThreadingTasks;
+        public static readonly ImmutableArray<string> Namespace = Namespaces.SystemThreadingTasks;
     }
 
     public static class ConfiguredValueTaskAwaitable
@@ -218,34 +216,34 @@ public static class Types
 
         public const string FullName = "System.Runtime.CompilerServices." + TypeName;
 
-        public static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeCompilerServices;
+        public static readonly ImmutableArray<string> Namespace = Namespaces.SystemRuntimeCompilerServices;
     }
 
     public static class CoClassAttribute
     {
         public const string TypeName = nameof(System.Runtime.InteropServices.CoClassAttribute);
 
-        public static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeInteropServices;
+        public static readonly ImmutableArray<string> Namespace = Namespaces.SystemRuntimeInteropServices;
     }
 
     public static class ComImportAttribute
     {
         public const string TypeName = nameof(System.Runtime.InteropServices.ComImportAttribute);
 
-        public static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeInteropServices;
+        public static readonly ImmutableArray<string> Namespace = Namespaces.SystemRuntimeInteropServices;
     }
 
     public static class InterfaceTypeAttribute
     {
         public const string TypeName = nameof(System.Runtime.InteropServices.InterfaceTypeAttribute);
 
-        public static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeInteropServices;
+        public static readonly ImmutableArray<string> Namespace = Namespaces.SystemRuntimeInteropServices;
     }
 
     public static class TypeLibTypeAttribute
     {
         public const string TypeName = "TypeLibTypeAttribute";
 
-        public static readonly IReadOnlyList<string> Namespace = Namespaces.SystemRuntimeInteropServices;
+        public static readonly ImmutableArray<string> Namespace = Namespaces.SystemRuntimeInteropServices;
     }
 }
