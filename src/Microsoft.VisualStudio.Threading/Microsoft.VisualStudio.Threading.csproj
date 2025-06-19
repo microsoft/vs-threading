@@ -7,6 +7,9 @@
       Use the Microsoft.VisualStudio.Threading package to get the library and analyzers together.
     </Description>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+     <!-- Enable warnings regarding AOT compatibility. Learn more about testing strategies at https://devblogs.microsoft.com/dotnet/creating-aot-compatible-libraries/ -->
+    <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</IsAotCompatible>
+    <PolySharpIncludeRuntimeSupportedAttributes>true</PolySharpIncludeRuntimeSupportedAttributes>
   </PropertyGroup>
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
     <UseWPF Condition=" '$(TargetFramework)' != 'net8.0' ">true</UseWPF>

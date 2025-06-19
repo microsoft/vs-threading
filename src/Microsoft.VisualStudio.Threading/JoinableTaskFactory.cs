@@ -2,16 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Security;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using JoinableTaskSynchronizationContext = Microsoft.VisualStudio.Threading.JoinableTask.JoinableTaskSynchronizationContext;
@@ -1133,6 +1128,7 @@ public partial class JoinableTaskFactory
         /// </summary>
         internal string DelegateLabel
         {
+            [RequiresUnreferencedCode(Reasons.DiagnosticAnalysisOnly)]
             get
             {
                 return this.WalkAsyncReturnStackFrames().First(); // Top frame of the return callstack.
@@ -1214,6 +1210,7 @@ public partial class JoinableTaskFactory
         /// Walk the continuation objects inside "async state machines" to generate the return callstack.
         /// FOR DIAGNOSTIC PURPOSES ONLY.
         /// </summary>
+        [RequiresUnreferencedCode(Reasons.DiagnosticAnalysisOnly)]
         internal IEnumerable<string> WalkAsyncReturnStackFrames()
         {
             // This instance might be a wrapper of another instance of "SingleExecuteProtector".

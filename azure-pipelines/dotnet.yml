@@ -5,6 +5,8 @@ parameters:
   default: false
 - name: Is1ESPT
   type: boolean
+- name: osRID
+  type: string
 
 steps:
 
@@ -15,6 +17,15 @@ steps:
   - powershell: tools/dotnet-test-cloud.ps1 -Configuration $(BuildConfiguration) -Agent $(Agent.JobName) -PublishResults
     displayName: 🧪 dotnet test
     condition: and(succeeded(), ${{ parameters.RunTests }})
+
+- powershell: |
+    dotnet publish -f net9.0 -c Release -r ${{ parameters.osRID }}-x64 -warnaserror
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    if (!($IsMacOS -or $IsLinux)) {
+      dotnet publish -f net9.0-windows -c Release -r ${{ parameters.osRID }}-x64 -warnaserror
+    }
+  displayName: 🧪 NativeAOT test
+  workingDirectory: test/NativeAOTCompatibility
 
 - ${{ if parameters.IsOptProf }}:
   - script: dotnet pack src\VSInsertionMetadata -c $(BuildConfiguration) -warnaserror /bl:"$(Build.ArtifactStagingDirectory)/build_logs/VSInsertion-Pack.binlog"
