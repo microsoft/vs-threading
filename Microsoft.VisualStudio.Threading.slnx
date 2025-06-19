@@ -47,6 +47,6 @@
     <Project Path="test/Microsoft.VisualStudio.Threading.Analyzers.Tests/Microsoft.VisualStudio.Threading.Analyzers.Tests.csproj" />
     <Project Path="test/Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher/Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.csproj" />
     <Project Path="test/Microsoft.VisualStudio.Threading.Tests/Microsoft.VisualStudio.Threading.Tests.csproj" />
-    <Project Path="test/NativeAOTCompatibility/NativeAOTCompatibility.csproj" />
+    <Project Path="test/NativeAOTCompatibility.Test/NativeAOTCompatibility.Test.csproj" />
   </Folder>
 </Solution>
