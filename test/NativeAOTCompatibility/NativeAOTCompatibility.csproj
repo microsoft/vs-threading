@@ -1,9 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
+  <Import Project="..\AOT.props" />
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <TargetFrameworks>net9.0</TargetFrameworks>
-    <PublishAot>true</PublishAot>
     <IsTestProject>false</IsTestProject>
   </PropertyGroup>
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">

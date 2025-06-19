@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.Build.Traversal">
+  <ItemGroup>
+    <ProjectReference Include="**\*.csproj" Exclude="NativeAOTCompatibility\**" Publish="false" />
+
+    <MultiRIDProjectReference Include="NativeAOTCompatibility\NativeAOTCompatibility.csproj" TargetFramework="net9.0" />
+    <MultiRIDProjectReference Include="NativeAOTCompatibility\NativeAOTCompatibility.csproj" TargetFramework="net9.0-windows" Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
+  </ItemGroup>
+</Project>

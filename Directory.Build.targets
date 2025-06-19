@@ -4,4 +4,6 @@
     <!-- Avoid compile error about missing namespace when combining ImplicitUsings with .NET Framework target frameworks. -->
     <Using Remove="System.Net.Http" Condition="'$(TargetFrameworkIdentifier)'=='.NETFramework'" />
   </ItemGroup>
+
+  <Import Project="Directory.Traversal.targets" Condition="'$(IsTraversal)'=='true'" />
 </Project>
