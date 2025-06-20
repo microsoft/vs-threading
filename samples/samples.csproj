@@ -21,4 +21,8 @@
     </ProjectReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Internal.MicroBuild.NonShipping" PrivateAssets="all" />
+  </ItemGroup>
+
 </Project>
