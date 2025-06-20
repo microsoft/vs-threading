@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 
 namespace Microsoft.VisualStudio.Threading;
@@ -104,6 +104,7 @@ internal sealed partial class ThreadingEventSource : EventSource
     /// <param name="taskId">Hash code of the task.</param>
     /// <param name="isOnMainThread">Whether the task is on the main thread.</param>
     [Event(CompleteOnCurrentThreadStartEvent)]
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "We're only serializing primitive types.")]
     public void CompleteOnCurrentThreadStart(int taskId, bool isOnMainThread)
     {
         this.WriteEvent(CompleteOnCurrentThreadStartEvent, taskId, Boxed.Box(isOnMainThread));
@@ -143,6 +144,7 @@ internal sealed partial class ThreadingEventSource : EventSource
     /// <param name="requestId">The request id.</param>
     /// <param name="mainThreadAffinitized">The execution need happen on the main thread.</param>
     [Event(PostExecutionStartEvent, Level = EventLevel.Verbose)]
+    [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "We're only serializing primitive types.")]
     public void PostExecutionStart(int requestId, bool mainThreadAffinitized)
     {
         this.WriteEvent(PostExecutionStartEvent, requestId, Boxed.Box(mainThreadAffinitized));

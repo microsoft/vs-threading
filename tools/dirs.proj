@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.Build.Traversal">
+  <ItemGroup>
+    <ProjectReference Include="$(RepoRootPath)src\dirs.proj" />
+    <ProjectReference Include="$(RepoRootPath)test\dirs.proj" />
+  </ItemGroup>
+</Project>

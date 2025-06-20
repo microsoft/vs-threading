@@ -1,0 +1,15 @@
+<Project>
+  <PropertyGroup>
+    <PackInParallel>true</PackInParallel>
+
+    <TestX64Binaries>false</TestX64Binaries>
+    <TestArm64Binaries>false</TestArm64Binaries>
+    <TestX64Binaries Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'x64'">true</TestX64Binaries>
+    <TestArm64Binaries Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'ARM64'">true</TestArm64Binaries>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- <ProjectReference Include="@(MultiRIDProjectReference)" AdditionalProperties="RuntimeIdentifier=$(RidOsPrefix)-x64" Test="$(TestX64Binaries)" />
+    <ProjectReference Include="@(MultiRIDProjectReference)" AdditionalProperties="RuntimeIdentifier=$(RidOsPrefix)-arm64" Test="$(TestArm64Binaries)" /> -->
+    <ProjectReference Include="@(MultiRIDProjectReference)" AdditionalProperties="RuntimeIdentifier=$(DefaultRuntimeIdentifier);TargetFramework=%(TargetFramework)" Test="true" />
+  </ItemGroup>
+</Project>
