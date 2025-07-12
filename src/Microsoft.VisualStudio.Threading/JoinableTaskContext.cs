@@ -246,6 +246,12 @@ public partial class JoinableTaskContext : IDisposable
     }
 
     /// <summary>
+    /// Gets a value indicating whether gets a value indicating the JoinableTask is not associated with any main thread.
+    /// This allows library code to skip some additional work in the environments that do not have a main thread.
+    /// </summary>
+    public bool IsNoOpContext => this.UnderlyingSynchronizationContext is null;
+
+    /// <summary>
     /// Gets a value indicating whether the main thread is blocked by any joinable task.
     /// </summary>
     internal bool IsMainThreadBlockedByAnyJoinableTask => this.mainThreadBlockingJoinableTaskCount > 0;
