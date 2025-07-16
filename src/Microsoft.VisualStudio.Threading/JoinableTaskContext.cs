@@ -246,9 +246,12 @@ public partial class JoinableTaskContext : IDisposable
     }
 
     /// <summary>
-    /// Gets a value indicating whether gets a value indicating the JoinableTask is not associated with any main thread.
-    /// This allows library code to skip some additional work in the environments that do not have a main thread.
+    /// Gets a value indicating whether this instance is not associated with any main thread
+    /// (e.g. created with <see cref="CreateNoOpContext" />).
     /// </summary>
+    /// <remarks>
+    /// This allows library code to skip some additional work in the environments that do not have a main thread.
+    /// </remarks>
     public bool IsNoOpContext => this.UnderlyingSynchronizationContext is null;
 
     /// <summary>
