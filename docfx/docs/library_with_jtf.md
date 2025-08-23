@@ -115,7 +115,7 @@ public static class LibrarySettings
 }
 ```
 
-This pattern and self-initializer allows all the rest of your library code to assume JTF is always present (so you can use JTF.Run and JTF.RunAsync everywhere w/o feature that JTF will be null), and it mitigates all the deadlocks possible given the host constraints.
+This pattern and self-initializer allows all the rest of your library code to assume JTF is always present (so you can use JTF.Run and JTF.RunAsync everywhere w/o fear that JTF will be null), and it mitigates all the deadlocks possible given the host constraints.
 
 Note that when you create your own default instance of JoinableTaskContext (i.e. when the host doesn't), it will consider the thread you're on to be the main thread. If SynchronizationContext.Current is object it will capture it and use it to switch to the main thread when you ask it to (very similar to how VS works today), otherwise any request to SwitchToMainThreadAsync will never switch the thread (since no `SynchronizationContext` was supplied to do so) but otherwise JTF continues to work.
 
