@@ -60,6 +60,8 @@ public class AsyncLazy<T>
     /// </summary>
     private JoinableTask<T>? joinableTask;
 
+    private bool suppressRecursiveFactoryDetection;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="AsyncLazy{T}"/> class.
     /// </summary>
@@ -98,7 +100,11 @@ public class AsyncLazy<T>
     /// if a <see cref="JoinableTaskFactory"/> was provided to the constructor.
     /// </para>
     /// </remarks>
-    public bool SuppressRecursiveFactoryDetection { get; init; }
+    public bool SuppressRecursiveFactoryDetection
+    {
+        get => this.suppressRecursiveFactoryDetection;
+        init => this.suppressRecursiveFactoryDetection = value;
+    }
 
     /// <summary>
     /// Gets a value indicating whether the value factory has been invoked.
@@ -471,6 +477,14 @@ public class AsyncLazy<T>
         return (this.value is object && this.value.IsCompleted)
             ? (this.value.Status == TaskStatus.RanToCompletion ? $"{this.value.Result}" : Strings.LazyValueFaulted)
             : Strings.LazyValueNotCreated;
+    }
+
+    internal void SetSuppressRecursiveFactoryDetection(bool value)
+    {
+        // This is a backdoor to setting an init property,
+        // but it should only be used *before* GetValueAsync is called.
+        Assumes.False(this.IsValueCreated);
+        this.suppressRecursiveFactoryDetection = value;
     }
 
     /// <summary>
