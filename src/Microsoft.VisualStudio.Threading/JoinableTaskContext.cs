@@ -302,11 +302,6 @@ public partial class JoinableTaskContext : IDisposable
     {
         get
         {
-            // Callers of this method are about to take a private lock, which tends
-            // to cause a deadlock while debugging because of lock contention with the
-            // debugger's expression evaluator. So prevent that.
-            Debugger.NotifyOfCrossThreadDependency();
-
             return NoMessagePumpSyncContext.Default;
         }
     }
