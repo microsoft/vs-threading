@@ -10,6 +10,7 @@
      <!-- Enable warnings regarding AOT compatibility. Learn more about testing strategies at https://devblogs.microsoft.com/dotnet/creating-aot-compatible-libraries/ -->
     <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</IsAotCompatible>
     <PolySharpIncludeRuntimeSupportedAttributes>true</PolySharpIncludeRuntimeSupportedAttributes>
+    <PackageValidationBaselineVersion Condition="$([MSBuild]::IsOSPlatform('Windows'))">17.14.15</PackageValidationBaselineVersion>
   </PropertyGroup>
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
     <UseWPF Condition=" '$(TargetFramework)' != 'net8.0' ">true</UseWPF>
@@ -21,12 +22,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <AdditionalFiles Include="$(TargetFramework)\PublicAPI.Shipped.txt" />
-    <AdditionalFiles Include="$(TargetFramework)\PublicAPI.Unshipped.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="Nullable" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="all" />
     <PackageReference Include="System.Memory" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
     <PackageReference Include="System.Threading.Tasks.Extensions" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'" />
