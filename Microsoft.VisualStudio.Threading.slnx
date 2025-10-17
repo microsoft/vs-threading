@@ -6,6 +6,7 @@
     <Platform Name="x86" />
   </Configurations>
   <Folder Name="/Solution Items/">
+    <File Path=".config\dotnet-tools.json" />
     <File Path=".editorconfig" />
     <File Path="azure-pipelines/build.yml" />
     <File Path="Directory.Build.props" />
