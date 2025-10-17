@@ -10,6 +10,7 @@
      <!-- Enable warnings regarding AOT compatibility. Learn more about testing strategies at https://devblogs.microsoft.com/dotnet/creating-aot-compatible-libraries/ -->
     <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</IsAotCompatible>
     <PolySharpIncludeRuntimeSupportedAttributes>true</PolySharpIncludeRuntimeSupportedAttributes>
+    <PolySharpExcludeGeneratedTypes>System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute</PolySharpExcludeGeneratedTypes>
     <PackageValidationBaselineVersion Condition="$([MSBuild]::IsOSPlatform('Windows'))">17.14.15</PackageValidationBaselineVersion>
   </PropertyGroup>
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
