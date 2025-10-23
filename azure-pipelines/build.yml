@@ -164,7 +164,13 @@ jobs:
             artifactName: ${{ artifact.name }}-Windows
             ${{ if and(parameters.Is1ESPTOfficial, eq(artifact.sbomEnabled, 'true')) }}:
               sbomEnabled: true
-            condition: succeededOrFailed()
+          - output: pipelineArtifact
+            displayName: 📢 Publish ${{ artifact.name }}-Windows (for failed attempts)
+            targetPath: $(Build.ArtifactStagingDirectory)/${{ artifact.name }}-Windows
+            artifactName: ${{ artifact.name }}-Windows-$(System.PhaseAttempt)
+            ${{ if and(parameters.Is1ESPTOfficial, eq(artifact.sbomEnabled, 'true')) }}:
+              sbomEnabled: true
+            condition: failed()
       - output: pipelineArtifact
         displayName: 📢 Publish VSInsertion-Windows
         targetPath: $(Build.ArtifactStagingDirectory)/VSInsertion-Windows
@@ -247,7 +253,13 @@ jobs:
                 artifactName: ${{ artifact.name }}-Linux
                 ${{ if and(parameters.Is1ESPTOfficial, eq(artifact.sbomEnabled, 'true')) }}:
                   sbomEnabled: true
-                condition: succeededOrFailed()
+              - output: pipelineArtifact
+                displayName: 📢 Publish ${{ artifact.name }}-Linux (for failed attempts)
+                targetPath: $(Build.ArtifactStagingDirectory)/${{ artifact.name }}-Linux
+                artifactName: ${{ artifact.name }}-Linux-$(System.PhaseAttempt)
+                ${{ if and(parameters.Is1ESPTOfficial, eq(artifact.sbomEnabled, 'true')) }}:
+                  sbomEnabled: true
+                condition: failed()
       steps:
       - checkout: self
         fetchDepth: 0 # avoid shallow clone so nbgv can do its work.
@@ -286,7 +298,13 @@ jobs:
                 artifactName: ${{ artifact.name }}-macOS
                 ${{ if and(parameters.Is1ESPTOfficial, eq(artifact.sbomEnabled, 'true')) }}:
                   sbomEnabled: true
-                condition: succeededOrFailed()
+              - output: pipelineArtifact
+                displayName: 📢 Publish ${{ artifact.name }}-macOS (for failed attempts)
+                targetPath: $(Build.ArtifactStagingDirectory)/${{ artifact.name }}-macOS
+                artifactName: ${{ artifact.name }}-macOS-$(System.PhaseAttempt)
+                ${{ if and(parameters.Is1ESPTOfficial, eq(artifact.sbomEnabled, 'true')) }}:
+                  sbomEnabled: true
+                condition: failed()
       steps:
       - checkout: self
         fetchDepth: 0 # avoid shallow clone so nbgv can do its work.
