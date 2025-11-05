@@ -320,7 +320,7 @@ public partial class JoinableTask : IJoinableTaskDependent
     {
         get
         {
-            if (this.JoinableTaskContext.IsOnMainThread)
+            if (this.JoinableTaskContext.IsOnMainThread && !this.JoinableTaskContext.IsNoOpContext)
             {
                 if (this.mainThreadJobSyncContext is null)
                 {

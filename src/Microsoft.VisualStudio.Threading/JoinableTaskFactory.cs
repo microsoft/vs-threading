@@ -28,7 +28,7 @@ public partial class JoinableTaskFactory
     /// </summary>
     private readonly JoinableTaskContext owner;
 
-    private readonly SynchronizationContext mainThreadJobSyncContext;
+    private readonly SynchronizationContext? mainThreadJobSyncContext;
 
     /// <summary>
     /// The collection to add all created tasks to. May be <see langword="null" />.
@@ -71,7 +71,7 @@ public partial class JoinableTaskFactory
 
         this.owner = owner;
         this.jobCollection = collection;
-        this.mainThreadJobSyncContext = new JoinableTaskSynchronizationContext(this);
+        this.mainThreadJobSyncContext = owner.IsNoOpContext ? null : new JoinableTaskSynchronizationContext(this);
     }
 
     /// <summary>
