@@ -8,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using JoinRelease = Microsoft.VisualStudio.Threading.JoinableTaskCollection.JoinRelease;
@@ -147,7 +146,7 @@ public partial class JoinableTask : IJoinableTaskDependent
             this.state |= JoinableTaskFlags.StartedSynchronously | JoinableTaskFlags.CompletingSynchronously;
         }
 
-        if (owner.Context.IsOnMainThread)
+        if (owner.Context.IsOnMainThread && !this.JoinableTaskContext.IsNoOpContext)
         {
             this.state |= JoinableTaskFlags.StartedOnMainThread;
             if (synchronouslyBlocking)
@@ -977,7 +976,7 @@ public partial class JoinableTask : IJoinableTaskDependent
         {
             bool onMainThread = false;
             JoinableTaskFlags additionalFlags = JoinableTaskFlags.CompletingSynchronously;
-            if (this.JoinableTaskContext.IsOnMainThread)
+            if (this.JoinableTaskContext.IsOnMainThread && !this.JoinableTaskContext.IsNoOpContext)
             {
                 additionalFlags |= JoinableTaskFlags.SynchronouslyBlockingMainThread;
                 onMainThread = true;
