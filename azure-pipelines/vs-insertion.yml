@@ -69,6 +69,11 @@ extends:
             AutoCompletePR: true
             AutoCompleteMergeStrategy: Squash
             ShallowClone: true
+            ${{ if eq(variables['system.collectionId'], '011b8bdf-6d56-4f87-be0d-0092136884d9') }}:
+              ConnectedVSDropServiceName: 'VSEng-VSDrop-MI'
+          env:
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+
         - powershell: |
             $contentType = 'application/json';
             $headers = @{ Authorization = 'Bearer $(System.AccessToken)' };

@@ -111,6 +111,10 @@ extends:
             DraftPR: false # set to true and update InsertionBuildPolicy when we can specify all the validations we want to run (https://dev.azure.com/devdiv/DevDiv/_workitems/edit/2224288)
             AutoCompletePR: false
             ShallowClone: true
+            ${{ if eq(variables['system.collectionId'], '011b8bdf-6d56-4f87-be0d-0092136884d9') }}:
+              ConnectedVSDropServiceName: 'VSEng-VSDrop-MI'
+          env:
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
         - powershell: |
             $insertionPRId = azure-pipelines/Get-InsertionPRId.ps1
             $Markdown = @"
