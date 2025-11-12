@@ -108,6 +108,14 @@ try {
     git mv src/VSInsertionMetadata/Library.VSInsertionMetadata.proj "src/VSInsertionMetadata/$LibraryName.VSInsertionMetadata.proj"
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+    # Update project reference in test project. Add before removal to keep the same ItemGroup in place.
+    dotnet add "test/$LibraryName.Tests" reference "src/$LibraryName"
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    dotnet remove "test/$LibraryName.Tests" reference src/Library/Library.csproj
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    git add "test/$LibraryName.Tests/$LibraryName.Tests.csproj"
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
     # Refresh solution file both to update paths and give the projects unique GUIDs
     dotnet sln remove src/Library/Library.csproj
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -120,12 +128,10 @@ try {
     git add "$LibraryName.slnx"
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-    # Update project reference in test project. Add before removal to keep the same ItemGroup in place.
-    dotnet add "test/$LibraryName.Tests" reference "src/$LibraryName"
+    # Establish a new strong-name key
+    & $sn.Path -k 2048 strongname.snk
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-    dotnet remove "test/$LibraryName.Tests" reference src/Library/Library.csproj
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-    git add "test/$LibraryName.Tests/$LibraryName.Tests.csproj"
+    git add strongname.snk
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
     # Replace placeholders in source files
