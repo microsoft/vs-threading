@@ -79,11 +79,13 @@ Function Get-PackageVersion($id) {
     $version
 }
 
-# All 3rd party packages for which symbols packages are expected should be listed here.
+# All 1st party packages for which symbols packages are expected should be listed here.
 # These must all be sourced from nuget.org, as it is the only feed that supports symbol packages.
-$3rdPartyPackageIds = @()
+# We should NOT add 3rd party packages to this list because PDBs may be unsafe for our debuggers to load,
+# so we should only archive 1st party symbols.
+$1stPartyPackageIds = @()
 
-$3rdPartyPackageIds | % {
+$1stPartyPackageIds | % {
     $version = Get-PackageVersion $_
     if ($version) {
         Get-SymbolsFromPackage -id $_ -version $version

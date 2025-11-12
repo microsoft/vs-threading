@@ -2,9 +2,6 @@ parameters:
 - name: EnableLocalization
   type: boolean
   default: false
-- name: EnableOptProf
-  type: boolean
-  default: false
 - name: IsOptProf
   type: boolean
   default: false
@@ -26,7 +23,7 @@ steps:
     inputs:
       outputfile: $(System.DefaultWorkingDirectory)/obj/NOTICE
       outputformat: text
-    retryCountOnTaskFailure: 3 # fails when the cloud service is overloaded
+    retryCountOnTaskFailure: 10 # fails when the cloud service is overloaded
     continueOnError: ${{ not(parameters.RealSign) }} # Tolerate failures when we're not building something that may ship.
 
 - ${{ if parameters.IsOptProf }}:

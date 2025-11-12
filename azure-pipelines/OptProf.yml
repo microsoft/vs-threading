@@ -97,6 +97,10 @@ stages:
         TeamEmail: $(TeamEmail)
         SkipCreatePR: true
         CustomScriptExecutionCommand: src\VSSDK\NuGet\AllowUnstablePackages.ps1
+        ${{ if eq(variables['system.collectionId'], '011b8bdf-6d56-4f87-be0d-0092136884d9') }}:
+          ConnectedVSDropServiceName: 'VSEng-VSDrop-MI'
+      env:
+        SYSTEM_ACCESSTOKEN: $(System.AccessToken)
     - task: benjhuser.tfs-extensions-build-tasks.trigger-build-task.TriggerBuild@3
       displayName: Trigger a new build of DD-CB-TestSignVS-devCI
       inputs:
