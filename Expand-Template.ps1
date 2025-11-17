@@ -7,9 +7,6 @@ Expands this template into an actual project, taking values for placeholders
 The name of the library. Should consist only of alphanumeric characters and periods.
 .PARAMETER Author
 The name to use in copyright and owner notices.
-.PARAMETER CodeCovToken
-A token obtained from codecov.io for your repo. If not specified, code coverage results will not be published to codecov.io,
-but can be added later by editing the Azure Pipelines YAML file.
 .PARAMETER Squash
 A switch that causes all of git history to be squashed to just one initial commit for the template, and one for its expansion.
 #>
@@ -19,8 +16,6 @@ Param(
     [string]$LibraryName,
     [Parameter()]
     [string]$Author = "Microsoft Corporation",
-    [Parameter()]
-    [string]$CodeCovToken,
     [Parameter()]
     [switch]$Squash
 )
@@ -166,11 +161,6 @@ try {
     Replace-Placeholders -Path "azure-pipelines.yml" -Replacements $YmlReplacements
 
     $YmlReplacements = @{}
-    if ($CodeCovToken) {
-        $YmlReplacements['(codecov_token: ).*(#.*)'] = "`$1$CodeCovToken"
-    } else {
-        $YmlReplacements['(codecov_token: ).*(#.*)'] = "#`$1`$2"
-    }
     Replace-Placeholders -Path "azure-pipelines/BuildStageVariables.yml" -Replacements $YmlReplacements
 
     Replace-Placeholders -Path "tools/variables/InsertVersionsValues.ps1" -Replacements @{
