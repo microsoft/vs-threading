@@ -1453,6 +1453,405 @@ class Tests
         await CSVerify.VerifyAnalyzerAsync(test);
     }
 
+    [Fact]
+    public async Task DoNotReportWarningWhenAwaitingPropertyWithCompletedTaskAttribute()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+    }
+}
+
+class Tests
+{
+    [Microsoft.VisualStudio.Threading.CompletedTask]
+    private static Task MyCompletedTask { get; } = Task.CompletedTask;
+
+    async Task GetTask()
+    {
+        await MyCompletedTask;
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningWhenAwaitingFieldWithCompletedTaskAttribute()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+    }
+}
+
+class Tests
+{
+    [Microsoft.VisualStudio.Threading.CompletedTask]
+    private static readonly Task MyCompletedTask = Task.CompletedTask;
+
+    async Task GetTask()
+    {
+        await MyCompletedTask;
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningWhenAwaitingMethodWithCompletedTaskAttribute()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+    }
+}
+
+class Tests
+{
+    [Microsoft.VisualStudio.Threading.CompletedTask]
+    private static Task GetCompletedTask() => Task.CompletedTask;
+
+    async Task TestMethod()
+    {
+        await GetCompletedTask();
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningWhenReturningPropertyWithCompletedTaskAttribute()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+    }
+}
+
+class Tests
+{
+    [Microsoft.VisualStudio.Threading.CompletedTask]
+    private static Task MyCompletedTask { get; } = Task.CompletedTask;
+
+    Task GetTask() => MyCompletedTask;
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task ReportWarningWhenAwaitingPropertyWithoutCompletedTaskAttribute()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Tests
+{
+    private static Task MyTask { get; } = Task.Run(() => {});
+
+    async Task GetTask()
+    {
+        await [|MyTask|];
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningWhenAwaitingTaskGenericPropertyWithCompletedTaskAttribute()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+    }
+}
+
+class Tests
+{
+    [Microsoft.VisualStudio.Threading.CompletedTask]
+    private static Task<int> MyCompletedTask { get; } = Task.FromResult(42);
+
+    async Task<int> GetResult()
+    {
+        return await MyCompletedTask;
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningWhenAwaitingPropertyWithCompletedTaskAttributeInJtfRun()
+    {
+        var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+    }
+}
+
+class Tests
+{
+    [Microsoft.VisualStudio.Threading.CompletedTask]
+    private static Task MyCompletedTask { get; } = Task.CompletedTask;
+
+    void TestMethod()
+    {
+        JoinableTaskFactory jtf = null;
+        jtf.Run(async delegate
+        {
+            await MyCompletedTask;
+        });
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningWhenAwaitingPropertyMarkedByAssemblyLevelAttribute()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+[assembly: Microsoft.VisualStudio.Threading.CompletedTask(Member = ""ExternalLibrary.ExternalClass.CompletedTaskProperty"")]
+
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field | System.AttributeTargets.Assembly, Inherited = false, AllowMultiple = true)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+        public CompletedTaskAttribute() { }
+        public string? Member { get; set; }
+    }
+}
+
+namespace ExternalLibrary
+{
+    public static class ExternalClass
+    {
+        public static Task CompletedTaskProperty { get; } = Task.CompletedTask;
+    }
+}
+
+class Tests
+{
+    async Task TestMethod()
+    {
+        await ExternalLibrary.ExternalClass.CompletedTaskProperty;
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningWhenAwaitingFieldMarkedByAssemblyLevelAttribute()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+[assembly: Microsoft.VisualStudio.Threading.CompletedTask(Member = ""ExternalLibrary.ExternalClass.CompletedTaskField"")]
+
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field | System.AttributeTargets.Assembly, Inherited = false, AllowMultiple = true)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+        public CompletedTaskAttribute() { }
+        public string? Member { get; set; }
+    }
+}
+
+namespace ExternalLibrary
+{
+    public static class ExternalClass
+    {
+        public static readonly Task CompletedTaskField = Task.FromResult(true);
+    }
+}
+
+class Tests
+{
+    async Task TestMethod()
+    {
+        await ExternalLibrary.ExternalClass.CompletedTaskField;
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningWhenAwaitingMethodMarkedByAssemblyLevelAttribute()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+[assembly: Microsoft.VisualStudio.Threading.CompletedTask(Member = ""ExternalLibrary.ExternalClass.GetCompletedTask"")]
+
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field | System.AttributeTargets.Assembly, Inherited = false, AllowMultiple = true)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+        public CompletedTaskAttribute() { }
+        public string? Member { get; set; }
+    }
+}
+
+namespace ExternalLibrary
+{
+    public static class ExternalClass
+    {
+        public static Task GetCompletedTask() => Task.CompletedTask;
+    }
+}
+
+class Tests
+{
+    async Task TestMethod()
+    {
+        await ExternalLibrary.ExternalClass.GetCompletedTask();
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningWhenReturningPropertyMarkedByAssemblyLevelAttribute()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+[assembly: Microsoft.VisualStudio.Threading.CompletedTask(Member = ""ExternalLibrary.ExternalClass.CompletedTaskProperty"")]
+
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field | System.AttributeTargets.Assembly, Inherited = false, AllowMultiple = true)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+        public CompletedTaskAttribute() { }
+        public string? Member { get; set; }
+    }
+}
+
+namespace ExternalLibrary
+{
+    public static class ExternalClass
+    {
+        public static Task CompletedTaskProperty { get; } = Task.CompletedTask;
+    }
+}
+
+class Tests
+{
+    Task GetTask() => ExternalLibrary.ExternalClass.CompletedTaskProperty;
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task ReportWarningWhenAwaitingPropertyNotMarkedByAssemblyLevelAttribute()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+namespace ExternalLibrary
+{
+    public static class ExternalClass
+    {
+        public static Task SomeTaskProperty { get; } = Task.Run(() => {});
+    }
+}
+
+class Tests
+{
+    async Task TestMethod()
+    {
+        await [|ExternalLibrary.ExternalClass.SomeTaskProperty|];
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningWithMultipleAssemblyLevelAttributes()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+[assembly: Microsoft.VisualStudio.Threading.CompletedTask(Member = ""ExternalLibrary.ExternalClass.Task1"")]
+[assembly: Microsoft.VisualStudio.Threading.CompletedTask(Member = ""ExternalLibrary.ExternalClass.Task2"")]
+
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field | System.AttributeTargets.Assembly, Inherited = false, AllowMultiple = true)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+        public CompletedTaskAttribute() { }
+        public string? Member { get; set; }
+    }
+}
+
+namespace ExternalLibrary
+{
+    public static class ExternalClass
+    {
+        public static Task Task1 { get; } = Task.CompletedTask;
+        public static Task Task2 { get; } = Task.FromResult(true);
+    }
+}
+
+class Tests
+{
+    async Task TestMethod()
+    {
+        await ExternalLibrary.ExternalClass.Task1;
+        await ExternalLibrary.ExternalClass.Task2;
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
     private DiagnosticResult CreateDiagnostic(int line, int column, int length) =>
         CSVerify.Diagnostic().WithSpan(line, column, line, column + length);
 }
