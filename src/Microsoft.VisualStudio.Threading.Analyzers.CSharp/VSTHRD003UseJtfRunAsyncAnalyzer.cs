@@ -73,6 +73,14 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
 
     private static bool IsSymbolAlwaysOkToAwait(ISymbol? symbol)
     {
+        // Check if the symbol has the CompletedTaskAttribute
+        if (symbol?.GetAttributes().Any(attr =>
+            attr.AttributeClass?.Name == Types.CompletedTaskAttribute.TypeName &&
+            attr.AttributeClass.BelongsToNamespace(Types.CompletedTaskAttribute.Namespace)) == true)
+        {
+            return true;
+        }
+
         if (symbol is IFieldSymbol field)
         {
             // Allow the TplExtensions.CompletedTask and related fields.
@@ -288,6 +296,12 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
 
                 break;
             case IMethodSymbol methodSymbol:
+                // Check if the method itself has the CompletedTaskAttribute
+                if (IsSymbolAlwaysOkToAwait(methodSymbol))
+                {
+                    return null;
+                }
+
                 if (Utils.IsTask(methodSymbol.ReturnType) && focusedExpression is InvocationExpressionSyntax invocationExpressionSyntax)
                 {
                     // Consider all arguments
