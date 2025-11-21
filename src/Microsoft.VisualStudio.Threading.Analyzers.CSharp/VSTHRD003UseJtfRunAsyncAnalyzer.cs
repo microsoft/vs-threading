@@ -71,14 +71,40 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
         context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeLambdaExpression), SyntaxKind.ParenthesizedLambdaExpression);
     }
 
-    private static bool IsSymbolAlwaysOkToAwait(ISymbol? symbol)
+    private static bool IsSymbolAlwaysOkToAwait(ISymbol? symbol, Compilation compilation)
     {
-        // Check if the symbol has the CompletedTaskAttribute
-        if (symbol?.GetAttributes().Any(attr =>
+        if (symbol is null)
+        {
+            return false;
+        }
+
+        // Check if the symbol has the CompletedTaskAttribute directly applied
+        if (symbol.GetAttributes().Any(attr =>
             attr.AttributeClass?.Name == Types.CompletedTaskAttribute.TypeName &&
-            attr.AttributeClass.BelongsToNamespace(Types.CompletedTaskAttribute.Namespace)) == true)
+            attr.AttributeClass.BelongsToNamespace(Types.CompletedTaskAttribute.Namespace)))
         {
             return true;
+        }
+
+        // Check for assembly-level CompletedTaskAttribute
+        foreach (AttributeData assemblyAttr in compilation.Assembly.GetAttributes())
+        {
+            if (assemblyAttr.AttributeClass?.Name == Types.CompletedTaskAttribute.TypeName &&
+                assemblyAttr.AttributeClass.BelongsToNamespace(Types.CompletedTaskAttribute.Namespace))
+            {
+                // Look for the Member named argument
+                foreach (KeyValuePair<string, TypedConstant> namedArg in assemblyAttr.NamedArguments)
+                {
+                    if (namedArg.Key == "Member" && namedArg.Value.Value is string memberName)
+                    {
+                        // Check if this symbol matches the specified member name
+                        if (IsSymbolMatchingMemberName(symbol, memberName))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
         }
 
         if (symbol is IFieldSymbol field)
@@ -101,6 +127,45 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
         }
 
         return false;
+    }
+
+    private static bool IsSymbolMatchingMemberName(ISymbol symbol, string memberName)
+    {
+        // Build the fully qualified name of the symbol
+        string fullyQualifiedName = GetFullyQualifiedName(symbol);
+
+        // Compare with the member name (case-sensitive)
+        return string.Equals(fullyQualifiedName, memberName, StringComparison.Ordinal);
+    }
+
+    private static string GetFullyQualifiedName(ISymbol symbol)
+    {
+        if (symbol.ContainingType is null)
+        {
+            return symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        }
+
+        // For members (properties, fields, methods), construct: Namespace.TypeName.MemberName
+        List<string> parts = new List<string>();
+
+        // Add member name
+        parts.Add(symbol.Name);
+
+        // Add containing type hierarchy
+        INamedTypeSymbol? currentType = symbol.ContainingType;
+        while (currentType is not null)
+        {
+            parts.Insert(0, currentType.Name);
+            currentType = currentType.ContainingType;
+        }
+
+        // Add namespace
+        if (symbol.ContainingNamespace is not null && !symbol.ContainingNamespace.IsGlobalNamespace)
+        {
+            parts.Insert(0, symbol.ContainingNamespace.ToDisplayString());
+        }
+
+        return string.Join(".", parts);
     }
 
     private void AnalyzeArrowExpressionClause(SyntaxNodeAnalysisContext context)
@@ -191,7 +256,7 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
                 symbolType = localSymbol.Type;
                 dataflowAnalysisCompatibleVariable = true;
                 break;
-            case IPropertySymbol propertySymbol when !IsSymbolAlwaysOkToAwait(propertySymbol):
+            case IPropertySymbol propertySymbol when !IsSymbolAlwaysOkToAwait(propertySymbol, context.Compilation):
                 symbolType = propertySymbol.Type;
 
                 if (focusedExpression is MemberAccessExpressionSyntax memberAccessExpression)
@@ -285,7 +350,7 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
                                 }
 
                                 ISymbol? definition = declarationSemanticModel.GetSymbolInfo(memberAccessSyntax, cancellationToken).Symbol;
-                                if (IsSymbolAlwaysOkToAwait(definition))
+                                if (IsSymbolAlwaysOkToAwait(definition, context.Compilation))
                                 {
                                     return null;
                                 }
@@ -297,7 +362,7 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
                 break;
             case IMethodSymbol methodSymbol:
                 // Check if the method itself has the CompletedTaskAttribute
-                if (IsSymbolAlwaysOkToAwait(methodSymbol))
+                if (IsSymbolAlwaysOkToAwait(methodSymbol, context.Compilation))
                 {
                     return null;
                 }

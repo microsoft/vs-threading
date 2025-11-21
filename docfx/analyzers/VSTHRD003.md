@@ -26,6 +26,17 @@ async Task MyMethodAsync()
 }
 ```
 
+### Marking external types
+
+You can also apply the attribute at the assembly level to mark members in external types that you don't control:
+
+```csharp
+[assembly: Microsoft.VisualStudio.Threading.CompletedTask(Member = "ExternalLibrary.ExternalClass.CompletedTaskProperty")]
+```
+
+This is useful when you're using third-party libraries that have pre-completed tasks but aren't annotated with the attribute.
+The `Member` property should contain the fully qualified name of the member in the format `Namespace.TypeName.MemberName`.
+
 The analyzer already recognizes the following as safe to await without the attribute:
 - `Task.CompletedTask`
 - `Task.FromResult(...)`

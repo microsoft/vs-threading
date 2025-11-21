@@ -1642,6 +1642,216 @@ class Tests
         await CSVerify.VerifyAnalyzerAsync(test);
     }
 
+    [Fact]
+    public async Task DoNotReportWarningWhenAwaitingPropertyMarkedByAssemblyLevelAttribute()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+[assembly: Microsoft.VisualStudio.Threading.CompletedTask(Member = ""ExternalLibrary.ExternalClass.CompletedTaskProperty"")]
+
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field | System.AttributeTargets.Assembly, Inherited = false, AllowMultiple = true)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+        public CompletedTaskAttribute() { }
+        public string? Member { get; set; }
+    }
+}
+
+namespace ExternalLibrary
+{
+    public static class ExternalClass
+    {
+        public static Task CompletedTaskProperty { get; } = Task.CompletedTask;
+    }
+}
+
+class Tests
+{
+    async Task TestMethod()
+    {
+        await ExternalLibrary.ExternalClass.CompletedTaskProperty;
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningWhenAwaitingFieldMarkedByAssemblyLevelAttribute()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+[assembly: Microsoft.VisualStudio.Threading.CompletedTask(Member = ""ExternalLibrary.ExternalClass.CompletedTaskField"")]
+
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field | System.AttributeTargets.Assembly, Inherited = false, AllowMultiple = true)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+        public CompletedTaskAttribute() { }
+        public string? Member { get; set; }
+    }
+}
+
+namespace ExternalLibrary
+{
+    public static class ExternalClass
+    {
+        public static readonly Task CompletedTaskField = Task.FromResult(true);
+    }
+}
+
+class Tests
+{
+    async Task TestMethod()
+    {
+        await ExternalLibrary.ExternalClass.CompletedTaskField;
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningWhenAwaitingMethodMarkedByAssemblyLevelAttribute()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+[assembly: Microsoft.VisualStudio.Threading.CompletedTask(Member = ""ExternalLibrary.ExternalClass.GetCompletedTask"")]
+
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field | System.AttributeTargets.Assembly, Inherited = false, AllowMultiple = true)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+        public CompletedTaskAttribute() { }
+        public string? Member { get; set; }
+    }
+}
+
+namespace ExternalLibrary
+{
+    public static class ExternalClass
+    {
+        public static Task GetCompletedTask() => Task.CompletedTask;
+    }
+}
+
+class Tests
+{
+    async Task TestMethod()
+    {
+        await ExternalLibrary.ExternalClass.GetCompletedTask();
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningWhenReturningPropertyMarkedByAssemblyLevelAttribute()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+[assembly: Microsoft.VisualStudio.Threading.CompletedTask(Member = ""ExternalLibrary.ExternalClass.CompletedTaskProperty"")]
+
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field | System.AttributeTargets.Assembly, Inherited = false, AllowMultiple = true)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+        public CompletedTaskAttribute() { }
+        public string? Member { get; set; }
+    }
+}
+
+namespace ExternalLibrary
+{
+    public static class ExternalClass
+    {
+        public static Task CompletedTaskProperty { get; } = Task.CompletedTask;
+    }
+}
+
+class Tests
+{
+    Task GetTask() => ExternalLibrary.ExternalClass.CompletedTaskProperty;
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task ReportWarningWhenAwaitingPropertyNotMarkedByAssemblyLevelAttribute()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+namespace ExternalLibrary
+{
+    public static class ExternalClass
+    {
+        public static Task SomeTaskProperty { get; } = Task.Run(() => {});
+    }
+}
+
+class Tests
+{
+    async Task TestMethod()
+    {
+        await [|ExternalLibrary.ExternalClass.SomeTaskProperty|];
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningWithMultipleAssemblyLevelAttributes()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+[assembly: Microsoft.VisualStudio.Threading.CompletedTask(Member = ""ExternalLibrary.ExternalClass.Task1"")]
+[assembly: Microsoft.VisualStudio.Threading.CompletedTask(Member = ""ExternalLibrary.ExternalClass.Task2"")]
+
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field | System.AttributeTargets.Assembly, Inherited = false, AllowMultiple = true)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+        public CompletedTaskAttribute() { }
+        public string? Member { get; set; }
+    }
+}
+
+namespace ExternalLibrary
+{
+    public static class ExternalClass
+    {
+        public static Task Task1 { get; } = Task.CompletedTask;
+        public static Task Task2 { get; } = Task.FromResult(true);
+    }
+}
+
+class Tests
+{
+    async Task TestMethod()
+    {
+        await ExternalLibrary.ExternalClass.Task1;
+        await ExternalLibrary.ExternalClass.Task2;
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
     private DiagnosticResult CreateDiagnostic(int line, int column, int length) =>
         CSVerify.Diagnostic().WithSpan(line, column, line, column + length);
 }
