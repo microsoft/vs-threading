@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 #if !COMPLETEDTASKATTRIBUTE_INCLUDED
+#define COMPLETEDTASKATTRIBUTE_INCLUDED
 
 namespace Microsoft.VisualStudio.Threading;
 
@@ -16,18 +17,10 @@ namespace Microsoft.VisualStudio.Threading;
 /// as awaiting an already-completed task does not pose a risk of deadlock.
 /// </remarks>
 [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
+#pragma warning disable SA1649 // File name should match first type name
 internal sealed class CompletedTaskAttribute : System.Attribute
 {
 }
-
-#pragma warning disable SA1403 // File may only contain a single namespace
-#pragma warning disable SA1649 // File name should match first type name
-internal static class CompletedTaskAttributeDefinition
-{
-    internal const bool Included = true;
-}
 #pragma warning restore SA1649 // File name should match first type name
-#pragma warning restore SA1403 // File may only contain a single namespace
 
-#define COMPLETEDTASKATTRIBUTE_INCLUDED
 #endif
