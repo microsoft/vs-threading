@@ -194,9 +194,6 @@ jobs:
       - powershell: Write-Host "##vso[task.setvariable variable=PROFILINGINPUTSDROPNAME]$(tools/variables/ProfilingInputsDropName.ps1)"
         displayName: ⚙ Set ProfilingInputsDropName for optprof
 
-  - ${{ if eq(variables['Build.Reason'], 'Schedule') }}:
-    - template: schedule-only-steps.yml
-
   - template: install-dependencies.yml
 
   - script: dotnet nbgv cloud -ca
