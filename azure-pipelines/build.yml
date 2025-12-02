@@ -69,12 +69,6 @@ parameters:
   type: boolean
   default: false
 
-# Whether this particular run is an OptProf profiling run.
-# This is used to skip unit tests and other non-essential work to improve reliability of the OptProf pipeline.
-- name: IsOptProf
-  type: boolean
-  default: false
-
 - name: RunTests
   type: boolean
   default: true
@@ -139,8 +133,11 @@ jobs:
         optprof:
           enabled: ${{ parameters.EnableOptProf }}
           ProfilingInputsDropName: $(ProfilingInputsDropName)
-          OptimizationInputsLookupMethod: DropPrefix
-          DropNamePrefix: OptimizationInputs/$(System.TeamProject)/$(Build.Repository.Name)
+          GeneratePropsFile: true
+          PropsPath: $(Build.ArtifactStagingDirectory)/InsertionOutputs/$(ProfilingInputsPropsName)
+          OptimizationInputsLookupMethod: GitTagRepo
+          GitTagProject: DevDiv
+          GitTagRepo: VS
           ShouldSkipOptimize: ${{ parameters.ShouldSkipOptimize }}
           AccessToken: $(System.AccessToken)
         mbpresteps:
@@ -148,8 +145,10 @@ jobs:
           fetchDepth: 0 # avoid shallow clone so nbgv can do its work.
           clean: true
         - ${{ if parameters.EnableOptProf }}:
-          - powershell: Write-Host "##vso[task.setvariable variable=PROFILINGINPUTSDROPNAME]$(tools/variables/ProfilingInputsDropName.ps1)"
-            displayName: ⚙ Set ProfilingInputsDropName for optprof
+          - powershell: |
+              Write-Host "##vso[task.setvariable variable=PROFILINGINPUTSDROPNAME]$(tools/variables/ProfilingInputsDropName.ps1)"
+              Write-Host "##vso[task.setvariable variable=PROFILINGINPUTSPROPSNAME]$(tools/variables/ProfilingInputsPropsName.ps1)"
+            displayName: ⚙ Setting variables for optprof
       sdl:
         binskim:
           analyzeTargetGlob: $(Build.ArtifactStagingDirectory)\symbols-Windows\**
@@ -185,6 +184,15 @@ jobs:
           displayName: 📢 Publish APIScanInputs
           targetPath: $(Build.ArtifactStagingDirectory)/APIScanInputs-Windows
           artifactName: APIScanInputs
+      - ${{ if parameters.EnableOptProf }}:
+        - output: artifactsDrop
+          displayName: 📢 Publish to Artifact Services - ProfilingInputs
+          dropServiceURI: https://devdiv.artifacts.visualstudio.com
+          buildNumber: $(ProfilingInputsDropName)
+          sourcePath: $(Build.ArtifactStagingDirectory)\OptProf\ProfilingInputs
+          toLowerCase: false
+          retentionDays: 500
+          condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
   steps:
   - ${{ if not(parameters.Is1ESPT) }}:
     - checkout: self
@@ -204,7 +212,6 @@ jobs:
     - template: microbuild.before.yml
       parameters:
         EnableLocalization: ${{ parameters.EnableLocalization }}
-        IsOptProf: ${{ parameters.IsOptProf }}
         ShouldSkipOptimize: ${{ parameters.ShouldSkipOptimize }}
         RealSign: ${{ parameters.RealSign }}
 
@@ -212,7 +219,6 @@ jobs:
     parameters:
       Is1ESPT: ${{ parameters.Is1ESPT }}
       RunTests: ${{ parameters.RunTests }}
-      IsOptProf: ${{ parameters.IsOptProf }}
       osRID: win
 
   - ${{ if and(parameters.EnableDotNetFormatCheck, not(parameters.EnableLinuxBuild)) }}:
@@ -224,140 +230,138 @@ jobs:
   - ${{ if eq(variables['system.collectionId'], '011b8bdf-6d56-4f87-be0d-0092136884d9') }}:
     - template: microbuild.after.yml
       parameters:
-        IsOptProf: ${{ parameters.IsOptProf }}
         SkipCodesignVerify: ${{ parameters.SkipCodesignVerify }}
 
-- ${{ if not(parameters.IsOptProf) }}:
-  - ${{ if parameters.EnableLinuxBuild }}:
-    - job: Linux
-      pool: ${{ parameters.linuxPool }}
-      ${{ if eq(variables['system.collectionId'], '011b8bdf-6d56-4f87-be0d-0092136884d9') }}:
-        templateContext:
-          mb:
-            ${{ if parameters.RealSign }}:
-              signing:
-                enabled: false # enable when building unique artifacts on this agent that must be signed
-                signType: real
-                signWithProd: true
-          outputParentDirectory: $(Build.ArtifactStagingDirectory)
-          outputs:
-          - ${{ each artifact in parameters.artifact_names }}:
-            - ${{ if or(ne(artifact.testOnly, 'true'), parameters.RunTests) }}:
-              - output: pipelineArtifact
-                displayName: 📢 Publish ${{ artifact.name }}-Linux
-                targetPath: $(Build.ArtifactStagingDirectory)/${{ artifact.name }}-Linux
-                artifactName: ${{ artifact.name }}-Linux
-                ${{ if and(parameters.Is1ESPTOfficial, eq(artifact.sbomEnabled, 'true')) }}:
-                  sbomEnabled: true
-              - output: pipelineArtifact
-                displayName: 📢 Publish ${{ artifact.name }}-Linux (for failed attempts)
-                targetPath: $(Build.ArtifactStagingDirectory)/${{ artifact.name }}-Linux
-                artifactName: ${{ artifact.name }}-Linux-$(System.PhaseAttempt)
-                ${{ if and(parameters.Is1ESPTOfficial, eq(artifact.sbomEnabled, 'true')) }}:
-                  sbomEnabled: true
-                condition: failed()
-      steps:
-      - checkout: self
-        fetchDepth: 0 # avoid shallow clone so nbgv can do its work.
-        clean: true
-      - template: install-dependencies.yml
-      - template: dotnet.yml
-        parameters:
-          Is1ESPT: ${{ parameters.Is1ESPT }}
-          RunTests: ${{ parameters.RunTests }}
-          BuildRequiresAccessToken: ${{ parameters.RealSign }} # Real signing on non-Windows machines requires passing through access token to build steps that sign
-          osRID: linux
-      - ${{ if parameters.EnableDotNetFormatCheck }}:
-        - script: dotnet format --verify-no-changes
-          displayName: 💅 Verify formatted code
-          env:
-            dotnetformat: true # part of a workaround for https://github.com/dotnet/sdk/issues/44951
-
-  - ${{ if parameters.EnableMacOSBuild }}:
-    - job: macOS
-      pool: ${{ parameters.macOSPool }}
-      ${{ if eq(variables['system.collectionId'], '011b8bdf-6d56-4f87-be0d-0092136884d9') }}:
-        templateContext:
-          mb:
-            ${{ if parameters.RealSign }}:
-              signing:
-                enabled: false # enable when building unique artifacts on this agent that must be signed
-                signType: real
-                signWithProd: true
-          outputParentDirectory: $(Build.ArtifactStagingDirectory)
-          outputs:
-          - ${{ each artifact in parameters.artifact_names }}:
-            - ${{ if or(ne(artifact.testOnly, 'true'), parameters.RunTests) }}:
-              - output: pipelineArtifact
-                displayName: 📢 Publish ${{ artifact.name }}-macOS
-                targetPath: $(Build.ArtifactStagingDirectory)/${{ artifact.name }}-macOS
-                artifactName: ${{ artifact.name }}-macOS
-                ${{ if and(parameters.Is1ESPTOfficial, eq(artifact.sbomEnabled, 'true')) }}:
-                  sbomEnabled: true
-              - output: pipelineArtifact
-                displayName: 📢 Publish ${{ artifact.name }}-macOS (for failed attempts)
-                targetPath: $(Build.ArtifactStagingDirectory)/${{ artifact.name }}-macOS
-                artifactName: ${{ artifact.name }}-macOS-$(System.PhaseAttempt)
-                ${{ if and(parameters.Is1ESPTOfficial, eq(artifact.sbomEnabled, 'true')) }}:
-                  sbomEnabled: true
-                condition: failed()
-      steps:
-      - checkout: self
-        fetchDepth: 0 # avoid shallow clone so nbgv can do its work.
-        clean: true
-      - template: install-dependencies.yml
-      - template: dotnet.yml
-        parameters:
-          Is1ESPT: ${{ parameters.Is1ESPT }}
-          RunTests: ${{ parameters.RunTests }}
-          BuildRequiresAccessToken: ${{ parameters.RealSign }} # Real signing on non-Windows machines requires passing through access token to build steps that sign
-          osRID: osx
-
-  - job: WrapUp
-    dependsOn:
-    - Windows
-    - ${{ if parameters.EnableLinuxBuild }}:
-      - Linux
-    - ${{ if parameters.EnableMacOSBuild }}:
-      - macOS
-    pool: ${{ parameters.windowsPool }} # Use Windows agent because PublishSymbols task requires it (https://github.com/microsoft/azure-pipelines-tasks/issues/13821).
-    condition: succeededOrFailed()
-    variables:
-      ONEES_ENFORCED_CODEQL_ENABLED: false # CodeQL runs on build jobs, we don't need it here
+- ${{ if parameters.EnableLinuxBuild }}:
+  - job: Linux
+    pool: ${{ parameters.linuxPool }}
     ${{ if eq(variables['system.collectionId'], '011b8bdf-6d56-4f87-be0d-0092136884d9') }}:
       templateContext:
-        ${{ if not(parameters.RealSign) }}:
-          mb:
-            signing: # if the build is test-signed, install the signing plugin so that CSVTestSignPolicy.xml is available
-              enabled: true
-              zipSources: false
-              signType: test
+        mb:
+          ${{ if parameters.RealSign }}:
+            signing:
+              enabled: false # enable when building unique artifacts on this agent that must be signed
+              signType: real
+              signWithProd: true
         outputParentDirectory: $(Build.ArtifactStagingDirectory)
         outputs:
-          - output: pipelineArtifact
-            displayName: 📢 Publish symbols-legacy
-            targetPath: $(Build.ArtifactStagingDirectory)/symbols-legacy
-            artifactName: symbols-legacy
-            condition: succeededOrFailed()
+        - ${{ each artifact in parameters.artifact_names }}:
+          - ${{ if or(ne(artifact.testOnly, 'true'), parameters.RunTests) }}:
+            - output: pipelineArtifact
+              displayName: 📢 Publish ${{ artifact.name }}-Linux
+              targetPath: $(Build.ArtifactStagingDirectory)/${{ artifact.name }}-Linux
+              artifactName: ${{ artifact.name }}-Linux
+              ${{ if and(parameters.Is1ESPTOfficial, eq(artifact.sbomEnabled, 'true')) }}:
+                sbomEnabled: true
+            - output: pipelineArtifact
+              displayName: 📢 Publish ${{ artifact.name }}-Linux (for failed attempts)
+              targetPath: $(Build.ArtifactStagingDirectory)/${{ artifact.name }}-Linux
+              artifactName: ${{ artifact.name }}-Linux-$(System.PhaseAttempt)
+              ${{ if and(parameters.Is1ESPTOfficial, eq(artifact.sbomEnabled, 'true')) }}:
+                sbomEnabled: true
+              condition: failed()
     steps:
     - checkout: self
       fetchDepth: 0 # avoid shallow clone so nbgv can do its work.
       clean: true
     - template: install-dependencies.yml
+    - template: dotnet.yml
       parameters:
-        initArgs: -NoRestore
-    - template: publish-symbols.yml
+        Is1ESPT: ${{ parameters.Is1ESPT }}
+        RunTests: ${{ parameters.RunTests }}
+        BuildRequiresAccessToken: ${{ parameters.RealSign }} # Real signing on non-Windows machines requires passing through access token to build steps that sign
+        osRID: linux
+    - ${{ if parameters.EnableDotNetFormatCheck }}:
+      - script: dotnet format --verify-no-changes
+        displayName: 💅 Verify formatted code
+        env:
+          dotnetformat: true # part of a workaround for https://github.com/dotnet/sdk/issues/44951
+
+- ${{ if parameters.EnableMacOSBuild }}:
+  - job: macOS
+    pool: ${{ parameters.macOSPool }}
+    ${{ if eq(variables['system.collectionId'], '011b8bdf-6d56-4f87-be0d-0092136884d9') }}:
+      templateContext:
+        mb:
+          ${{ if parameters.RealSign }}:
+            signing:
+              enabled: false # enable when building unique artifacts on this agent that must be signed
+              signType: real
+              signWithProd: true
+        outputParentDirectory: $(Build.ArtifactStagingDirectory)
+        outputs:
+        - ${{ each artifact in parameters.artifact_names }}:
+          - ${{ if or(ne(artifact.testOnly, 'true'), parameters.RunTests) }}:
+            - output: pipelineArtifact
+              displayName: 📢 Publish ${{ artifact.name }}-macOS
+              targetPath: $(Build.ArtifactStagingDirectory)/${{ artifact.name }}-macOS
+              artifactName: ${{ artifact.name }}-macOS
+              ${{ if and(parameters.Is1ESPTOfficial, eq(artifact.sbomEnabled, 'true')) }}:
+                sbomEnabled: true
+            - output: pipelineArtifact
+              displayName: 📢 Publish ${{ artifact.name }}-macOS (for failed attempts)
+              targetPath: $(Build.ArtifactStagingDirectory)/${{ artifact.name }}-macOS
+              artifactName: ${{ artifact.name }}-macOS-$(System.PhaseAttempt)
+              ${{ if and(parameters.Is1ESPTOfficial, eq(artifact.sbomEnabled, 'true')) }}:
+                sbomEnabled: true
+              condition: failed()
+    steps:
+    - checkout: self
+      fetchDepth: 0 # avoid shallow clone so nbgv can do its work.
+      clean: true
+    - template: install-dependencies.yml
+    - template: dotnet.yml
+      parameters:
+        Is1ESPT: ${{ parameters.Is1ESPT }}
+        RunTests: ${{ parameters.RunTests }}
+        BuildRequiresAccessToken: ${{ parameters.RealSign }} # Real signing on non-Windows machines requires passing through access token to build steps that sign
+        osRID: osx
+
+- job: WrapUp
+  dependsOn:
+  - Windows
+  - ${{ if parameters.EnableLinuxBuild }}:
+    - Linux
+  - ${{ if parameters.EnableMacOSBuild }}:
+    - macOS
+  pool: ${{ parameters.windowsPool }} # Use Windows agent because PublishSymbols task requires it (https://github.com/microsoft/azure-pipelines-tasks/issues/13821).
+  condition: succeededOrFailed()
+  variables:
+    ONEES_ENFORCED_CODEQL_ENABLED: false # CodeQL runs on build jobs, we don't need it here
+  ${{ if eq(variables['system.collectionId'], '011b8bdf-6d56-4f87-be0d-0092136884d9') }}:
+    templateContext:
+      ${{ if not(parameters.RealSign) }}:
+        mb:
+          signing: # if the build is test-signed, install the signing plugin so that CSVTestSignPolicy.xml is available
+            enabled: true
+            zipSources: false
+            signType: test
+      outputParentDirectory: $(Build.ArtifactStagingDirectory)
+      outputs:
+        - output: pipelineArtifact
+          displayName: 📢 Publish symbols-legacy
+          targetPath: $(Build.ArtifactStagingDirectory)/symbols-legacy
+          artifactName: symbols-legacy
+          condition: succeededOrFailed()
+  steps:
+  - checkout: self
+    fetchDepth: 0 # avoid shallow clone so nbgv can do its work.
+    clean: true
+  - template: install-dependencies.yml
+    parameters:
+      initArgs: -NoRestore
+  - template: publish-symbols.yml
+    parameters:
+      EnableLinuxBuild: ${{ parameters.EnableLinuxBuild }}
+      EnableMacOSBuild: ${{ parameters.EnableMacOSBuild }}
+  - ${{ if and(parameters.RunTests, parameters.PublishCodeCoverage) }}:
+    - template: publish-codecoverage.yml
       parameters:
         EnableLinuxBuild: ${{ parameters.EnableLinuxBuild }}
         EnableMacOSBuild: ${{ parameters.EnableMacOSBuild }}
-    - ${{ if and(parameters.RunTests, parameters.PublishCodeCoverage) }}:
-      - template: publish-codecoverage.yml
-        parameters:
-          EnableLinuxBuild: ${{ parameters.EnableLinuxBuild }}
-          EnableMacOSBuild: ${{ parameters.EnableMacOSBuild }}
 
-  - ${{ if parameters.EnableAPIScan }}:
-    - template: apiscan.yml
-      parameters:
-        windowsPool: ${{ parameters.windowsPool }}
-        RealSign: ${{ parameters.RealSign }}
+- ${{ if parameters.EnableAPIScan }}:
+  - template: apiscan.yml
+    parameters:
+      windowsPool: ${{ parameters.windowsPool }}
+      RealSign: ${{ parameters.RealSign }}
