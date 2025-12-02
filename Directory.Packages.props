@@ -11,7 +11,7 @@
     <CodeAnalysisAnalyzerVersion>3.11.0-beta1.25076.3</CodeAnalysisAnalyzerVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="DNNE" Version="2.0.7" />
+    <PackageVersion Include="DNNE" Version="2.0.8" />
     <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis" Version="$(CodeAnalysisVersion)" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
