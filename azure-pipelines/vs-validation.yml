@@ -105,7 +105,7 @@ extends:
             InsertionPayloadName: $(Build.Repository.Name) VALIDATION BUILD $(Build.BuildNumber) ($(Build.SourceBranch)) [Skip-SymbolCheck] [Skip-HashCheck] [Skip-SignCheck]
             InsertionDescription: |
               This PR is for **validation purposes only** for !$(System.PullRequest.PullRequestId). **Do not complete**.
-            CustomScriptExecutionCommand: src/VSSDK/NuGet/AllowUnstablePackages.ps1
+            CustomScriptExecutionCommand: $(Pipeline.Workspace)\VSInsertion-Windows\vs-insertion-script.ps1; src\VSSDK\NuGet\AllowUnstablePackages.ps1
             InsertionBuildPolicies: Request Perf DDRITs
             InsertionReviewers: $(Build.RequestedFor)
             DraftPR: false # set to true and update InsertionBuildPolicy when we can specify all the validations we want to run (https://dev.azure.com/devdiv/DevDiv/_workitems/edit/2224288)
