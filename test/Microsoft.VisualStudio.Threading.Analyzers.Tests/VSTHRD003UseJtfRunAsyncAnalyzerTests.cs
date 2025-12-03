@@ -1852,6 +1852,146 @@ class Tests
         await CSVerify.VerifyAnalyzerAsync(test);
     }
 
+    [Fact]
+    public async Task ReportWarningWhenCompletedTaskAttributeOnNonReadonlyField()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+    }
+}
+
+class Tests
+{
+    [Microsoft.VisualStudio.Threading.CompletedTask]
+    private static Task MyTask = Task.CompletedTask; // Not readonly
+
+    async Task GetTask()
+    {
+        await [|MyTask|];
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task ReportWarningWhenCompletedTaskAttributeOnPropertyWithPublicSetter()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+    }
+}
+
+class Tests
+{
+    [Microsoft.VisualStudio.Threading.CompletedTask]
+    public static Task MyTask { get; set; } = Task.CompletedTask; // Public setter
+
+    async Task GetTask()
+    {
+        await [|MyTask|];
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task ReportWarningWhenCompletedTaskAttributeOnPropertyWithInternalSetter()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+    }
+}
+
+class Tests
+{
+    [Microsoft.VisualStudio.Threading.CompletedTask]
+    public static Task MyTask { get; internal set; } = Task.CompletedTask; // Internal setter
+
+    async Task GetTask()
+    {
+        await [|MyTask|];
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningWhenCompletedTaskAttributeOnPropertyWithPrivateSetter()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+    }
+}
+
+class Tests
+{
+    [Microsoft.VisualStudio.Threading.CompletedTask]
+    public static Task MyTask { get; private set; } = Task.CompletedTask; // Private setter is OK
+
+    async Task GetTask()
+    {
+        await MyTask;
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningWhenCompletedTaskAttributeOnPropertyWithGetterOnly()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+    }
+}
+
+class Tests
+{
+    [Microsoft.VisualStudio.Threading.CompletedTask]
+    public static Task MyTask { get; } = Task.CompletedTask; // Getter-only is OK
+
+    async Task GetTask()
+    {
+        await MyTask;
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
     private DiagnosticResult CreateDiagnostic(int line, int column, int length) =>
         CSVerify.Diagnostic().WithSpan(line, column, line, column + length);
 }

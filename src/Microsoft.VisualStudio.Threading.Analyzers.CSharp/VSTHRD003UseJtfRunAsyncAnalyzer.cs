@@ -83,6 +83,24 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
             attr.AttributeClass?.Name == Types.CompletedTaskAttribute.TypeName &&
             attr.AttributeClass.BelongsToNamespace(Types.CompletedTaskAttribute.Namespace)))
         {
+            // Validate that the attribute is used correctly
+            if (symbol is IFieldSymbol fieldSymbol)
+            {
+                // Fields must be readonly
+                if (!fieldSymbol.IsReadOnly)
+                {
+                    return false;
+                }
+            }
+            else if (symbol is IPropertySymbol propertySymbol)
+            {
+                // Properties must not have non-private setters
+                if (propertySymbol.SetMethod is not null && propertySymbol.SetMethod.DeclaredAccessibility != Accessibility.Private)
+                {
+                    return false;
+                }
+            }
+
             return true;
         }
 

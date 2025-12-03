@@ -26,6 +26,10 @@ async Task MyMethodAsync()
 }
 ```
 
+**Important restrictions:**
+- Fields must be marked `readonly` when using this attribute
+- Properties must not have non-private setters (getter-only or private setters are allowed)
+
 ### Marking external types
 
 You can also apply the attribute at the assembly level to mark members in external types that you don't control:
