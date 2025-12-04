@@ -359,4 +359,16 @@ Start the work within this context, or use JoinableTaskFactory.RunAsync to start
   <data name="VSTHRD003InvalidAttributeUse_MessageFormat" xml:space="preserve">
     <value>CompletedTaskAttribute can only be applied to readonly fields, properties without non-private setters, or methods. {0}</value>
   </data>
+  <data name="VSTHRD003InvalidAttributeUse_FieldNotReadonly" xml:space="preserve">
+    <value>Fields must be readonly.</value>
+    <comment>Error message shown when the CompletedTaskAttribute is applied to a field that is not marked as readonly. The attribute is only valid on readonly fields to ensure the task value cannot be changed.</comment>
+  </data>
+  <data name="VSTHRD003InvalidAttributeUse_PropertyWithNonPrivateSetter" xml:space="preserve">
+    <value>Properties must not have non-private setters.</value>
+    <comment>Error message shown when the CompletedTaskAttribute is applied to a property that has a public, internal, or protected setter. The attribute is only valid on properties with private setters or no setter (getter-only) to ensure the task value cannot be changed from outside the class.</comment>
+  </data>
+  <data name="VSTHRD003InvalidAttributeUse_PropertyWithNonPrivateInit" xml:space="preserve">
+    <value>Properties with init accessors must be private.</value>
+    <comment>Error message shown when the CompletedTaskAttribute is applied to a property with a public, internal, or protected init accessor. Init accessors allow setting the property during object initialization, so the property itself must be private when using this attribute to ensure the task value cannot be changed from outside the class.</comment>
+  </data>
 </root>

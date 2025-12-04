@@ -230,7 +230,7 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
             // Fields must be readonly
             if (!fieldSymbol.IsReadOnly)
             {
-                errorMessage = "Fields must be readonly.";
+                errorMessage = Strings.VSTHRD003InvalidAttributeUse_FieldNotReadonly;
             }
         }
         else if (symbol is IPropertySymbol propertySymbol)
@@ -243,13 +243,13 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
                 {
                     if (propertySymbol.DeclaredAccessibility != Accessibility.Private)
                     {
-                        errorMessage = "Properties with init accessors must be private.";
+                        errorMessage = Strings.VSTHRD003InvalidAttributeUse_PropertyWithNonPrivateInit;
                     }
                 }
                 else if (propertySymbol.SetMethod.DeclaredAccessibility != Accessibility.Private)
                 {
                     // Non-private setters are not allowed
-                    errorMessage = "Properties must not have non-private setters.";
+                    errorMessage = Strings.VSTHRD003InvalidAttributeUse_PropertyWithNonPrivateSetter;
                 }
             }
         }
