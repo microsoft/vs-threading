@@ -47,6 +47,11 @@ if ($x86) {
 $testBinLog = Join-Path $ArtifactStagingFolder (Join-Path build_logs test.binlog)
 $testDiagLog = Join-Path $ArtifactStagingFolder (Join-Path test_logs diag.log)
 
+$extraArgs = @()
+if ($IsLinux -or $IsMacOS) {
+    $extraArgs += '-p:Platform=NonWindows'
+}
+
 & $dotnet test $RepoRoot `
     --no-build `
     -c $Configuration `
@@ -58,6 +63,7 @@ $testDiagLog = Join-Path $ArtifactStagingFolder (Join-Path test_logs diag.log)
     -bl:"$testBinLog" `
     --diag "$testDiagLog;TraceLevel=info" `
     --logger trx `
+    @extraArgs `
 
 $unknownCounter = 0
 Get-ChildItem -Recurse -Path $RepoRoot\test\*.trx |% {
