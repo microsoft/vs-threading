@@ -6,7 +6,6 @@
       <InstrumentationArguments>/ExeConfig:"%VisualStudio.InstallationUnderTest.Path%\Common7\IDE\vsn.exe"</InstrumentationArguments>
       <Scenarios>
         <TestContainer Name="VSPE">
-          <!-- When adding to this list, be sure to also add to VS repo too (e.g. https://dev.azure.com/devdiv/DevDiv/_git/VS/pullrequest/203770) -->
           <TestCase FullyQualifiedName="VSPE.OptProfTests.vs_perf_DesignTime_solution_loadclose_cs_picasso" />
         </TestContainer>
       </Scenarios>
