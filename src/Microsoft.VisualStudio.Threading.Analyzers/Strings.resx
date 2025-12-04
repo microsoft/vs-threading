@@ -353,4 +353,10 @@ Start the work within this context, or use JoinableTaskFactory.RunAsync to start
   <data name="VSTHRD115_CodeFix_UseFactory_Title" xml:space="preserve">
     <value>Use 'JoinableTaskContext.CreateNoOpContext' instead.</value>
   </data>
+  <data name="VSTHRD003InvalidAttributeUse_Title" xml:space="preserve">
+    <value>Invalid use of CompletedTaskAttribute</value>
+  </data>
+  <data name="VSTHRD003InvalidAttributeUse_MessageFormat" xml:space="preserve">
+    <value>CompletedTaskAttribute can only be applied to readonly fields, properties without non-private setters, or methods. {0}</value>
+  </data>
 </root>

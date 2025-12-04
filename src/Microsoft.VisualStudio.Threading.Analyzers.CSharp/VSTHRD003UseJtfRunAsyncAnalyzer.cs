@@ -40,6 +40,15 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
 {
     public const string Id = "VSTHRD003";
 
+    public static readonly DiagnosticDescriptor InvalidAttributeUseDescriptor = new DiagnosticDescriptor(
+        id: Id,
+        title: new LocalizableResourceString(nameof(Strings.VSTHRD003InvalidAttributeUse_Title), Strings.ResourceManager, typeof(Strings)),
+        messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD003InvalidAttributeUse_MessageFormat), Strings.ResourceManager, typeof(Strings)),
+        helpLinkUri: Utils.GetHelpLink(Id),
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
     internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
         id: Id,
         title: new LocalizableResourceString(nameof(Strings.VSTHRD003_Title), Strings.ResourceManager, typeof(Strings)),
@@ -54,7 +63,7 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
     {
         get
         {
-            return ImmutableArray.Create(Descriptor);
+            return ImmutableArray.Create(InvalidAttributeUseDescriptor, Descriptor);
         }
     }
 
@@ -69,6 +78,7 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
         context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeArrowExpressionClause), SyntaxKind.ArrowExpressionClause);
         context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeLambdaExpression), SyntaxKind.SimpleLambdaExpression);
         context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeLambdaExpression), SyntaxKind.ParenthesizedLambdaExpression);
+        context.RegisterSymbolAction(Utils.DebuggableWrapper(this.AnalyzeSymbolForInvalidAttributeUse), SymbolKind.Field, SymbolKind.Property, SymbolKind.Method);
     }
 
     private static bool IsSymbolAlwaysOkToAwait(ISymbol? symbol, Compilation compilation)
@@ -95,9 +105,22 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
             else if (symbol is IPropertySymbol propertySymbol)
             {
                 // Properties must not have non-private setters
-                if (propertySymbol.SetMethod is not null && propertySymbol.SetMethod.DeclaredAccessibility != Accessibility.Private)
+                // Init accessors are only allowed if the property itself is private
+                if (propertySymbol.SetMethod is not null)
                 {
-                    return false;
+                    if (propertySymbol.SetMethod.IsInitOnly)
+                    {
+                        // Init accessor - only allowed if property is private
+                        if (propertySymbol.DeclaredAccessibility != Accessibility.Private)
+                        {
+                            return false;
+                        }
+                    }
+                    else if (propertySymbol.SetMethod.DeclaredAccessibility != Accessibility.Private)
+                    {
+                        // Regular setter must be private
+                        return false;
+                    }
                 }
             }
 
@@ -184,6 +207,63 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
         }
 
         return string.Join(".", parts);
+    }
+
+    private void AnalyzeSymbolForInvalidAttributeUse(SymbolAnalysisContext context)
+    {
+        ISymbol symbol = context.Symbol;
+
+        // Check if the symbol has the CompletedTaskAttribute
+        AttributeData? completedTaskAttr = symbol.GetAttributes().FirstOrDefault(attr =>
+            attr.AttributeClass?.Name == Types.CompletedTaskAttribute.TypeName &&
+            attr.AttributeClass.BelongsToNamespace(Types.CompletedTaskAttribute.Namespace));
+
+        if (completedTaskAttr is null)
+        {
+            return;
+        }
+
+        string? errorMessage = null;
+
+        if (symbol is IFieldSymbol fieldSymbol)
+        {
+            // Fields must be readonly
+            if (!fieldSymbol.IsReadOnly)
+            {
+                errorMessage = "Fields must be readonly.";
+            }
+        }
+        else if (symbol is IPropertySymbol propertySymbol)
+        {
+            // Check for init accessor (which is a special kind of setter)
+            if (propertySymbol.SetMethod is not null)
+            {
+                // Init accessors are only allowed if the property itself is private
+                if (propertySymbol.SetMethod.IsInitOnly)
+                {
+                    if (propertySymbol.DeclaredAccessibility != Accessibility.Private)
+                    {
+                        errorMessage = "Properties with init accessors must be private.";
+                    }
+                }
+                else if (propertySymbol.SetMethod.DeclaredAccessibility != Accessibility.Private)
+                {
+                    // Non-private setters are not allowed
+                    errorMessage = "Properties must not have non-private setters.";
+                }
+            }
+        }
+
+        // Methods are always allowed
+        if (errorMessage is not null)
+        {
+            // Report diagnostic on the attribute location
+            Location? location = completedTaskAttr.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken).GetLocation();
+            if (location is not null)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(InvalidAttributeUseDescriptor, location, errorMessage));
+            }
+        }
     }
 
     private void AnalyzeArrowExpressionClause(SyntaxNodeAnalysisContext context)

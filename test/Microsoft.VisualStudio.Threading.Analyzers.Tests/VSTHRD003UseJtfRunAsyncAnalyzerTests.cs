@@ -1868,7 +1868,7 @@ namespace Microsoft.VisualStudio.Threading
 
 class Tests
 {
-    [Microsoft.VisualStudio.Threading.CompletedTask]
+    [{|#0:Microsoft.VisualStudio.Threading.CompletedTask|}]
     private static Task MyTask = Task.CompletedTask; // Not readonly
 
     async Task GetTask()
@@ -1877,7 +1877,10 @@ class Tests
     }
 }
 ";
-        await CSVerify.VerifyAnalyzerAsync(test);
+        DiagnosticResult expected = new DiagnosticResult(Microsoft.VisualStudio.Threading.Analyzers.VSTHRD003UseJtfRunAsyncAnalyzer.InvalidAttributeUseDescriptor)
+            .WithLocation(0)
+            .WithArguments("Fields must be readonly.");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
     [Fact]
@@ -1896,7 +1899,7 @@ namespace Microsoft.VisualStudio.Threading
 
 class Tests
 {
-    [Microsoft.VisualStudio.Threading.CompletedTask]
+    [{|#0:Microsoft.VisualStudio.Threading.CompletedTask|}]
     public static Task MyTask { get; set; } = Task.CompletedTask; // Public setter
 
     async Task GetTask()
@@ -1905,7 +1908,10 @@ class Tests
     }
 }
 ";
-        await CSVerify.VerifyAnalyzerAsync(test);
+        DiagnosticResult expected = new DiagnosticResult(Microsoft.VisualStudio.Threading.Analyzers.VSTHRD003UseJtfRunAsyncAnalyzer.InvalidAttributeUseDescriptor)
+            .WithLocation(0)
+            .WithArguments("Properties must not have non-private setters.");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
     [Fact]
@@ -1924,7 +1930,7 @@ namespace Microsoft.VisualStudio.Threading
 
 class Tests
 {
-    [Microsoft.VisualStudio.Threading.CompletedTask]
+    [{|#0:Microsoft.VisualStudio.Threading.CompletedTask|}]
     public static Task MyTask { get; internal set; } = Task.CompletedTask; // Internal setter
 
     async Task GetTask()
@@ -1933,7 +1939,10 @@ class Tests
     }
 }
 ";
-        await CSVerify.VerifyAnalyzerAsync(test);
+        DiagnosticResult expected = new DiagnosticResult(Microsoft.VisualStudio.Threading.Analyzers.VSTHRD003UseJtfRunAsyncAnalyzer.InvalidAttributeUseDescriptor)
+            .WithLocation(0)
+            .WithArguments("Properties must not have non-private setters.");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
     [Fact]
@@ -1990,6 +1999,158 @@ class Tests
 }
 ";
         await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task ReportDiagnosticWhenCompletedTaskAttributeOnPropertyWithPublicInit()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+    }
+}
+
+class Tests
+{
+    [{|#0:Microsoft.VisualStudio.Threading.CompletedTask|}]
+    public static Task MyTask { get; init; } = Task.CompletedTask; // Public init
+
+    async Task GetTask()
+    {
+        await [|MyTask|];
+    }
+}
+";
+        DiagnosticResult expected = new DiagnosticResult(Microsoft.VisualStudio.Threading.Analyzers.VSTHRD003UseJtfRunAsyncAnalyzer.InvalidAttributeUseDescriptor)
+            .WithLocation(0)
+            .WithArguments("Properties with init accessors must be private.");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningWhenCompletedTaskAttributeOnPrivatePropertyWithInit()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+    }
+}
+
+class Tests
+{
+    [Microsoft.VisualStudio.Threading.CompletedTask]
+    private static Task MyTask { get; init; } = Task.CompletedTask; // Private init is OK
+
+    async Task GetTask()
+    {
+        await MyTask;
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task ReportDiagnosticWhenCompletedTaskAttributeOnNonReadonlyFieldWithDiagnosticOnAttribute()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+    }
+}
+
+class Tests
+{
+    [{|#0:Microsoft.VisualStudio.Threading.CompletedTask|}]
+    private static Task MyTask = Task.CompletedTask; // Not readonly
+
+    async Task GetTask()
+    {
+        await [|MyTask|];
+    }
+}
+";
+        DiagnosticResult expected = new DiagnosticResult(Microsoft.VisualStudio.Threading.Analyzers.VSTHRD003UseJtfRunAsyncAnalyzer.InvalidAttributeUseDescriptor)
+            .WithLocation(0)
+            .WithArguments("Fields must be readonly.");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task ReportDiagnosticWhenCompletedTaskAttributeOnPropertyWithPublicSetterWithDiagnosticOnAttribute()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+    }
+}
+
+class Tests
+{
+    [{|#0:Microsoft.VisualStudio.Threading.CompletedTask|}]
+    public static Task MyTask { get; set; } = Task.CompletedTask; // Public setter
+
+    async Task GetTask()
+    {
+        await [|MyTask|];
+    }
+}
+";
+        DiagnosticResult expected = new DiagnosticResult(Microsoft.VisualStudio.Threading.Analyzers.VSTHRD003UseJtfRunAsyncAnalyzer.InvalidAttributeUseDescriptor)
+            .WithLocation(0)
+            .WithArguments("Properties must not have non-private setters.");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task ReportDiagnosticWhenCompletedTaskAttributeOnPropertyWithInternalSetterWithDiagnosticOnAttribute()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Method | System.AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+    }
+}
+
+class Tests
+{
+    [{|#0:Microsoft.VisualStudio.Threading.CompletedTask|}]
+    public static Task MyTask { get; internal set; } = Task.CompletedTask; // Internal setter
+
+    async Task GetTask()
+    {
+        await [|MyTask|];
+    }
+}
+";
+        DiagnosticResult expected = new DiagnosticResult(Microsoft.VisualStudio.Threading.Analyzers.VSTHRD003UseJtfRunAsyncAnalyzer.InvalidAttributeUseDescriptor)
+            .WithLocation(0)
+            .WithArguments("Properties must not have non-private setters.");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
     private DiagnosticResult CreateDiagnostic(int line, int column, int length) =>
