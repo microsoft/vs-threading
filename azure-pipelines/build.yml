@@ -98,15 +98,15 @@ parameters:
 - name: windowsPool
   type: object
   default:
-    vmImage: windows-2022
+    vmImage: windows-2025
 - name: linuxPool
   type: object
   default:
-    vmImage: ubuntu-22.04
+    vmImage: ubuntu-24.04
 - name: macOSPool
   type: object
   default:
-    vmImage: macOS-14
+    vmImage: macOS-15
 
 jobs:
 - job: Windows
