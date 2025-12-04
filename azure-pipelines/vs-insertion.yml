@@ -67,6 +67,7 @@ extends:
             InsertionPayloadName: $(Build.Repository.Name) $(Build.BuildNumber)
             InsertionBuildPolicies: Request Perf DDRITs
             InsertionReviewers: $(Build.RequestedFor) # Append `,Your team name` (without quotes)
+            CustomScriptExecutionCommand: $(Pipeline.Workspace)\CI\VSInsertion-Windows\vs-insertion-script.ps1
             AutoCompletePR: true
             AutoCompleteMergeStrategy: Squash
             ShallowClone: true
