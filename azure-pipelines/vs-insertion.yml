@@ -26,8 +26,8 @@ extends:
       networkIsolationPolicy: Permissive,CFSClean
     sdl:
       sourceAnalysisPool: VSEng-MicroBuildVSStable
-    sbom:
-      enabled: false
+      sbom:
+        enabled: false
 
     stages:
     - stage: insertion
