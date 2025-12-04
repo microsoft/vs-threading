@@ -369,6 +369,6 @@ Start the work within this context, or use JoinableTaskFactory.RunAsync to start
   </data>
   <data name="VSTHRD003InvalidAttributeUse_PropertyWithNonPrivateInit" xml:space="preserve">
     <value>Properties with init accessors must be private.</value>
-    <comment>Error message shown when the CompletedTaskAttribute is applied to a property with a public, internal, or protected init accessor. Init accessors allow setting the property during object initialization, so the property itself must be private when using this attribute to ensure the task value cannot be changed from outside the class.</comment>
+    <comment>Error message shown when the CompletedTaskAttribute is applied to a property that has an init accessor and the property itself is not private (i.e., it's public, internal, or protected). Init accessors allow setting the property during object initialization. When using this attribute on a property with an init accessor, the entire property must be declared as private to ensure the task value cannot be changed from outside the class.</comment>
   </data>
 </root>
