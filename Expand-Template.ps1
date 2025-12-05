@@ -100,8 +100,6 @@ try {
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     git mv test/Library.Tests "test/$LibraryName.Tests"
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-    git mv src/VSInsertionMetadata/Library.VSInsertionMetadata.proj "src/VSInsertionMetadata/$LibraryName.VSInsertionMetadata.proj"
-    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
     # Update project reference in test project. Add before removal to keep the same ItemGroup in place.
     dotnet add "test/$LibraryName.Tests" reference "src/$LibraryName"
@@ -169,13 +167,6 @@ try {
     }
 
     Replace-Placeholders -Path "tools/variables/SymbolsFeatureName.ps1" -Replacements @{
-        'LibraryName' = $LibraryName;
-    }
-
-    Replace-Placeholders -Path "azure-pipelines/OptProf.yml" -Replacements @{
-        'LibraryName' = $LibraryName;
-    }
-    Replace-Placeholders -Path "azure-pipelines/OptProf_part2.yml" -Replacements @{
         'LibraryName' = $LibraryName;
     }
 
