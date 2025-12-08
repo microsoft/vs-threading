@@ -148,16 +148,7 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
             }
         }
 
-        if (symbol is IFieldSymbol field)
-        {
-            // Allow the TplExtensions.CompletedTask and related fields.
-            if (field.ContainingType.Name == Types.TplExtensions.TypeName && field.BelongsToNamespace(Types.TplExtensions.Namespace) &&
-                (field.Name == Types.TplExtensions.CompletedTask || field.Name == Types.TplExtensions.CanceledTask || field.Name == Types.TplExtensions.TrueTask || field.Name == Types.TplExtensions.FalseTask))
-            {
-                return true;
-            }
-        }
-        else if (symbol is IPropertySymbol property)
+        if (symbol is IPropertySymbol property)
         {
             // Explicitly allow Task.CompletedTask
             if (property.ContainingType.Name == Types.Task.TypeName && property.BelongsToNamespace(Types.Task.Namespace) &&
