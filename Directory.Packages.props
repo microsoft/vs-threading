@@ -4,9 +4,9 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+    <MicrosoftTestingPlatformVersion>2.0.2</MicrosoftTestingPlatformVersion>
     <MicroBuildVersion>2.0.208</MicroBuildVersion>
     <CodeAnalysisVersion>3.11.0</CodeAnalysisVersion>
-    <CodeAnalysisVersionForTests>4.13.0</CodeAnalysisVersionForTests>
     <CodefixTestingVersion>1.1.2</CodefixTestingVersion>
     <CodeAnalysisAnalyzerVersion>3.11.0-beta1.25076.3</CodeAnalysisAnalyzerVersion>
   </PropertyGroup>
@@ -36,22 +36,17 @@
     <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.0" />
     <PackageVersion Include="System.Threading.Tasks.Extensions" Version="4.6.0" />
     <PackageVersion Include="System.ValueTuple" Version="4.6.1" />
-    <PackageVersion Include="xunit.abstractions" Version="2.0.3" />
-    <PackageVersion Include="Xunit.Combinatorial" Version="1.6.24" />
-    <PackageVersion Include="Xunit.SkippableFact" Version="1.5.23" />
-    <PackageVersion Include="Xunit.StaFact" Version="1.2.69" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(IsTestProject)'=='true'">
-    <PackageVersion Update="Microsoft.CodeAnalysis" Version="$(CodeAnalysisVersionForTests)" />
-    <PackageVersion Update="Microsoft.CodeAnalysis.Common" Version="$(CodeAnalysisVersionForTests)" />
-    <PackageVersion Update="Microsoft.CodeAnalysis.CSharp" Version="$(CodeAnalysisVersionForTests)" />
-    <PackageVersion Update="Microsoft.CodeAnalysis.VisualBasic" Version="$(CodeAnalysisVersionForTests)" />
+    <PackageVersion Include="xunit.v3.core.mtp-v2" Version="3.2.1" />
+    <PackageVersion Include="Xunit.Combinatorial" Version="2.0.24" />
+    <PackageVersion Include="Xunit.StaFact" Version="3.0.13" />
   </ItemGroup>
   <ItemGroup Label="Library.Template">
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.0.1" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.1.0" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.CrashDump" Version="$(MicrosoftTestingPlatformVersion)" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.HangDump" Version="$(MicrosoftTestingPlatformVersion)" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="$(MicrosoftTestingPlatformVersion)" />
     <PackageVersion Include="Microsoft.VisualStudio.Internal.MicroBuild.NonShipping" Version="$(MicroBuildVersion)" />
-    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
-    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.v3.mtp-v2" Version="3.2.1" />
   </ItemGroup>
   <ItemGroup>
     <GlobalPackageReference Include="Microsoft.CodeAnalysis.ResxSourceGenerator" Version="$(CodeAnalysisAnalyzerVersion)" />

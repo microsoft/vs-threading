@@ -6,14 +6,12 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.Threading;
-using Xunit;
 
 public class AsyncQueueTests : TestBase
 {
     private AsyncQueue<GenericParameterHelper> queue;
 
-    public AsyncQueueTests(Xunit.Abstractions.ITestOutputHelper logger)
+    public AsyncQueueTests(ITestOutputHelper logger)
         : base(logger)
     {
         this.queue = new AsyncQueue<GenericParameterHelper>();
@@ -543,7 +541,7 @@ public class AsyncQueueTests : TestBase
         Assert.Equal(1, invoked);
     }
 
-    [SkippableFact, Trait("GC", "true")]
+    [Fact, Trait("GC", "true")]
     [Trait("TestCategory", "FailsInCloudTest")]
     public void UnusedQueueGCPressure()
     {

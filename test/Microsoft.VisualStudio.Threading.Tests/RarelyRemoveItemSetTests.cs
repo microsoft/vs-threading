@@ -4,9 +4,6 @@
 using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using Microsoft.VisualStudio.Threading;
-using Xunit;
-using Xunit.Abstractions;
 
 public class RarelyRemoveItemSetTests : TestBase
 {
@@ -36,11 +33,11 @@ public class RarelyRemoveItemSetTests : TestBase
         using (RarelyRemoveItemSet<GenericParameterHelper>.Enumerator enumerator = this.list.EnumerateAndClear().GetEnumerator())
         {
             Assert.True(enumerator.MoveNext());
-            Assert.Equal<int>(1, enumerator.Current.Data);
+            Assert.Equal(1, enumerator.Current.Data);
             Assert.False(enumerator.MoveNext());
             enumerator.Reset();
             Assert.True(enumerator.MoveNext());
-            Assert.Equal<int>(1, enumerator.Current.Data);
+            Assert.Equal(1, enumerator.Current.Data);
             Assert.False(enumerator.MoveNext());
         }
     }
@@ -53,15 +50,15 @@ public class RarelyRemoveItemSetTests : TestBase
         using (RarelyRemoveItemSet<GenericParameterHelper>.Enumerator enumerator = this.list.EnumerateAndClear().GetEnumerator())
         {
             Assert.True(enumerator.MoveNext());
-            Assert.Equal<int>(1, enumerator.Current.Data);
+            Assert.Equal(1, enumerator.Current.Data);
             Assert.True(enumerator.MoveNext());
-            Assert.Equal<int>(2, enumerator.Current.Data);
+            Assert.Equal(2, enumerator.Current.Data);
             Assert.False(enumerator.MoveNext());
             enumerator.Reset();
             Assert.True(enumerator.MoveNext());
-            Assert.Equal<int>(1, enumerator.Current.Data);
+            Assert.Equal(1, enumerator.Current.Data);
             Assert.True(enumerator.MoveNext());
-            Assert.Equal<int>(2, enumerator.Current.Data);
+            Assert.Equal(2, enumerator.Current.Data);
             Assert.False(enumerator.MoveNext());
         }
     }

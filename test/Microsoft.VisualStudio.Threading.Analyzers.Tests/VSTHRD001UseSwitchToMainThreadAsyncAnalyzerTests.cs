@@ -53,7 +53,7 @@ class Test {
         await CSVerify.VerifyAnalyzerAsync(test, CSVerify.Diagnostic().WithLocation(0));
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task DispatcherInvoke_ProducesDiagnostic()
     {
         var test = @"
@@ -71,7 +71,7 @@ class Test {
         await t.RunAsync();
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task DispatcherBeginInvoke_ProducesDiagnostic()
     {
         var test = @"
@@ -90,7 +90,7 @@ class Test {
         await t.RunAsync();
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task DispatcherInvokeAsync_ProducesDiagnostic()
     {
         var test = @"
