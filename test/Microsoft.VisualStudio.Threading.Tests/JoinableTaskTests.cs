@@ -3762,7 +3762,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
         // We expect to be able to block on the UI thread and the Task complete.
         // In completing, it will throw a TaskCanceledException, wrapped by an
         // AggregateException. If it 'hangs', it will timeout, returning false.
-        Assert.Throws<AggregateException>(() => joinTask.Wait(AsyncDelay));
+        Assert.Throws<AggregateException>(() => joinTask.Wait(UnexpectedTimeout));
     }
 
     [Fact]
