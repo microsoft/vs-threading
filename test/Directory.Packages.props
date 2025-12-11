@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove($(MSBuildThisFile), $(MSBuildThisFileDirectory)..))" />
 
   <PropertyGroup>
-    <CodeAnalysisVersionForTests>4.13.0</CodeAnalysisVersionForTests>
+    <CodeAnalysisVersionForTests>5.0.0</CodeAnalysisVersionForTests>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Update="Microsoft.CodeAnalysis" Version="$(CodeAnalysisVersionForTests)" />
