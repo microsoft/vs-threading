@@ -25,12 +25,10 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" />
     <PackageReference Include="Microsoft.CodeAnalysis.VisualBasic.CodeFix.Testing" />
     <PackageReference Include="Microsoft.CodeAnalysis" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="Microsoft.VisualStudio.Interop" />
     <PackageReference Include="Microsoft.VisualStudio.Shell.15.0" IncludeAssets="None" />
     <PackageReference Include="Microsoft.VisualStudio.Shell.Framework" IncludeAssets="None" />
-    <PackageReference Include="xunit" />
-    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="xunit.v3.mtp-v2" />
     <PackageReference Include="Xunit.SkippableFact" />
   </ItemGroup>
   <ItemGroup>
