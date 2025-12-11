@@ -52,8 +52,7 @@ internal static class Program
         }
 
         bool fact = testMethod.GetCustomAttributesData().Any(a => a.AttributeType.Name == "FactAttribute");
-        bool skippableFact = testMethod.GetCustomAttributesData().Any(a => a.AttributeType.Name == "SkippableFactAttribute");
-        if (fact || skippableFact)
+        if (fact)
         {
             return ExecuteTest(testClass, testMethod);
         }
