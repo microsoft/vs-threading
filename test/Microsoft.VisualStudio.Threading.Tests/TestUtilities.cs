@@ -92,11 +92,10 @@ internal static class TestUtilities
     internal static DebugAssertionRevert DisableAssertionDialog()
     {
 #if NETFRAMEWORK
-        DefaultTraceListener? listener = Debug.Listeners.OfType<DefaultTraceListener>().FirstOrDefault();
-        if (listener is object)
-        {
-            listener.AssertUiEnabled = false;
-        }
+        Debug.Listeners.OfType<DefaultTraceListener>().FirstOrDefault()?.AssertUiEnabled = false;
+
+        // Xunit v3 adds a listener that throws on assertions; remove it so we can test actual runtime functionality of the library.
+        Debug.Listeners.Remove("xUnit.net");
 #else
         Trace.Listeners.Clear();
 #endif
