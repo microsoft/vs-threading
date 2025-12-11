@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net8.0</TargetFrameworks>
+    <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsTestProject>true</IsTestProject>
 
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
@@ -31,7 +31,6 @@
     <PackageReference Include="Nullable" PrivateAssets="all" />
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" />
     <PackageReference Include="Xunit.Combinatorial" />
-    <PackageReference Include="Xunit.SkippableFact" />
     <PackageReference Include="Xunit.StaFact" />
     <PackageReference Include="xunit.v3.mtp-v2" />
   </ItemGroup>

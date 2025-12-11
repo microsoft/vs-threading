@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net8.0</TargetFrameworks>
-    <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
     <NoWarn>$(NoWarn);NU1701</NoWarn>
@@ -29,7 +29,6 @@
     <PackageReference Include="Microsoft.VisualStudio.Shell.15.0" IncludeAssets="None" />
     <PackageReference Include="Microsoft.VisualStudio.Shell.Framework" IncludeAssets="None" />
     <PackageReference Include="xunit.v3.mtp-v2" />
-    <PackageReference Include="Xunit.SkippableFact" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\..\src\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\buildTransitive\AdditionalFiles\**"

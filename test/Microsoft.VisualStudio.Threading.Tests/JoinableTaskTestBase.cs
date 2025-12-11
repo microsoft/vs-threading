@@ -9,8 +9,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Microsoft;
-using Microsoft.VisualStudio.Threading;
-using Xunit.Abstractions;
 
 public abstract class JoinableTaskTestBase : TestBase
 {

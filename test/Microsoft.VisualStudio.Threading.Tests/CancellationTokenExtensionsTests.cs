@@ -4,9 +4,6 @@
 using System;
 using System.Linq;
 using System.Threading;
-using Microsoft.VisualStudio.Threading;
-using Xunit;
-using Xunit.Abstractions;
 
 public class CancellationTokenExtensionsTests : TestBase
 {

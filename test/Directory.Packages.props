@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove($(MSBuildThisFile), $(MSBuildThisFileDirectory)..))" />
+
+  <PropertyGroup>
+    <CodeAnalysisVersionForTests>4.13.0</CodeAnalysisVersionForTests>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Update="Microsoft.CodeAnalysis" Version="$(CodeAnalysisVersionForTests)" />
+    <PackageVersion Update="Microsoft.CodeAnalysis.Common" Version="$(CodeAnalysisVersionForTests)" />
+    <PackageVersion Update="Microsoft.CodeAnalysis.CSharp" Version="$(CodeAnalysisVersionForTests)" />
+    <PackageVersion Update="Microsoft.CodeAnalysis.VisualBasic" Version="$(CodeAnalysisVersionForTests)" />
+  </ItemGroup>
+</Project>

@@ -10,9 +10,6 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft;
-using Microsoft.VisualStudio.Threading;
-using Xunit;
-using Xunit.Abstractions;
 
 public class JoinableTaskTests : JoinableTaskTestBase
 {
@@ -1934,7 +1931,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
     {
         this.asyncPump.Run(async delegate
         {
-            this.asyncPump.Run(() => Task.FromResult<bool>(true));
+            this.asyncPump.Run(() => Task.FromResult(true));
             await Task.Yield();
         });
     }
@@ -2236,7 +2233,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
 
         Assert.False(joinable.Task.IsCompleted);
         int result = joinable.Join();
-        Assert.Equal<int>(5, result);
+        Assert.Equal(5, result);
         Assert.True(taskFinished);
         Assert.True(joinable.Task.IsCompleted);
     }
@@ -2268,7 +2265,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
     [Fact]
     public void Join_AlreadyCompletedWithPrecanceledArgument_Generic()
     {
-        JoinableTask<int> jt = this.asyncPump.RunAsync<int>(() => Task.FromResult(0));
+        JoinableTask<int> jt = this.asyncPump.RunAsync(() => Task.FromResult(0));
         Assert.Throws<OperationCanceledException>(() => jt.Join(new CancellationToken(canceled: true)));
     }
 
@@ -2282,7 +2279,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
     [Fact]
     public async Task JoinAsync_AlreadyCompletedWithPrecanceledArgument_Generic()
     {
-        JoinableTask<int> jt = this.asyncPump.RunAsync<int>(() => Task.FromResult(0));
+        JoinableTask<int> jt = this.asyncPump.RunAsync(() => Task.FromResult(0));
         await Assert.ThrowsAsync<OperationCanceledException>(() => jt.JoinAsync(new CancellationToken(canceled: true)));
     }
 
@@ -2977,7 +2974,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
         hiPriFactory.DoModalLoopTillEmptyAndTaskCompleted(outer.Task, this.TimeoutToken);
     }
 
-    [SkippableFact]
+    [Fact]
     public void NestedFactoriesCanBeCollected()
     {
         WeakReference weakOuterFactory = this.NestedFactoriesCanBeCollected_Helper();
@@ -4491,7 +4488,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
         });
 
         outerFactory.DoModalLoopTillEmptyAndTaskCompleted(outer.Task, this.TimeoutToken);
-        Skip.IfNot(outer.IsCompleted, "this is a product defect, but this test assumes this works to test something else.");
+        Assert.SkipUnless(outer.IsCompleted, "this is a product defect, but this test assumes this works to test something else.");
 
         // Allow the dispatcher to drain all messages that may be holding references.
         SynchronizationContext.Current!.Post(s => this.testFrame.Continue = false, null);

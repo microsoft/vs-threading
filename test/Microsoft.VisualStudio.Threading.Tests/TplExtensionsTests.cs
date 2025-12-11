@@ -6,9 +6,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
-using Microsoft.VisualStudio.Threading;
-using Xunit;
-using Xunit.Abstractions;
 using TplExtensions = Microsoft.VisualStudio.Threading.TplExtensions;
 
 public class TplExtensionsTests : TestBase
@@ -1077,7 +1074,7 @@ public class TplExtensionsTests : TestBase
         {
             var tcs = new TaskCompletionSource<object?>();
             Task? timeoutTask = generic
-                ? TplExtensions.WithTimeout<object?>(tcs.Task, TimeSpan.FromMilliseconds(-1))
+                ? TplExtensions.WithTimeout(tcs.Task, TimeSpan.FromMilliseconds(-1))
                 : TplExtensions.WithTimeout((Task)tcs.Task, TimeSpan.FromMilliseconds(-1));
             Assert.False(timeoutTask.IsCompleted);
             await Task.Delay(AsyncDelay / 2);

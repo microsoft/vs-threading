@@ -8,11 +8,6 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using Microsoft;
-using Microsoft.VisualStudio.Threading;
-
-using Xunit;
-using Xunit.Abstractions;
-
 using NamedSyncContext = AwaitExtensionsTests.NamedSyncContext;
 
 public class AsyncLazyTests : TestBase
@@ -214,7 +209,7 @@ public class AsyncLazyTests : TestBase
                 Assert.False(executed);
                 executed = true;
                 lazy!.GetValueAsync();
-                return Task.FromResult<object>(new object());
+                return Task.FromResult(new object());
             },
             jtf);
 
@@ -389,7 +384,7 @@ public class AsyncLazyTests : TestBase
     [Fact]
     public async Task ToStringForCreatedValue()
     {
-        var lazy = new AsyncLazy<int>(() => Task.FromResult<int>(3));
+        var lazy = new AsyncLazy<int>(() => Task.FromResult(3));
         int value = await lazy.GetValueAsync();
         string result = lazy.ToString();
         Assert.Equal(value.ToString(CultureInfo.InvariantCulture), result);

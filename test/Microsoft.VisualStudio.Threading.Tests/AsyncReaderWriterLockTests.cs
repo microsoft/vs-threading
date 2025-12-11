@@ -9,9 +9,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft;
-using Microsoft.VisualStudio.Threading;
-using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 
 #pragma warning disable CA1416 // Validate platform compatibility
@@ -230,7 +227,7 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
         await continuation;
     }
 
-    [SkippableFact]
+    [Fact]
     [Trait("TestCategory", "FailsInCloudTest")]
     public async Task NoMemoryLeakForManyLocks()
     {
@@ -3854,10 +3851,10 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
     }
 
     /// <summary>Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA does not appear to hold a lock.</summary>
-    [SkippableFact]
+    [Fact]
     public async Task MtaLockNotSharedWithSta()
     {
-        Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+        Assert.SkipUnless(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Windows only");
         using (await this.asyncLock.ReadLockAsync())
         {
             var testComplete = new TaskCompletionSource<object?>();
@@ -3880,10 +3877,10 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
     }
 
     /// <summary>Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by marshaling back to an MTA.</summary>
-    [SkippableFact]
+    [Fact]
     public async Task ReadLockTraversesAcrossSta()
     {
-        Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+        Assert.SkipUnless(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Windows only");
         using (await this.asyncLock.ReadLockAsync())
         {
             var testComplete = new TaskCompletionSource<object?>();
@@ -3920,10 +3917,10 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
     }
 
     /// <summary>Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by requesting it and moving back to an MTA.</summary>
-    [SkippableFact]
+    [Fact]
     public async Task UpgradeableReadLockTraversesAcrossSta()
     {
-        Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+        Assert.SkipUnless(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Windows only");
 
         using (await this.asyncLock.UpgradeableReadLockAsync())
         {
@@ -3963,10 +3960,10 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
     }
 
     /// <summary>Verifies that when an MTA holding a lock traverses (via CallContext) to an STA that the STA will be able to access the same lock by requesting it and moving back to an MTA.</summary>
-    [SkippableFact]
+    [Fact]
     public async Task WriteLockTraversesAcrossSta()
     {
-        Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+        Assert.SkipUnless(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Windows only");
         using (await this.asyncLock.WriteLockAsync())
         {
             var testComplete = new TaskCompletionSource<object?>();
