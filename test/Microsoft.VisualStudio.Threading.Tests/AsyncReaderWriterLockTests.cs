@@ -4379,30 +4379,34 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
     [Fact]
     public async Task ReadLockAsync_UnsafeOnCompleted_DoesNotCaptureExecutionContext()
     {
-        var asyncLocal = new Microsoft.VisualStudio.Threading.AsyncLocal<string>();
-        asyncLocal.Value = "expected";
-        AsyncReaderWriterLock.Awaiter? awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
-        Assumes.False(awaiter.IsCompleted);
-        var testResultSource = new TaskCompletionSource<object?>();
-        awaiter.UnsafeOnCompleted(delegate
+        // Apply some SynchronizationContext to ensure the issued lock will require us to yield.
+        using (new SynchronizationContext().Apply(checkForChangesOnRevert: false))
         {
-            try
+            var asyncLocal = new Microsoft.VisualStudio.Threading.AsyncLocal<string>();
+            asyncLocal.Value = "expected";
+            AsyncReaderWriterLock.Awaiter? awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
+            Assumes.False(awaiter.IsCompleted);
+            TaskCompletionSource<object?> testResultSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            awaiter.UnsafeOnCompleted(delegate
             {
-                using (awaiter.GetResult())
+                try
                 {
-                    Assert.Null(asyncLocal.Value);
-                    testResultSource.SetResult(null);
+                    using (awaiter.GetResult())
+                    {
+                        Assert.Null(asyncLocal.Value);
+                        testResultSource.SetResult(null);
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                testResultSource.SetException(ex);
-            }
-            finally
-            {
-            }
-        });
-        await testResultSource.Task;
+                catch (Exception ex)
+                {
+                    testResultSource.SetException(ex);
+                }
+                finally
+                {
+                }
+            });
+            await testResultSource.Task;
+        }
     }
 
     [Fact(Skip = "Disabled after dependency updates introduced failures. See https://dev.azure.com/devdiv/DevDiv/_workitems/edit/1974921")]
