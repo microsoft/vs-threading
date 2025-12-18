@@ -246,4 +246,11 @@ public static class Types
 
         public static readonly ImmutableArray<string> Namespace = Namespaces.SystemRuntimeInteropServices;
     }
+
+    public static class CompletedTaskAttribute
+    {
+        public const string TypeName = "CompletedTaskAttribute";
+
+        public static readonly ImmutableArray<string> Namespace = Namespaces.MicrosoftVisualStudioThreading;
+    }
 }
