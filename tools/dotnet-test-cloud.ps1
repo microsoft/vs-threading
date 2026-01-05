@@ -105,7 +105,7 @@ if ($isMTP) {
 $unknownCounter = 0
 $trxFiles |% {
   New-Item $testLogs -ItemType Directory -Force | Out-Null
-  if (!($_.FullName.StartsWith($testLogs))) {
+  if (!($_.FullName.StartsWith($testLogs, [StringComparison]::OrdinalIgnoreCase))) {
     Copy-Item $_ -Destination $testLogs
   }
 
