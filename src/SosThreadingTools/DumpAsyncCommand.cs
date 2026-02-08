@@ -164,6 +164,12 @@ internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
                                     }
                                 }
                             }
+
+                            ClrObject currentObject = stateMachine.TryGetObjectField("<>4__this");
+                            if (!currentObject.IsNull && currentObject.Type is not null && string.Equals(currentObject.Type.Name, "Microsoft.VisualStudio.Threading.JoinableTaskCollection", StringComparison.Ordinal))
+                            {
+                                asyncState.WaitingJoinableTasks = GetJoinableTasksFromCollection(currentObject);
+                            }
                         }
                     }
 #pragma warning disable CA1031 // Do not catch general exception types
@@ -181,6 +187,40 @@ internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
                 Console.WriteLine($"Fail to process AsyncStateMachine Runner {obj.Address:x} Error: {ex.Message}");
             }
         }
+    }
+
+    private static List<ClrObject> GetJoinableTasksFromCollection(ClrObject joinableTaskCollection)
+    {
+        var joinableTasks = new List<ClrObject>();
+        ClrValueType? dependentData = joinableTaskCollection.TryGetValueClassField("dependentData");
+        if (dependentData is not null)
+        {
+            ClrObject childDependentNodes = dependentData.TryGetObjectField("childDependentNodes");
+            if (!childDependentNodes.IsNull &&
+                childDependentNodes.TryReadField<int>("count", out int count) &&
+                childDependentNodes.TryReadField<int>("freeCount", out int freeCount))
+            {
+                count -= freeCount;
+                if (count > 0)
+                {
+                    ClrObject entries = childDependentNodes.TryGetObjectField("entries");
+                    if (!entries.IsNull && entries.IsArray && entries.AsArray() is ClrArray entriesArray)
+                    {
+                        for (int i = 0; i < entriesArray.Length; i++)
+                        {
+                            ClrValueType? value = entriesArray.GetStructValue(i);
+                            ClrObject key = value.TryGetObjectField("key");
+                            if (!key.IsNull)
+                            {
+                                joinableTasks.Add(key);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return joinableTasks;
     }
 
     private static void ChainStateMachinesBasedOnTaskContinuations(Dictionary<ulong, AsyncStateMachine> knownStateMachines)
@@ -285,16 +325,13 @@ internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
                 try
                 {
                     ClrObject joinableTask = stateMachine.StateMachine.TryGetObjectField("<>4__this");
-                    ClrObject wrappedTask = joinableTask.TryGetObjectField("wrappedTask");
-                    if (!wrappedTask.IsNull)
+                    FindWaitingTaskFromJoinableTask(joinableTask, stateMachine);
+
+                    if (stateMachine.WaitingJoinableTasks is List<ClrObject> joinableTasks)
                     {
-                        AsyncStateMachine? previousStateMachine = allStateMachines
-                            .FirstOrDefault(s => s.Task.Address == wrappedTask.Address);
-                        if (previousStateMachine is object && stateMachine != previousStateMachine)
+                        foreach (ClrObject waitingJoinableTask in joinableTasks)
                         {
-                            stateMachine.Previous = previousStateMachine;
-                            previousStateMachine.Next = stateMachine;
-                            previousStateMachine.DependentCount++;
+                            FindWaitingTaskFromJoinableTask(waitingJoinableTask, stateMachine);
                         }
                     }
                 }
@@ -303,6 +340,22 @@ internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
 #pragma warning restore CA1031 // Do not catch general exception types
                 {
                     Console.WriteLine($"Fail to fix continuation of state {stateMachine.StateMachine.Address:x} Error: {ex.Message}");
+                }
+            }
+        }
+
+        void FindWaitingTaskFromJoinableTask(ClrObject joinableTask, AsyncStateMachine currentStateMachine)
+        {
+            ClrObject wrappedTask = joinableTask.TryGetObjectField("wrappedTask");
+            if (!wrappedTask.IsNull)
+            {
+                AsyncStateMachine? previousStateMachine = allStateMachines
+                    .FirstOrDefault(s => s.Task.Address == wrappedTask.Address);
+                if (previousStateMachine is object && currentStateMachine != previousStateMachine)
+                {
+                    currentStateMachine.Previous ??= previousStateMachine;
+                    previousStateMachine.Next = currentStateMachine;
+                    previousStateMachine.DependentCount++;
                 }
             }
         }
@@ -438,10 +491,7 @@ internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
         {
             bool multipleLineBlock = this.PrintAsyncStateMachineChain(node, printedMachines);
 
-            if (multipleLineBlock)
-            {
-                Console.WriteLine(string.Empty);
-            }
+            Console.WriteLine(string.Empty);
         }
 
         // Print nodes which we didn't print because of loops.
@@ -572,6 +622,8 @@ internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
         public ClrObject SwitchToMainThreadTask { get; set; }
 
         public AsyncStateMachine? AlterPrevious { get; set; }
+
+        public List<ClrObject>? WaitingJoinableTasks { get; set; }
 
         public ulong CodeAddress { get; set; }
 
