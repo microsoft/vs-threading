@@ -213,6 +213,10 @@ internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
                             if (!key.IsNull)
                             {
                                 joinableTasks.Add(key);
+                                if (--count == 0)
+                                {
+                                    break;
+                                }
                             }
                         }
                     }
@@ -353,8 +357,16 @@ internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
                     .FirstOrDefault(s => s.Task.Address == wrappedTask.Address);
                 if (previousStateMachine is object && currentStateMachine != previousStateMachine)
                 {
-                    currentStateMachine.Previous ??= previousStateMachine;
-                    previousStateMachine.Next = currentStateMachine;
+                    if (currentStateMachine.Previous is null)
+                    {
+                        currentStateMachine.Previous = previousStateMachine;
+                        previousStateMachine.Next = currentStateMachine;
+                    }
+                    else
+                    {
+                        previousStateMachine.Next ??= currentStateMachine;
+                    }
+
                     previousStateMachine.DependentCount++;
                 }
             }
