@@ -52,7 +52,7 @@ dotnet test --project test/Library.Tests/Library.Tests.csproj --no-build -c Rele
 
 **Exclude tests with a specific trait** (skip unstable tests):
 ```bash
-dotnet test --project test/Library.Tests/Library.Tests.csproj --no-build -c Release -- --filter-not-trait "FailsInCloudTest=true"
+dotnet test --project test/Library.Tests/Library.Tests.csproj --no-build -c Release -- --filter-not-trait "TestCategory=FailsInCloudTest"
 ```
 
 **Run tests for a specific framework only**:
