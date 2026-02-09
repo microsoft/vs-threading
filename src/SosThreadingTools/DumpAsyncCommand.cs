@@ -489,7 +489,7 @@ internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
             .OrderByDescending(m => m.Depth)
             .ThenByDescending(m => m.SwitchToMainThreadTask.Address))
         {
-            bool multipleLineBlock = this.PrintAsyncStateMachineChain(node, printedMachines);
+            this.PrintAsyncStateMachineChain(node, printedMachines);
 
             Console.WriteLine(string.Empty);
         }
@@ -509,10 +509,9 @@ internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
         }
     }
 
-    private bool PrintAsyncStateMachineChain(AsyncStateMachine node, HashSet<AsyncStateMachine> printedMachines)
+    private void PrintAsyncStateMachineChain(AsyncStateMachine node, HashSet<AsyncStateMachine> printedMachines)
     {
         int nLevel = 0;
-        bool multipleLineBlock = false;
 
         var loopDetection = new HashSet<AsyncStateMachine>();
         for (AsyncStateMachine? p = node; p is object; p = p.Next)
@@ -522,7 +521,6 @@ internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
             if (nLevel > 0)
             {
                 this.WriteString("..");
-                multipleLineBlock = true;
             }
             else if (p.AlterPrevious is object)
             {
@@ -531,14 +529,12 @@ internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
                 this.WriteMethodInfo($"{p.AlterPrevious.CodeAddress:x}", p.AlterPrevious.CodeAddress);
                 this.WriteLine(string.Empty);
                 this.WriteString("..");
-                multipleLineBlock = true;
             }
             else if (!p.SwitchToMainThreadTask.IsNull)
             {
                 this.WriteObjectAddress(p.SwitchToMainThreadTask.Address);
                 this.WriteLine(".SwitchToMainThreadAsync");
                 this.WriteString("..");
-                multipleLineBlock = true;
             }
 
             this.WriteObjectAddress(p.StateMachine.Address);
@@ -569,14 +565,10 @@ internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
                 {
                     this.WriteLine(string.Empty);
                 }
-
-                multipleLineBlock = true;
             }
 
             nLevel++;
         }
-
-        return multipleLineBlock;
     }
 
     private void LoadCodePages(List<AsyncStateMachine> allStateMachines)
