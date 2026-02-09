@@ -441,7 +441,7 @@ internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
                                         }
                                     }
 
-                                    break;
+                                    continue;
                                 }
                             }
                         }
