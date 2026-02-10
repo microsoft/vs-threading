@@ -20,6 +20,8 @@ For example the template uses MTPv2 for test projects, but a repo might have cho
 When resolving merge conflicts, consider whether it looks like the relevant code file is older than it should be given the changes the template is bringing in.
 Ask the user when in doubt as to whether the conflict should be resolved in favor of 'catching up' with the template or keeping the current changes.
 
+Use #runSubagent to analyze and resolve merge conflicts across files in parallel.
+
 ### Keep Current files
 
 Conflicts in the following files should always be resolved by keeping the current version (i.e. discard incoming changes):
@@ -46,6 +48,11 @@ Use #runSubagent for each step.
 
 While these validations are described using `dotnet` CLI commands, some repos require using full msbuild.exe.
 You can detect this by checking the `azure-pipelines/dotnet.yml` or `.github/workflows/build.yml` files for use of one or the other tool.
+
+You are *not* responsible for fixing issues that the merge did not cause.
+If validation fails for reasons that seem unrelated to the changes brought in by the merge, advise the user and ask how they'd like you to proceed.
+That said, sometimes merges will bring in SDK or dependency updates that can cause breaks in seemingly unrelated areas.
+In such cases, you should investigate and solve the issues as needed.
 
 ## Committing your changes
 
