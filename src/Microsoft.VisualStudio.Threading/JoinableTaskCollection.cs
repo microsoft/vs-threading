@@ -56,6 +56,16 @@ public class JoinableTaskCollection : IJoinableTaskDependent, IEnumerable<Joinab
     }
 
     /// <summary>
+    /// Occurs when <see cref="JoinTillEmptyAsync(CancellationToken)"/> is called.
+    /// </summary>
+    /// <remarks>
+    /// This event is raised before the method begins waiting for the collection to empty.
+    /// It may be used to signal cancellation to tasks in the collection so they can complete
+    /// and allow the collection to drain.
+    /// </remarks>
+    internal event EventHandler? JoinTillEmptyAsyncRequested;
+
+    /// <summary>
     /// Gets the <see cref="JoinableTaskContext"/> to which this collection belongs.
     /// </summary>
     public JoinableTaskContext Context { get; }
@@ -160,6 +170,8 @@ public class JoinableTaskCollection : IJoinableTaskDependent, IEnumerable<Joinab
     /// </remarks>
     public async Task JoinTillEmptyAsync(CancellationToken cancellationToken)
     {
+        this.JoinTillEmptyAsyncRequested?.Invoke(this, EventArgs.Empty);
+
         cancellationToken.ThrowIfCancellationRequested();
 
         if (this.emptyEvent is null)
