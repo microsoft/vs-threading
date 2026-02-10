@@ -5,7 +5,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Microsoft.VisualStudio.Threading.Tests;
+namespace Microsoft.VisualStudio.Threading;
 
 /// <summary>
 /// A variant on <see cref="JoinableTaskFactory"/> that tracks pending tasks and blocks disposal until all tasks have completed.
@@ -33,6 +33,9 @@ public class DisposableJoinableTaskFactory : DelegatingJoinableTaskFactory, IDis
         : base(innerFactory)
     {
         Requires.Argument(this.Collection is not null, nameof(innerFactory), "A collection must be associated with the factory.");
+
+        // Get it now, since after the CTS is disposed, it throws when we try to access the token.
+        this.DisposalToken = this.disposalTokenSource.Token;
     }
 
     /// <summary>
@@ -53,16 +56,21 @@ public class DisposableJoinableTaskFactory : DelegatingJoinableTaskFactory, IDis
     /// <remarks>
     /// This token is canceled when the factory is disposed.
     /// </remarks>
-    public CancellationToken DisposalToken => this.disposalTokenSource.Token;
+    public CancellationToken DisposalToken { get; }
 
-    /// <inheritdoc cref="JoinableTaskFactory.Collection"/>
+    /// <summary>
+    /// Gets the collection to which created tasks belong until they complete.
+    /// </summary>
     protected new JoinableTaskCollection Collection => base.Collection!;
 
     /// <inheritdoc/>
     public void Dispose()
     {
-        this.disposalTokenSource.Cancel();
-        this.disposalTokenSource.Dispose();
+        if (!this.disposalTokenSource.IsCancellationRequested)
+        {
+            this.disposalTokenSource.Cancel();
+            this.disposalTokenSource.Dispose();
+        }
 
         this.Context.Factory.Run(() => this.Collection.JoinTillEmptyAsync());
     }
@@ -70,8 +78,11 @@ public class DisposableJoinableTaskFactory : DelegatingJoinableTaskFactory, IDis
     /// <inheritdoc/>
     public async ValueTask DisposeAsync()
     {
-        this.disposalTokenSource.Cancel();
-        this.disposalTokenSource.Dispose();
+        if (!this.disposalTokenSource.IsCancellationRequested)
+        {
+            this.disposalTokenSource.Cancel();
+            this.disposalTokenSource.Dispose();
+        }
 
         await this.Collection.JoinTillEmptyAsync();
     }
