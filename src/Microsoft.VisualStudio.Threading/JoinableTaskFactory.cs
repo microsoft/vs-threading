@@ -93,7 +93,7 @@ public partial class JoinableTaskFactory
     /// <summary>
     /// Gets the collection to which created tasks belong until they complete. May be null.
     /// </summary>
-    internal JoinableTaskCollection? Collection
+    protected internal JoinableTaskCollection? Collection
     {
         get { return this.jobCollection; }
     }
