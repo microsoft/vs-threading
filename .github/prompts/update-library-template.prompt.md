@@ -44,7 +44,7 @@ Use #runSubagent for each step.
 
 1. Verify that `dotnet restore` succeeds. Fix any issues that come up.
 2. Verify that `dotnet build` succeeds.
-3. Verify that tests succeed by running `tools\dotnet-test-cloud.ps1`.
+3. Verify that tests succeed by running `tools/dotnet-test-cloud.ps1`.
 
 While these validations are described using `dotnet` CLI commands, some repos require using full msbuild.exe.
 You can detect this by checking the `azure-pipelines/dotnet.yml` or `.github/workflows/build.yml` files for use of one or the other tool.
