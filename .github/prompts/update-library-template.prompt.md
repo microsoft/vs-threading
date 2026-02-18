@@ -4,10 +4,10 @@ description: Merges the latest Library.Template into this repo (at position of H
 
 # Instructions
 
-1. Run `tools\MergeFrom-Template.ps1`
+1. Run `tools/MergeFrom-Template.ps1`
 2. Resolve merge conflicts, taking into account conflict resolution policy below.
 3. Validate the changes, as described in the validation section below.
-4. Commiting your changes (if applicable).
+4. Committing your changes (if applicable).
 
 ## Conflict resolution policy
 
@@ -33,7 +33,7 @@ Conflicts in the following files should always be resolved by keeping the curren
 Very typically, when the incoming change is to a file that was deleted locally, the correct resolution is to re-delete the file.
 
 In some cases however, the deleted file may have incoming changes that should be applied to other files.
-The `test\Library.Tests\Library.Tests.csproj` file is very typical of this.
+The `test/Library.Tests/Library.Tests.csproj` file is very typical of this.
 Changes to this file should very typically be applied to any and all test projects in the repo.
 You are responsible for doing this in addition to re-deleting this template file.
 
@@ -44,7 +44,7 @@ Use #runSubagent for each step.
 
 1. Verify that `dotnet restore` succeeds. Fix any issues that come up.
 2. Verify that `dotnet build` succeeds.
-3. Verify that tests succeed by running `tools\dotnet-test-cloud.ps1`.
+3. Verify that tests succeed by running `tools/dotnet-test-cloud.ps1`.
 
 While these validations are described using `dotnet` CLI commands, some repos require using full msbuild.exe.
 You can detect this by checking the `azure-pipelines/dotnet.yml` or `.github/workflows/build.yml` files for use of one or the other tool.
