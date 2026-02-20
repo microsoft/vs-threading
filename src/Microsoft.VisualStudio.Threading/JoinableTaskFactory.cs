@@ -28,7 +28,7 @@ public partial class JoinableTaskFactory
     /// </summary>
     private readonly JoinableTaskContext owner;
 
-    private readonly SynchronizationContext mainThreadJobSyncContext;
+    private readonly SynchronizationContext? mainThreadJobSyncContext;
 
     /// <summary>
     /// The collection to add all created tasks to. May be <see langword="null" />.
@@ -71,7 +71,7 @@ public partial class JoinableTaskFactory
 
         this.owner = owner;
         this.jobCollection = collection;
-        this.mainThreadJobSyncContext = new JoinableTaskSynchronizationContext(this);
+        this.mainThreadJobSyncContext = owner.IsNoOpContext ? null : new JoinableTaskSynchronizationContext(this);
     }
 
     /// <summary>
@@ -1017,20 +1017,23 @@ public partial class JoinableTaskFactory
             {
                 JoinableTaskDependencyGraph.AddDependency(this.previousJoinable, joinable);
 
-                // By definition we inherit the nesting factories of our immediate nesting task.
-                ListOfOftenOne<JoinableTaskFactory> nestingFactories = this.previousJoinable.NestingFactories;
-
-                // And we may add our immediate nesting parent's factory to the list of
-                // ancestors if it isn't already in the list.
-                if (this.previousJoinable.Factory != this.factory)
+                if (!factory.Context.IsNoOpContext)
                 {
-                    if (!nestingFactories.Contains(this.previousJoinable.Factory))
-                    {
-                        nestingFactories.Add(this.previousJoinable.Factory);
-                    }
-                }
+                    // By definition we inherit the nesting factories of our immediate nesting task.
+                    ListOfOftenOne<JoinableTaskFactory> nestingFactories = this.previousJoinable.NestingFactories;
 
-                this.joinable.NestingFactories = nestingFactories;
+                    // And we may add our immediate nesting parent's factory to the list of
+                    // ancestors if it isn't already in the list.
+                    if (this.previousJoinable.Factory != this.factory)
+                    {
+                        if (!nestingFactories.Contains(this.previousJoinable.Factory))
+                        {
+                            nestingFactories.Add(this.previousJoinable.Factory);
+                        }
+                    }
+
+                    this.joinable.NestingFactories = nestingFactories;
+                }
             }
 
             if (joinable.GetTokenizedParent() is JoinableTask tokenizedParent)

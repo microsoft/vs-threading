@@ -2,7 +2,7 @@
   <ItemGroup>
     <ProjectReference Include="**\*.csproj" Exclude="NativeAOTCompatibility.Test\**" Publish="false" />
 
-    <MultiRIDProjectReference Include="NativeAOTCompatibility.Test\NativeAOTCompatibility.Test.csproj" TargetFramework="net9.0" />
-    <MultiRIDProjectReference Include="NativeAOTCompatibility.Test\NativeAOTCompatibility.Test.csproj" TargetFramework="net9.0-windows" Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
+    <MultiRIDProjectReference Include="NativeAOTCompatibility.Test\NativeAOTCompatibility.Test.csproj" TargetFramework="net10.0" />
+    <MultiRIDProjectReference Include="NativeAOTCompatibility.Test\NativeAOTCompatibility.Test.csproj" TargetFramework="net10.0-windows" Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
   </ItemGroup>
 </Project>

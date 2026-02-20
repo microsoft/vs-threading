@@ -9,8 +9,6 @@ using System.Threading.Tasks;
 using System.Windows.Threading;
 using Microsoft;
 using Microsoft.VisualStudio.Threading;
-using Xunit;
-using Xunit.Abstractions;
 
 public class DispatcherExtensionsTests : JoinableTaskTestBase
 {

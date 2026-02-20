@@ -6,6 +6,7 @@
     <Platform Name="x86" />
   </Configurations>
   <Folder Name="/Solution Items/">
+    <File Path=".config\dotnet-tools.json" />
     <File Path=".editorconfig" />
     <File Path="azure-pipelines/build.yml" />
     <File Path="Directory.Build.props" />
@@ -43,9 +44,13 @@
     <File Path="test/Directory.Build.targets" />
     <File Path="test/dirs.proj" />
     <Project Path="samples/samples.csproj" />
-    <Project Path="test/IsolatedTestHost/IsolatedTestHost.csproj" />
+    <Project Path="test/IsolatedTestHost/IsolatedTestHost.csproj">
+      <Build Solution="*|NonWindows" Project="false" />
+    </Project>
     <Project Path="test/Microsoft.VisualStudio.Threading.Analyzers.Tests/Microsoft.VisualStudio.Threading.Analyzers.Tests.csproj" />
-    <Project Path="test/Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher/Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.csproj" />
+    <Project Path="test/Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher/Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.csproj">
+      <Build Solution="*|NonWindows" Project="false" />
+    </Project>
     <Project Path="test/Microsoft.VisualStudio.Threading.Tests/Microsoft.VisualStudio.Threading.Tests.csproj" />
     <Project Path="test/NativeAOTCompatibility.Test/NativeAOTCompatibility.Test.csproj" />
   </Folder>

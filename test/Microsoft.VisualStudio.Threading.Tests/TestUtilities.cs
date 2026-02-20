@@ -10,9 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft;
-using Microsoft.VisualStudio.Threading;
-using Xunit;
-using Xunit.Abstractions;
+using Xunit.Sdk;
 
 internal static class TestUtilities
 {
@@ -69,7 +67,7 @@ internal static class TestUtilities
             concurrency = Environment.ProcessorCount;
         }
 
-        Skip.If(Environment.ProcessorCount < concurrency, $"The test machine does not have enough CPU cores to exercise a concurrency level of {concurrency}");
+        Assert.SkipWhen(Environment.ProcessorCount < concurrency, $"The test machine does not have enough CPU cores to exercise a concurrency level of {concurrency}");
 
         // We use a barrier to guarantee that all threads are fully ready to
         // execute the provided function at precisely the same time.
@@ -94,11 +92,10 @@ internal static class TestUtilities
     internal static DebugAssertionRevert DisableAssertionDialog()
     {
 #if NETFRAMEWORK
-        DefaultTraceListener? listener = Debug.Listeners.OfType<DefaultTraceListener>().FirstOrDefault();
-        if (listener is object)
-        {
-            listener.AssertUiEnabled = false;
-        }
+        Debug.Listeners.OfType<DefaultTraceListener>().FirstOrDefault()?.AssertUiEnabled = false;
+
+        // Xunit v3 adds a listener that throws on assertions; remove it so we can test actual runtime functionality of the library.
+        Debug.Listeners.Remove("xUnit.net");
 #else
         Trace.Listeners.Clear();
 #endif
@@ -170,7 +167,7 @@ internal static class TestUtilities
     /// A task whose result is <see langword="true" /> if test execution is already isolated and should therefore proceed with the body of the test,
     /// or <see langword="false" /> after the isolated instance of the test has completed execution.
     /// </returns>
-    /// <exception cref="Xunit.Sdk.XunitException">Thrown if the isolated test result is a Failure.</exception>
+    /// <exception cref="XunitException">Thrown if the isolated test result is a Failure.</exception>
     /// <exception cref="SkipException">Thrown if on a platform that we do not yet support test isolation on.</exception>
     internal static Task<bool> ExecuteInIsolationAsync(object testClass, string testMethodName, ITestOutputHelper logger)
     {
@@ -189,7 +186,7 @@ internal static class TestUtilities
     /// A task whose result is <see langword="true" /> if test execution is already isolated and should therefore proceed with the body of the test,
     /// or <see langword="false" /> after the isolated instance of the test has completed execution.
     /// </returns>
-    /// <exception cref="Xunit.Sdk.XunitException">Thrown if the isolated test result is a Failure.</exception>
+    /// <exception cref="XunitException">Thrown if the isolated test result is a Failure.</exception>
     /// <exception cref="SkipException">Thrown if on a platform that we do not yet support test isolation on.</exception>
 #pragma warning disable CA1801 // Review unused parameters
     internal static Task<bool> ExecuteInIsolationAsync(string testClassName, string testMethodName, ITestOutputHelper logger)
@@ -248,7 +245,7 @@ internal static class TestUtilities
                 switch (t.Result)
                 {
                     case IsolatedTestHost.ExitCode.TestSkipped:
-                        throw new SkipException("Test skipped. See output of isolated task for details.");
+                        throw SkipException.ForSkip("Test skipped. See output of isolated task for details.");
                     case IsolatedTestHost.ExitCode.TestPassed:
                     default:
                         Assert.Equal(IsolatedTestHost.ExitCode.TestPassed, t.Result);
@@ -259,7 +256,7 @@ internal static class TestUtilities
             },
             TaskScheduler.Default);
 #else
-        return Task.FromException<bool>(new SkipException("Test isolation is not yet supported on this platform."));
+        return Task.FromException<bool>(SkipException.ForSkip("Test isolation is not yet supported on this platform."));
 #endif
     }
 

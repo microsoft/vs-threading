@@ -2,9 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Linq;
-using Microsoft.VisualStudio.Threading;
-using Xunit;
-using Xunit.Abstractions;
 
 public class ListOfOftenOneTests : TestBase
 {
@@ -34,11 +31,11 @@ public class ListOfOftenOneTests : TestBase
         using (ListOfOftenOne<GenericParameterHelper>.Enumerator enumerator = this.list.GetEnumerator())
         {
             Assert.True(enumerator.MoveNext());
-            Assert.Equal<int>(1, enumerator.Current.Data);
+            Assert.Equal(1, enumerator.Current.Data);
             Assert.False(enumerator.MoveNext());
             enumerator.Reset();
             Assert.True(enumerator.MoveNext());
-            Assert.Equal<int>(1, enumerator.Current.Data);
+            Assert.Equal(1, enumerator.Current.Data);
             Assert.False(enumerator.MoveNext());
         }
     }
@@ -51,15 +48,15 @@ public class ListOfOftenOneTests : TestBase
         using (ListOfOftenOne<GenericParameterHelper>.Enumerator enumerator = this.list.GetEnumerator())
         {
             Assert.True(enumerator.MoveNext());
-            Assert.Equal<int>(1, enumerator.Current.Data);
+            Assert.Equal(1, enumerator.Current.Data);
             Assert.True(enumerator.MoveNext());
-            Assert.Equal<int>(2, enumerator.Current.Data);
+            Assert.Equal(2, enumerator.Current.Data);
             Assert.False(enumerator.MoveNext());
             enumerator.Reset();
             Assert.True(enumerator.MoveNext());
-            Assert.Equal<int>(1, enumerator.Current.Data);
+            Assert.Equal(1, enumerator.Current.Data);
             Assert.True(enumerator.MoveNext());
-            Assert.Equal<int>(2, enumerator.Current.Data);
+            Assert.Equal(2, enumerator.Current.Data);
             Assert.False(enumerator.MoveNext());
         }
     }

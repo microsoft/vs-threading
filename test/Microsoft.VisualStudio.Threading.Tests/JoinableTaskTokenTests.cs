@@ -4,9 +4,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.Threading;
-using Xunit;
-using Xunit.Abstractions;
 
 public class JoinableTaskTokenTests : JoinableTaskTestBase
 {
@@ -171,7 +168,7 @@ public class JoinableTaskTokenTests : JoinableTaskTestBase
         TaskCompletionSource<string?> tokenSource = new();
         AsyncManualResetEvent releaseOuterTask = new();
 
-        JoinableTask outerTask = this.asyncPump.RunAsync<bool>(
+        JoinableTask outerTask = this.asyncPump.RunAsync(
             async delegate
             {
                 try
@@ -199,7 +196,7 @@ public class JoinableTaskTokenTests : JoinableTaskTestBase
             this.Logger.WriteLine($"Token (modified): {token}");
         }
 
-        JoinableTask innerTask = this.asyncPump.RunAsync<bool>(
+        JoinableTask innerTask = this.asyncPump.RunAsync(
             async delegate
             {
                 await Task.Yield();
