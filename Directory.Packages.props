@@ -14,7 +14,7 @@
     <PackageVersion Include="DNNE" Version="2.0.8" />
     <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.1" />
     <PackageVersion Include="Microsoft.CodeAnalysis" Version="$(CodeAnalysisVersion)" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="4.14.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Common" Version="$(CodeAnalysisVersion)" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="$(CodeAnalysisVersion)" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing" Version="$(CodefixTestingVersion)" />
