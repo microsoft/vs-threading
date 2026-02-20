@@ -12,7 +12,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="DNNE" Version="2.0.8" />
-    <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.11" />
+    <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.1" />
     <PackageVersion Include="Microsoft.CodeAnalysis" Version="$(CodeAnalysisVersion)" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Common" Version="$(CodeAnalysisVersion)" />
@@ -33,8 +33,8 @@
     <PackageVersion Include="Nullable" Version="1.3.1" />
     <PackageVersion Include="System.Collections.Immutable" Version="8.0.0" />
     <PackageVersion Include="System.Memory" Version="4.6.0" />
-    <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.0" />
-    <PackageVersion Include="System.Threading.Tasks.Extensions" Version="4.6.0" />
+    <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
+    <PackageVersion Include="System.Threading.Tasks.Extensions" Version="4.6.3" />
     <PackageVersion Include="System.ValueTuple" Version="4.6.1" />
     <PackageVersion Include="xunit.v3.core.mtp-v2" Version="3.2.2" />
     <PackageVersion Include="Xunit.Combinatorial" Version="2.0.24" />
