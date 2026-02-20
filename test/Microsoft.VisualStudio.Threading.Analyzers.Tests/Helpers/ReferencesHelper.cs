@@ -24,7 +24,7 @@ internal static class ReferencesHelper
         .WithNuGetConfigFilePath(NuGetConfigPath)
         .WithPackages(ImmutableArray.Create(
             new PackageIdentity("System.Collections.Immutable", "6.0.0"),
-            new PackageIdentity("System.Threading.Tasks.Extensions", "4.6.0"),
+            new PackageIdentity("System.Threading.Tasks.Extensions", "4.6.3"),
             new PackageIdentity("Microsoft.Bcl.AsyncInterfaces", "6.0.0")));
 
     internal static readonly ImmutableArray<string> VSSDKPackageReferences = ImmutableArray.Create(new string[]
