@@ -153,10 +153,11 @@ public class AsyncLazyTests : TestBase
     {
         WeakReference collectible = await this.ValueFactoryReleasedAfterExecution_Helper();
 
+        await Task.Yield();
         for (int i = 0; i < 3; i++)
         {
-            await Task.Yield();
-            GC.Collect();
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true);
+            GC.WaitForPendingFinalizers();
         }
 
         Assert.False(collectible.IsAlive);
@@ -167,10 +168,11 @@ public class AsyncLazyTests : TestBase
     {
         WeakReference collectible = await this.AsyncPumpReleasedAfterExecution_Helper(throwInValueFactory);
 
+        await Task.Yield();
         for (int i = 0; i < 3; i++)
         {
-            await Task.Yield();
-            GC.Collect();
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true);
+            GC.WaitForPendingFinalizers();
         }
 
         Assert.False(collectible.IsAlive);
