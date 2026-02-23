@@ -182,7 +182,12 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
         /// </returns>
         private static bool HasSupersetOfParameterTypes(IMethodSymbol candidateMethod, IMethodSymbol baselineMethod)
         {
-            return candidateMethod.Parameters.All(candidateParameter => baselineMethod.Parameters.Any(baselineParameter => baselineParameter.Type?.Equals(candidateParameter.Type, SymbolEqualityComparer.Default) ?? false));
+            if (baselineMethod.Parameters.Length > candidateMethod.Parameters.Length)
+            {
+                return false;
+            }
+
+            return baselineMethod.Parameters.All(baselineParameter => candidateMethod.Parameters.Any(candidateParameter => baselineParameter.Type?.Equals(candidateParameter.Type, SymbolEqualityComparer.Default) ?? false));
         }
 
         private static bool IsInTaskReturningMethodOrDelegate(SyntaxNodeAnalysisContext context)
