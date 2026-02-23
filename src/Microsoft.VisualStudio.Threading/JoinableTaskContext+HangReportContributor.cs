@@ -3,10 +3,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Xml.Linq;
 
 namespace Microsoft.VisualStudio.Threading;
@@ -17,6 +17,7 @@ public partial class JoinableTaskContext : IHangReportContributor
     /// Contributes data for a hang report.
     /// </summary>
     /// <returns>The hang report contribution.</returns>
+    [RequiresUnreferencedCode(Reasons.DiagnosticAnalysisOnly)]
     HangReportContribution IHangReportContributor.GetHangReport()
     {
         return this.GetHangReport();
@@ -26,6 +27,7 @@ public partial class JoinableTaskContext : IHangReportContributor
     /// Contributes data for a hang report.
     /// </summary>
     /// <returns>The hang report contribution. Null values should be ignored.</returns>
+    [RequiresUnreferencedCode(Reasons.DiagnosticAnalysisOnly)]
     protected virtual HangReportContribution GetHangReport()
     {
         using (this.NoMessagePumpSynchronizationContext.Apply())
@@ -116,6 +118,7 @@ public partial class JoinableTaskContext : IHangReportContributor
         return result;
     }
 
+    [RequiresUnreferencedCode(Reasons.DiagnosticAnalysisOnly)]
     private static List<Tuple<XElement, XElement>> CreateNodeLabels(Dictionary<JoinableTask, XElement> tasksAndElements)
     {
         Requires.NotNull(tasksAndElements, nameof(tasksAndElements));
@@ -146,6 +149,7 @@ public partial class JoinableTaskContext : IHangReportContributor
         return result;
     }
 
+    [RequiresUnreferencedCode(Reasons.DiagnosticAnalysisOnly)]
     private static string GetAsyncReturnStack(JoinableTaskFactory.SingleExecuteProtector singleExecuteProtector)
     {
         Requires.NotNull(singleExecuteProtector, nameof(singleExecuteProtector));

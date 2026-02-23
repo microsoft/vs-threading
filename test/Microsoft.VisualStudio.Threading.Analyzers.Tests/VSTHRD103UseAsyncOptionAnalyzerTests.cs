@@ -1340,6 +1340,53 @@ class Test {
     }
 
     [Fact]
+    public async Task SyncMethodCallInAsyncMethod_ExcludedViaAdditionalFiles_GeneratesNoWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T() {
+        TestNamespace.TestClass.SlowSyncMethod();
+    }
+}
+
+namespace TestNamespace {
+    class TestClass {
+        public static void SlowSyncMethod() { }
+        public static Task SlowSyncMethodAsync() => Task.CompletedTask;
+    }
+}
+";
+
+        // No diagnostic expected because SlowSyncMethod is excluded via AdditionalFiles
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task SyncMethodCallInAsyncMethod_NotExcludedViaAdditionalFiles_GeneratesWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T() {
+        TestNamespace.TestClass.{|#0:NotExcludedMethod|}();
+    }
+}
+
+namespace TestNamespace {
+    class TestClass {
+        public static void NotExcludedMethod() { }
+        public static Task NotExcludedMethodAsync() => Task.CompletedTask;
+    }
+}
+";
+
+        await CSVerify.VerifyAnalyzerAsync(test, CSVerify.Diagnostic(Descriptor).WithLocation(0).WithArguments("NotExcludedMethod", "NotExcludedMethodAsync"));
+    }
+
+    [Fact]
     public async Task DoNotRaiseForDistinctSyncMethod()
     {
         string test = @"

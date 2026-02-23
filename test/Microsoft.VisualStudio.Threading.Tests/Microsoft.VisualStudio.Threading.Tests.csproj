@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net8.0</TargetFrameworks>
+    <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsTestProject>true</IsTestProject>
 
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
@@ -22,25 +22,20 @@
     <Compile Include="..\..\src\Microsoft.VisualStudio.Threading\RarelyRemoveItemSet`1.cs">
       <Link>RarelyRemoveItemSet`1.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\Microsoft.VisualStudio.Threading\RoslynDebug.cs"
-      Link="RoslynDebug.cs" />
+    <Compile Include="..\..\src\Microsoft.VisualStudio.Threading\RoslynDebug.cs" Link="RoslynDebug.cs" />
     <Compile Include="..\..\src\Microsoft.VisualStudio.Threading\WeakKeyDictionary`2.cs">
       <Link>WeakKeyDictionary`2.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="Nullable" PrivateAssets="all" />
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" />
     <PackageReference Include="Xunit.Combinatorial" />
-    <PackageReference Include="xunit.runner.visualstudio" />
-    <PackageReference Include="Xunit.SkippableFact" />
     <PackageReference Include="Xunit.StaFact" />
-    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.v3.mtp-v2" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference
-      Include="..\..\src\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj" />
+    <ProjectReference Include="..\..\src\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetFramework)' == 'net472' ">
     <Reference Include="System.Configuration" />
@@ -48,8 +43,7 @@
     <ProjectReference Include="..\IsolatedTestHost\IsolatedTestHost.csproj">
       <Private>true</Private>
     </ProjectReference>
-    <ProjectReference
-      Include="..\Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher\Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.csproj">
+    <ProjectReference Include="..\Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher\Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <Private>true</Private>
     </ProjectReference>

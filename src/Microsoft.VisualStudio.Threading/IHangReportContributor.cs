@@ -1,11 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.VisualStudio.Threading;
 
@@ -18,5 +14,6 @@ public interface IHangReportContributor
     /// Contributes data for a hang report.
     /// </summary>
     /// <returns>The hang report contribution. Null values should be ignored.</returns>
+    [RequiresUnreferencedCode(Reasons.DiagnosticAnalysisOnly)]
     HangReportContribution GetHangReport();
 }

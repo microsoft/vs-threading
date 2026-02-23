@@ -6,9 +6,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft;
-using Microsoft.VisualStudio.Threading;
-using Xunit;
-using Xunit.Abstractions;
 using Xunit.Sdk;
 
 public class TestBaseTests : TestBase
@@ -18,10 +15,10 @@ public class TestBaseTests : TestBase
     {
     }
 
-    [SkippableFact]
+    [Fact]
     public void ExecuteOnSTA_ExecutesDelegateOnSTA()
     {
-        Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+        Assert.SkipUnless(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Windows only");
         bool executed = false;
         this.ExecuteOnSTA(delegate
         {
@@ -32,10 +29,10 @@ public class TestBaseTests : TestBase
         Assert.True(executed);
     }
 
-    [SkippableFact]
+    [Fact]
     public void ExecuteOnSTA_PropagatesExceptions()
     {
-        Skip.IfNot(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+        Assert.SkipUnless(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Windows only");
         Assert.Throws<ApplicationException>(() => this.ExecuteOnSTA(() =>
         {
             throw new ApplicationException();
@@ -90,7 +87,7 @@ public class TestBaseTests : TestBase
         }));
     }
 
-    [SkippableFact]
+    [Fact]
     [Trait("TestCategory", "FailsInCloudTest")]
     public async Task ExecuteInIsolation_PassingTest()
     {
@@ -100,7 +97,7 @@ public class TestBaseTests : TestBase
         }
     }
 
-    [SkippableFact]
+    [Fact]
     public async Task ExecuteInIsolation_FailingTest()
     {
         bool executeHere;

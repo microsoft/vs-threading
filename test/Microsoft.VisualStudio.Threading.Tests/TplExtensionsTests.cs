@@ -6,9 +6,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
-using Microsoft.VisualStudio.Threading;
-using Xunit;
-using Xunit.Abstractions;
 using TplExtensions = Microsoft.VisualStudio.Threading.TplExtensions;
 
 public class TplExtensionsTests : TestBase
@@ -534,7 +531,7 @@ public class TplExtensionsTests : TestBase
     public async Task NoThrowAwaitable_ValueTaskT_Succeeds()
     {
         var barrier = new TaskCompletionSource<object?>();
-        var result = new object();
+        object result = new object();
         var tcs = new TaskCompletionSource<object>();
         var test = Task.Run(async () =>
         {
@@ -885,7 +882,7 @@ public class TplExtensionsTests : TestBase
     [Fact]
     public async Task ToApmOfTWithNoTaskState()
     {
-        var state = new object();
+        object state = new object();
         var tcs = new TaskCompletionSource<int>();
         IAsyncResult? beginResult = null;
 
@@ -912,7 +909,7 @@ public class TplExtensionsTests : TestBase
     [Fact]
     public async Task ToApmOfTWithMatchingTaskState()
     {
-        var state = new object();
+        object state = new object();
         var tcs = new TaskCompletionSource<int>(state);
         IAsyncResult? beginResult = null;
 
@@ -939,7 +936,7 @@ public class TplExtensionsTests : TestBase
     [Fact]
     public async Task ToApmWithNoTaskState()
     {
-        var state = new object();
+        object state = new object();
         var tcs = new TaskCompletionSource<object?>();
         IAsyncResult? beginResult = null;
 
@@ -966,7 +963,7 @@ public class TplExtensionsTests : TestBase
     [Fact]
     public async Task ToApmWithMatchingTaskState()
     {
-        var state = new object();
+        object state = new object();
         var tcs = new TaskCompletionSource<object?>(state);
         IAsyncResult? beginResult = null;
 
@@ -1077,7 +1074,7 @@ public class TplExtensionsTests : TestBase
         {
             var tcs = new TaskCompletionSource<object?>();
             Task? timeoutTask = generic
-                ? TplExtensions.WithTimeout<object?>(tcs.Task, TimeSpan.FromMilliseconds(-1))
+                ? TplExtensions.WithTimeout(tcs.Task, TimeSpan.FromMilliseconds(-1))
                 : TplExtensions.WithTimeout((Task)tcs.Task, TimeSpan.FromMilliseconds(-1));
             Assert.False(timeoutTask.IsCompleted);
             await Task.Delay(AsyncDelay / 2);

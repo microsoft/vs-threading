@@ -2,10 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Linq;
 using System.Threading;
-using Microsoft.VisualStudio.Threading;
-using Xunit;
-using Xunit.Abstractions;
 
 public class CancellationTokenExtensionsTests : TestBase
 {
@@ -226,19 +224,23 @@ public class CancellationTokenExtensionsTests : TestBase
         }
     }
 
-    [Fact]
-    public void CombineWith_Array_ThreeCancelable_AmidMany()
+    [Theory, CombinatorialData]
+    public void CombineWith_Array_ThreeCancelable_AmidMany([CombinatorialRange(0, 3)] int canceledIndex)
     {
-        var cts1 = new CancellationTokenSource();
-        var cts2 = new CancellationTokenSource();
-        var cts3 = new CancellationTokenSource();
-        using (CancellationTokenExtensions.CombinedCancellationToken combined = CancellationToken.None.CombineWith(cts1.Token, CancellationToken.None, cts2.Token, CancellationToken.None, cts3.Token))
+        CancellationTokenSource[] cts = new CancellationTokenSource[3];
+        for (int i = 0; i < 3; i++)
         {
-            Assert.NotEqual(cts1.Token, combined.Token);
-            Assert.NotEqual(cts2.Token, combined.Token);
-            Assert.NotEqual(cts3.Token, combined.Token);
+            cts[i] = new();
+        }
 
-            cts2.Cancel();
+        using (CancellationTokenExtensions.CombinedCancellationToken combined = cts[0].Token.CombineWith(cts.Skip(1).Select(s => s.Token).ToArray()))
+        {
+            for (int i = 0; i < cts.Length; i++)
+            {
+                Assert.NotEqual(cts[i].Token, combined.Token);
+            }
+
+            cts[canceledIndex].Cancel();
             Assert.True(combined.Token.IsCancellationRequested);
         }
     }

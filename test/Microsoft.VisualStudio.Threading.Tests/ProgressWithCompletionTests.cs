@@ -5,9 +5,6 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.Threading;
-using Xunit;
-using Xunit.Abstractions;
 
 public class ProgressWithCompletionTests : TestBase
 {
@@ -162,7 +159,7 @@ public class ProgressWithCompletionTests : TestBase
         }
         else
         {
-            var progressTask = Task.Run(progressFactory);
+            Task<ProgressWithCompletion<GenericParameterHelper>> progressTask = Task.Run(progressFactory);
             progressTask.WaitWithoutInlining();
             progress = progressTask.Result;
         }

@@ -245,12 +245,12 @@
     <Disp Icon="Ver" Disp="true" LocTbl="false" Path=" \ ;Version \ 8 \ 0" />
     <Item ItemId=";Comments" ItemType="0" PsrId="211" Leaf="true">
       <Str Cat="Text">
-        <Val><![CDATA[Async synchronization primitives, async collections, TPL and dataflow extensions.]D;]A;      The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This]D;]A;      package is applicable to any .NET application (not just Visual Studio).]]></Val>
+        <Val><![CDATA[Async synchronization primitives, async collections, TPL and dataflow extensions.]D;]A;      The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This]D;]A;      package is applicable to any .NET application (not just Visual Studio).]D;]A;    ]D;]A;      This package contains only the library, without a dependency on the analyzers.]D;]A;      Use the Microsoft.VisualStudio.Threading package to get the library and analyzers together.]D;]A;    ]]></Val>
         <Tgt Cat="Text" Stat="Loc" Orig="New">
-          <Val><![CDATA[Примитивы асинхронной синхронизации, асинхронные коллекции, TPL и расширения потоков данных.]D;]A;      JoinableTaskFactory позволяет синхронно блокировать поток пользовательского интерфейса для асинхронной работы. Этот]D;]A;      пакет применим к любому приложению .NET (не только к Visual Studio).]]></Val>
+          <Val><![CDATA[Примитивы асинхронной синхронизации, асинхронные коллекции, TPL и расширения потоков данных.]D;]A;      JoinableTaskFactory позволяет синхронно блокировать поток пользовательского интерфейса для асинхронной работы. Этот]D;]A;      пакет применим к любому приложению .NET (не только к Visual Studio).]D;]A;    ]D;]A;      Этот пакет содержит только библиотеку, без зависимости от анализаторов.]D;]A;      Используйте пакет Microsoft.VisualStudio.Threading для объединения библиотеки и анализаторов.]D;]A;    ]]></Val>
         </Tgt>
         <Prev Cat="Text">
-          <Val><![CDATA[Async synchronization primitives, async collections, TPL and dataflow extensions. The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This package is applicable to any .NET application (not just Visual Studio).]]></Val>
+          <Val><![CDATA[Async synchronization primitives, async collections, TPL and dataflow extensions.]D;]A;      The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This]D;]A;      package is applicable to any .NET application (not just Visual Studio).]]></Val>
         </Prev>
       </Str>
       <Disp Icon="Str" />

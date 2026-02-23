@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;net8.0;net472</TargetFrameworks>
+    <TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(TargetFrameworks);net8.0-windows</TargetFrameworks>
+
+    <Description>Async synchronization primitives, async collections, TPL and dataflow extensions.
+      The JoinableTaskFactory allows synchronously blocking the UI thread for async work. This
+      package is applicable to any .NET application (not just Visual Studio).
+    </Description>
+    <PackageTags>Threading Async Lock Synchronization Threadsafe</PackageTags>
+  </PropertyGroup>
+</Project>

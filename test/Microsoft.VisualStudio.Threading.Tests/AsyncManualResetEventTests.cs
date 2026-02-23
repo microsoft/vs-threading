@@ -4,9 +4,6 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.Threading;
-using Xunit;
-using Xunit.Abstractions;
 
 public class AsyncManualResetEventTests : TestBase
 {
@@ -21,7 +18,7 @@ public class AsyncManualResetEventTests : TestBase
     [Fact]
     public void CtorDefaultParameter()
     {
-        Assert.False(new System.Threading.ManualResetEventSlim().IsSet);
+        Assert.False(new ManualResetEventSlim().IsSet);
     }
 
     [Fact]

@@ -8,9 +8,7 @@ using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft;
-using Microsoft.VisualStudio.Threading;
-using Xunit;
-using Xunit.Abstractions;
+using Xunit.Sdk;
 
 public abstract class TestBase
 {
@@ -22,7 +20,7 @@ public abstract class TestBase
     /// The maximum length of time to wait for something that we expect will happen
     /// within the timeout.
     /// </summary>
-    protected static readonly TimeSpan UnexpectedTimeout = Debugger.IsAttached ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(10);
+    protected static readonly TimeSpan UnexpectedTimeout = Debugger.IsAttached ? Timeout.InfiniteTimeSpan : TimeSpan.FromSeconds(15);
 
     /// <summary>
     /// The maximum length of time to wait for something that we do not expect will happen
@@ -339,7 +337,7 @@ public abstract class TestBase
     /// A task whose result is <see langword="true" /> if test execution is already isolated and should therefore proceed with the body of the test,
     /// or <see langword="false" /> after the isolated instance of the test has completed execution.
     /// </returns>
-    /// <exception cref="Xunit.Sdk.XunitException">Thrown if the isolated test result is a Failure.</exception>
+    /// <exception cref="XunitException">Thrown if the isolated test result is a Failure.</exception>
     /// <exception cref="SkipException">Thrown if on a platform that we do not yet support test isolation on.</exception>
     protected Task<bool> ExecuteInIsolationAsync([CallerMemberName] string testMethodName = null!)
     {
@@ -355,7 +353,7 @@ public abstract class TestBase
     /// <see langword="true" /> if test execution is already isolated and should therefore proceed with the body of the test,
     /// or <see langword="false" /> after the isolated instance of the test has completed execution.
     /// </returns>
-    /// <exception cref="Xunit.Sdk.XunitException">Thrown if the isolated test result is a Failure.</exception>
+    /// <exception cref="XunitException">Thrown if the isolated test result is a Failure.</exception>
     /// <exception cref="SkipException">Thrown if on a platform that we do not yet support test isolation on.</exception>
     protected bool ExecuteInIsolation([CallerMemberName] string testMethodName = null!)
     {

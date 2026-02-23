@@ -26,7 +26,11 @@ parameters:
 - name: EnableAPIScan
   displayName: Include APIScan with compliance tools
   type: boolean
-  default: true # enable in individual repos only AFTER updating TSAOptions.json with your own values
+  default: true
+- name: PublishCodeCoverage
+  displayName: Publish code coverage
+  type: boolean
+  default: true
 
 resources:
   repositories:
@@ -41,19 +45,21 @@ variables:
 extends:
   template: azure-pipelines/MicroBuild.1ES.Official.yml@MicroBuildTemplate
   parameters:
+    settings:
+      networkIsolationPolicy: Permissive,CFSClean2
     sdl:
-      sourceAnalysisPool: VSEngSS-MicroBuild2022-1ES
+      sourceAnalysisPool: VSEng-MicroBuildVSStable
       codeSignValidation:
         enabled: true
         break: true
-        additionalTargetsGlobPattern: -|Variables-*\*.ps1;-|APIScanInputs-*\**;-|test_symbols-*\**;-|MicroBuild\**
+        additionalTargetsGlobPattern: -|Variables-*\*.ps1;-|LocBin-*\**;-|APIScanInputs-*\**;-|test_symbols-*\**;-|MicroBuild\**;-|$(Build.ArtifactStagingDirectory)\VSInsertion-Windows\vs-insertion-script.ps1
       policheck:
         enabled: true
         exclusionsFile: $(System.DefaultWorkingDirectory)\azure-pipelines\PoliCheckExclusions.xml
       suppression:
         suppressionFile: $(System.DefaultWorkingDirectory)\azure-pipelines\falsepositives.gdnsuppress
       sbom:
-        enabled: true
+        enabled: false # Skip 1ES SBOM because microbuild has our own sbom system
     stages:
     - stage: Build
       variables:
@@ -62,10 +68,11 @@ extends:
       - template: /azure-pipelines/build.yml@self
         parameters:
           Is1ESPT: true
+          Is1ESPTOfficial: true
           RealSign: true
           ShouldSkipOptimize: ${{ parameters.ShouldSkipOptimize }}
           EnableAPIScan: ${{ parameters.EnableAPIScan }}
-          windowsPool: VSEngSS-MicroBuild2022-1ES
+          windowsPool: VSEng-MicroBuildVSStable
           linuxPool:
             name: AzurePipelines-EO
             demands:
@@ -73,10 +80,11 @@ extends:
             os: Linux
           macOSPool:
             name: Azure Pipelines
-            vmImage: macOS-14
+            vmImage: macOS-15
             os: macOS
           EnableMacOSBuild: ${{ parameters.EnableMacOSBuild }}
           RunTests: ${{ parameters.RunTests }}
+          PublishCodeCoverage: ${{ parameters.PublishCodeCoverage }}
     - template: /azure-pipelines/prepare-insertion-stages.yml@self
       parameters:
         RealSign: true

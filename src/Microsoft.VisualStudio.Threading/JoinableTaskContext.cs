@@ -246,6 +246,15 @@ public partial class JoinableTaskContext : IDisposable
     }
 
     /// <summary>
+    /// Gets a value indicating whether this instance is not associated with any main thread
+    /// (e.g. created with <see cref="CreateNoOpContext" />).
+    /// </summary>
+    /// <remarks>
+    /// This allows library code to skip some additional work in the environments that do not have a main thread.
+    /// </remarks>
+    public bool IsNoOpContext => this.UnderlyingSynchronizationContext is null;
+
+    /// <summary>
     /// Gets a value indicating whether the main thread is blocked by any joinable task.
     /// </summary>
     internal bool IsMainThreadBlockedByAnyJoinableTask => this.mainThreadBlockingJoinableTaskCount > 0;
@@ -293,11 +302,6 @@ public partial class JoinableTaskContext : IDisposable
     {
         get
         {
-            // Callers of this method are about to take a private lock, which tends
-            // to cause a deadlock while debugging because of lock contention with the
-            // debugger's expression evaluator. So prevent that.
-            Debugger.NotifyOfCrossThreadDependency();
-
             return NoMessagePumpSyncContext.Default;
         }
     }
