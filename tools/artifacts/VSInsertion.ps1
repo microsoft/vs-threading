@@ -19,23 +19,27 @@ if (!$BuildConfiguration) {
 $PackagesRoot = "$RepoRoot/bin/Packages/$BuildConfiguration"
 $NuGetPackages = "$PackagesRoot/NuGet"
 $VsixPackages = "$PackagesRoot/Vsix"
+$AzurePipelinesPath = "$RepoRoot/azure-pipelines"
+if ($env:BUILD_ARTIFACTSTAGINGDIRECTORY) {
+    $InsertionOutputs = "$env:BUILD_ARTIFACTSTAGINGDIRECTORY/InsertionOutputs"
+}
 
-if (!(Test-Path $NuGetPackages)) {
-    Write-Warning "Skipping because NuGet packages haven't been built yet."
+if (!(Test-Path $NuGetPackages) -and !(Test-Path $VsixPackages)) {
+    Write-Warning "Skipping because NuGet and VSIX packages haven't been built yet."
     return @{}
 }
 
 $result = @{
-    "$NuGetPackages" = (Get-ChildItem $NuGetPackages -Recurse)
+    "$AzurePipelinesPath" = (Get-ChildItem "$AzurePipelinesPath/vs-insertion-script.ps1");
+    "$NuGetPackages" = (Get-ChildItem $NuGetPackages -Recurse);
 }
 
 if (Test-Path $VsixPackages) {
     $result["$PackagesRoot"] += Get-ChildItem $VsixPackages -Recurse
 }
 
-if ($env:IsOptProf) {
-    $VSRepoPackages = "$PackagesRoot/VSRepo"
-    $result["$VSRepoPackages"] = (Get-ChildItem "$VSRepoPackages\*.VSInsertionMetadata.*.nupkg");
+if ($InsertionOutputs -and $env:PROFILINGINPUTSPROPSNAME -and (Test-Path "$InsertionOutputs/$env:PROFILINGINPUTSPROPSNAME")) {
+    $result[$InsertionOutputs] = (Get-ChildItem "$InsertionOutputs/$env:PROFILINGINPUTSPROPSNAME"); # OptProf ProfilingInputs
 }
 
 $result

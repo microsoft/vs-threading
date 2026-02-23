@@ -8,7 +8,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using Microsoft;
-using Microsoft.VisualStudio.Threading;
 #if UseWpfContext
 using System.Windows.Threading;
 #endif

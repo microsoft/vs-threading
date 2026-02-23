@@ -7,9 +7,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft;
-using Microsoft.VisualStudio.Threading;
-using Xunit;
-using Xunit.Abstractions;
 
 public class DelegatingJoinableTaskFactoryTests : JoinableTaskTestBase
 {
@@ -156,7 +153,7 @@ public class DelegatingJoinableTaskFactoryTests : JoinableTaskTestBase
             base.WaitSynchronously(task);
         }
 
-        protected override void PostToUnderlyingSynchronizationContext(System.Threading.SendOrPostCallback callback, object state)
+        protected override void PostToUnderlyingSynchronizationContext(SendOrPostCallback callback, object state)
         {
             this.addToLog(FactoryLogEntry.InnerPostToUnderlyingSynchronizationContext);
             base.PostToUnderlyingSynchronizationContext(callback, state);
@@ -196,7 +193,7 @@ public class DelegatingJoinableTaskFactoryTests : JoinableTaskTestBase
             base.WaitSynchronously(task);
         }
 
-        protected override void PostToUnderlyingSynchronizationContext(System.Threading.SendOrPostCallback callback, object state)
+        protected override void PostToUnderlyingSynchronizationContext(SendOrPostCallback callback, object state)
         {
             this.addToLog(FactoryLogEntry.OuterPostToUnderlyingSynchronizationContext);
             base.PostToUnderlyingSynchronizationContext(callback, state);

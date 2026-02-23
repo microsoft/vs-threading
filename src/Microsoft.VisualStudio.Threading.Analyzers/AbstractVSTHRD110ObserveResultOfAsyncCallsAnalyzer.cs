@@ -43,6 +43,98 @@ public abstract class AbstractVSTHRD110ObserveResultOfAsyncCallsAnalyzer : Diagn
         });
     }
 
+    /// <summary>
+    /// Determines whether an invocation is within a lambda expression that is being converted to an Expression tree.
+    /// </summary>
+    /// <param name="operation">The invocation operation to check.</param>
+    /// <returns>True if the invocation is within a lambda converted to an Expression; false otherwise.</returns>
+    private static bool IsWithinExpressionLambda(IInvocationOperation operation)
+    {
+        // Walk up the operation tree to find the containing lambda
+        IOperation? current = operation.Parent;
+        while (current is not null)
+        {
+            if (current is IAnonymousFunctionOperation lambda)
+            {
+                // Found a lambda, now check if it's being converted to an Expression<>
+                return IsLambdaConvertedToExpression(lambda);
+            }
+
+            current = current.Parent;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Determines whether a lambda is being converted to an Expression tree type.
+    /// </summary>
+    /// <param name="lambda">The lambda operation to check.</param>
+    /// <returns>True if the lambda is being converted to an Expression; false otherwise.</returns>
+    private static bool IsLambdaConvertedToExpression(IAnonymousFunctionOperation lambda)
+    {
+        // Walk up from the lambda to find conversion or argument operations
+        IOperation? current = lambda.Parent;
+        while (current is not null)
+        {
+            // Check if the lambda's parent is a conversion operation
+            if (current is IConversionOperation conversion)
+            {
+                // Check if the target type is Expression<> or a related expression tree type
+                return IsExpressionTreeType(conversion.Type);
+            }
+
+            // Check if the lambda is being passed as an argument to a method expecting Expression<>
+            if (current is IArgumentOperation argument &&
+                argument.Parameter?.Type is INamedTypeSymbol parameterType)
+            {
+                return IsExpressionTreeType(parameterType);
+            }
+
+            // Allow certain operations to be skipped (like parentheses)
+            if (current is IParenthesizedOperation)
+            {
+                current = current.Parent;
+                continue;
+            }
+
+            // Stop walking up at other operation types to avoid false positives
+            break;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Determines whether a type is an Expression tree type (Expression&lt;T&gt; or related types).
+    /// </summary>
+    /// <param name="type">The type to check.</param>
+    /// <returns>True if the type is an Expression tree type; false otherwise.</returns>
+    private static bool IsExpressionTreeType(ITypeSymbol? type)
+    {
+        if (type is not INamedTypeSymbol namedType)
+        {
+            return false;
+        }
+
+        // Check for System.Linq.Expressions.Expression<T>
+        if (namedType.Name == "Expression" &&
+            namedType.ContainingNamespace?.ToDisplayString() == "System.Linq.Expressions" &&
+            namedType.IsGenericType)
+        {
+            return true;
+        }
+
+        // Check for LambdaExpression and other expression types
+        if (namedType.ContainingNamespace?.ToDisplayString() == "System.Linq.Expressions" &&
+            (namedType.Name == "LambdaExpression" || namedType.Name.EndsWith("Expression")))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
     private void AnalyzeInvocation(OperationAnalysisContext context, CommonInterest.AwaitableTypeTester awaitableTypes)
     {
         var operation = (IInvocationOperation)context.Operation;
@@ -54,6 +146,13 @@ public abstract class AbstractVSTHRD110ObserveResultOfAsyncCallsAnalyzer : Diagn
         if (operation.GetContainingFunction() is { } function && this.LanguageUtils.IsAsyncMethod(function.Syntax))
         {
             // CS4014 should already take care of this case.
+            return;
+        }
+
+        // Check if this invocation is within a lambda that's being converted to an Expression<>
+        if (IsWithinExpressionLambda(operation))
+        {
+            // This invocation is within a lambda converted to an expression tree, so it's not actually being invoked.
             return;
         }
 

@@ -3,11 +3,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Xml.Linq;
 
 namespace Microsoft.VisualStudio.Threading
@@ -46,6 +46,7 @@ namespace Microsoft.VisualStudio.Threading
         /// Contributes data for a hang report.
         /// </summary>
         /// <returns>The hang report contribution. Null values should be ignored.</returns>
+        [RequiresUnreferencedCode(Reasons.DiagnosticAnalysisOnly)]
         HangReportContribution IHangReportContributor.GetHangReport()
         {
             return this.GetHangReport();
@@ -55,7 +56,8 @@ namespace Microsoft.VisualStudio.Threading
         /// Contributes data for a hang report.
         /// </summary>
         /// <returns>The hang report contribution. Null values should be ignored.</returns>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity"), System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
+        [SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity"), SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
+        [RequiresUnreferencedCode(Reasons.DiagnosticAnalysisOnly)]
         protected virtual HangReportContribution GetHangReport()
         {
             using (this.NoMessagePumpSynchronizationContext.Apply())
@@ -125,6 +127,7 @@ namespace Microsoft.VisualStudio.Threading
         /// <summary>
         /// Appends details of a given collection of awaiters to the hang report.
         /// </summary>
+        [RequiresUnreferencedCode(Reasons.DiagnosticAnalysisOnly)]
         private static XElement CreateAwaiterNode(Awaiter awaiter)
         {
             Requires.NotNull(awaiter, nameof(awaiter));
@@ -211,9 +214,13 @@ namespace Microsoft.VisualStudio.Threading
             {
                 get
                 {
+#if NET
+                    foreach (AwaiterCollection value in Enum.GetValues<AwaiterCollection>())
+#else
 #pragma warning disable CS8605 // Unboxing a possibly null value.
                     foreach (AwaiterCollection value in Enum.GetValues(typeof(AwaiterCollection)))
 #pragma warning restore CS8605 // Unboxing a possibly null value.
+#endif
                     {
                         if (this.Membership.HasFlag(value))
                         {

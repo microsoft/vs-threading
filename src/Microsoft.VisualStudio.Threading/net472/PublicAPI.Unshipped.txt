@@ -1,2 +1,0 @@
-Microsoft.VisualStudio.Threading.AsyncBarrier.SignalAndWait(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
-static Microsoft.VisualStudio.Threading.JoinableTaskContext.CreateNoOpContext() -> Microsoft.VisualStudio.Threading.JoinableTaskContext!

@@ -20,7 +20,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="build\**" Pack="true" PackagePath="build\" />
+    <Content Include="buildTransitive\**" Pack="true" PackagePath="buildTransitive\" />
     <Content Include="tools\*.ps1" Pack="true" PackagePath="tools\" />
   </ItemGroup>
 

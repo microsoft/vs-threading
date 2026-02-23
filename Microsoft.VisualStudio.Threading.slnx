@@ -1,0 +1,57 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="NonWindows" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/Solution Items/">
+    <File Path=".config\dotnet-tools.json" />
+    <File Path=".editorconfig" />
+    <File Path="azure-pipelines/build.yml" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Build.targets" />
+    <File Path="Directory.Packages.props" />
+    <File Path="Directory.Traversal.targets" />
+    <File Path="global.json" />
+    <File Path="nuget.config" />
+    <File Path="stylecop.json" />
+    <File Path="version.json" />
+  </Folder>
+  <Folder Name="/Solution Items/tools/">
+    <File Path="tools/dirs.proj" />
+  </Folder>
+  <Folder Name="/src/">
+    <File Path="src/.editorconfig" />
+    <File Path="src/AssemblyInfo.cs" />
+    <File Path="src/Directory.Build.props" />
+    <File Path="src/Directory.Build.targets" />
+    <File Path="src/dirs.proj" />
+    <Project Path="src/Microsoft.VisualStudio.Threading.Analyzers.CodeFixes/Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.csproj" />
+    <Project Path="src/Microsoft.VisualStudio.Threading.Analyzers.CSharp/Microsoft.VisualStudio.Threading.Analyzers.CSharp.csproj" />
+    <Project Path="src/Microsoft.VisualStudio.Threading.Analyzers.VisualBasic/Microsoft.VisualStudio.Threading.Analyzers.VisualBasic.csproj" />
+    <Project Path="src/Microsoft.VisualStudio.Threading.Analyzers/Microsoft.VisualStudio.Threading.Analyzers.csproj" />
+    <Project Path="src/Microsoft.VisualStudio.Threading.JointPackage/Microsoft.VisualStudio.Threading.JointPackage.csproj" />
+    <Project Path="src/Microsoft.VisualStudio.Threading/Microsoft.VisualStudio.Threading.csproj" />
+    <Project Path="src/SosThreadingTools/SosThreadingTools.csproj">
+      <Build Solution="*|NonWindows" Project="false" />
+    </Project>
+  </Folder>
+  <Folder Name="/test/">
+    <File Path="test/.editorconfig" />
+    <File Path="test/AOT.props" />
+    <File Path="test/Directory.Build.props" />
+    <File Path="test/Directory.Build.targets" />
+    <File Path="test/dirs.proj" />
+    <Project Path="samples/samples.csproj" />
+    <Project Path="test/IsolatedTestHost/IsolatedTestHost.csproj">
+      <Build Solution="*|NonWindows" Project="false" />
+    </Project>
+    <Project Path="test/Microsoft.VisualStudio.Threading.Analyzers.Tests/Microsoft.VisualStudio.Threading.Analyzers.Tests.csproj" />
+    <Project Path="test/Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher/Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.csproj">
+      <Build Solution="*|NonWindows" Project="false" />
+    </Project>
+    <Project Path="test/Microsoft.VisualStudio.Threading.Tests/Microsoft.VisualStudio.Threading.Tests.csproj" />
+    <Project Path="test/NativeAOTCompatibility.Test/NativeAOTCompatibility.Test.csproj" />
+  </Folder>
+</Solution>

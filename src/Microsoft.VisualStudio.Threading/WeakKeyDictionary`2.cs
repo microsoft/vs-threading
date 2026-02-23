@@ -214,7 +214,7 @@ internal class WeakKeyDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, 
     /// </summary>
     internal bool Any()
     {
-        foreach (KeyValuePair<WeakKeyDictionary<TKey, TValue>.WeakReference<TKey>, TValue> item in this.dictionary)
+        foreach (KeyValuePair<WeakReference<TKey>, TValue> item in this.dictionary)
         {
             if (item.Key.IsAlive)
             {

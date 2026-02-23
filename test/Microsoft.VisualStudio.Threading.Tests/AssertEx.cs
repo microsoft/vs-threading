@@ -10,7 +10,7 @@ internal static class AssertEx
     {
         if (!EqualityComparer<T>.Default.Equals(expected, actual))
         {
-            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, message);
+            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected?.ToString() ?? string.Empty, actual?.ToString() ?? string.Empty, message);
         }
     }
 
@@ -18,7 +18,7 @@ internal static class AssertEx
     {
         if (!EqualityComparer<T>.Default.Equals(expected, actual))
         {
-            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual, string.Format(CultureInfo.CurrentCulture, formattingMessage, formattingArgs));
+            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected?.ToString() ?? string.Empty, actual?.ToString() ?? string.Empty, string.Format(CultureInfo.CurrentCulture, formattingMessage, formattingArgs));
         }
     }
 
