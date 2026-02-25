@@ -147,7 +147,7 @@ class Test
     }
 
     [Fact]
-    public async Task NullInTernary_NoDiagnostic_FalseNegative()
+    public async Task NullInTernary_Diagnostic()
     {
         var test = @"
 using System.Threading.Tasks;
@@ -156,13 +156,54 @@ class Test
 {
     public Task<object> GetTaskObj(bool b)
     {
-        return b ? default(Task<object>) : null;
+        return b ? [|default(Task<object>)|] : [|null|];
     }
 }
 ";
         await new CSVerify.Test
         {
             TestCode = test,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task NullInTernaryReturnStatement_Diagnostic()
+    {
+        var csharpTest = @"
+using System.Threading.Tasks;
+
+class Test
+{
+    public Task First(bool flag)
+    {
+        return flag
+            ? [|null|]
+            : Task.CompletedTask;
+    }
+
+    public Task Second(bool flag) =>
+        flag
+            ? [|null|]
+            : Task.CompletedTask;
+}
+";
+        await new CSVerify.Test
+        {
+            TestCode = csharpTest,
+        }.RunAsync();
+
+        var vbTest = @"
+Imports System.Threading.Tasks
+
+Friend Class Test
+    Public Function First(flag As Boolean) As Task
+        Return If(flag, [|Nothing|], Task.CompletedTask)
+    End Function
+End Class
+";
+        await new VerifyVB.Test
+        {
+            TestCode = vbTest,
         }.RunAsync();
     }
 

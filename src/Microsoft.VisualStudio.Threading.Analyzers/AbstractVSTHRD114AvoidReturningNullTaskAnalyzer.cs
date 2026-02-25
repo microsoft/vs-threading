@@ -55,19 +55,42 @@ public abstract class AbstractVSTHRD114AvoidReturningNullTaskAnalyzer : Diagnost
         };
     }
 
+    private static void CheckForNullValue(OperationAnalysisContext context, IOperation operation)
+    {
+        if (operation is IConditionalOperation conditionalOp)
+        {
+            if (conditionalOp.WhenTrue is { } whenTrue)
+            {
+                CheckForNullValue(context, whenTrue);
+            }
+
+            if (conditionalOp.WhenFalse is { } whenFalse)
+            {
+                CheckForNullValue(context, whenFalse);
+            }
+        }
+        else if (operation.ConstantValue is { HasValue: true, Value: null } &&
+            operation.Syntax is { } nullSyntax)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(Descriptor, nullSyntax.GetLocation()));
+        }
+    }
+
     private void AnalyzerReturnOperation(OperationAnalysisContext context)
     {
         var returnOperation = (IReturnOperation)context.Operation;
 
-        if (returnOperation.ReturnedValue is { ConstantValue: { HasValue: true, Value: null } } && // could be null for implicit returns
-            returnOperation.ReturnedValue.Syntax is { } returnedValueSyntax &&
-            Utils.GetContainingFunctionBlock(returnOperation) is { } block &&
-            FindOwningSymbol(block, context.ContainingSymbol) is { } method &&
-            !method.IsAsync &&
-            Utils.IsTask(method.ReturnType) &&
-            !this.LanguageUtils.MethodReturnsNullableReferenceType(method))
+        // ReturnedValue is null for implicit/void returns
+        if (returnOperation.ReturnedValue is not { } returnedValue ||
+            Utils.GetContainingFunctionBlock(returnOperation) is not { } block ||
+            FindOwningSymbol(block, context.ContainingSymbol) is not { } owningMethod ||
+            owningMethod.IsAsync ||
+            !Utils.IsTask(owningMethod.ReturnType) ||
+            this.LanguageUtils.MethodReturnsNullableReferenceType(owningMethod))
         {
-            context.ReportDiagnostic(Diagnostic.Create(Descriptor, returnedValueSyntax.GetLocation()));
+            return;
         }
+
+        CheckForNullValue(context, returnedValue);
     }
 }
