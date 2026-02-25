@@ -9,6 +9,7 @@
 
 * Design APIs to be highly testable, and all functionality should be tested.
 * Avoid introducing binary breaking changes in public APIs of projects under `src` unless their project files have `IsPackable` set to `false`.
+* `InternalsVisibleTo` attributes are *not allowed*.
 
 ## Testing
 
@@ -17,6 +18,8 @@
 * There should generally be one test project (under the `test` directory) per shipping project (under the `src` directory). Test projects are named after the project being tested with a `.Tests` suffix.
 * Tests use xunit v3 with Microsoft.Testing.Platform (MTP v2). Traditional VSTest `--filter` syntax does NOT work.
 * Some tests are known to be unstable. When running tests, you should skip the unstable ones by using `-- --filter-not-trait "FailsInCloudTest=true"`.
+* Since `InternalsVisibleTo` is not allowed, testing must be done at the public API level.
+  In rare cases where there are static utility methods that need to be thoroughly tested, which may be impossible or inefficient to do via public APIs, the static methods may be moved to a .cs file that is then linked both into the product and into the test project so that it may be tested directly.
 
 ### Running Tests
 

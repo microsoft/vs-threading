@@ -45,6 +45,10 @@
     <None Include="$(PkgMicrosoft_VisualStudio_Shell_Framework)\lib\net472\Microsoft.VisualStudio.Shell.Framework.dll" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
+    <!-- Link parsing helpers directly so they can be tested without InternalsVisibleTo. -->
+    <Compile Include="..\..\src\Microsoft.VisualStudio.Threading.Analyzers\CommonInterestParsing.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <ItemGroup>

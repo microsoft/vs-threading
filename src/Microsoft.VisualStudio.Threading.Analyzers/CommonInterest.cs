@@ -69,17 +69,6 @@ public static class CommonInterest
 
     private const string GetAwaiterMethodName = "GetAwaiter";
 
-    private static readonly TimeSpan RegexMatchTimeout = TimeSpan.FromSeconds(5);  // Prevent expensive CPU hang in Regex.Match if backtracking occurs due to pathological input (see #485).
-
-    private static readonly Regex NegatableTypeOrMemberReferenceRegex = new Regex(@"^(?<negated>!)?\[(?<typeName>[^\[\]\:]+)+\](?:\:\:(?<memberName>\S+))?\s*$", RegexOptions.Singleline | RegexOptions.CultureInvariant, RegexMatchTimeout);
-
-    private static readonly Regex MemberReferenceRegex = new Regex(@"^\[(?<typeName>[^\[\]\:]+)+\]::(?<memberName>\S+)\s*$", RegexOptions.Singleline | RegexOptions.CultureInvariant, RegexMatchTimeout);
-
-    /// <summary>
-    /// An array with '.' as its only element.
-    /// </summary>
-    private static readonly char[] QualifiedIdentifierSeparators = ['.'];
-
     public static IEnumerable<QualifiedMember> ReadMethods(AnalyzerOptions analyzerOptions, Regex fileNamePattern, CancellationToken cancellationToken)
     {
         foreach (string line in ReadAdditionalFiles(analyzerOptions, fileNamePattern, cancellationToken))
@@ -92,28 +81,15 @@ public static class CommonInterest
     {
         foreach (string line in ReadAdditionalFiles(analyzerOptions, fileNamePattern, cancellationToken))
         {
-            Match? match = null;
-            try
-            {
-                match = NegatableTypeOrMemberReferenceRegex.Match(line);
-            }
-            catch (RegexMatchTimeoutException)
-            {
-                throw new InvalidOperationException($"Regex.Match timeout when parsing line: {line}");
-            }
-
-            if (!match.Success)
+            if (!CommonInterestParsing.TryParseNegatableTypeOrMemberReference(line, out bool negated, out ReadOnlyMemory<char> typeNameMemory, out string? memberNameValue))
             {
                 throw new InvalidOperationException($"Parsing error on line: {line}");
             }
 
-            bool inverted = match.Groups["negated"].Success;
-            string[] typeNameElements = match.Groups["typeName"].Value.Split(QualifiedIdentifierSeparators);
-            string typeName = typeNameElements[typeNameElements.Length - 1];
-            var containingNamespace = typeNameElements.Take(typeNameElements.Length - 1).ToImmutableArray();
+            (ImmutableArray<string> containingNamespace, string? typeName) = SplitQualifiedIdentifier(typeNameMemory);
             var type = new QualifiedType(containingNamespace, typeName);
-            QualifiedMember member = match.Groups["memberName"].Success ? new QualifiedMember(type, match.Groups["memberName"].Value) : default(QualifiedMember);
-            yield return new TypeMatchSpec(type, member, inverted);
+            QualifiedMember member = memberNameValue is not null ? new QualifiedMember(type, memberNameValue) : default(QualifiedMember);
+            yield return new TypeMatchSpec(type, member, negated);
         }
     }
 
@@ -345,26 +321,47 @@ public static class CommonInterest
 
     public static QualifiedMember ParseAdditionalFileMethodLine(string line)
     {
-        Match? match = null;
-        try
-        {
-            match = MemberReferenceRegex.Match(line);
-        }
-        catch (RegexMatchTimeoutException)
-        {
-            throw new InvalidOperationException($"Regex.Match timeout when parsing line: {line}");
-        }
-
-        if (!match.Success)
+        if (!CommonInterestParsing.TryParseMemberReference(line, out ReadOnlyMemory<char> typeNameMemory, out string? memberName))
         {
             throw new InvalidOperationException($"Parsing error on line: {line}");
         }
 
-        string methodName = match.Groups["memberName"].Value;
-        string[] typeNameElements = match.Groups["typeName"].Value.Split(QualifiedIdentifierSeparators);
-        string typeName = typeNameElements[typeNameElements.Length - 1];
-        var containingType = new QualifiedType(typeNameElements.Take(typeNameElements.Length - 1).ToImmutableArray(), typeName);
-        return new QualifiedMember(containingType, methodName);
+        (ImmutableArray<string> containingNamespace, string? typeName) = SplitQualifiedIdentifier(typeNameMemory);
+        var containingType = new QualifiedType(containingNamespace, typeName);
+        return new QualifiedMember(containingType, memberName!);
+    }
+
+    /// <summary>
+    /// Splits a qualified type name (e.g. <c>My.Namespace.MyType</c>) into its containing namespace
+    /// segments and the simple type name, without allocating an intermediate joined string.
+    /// </summary>
+    /// <param name="qualifiedName">The qualified type name as a memory slice.</param>
+    /// <returns>The namespace segments and the simple type name.</returns>
+    private static (ImmutableArray<string> ContainingNamespace, string TypeName) SplitQualifiedIdentifier(ReadOnlyMemory<char> qualifiedName)
+    {
+        int lastDot = qualifiedName.Span.LastIndexOf('.');
+        if (lastDot < 0)
+        {
+            return (ImmutableArray<string>.Empty, qualifiedName.ToString());
+        }
+
+        string typeName = qualifiedName.Slice(lastDot + 1).ToString();
+        ReadOnlyMemory<char> nsPart = qualifiedName.Slice(0, lastDot);
+        ImmutableArray<string>.Builder nsBuilder = ImmutableArray.CreateBuilder<string>();
+        while (!nsPart.IsEmpty)
+        {
+            int dot = nsPart.Span.IndexOf('.');
+            if (dot < 0)
+            {
+                nsBuilder.Add(nsPart.ToString());
+                break;
+            }
+
+            nsBuilder.Add(nsPart.Slice(0, dot).ToString());
+            nsPart = nsPart.Slice(dot + 1);
+        }
+
+        return (nsBuilder.ToImmutable(), typeName);
     }
 
     private static bool TestGetAwaiterMethod(IMethodSymbol getAwaiterMethod)
