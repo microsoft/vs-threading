@@ -153,6 +153,7 @@ public abstract class ReentrantSemaphore : IDisposable
     /// </param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A task that completes with the result of <paramref name="operation"/>, after the semaphore has been exited.</returns>
+    /// <inheritdoc cref="ExecuteAsync{T}(Func{ValueTask{T}}, CancellationToken)" path="/exception" />
     public abstract Task ExecuteAsync(Func<Task> operation, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -167,6 +168,13 @@ public abstract class ReentrantSemaphore : IDisposable
     /// </param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>A task that completes with the result of <paramref name="operation"/>, after the semaphore has been exited.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when reentrancy is detected and not allowed based due to <see cref="ReentrancyMode.NotAllowed"/> being provided to the constructor.
+    /// This happens when code that already holds the semaphore calls code that attempts to again enter the semaphore.
+    /// When the called code is not awaited on by the caller, it may be appropriate to suppress this reentrancy detection for the method
+    /// that is called in a fire-and-forget fashion.
+    /// To suppress this exception for that specific case while preserving overall protection, use <see cref="SuppressRelevance" />.
+    /// </exception>
     public abstract ValueTask<T> ExecuteAsync<T>(Func<ValueTask<T>> operation, CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -179,6 +187,12 @@ public abstract class ReentrantSemaphore : IDisposable
     /// caller's right to the semaphore.</para>
     /// <para>This is a safe call to make whether or not the semaphore is currently held, or whether reentrancy is allowed on this instance.</para>
     /// </remarks>
+    /// <example>
+    /// <para>
+    /// The following snippet demonstrates a way to use this method.
+    /// </para>
+    /// <code source="../../samples/ApiSamples.cs" region="SuppressRelevance" lang="C#" />
+    /// </example>
     public virtual RevertRelevance SuppressRelevance() => default;
 
     /// <summary>

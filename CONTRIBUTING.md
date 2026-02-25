@@ -19,7 +19,7 @@ For significant changes we strongly recommend opening an issue to start a design
 
 * [.NET Core SDK](https://dotnet.microsoft.com/download/dotnet-core/2.2) with the version matching our [global.json](global.json) file. The version you install must be at least the version specified in the global.json file, and must be within the same hundreds version for the 3rd integer: x.y.Czz (x.y.C must match, and zz must be at least as high).
   The easiest way to get this is to run the `init` script at the root of the repo. Use the `-InstallLocality Machine` and approve admin elevation if you wish so the SDK is always discoverable from VS. See the `init` script usage doc for more details.
-* Optional: [Visual Studio 2019](https://www.visualstudio.com/)
+* Optional: [Visual Studio 2022](https://visualstudio.microsoft.com/)
 
 The only prerequisite for building, testing, and deploying from this repository
 is the [.NET SDK](https://get.dot.net/).
@@ -44,7 +44,7 @@ assuming the working directory is the root of this repository:
 msbuild src
 ```
 
-[pwsh]: https://docs.microsoft.com/powershell/scripting/install/installing-powershell?view=powershell-6
+[pwsh]: https://learn.microsoft.com/powershell/scripting/install/installing-powershell
 
 ## Releases
 
@@ -58,9 +58,9 @@ Push the tag.
 When your repo is hosted by GitHub and you are using GitHub Actions, you should create a GitHub Release using the standard GitHub UI.
 Having previously used `nbgv tag` and pushing the tag will help you identify the precise commit and name to use for this release.
 
-After publishing the release, the `.github\workflows\release.yml` workflow will be automatically triggered, which will:
+After publishing the release, the `.github/workflows/release.yml` workflow will be automatically triggered, which will:
 
-1. Find the most recent `.github\workflows\build.yml` GitHub workflow run of the tagged release.
+1. Find the most recent `.github/workflows/build.yml` GitHub workflow run of the tagged release.
 1. Upload the `deployables` artifact from that workflow run to your GitHub Release.
 1. If you have `NUGET_API_KEY` defined as a secret variable for your repo or org, any nuget packages in the `deployables` artifact will be pushed to nuget.org.
 
@@ -71,7 +71,7 @@ Trigger the pipeline by adding the `auto-release` tag on a run of your main `azu
 
 ## Tutorial and API documentation
 
-API and hand-written docs are found under the `docfx/` directory. and are built by [docfx](https://dotnet.github.io/docfx/).
+API and hand-written docs are found under the `docfx/` directory and are built by [docfx](https://dotnet.github.io/docfx/).
 
 You can make changes and host the site locally to preview them by switching to that directory and running the `dotnet docfx --serve` command.
 After making a change, you can rebuild the docs site while the localhost server is running by running `dotnet docfx` again from a separate terminal.
@@ -87,3 +87,17 @@ Configuration is in the `.github/renovate.json` file.
 When changing the renovate.json file, follow [these validation steps](https://docs.renovatebot.com/config-validation/).
 
 If Renovate is not creating pull requests when you expect it to, check that the [Renovate GitHub App](https://github.com/apps/renovate) is configured for your account or repo.
+
+## Merging latest from Library.Template
+
+### Maintaining your repo based on this template
+
+The best way to keep your repo in sync with Library.Template's evolving features and best practices is to periodically merge the template into your repo:
+
+```ps1
+git fetch
+git checkout origin/main
+./tools/MergeFrom-Template.ps1
+# resolve any conflicts, then commit the merge commit.
+git push origin -u HEAD
+```

@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net472</TargetFrameworks>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\src\Microsoft.VisualStudio.Threading\Microsoft.VisualStudio.Threading.csproj" />
+    <ProjectReference Include="$(RepoRootPath)src\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Analyzer</OutputItemType>
+    </ProjectReference>
+    <ProjectReference Include="$(RepoRootPath)src\Microsoft.VisualStudio.Threading.Analyzers\Microsoft.VisualStudio.Threading.Analyzers.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Analyzer</OutputItemType>
+    </ProjectReference>
+    <ProjectReference Include="$(RepoRootPath)src\Microsoft.VisualStudio.Threading.Analyzers.CSharp\Microsoft.VisualStudio.Threading.Analyzers.CSharp.csproj">
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+      <OutputItemType>Analyzer</OutputItemType>
+    </ProjectReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Internal.MicroBuild.NonShipping" PrivateAssets="all" />
+  </ItemGroup>
+
+</Project>

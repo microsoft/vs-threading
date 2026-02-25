@@ -1,24 +1,24 @@
 parameters:
 - name: RunTests
-- name: IsOptProf
-  type: boolean
-  default: false
 - name: Is1ESPT
   type: boolean
+- name: BuildRequiresAccessToken
+  type: boolean
+  default: false
+- name: osRID
+  type: string
 
 steps:
 
-- script: dotnet build -t:build,pack --no-restore -c $(BuildConfiguration) -warnAsError -warnNotAsError:NU1901,NU1902,NU1903,NU1904 /bl:"$(Build.ArtifactStagingDirectory)/build_logs/build.binlog"
+- script: dotnet build tools/dirs.proj -t:build,pack,publish --no-restore -c $(BuildConfiguration) -warnAsError -warnNotAsError:NU1901,NU1902,NU1903,NU1904,LOCTASK002 /bl:"$(Build.ArtifactStagingDirectory)/build_logs/build.binlog"
   displayName: 🛠 dotnet build
+  ${{ if parameters.BuildRequiresAccessToken }}:
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 
-- ${{ if not(parameters.IsOptProf) }}:
-  - powershell: tools/dotnet-test-cloud.ps1 -Configuration $(BuildConfiguration) -Agent $(Agent.JobName) -PublishResults
-    displayName: 🧪 dotnet test
-    condition: and(succeeded(), ${{ parameters.RunTests }})
-
-- ${{ if parameters.IsOptProf }}:
-  - script: dotnet pack src\VSInsertionMetadata -c $(BuildConfiguration) -warnaserror /bl:"$(Build.ArtifactStagingDirectory)/build_logs/VSInsertion-Pack.binlog"
-    displayName: 🔧 dotnet pack VSInsertionMetadata
+- powershell: tools/dotnet-test-cloud.ps1 -Configuration $(BuildConfiguration) -Agent $(Agent.JobName) -PublishResults
+  displayName: 🧪 dotnet test
+  condition: and(succeeded(), ${{ parameters.RunTests }})
 
 - powershell: tools/variables/_define.ps1
   failOnStderr: true
@@ -36,11 +36,14 @@ steps:
     displayName: 📢 Publish artifacts
     condition: succeededOrFailed()
 
-- ${{ if and(ne(variables['codecov_token'], ''), parameters.RunTests) }}:
+- ${{ if parameters.RunTests }}:
   - powershell: |
       $ArtifactStagingFolder = & "tools/Get-ArtifactsStagingDirectory.ps1"
       $CoverageResultsFolder = Join-Path $ArtifactStagingFolder "coverageResults-$(Agent.JobName)"
-      tools/publish-CodeCov.ps1 -CodeCovToken "$(codecov_token)" -PathToCodeCoverage "$CoverageResultsFolder" -Name "$(Agent.JobName) Coverage Results" -Flags "$(Agent.JobName)"
+      tools/publish-CodeCov.ps1 -CodeCovToken "$(CODECOV_TOKEN)" -PathToCodeCoverage "$CoverageResultsFolder" -Name "$(Agent.JobName) Coverage Results" -Flags "$(Agent.JobName)"
     displayName: 📢 Publish code coverage results to codecov.io
     timeoutInMinutes: 3
     continueOnError: true
+    # Set the CODECOV_TOKEN variable in your Azure Pipeline to enable code coverage reporting
+    # Get a token from https://codecov.io/
+    condition: and(succeeded(), ne(variables['CODECOV_TOKEN'], ''))

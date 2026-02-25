@@ -4,9 +4,6 @@
 using System;
 using System.Reflection;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.Threading;
-using Xunit;
-using Xunit.Abstractions;
 
 public class SingleThreadedSynchronizationContextTests : TestBase
 {
@@ -127,7 +124,7 @@ public class SingleThreadedSynchronizationContextTests : TestBase
     [Fact]
     public void Post_PushFrame()
     {
-        var originalThreadId = Environment.CurrentManagedThreadId;
+        int originalThreadId = Environment.CurrentManagedThreadId;
         var syncContext = new SingleThreadedSynchronizationContext();
         var frame = new SingleThreadedSynchronizationContext.Frame();
 
@@ -164,7 +161,7 @@ public class SingleThreadedSynchronizationContextTests : TestBase
     [Fact]
     public void Post_PushFrame_Throws()
     {
-        var originalThreadId = Environment.CurrentManagedThreadId;
+        int originalThreadId = Environment.CurrentManagedThreadId;
         var syncContext = new SingleThreadedSynchronizationContext();
         var frame = new SingleThreadedSynchronizationContext.Frame();
 
@@ -184,7 +181,7 @@ public class SingleThreadedSynchronizationContextTests : TestBase
         {
             try
             {
-                var expectedValue = new object();
+                object expectedValue = new object();
                 var actualValue = new TaskCompletionSource<object>();
 
                 var asyncLocal = new AsyncLocal<object>();

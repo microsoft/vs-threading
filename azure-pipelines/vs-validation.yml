@@ -5,6 +5,12 @@
 trigger: none # We only want to trigger manually or based on resources
 pr: none
 
+parameters:
+- name: ShouldSkipOptimize
+  displayName: Skip OptProf optimization
+  type: boolean
+  default: false
+
 resources:
   repositories:
   - repository: MicroBuildTemplate
@@ -20,23 +26,27 @@ variables:
 extends:
   template: azure-pipelines/MicroBuild.1ES.Unofficial.yml@MicroBuildTemplate
   parameters:
+    settings:
+      networkIsolationPolicy: Permissive,CFSClean2
     sdl:
-      sourceAnalysisPool: VSEngSS-MicroBuild2022-1ES
+      sourceAnalysisPool: VSEng-MicroBuildVSStable
+      credscan:
+        enabled: false
 
     stages:
     - stage: Build
       variables:
-        DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
-        NUGET_PACKAGES: $(Agent.TempDirectory)/.nuget/packages/
-        BuildConfiguration: Release
-        SkipCodesignVerify: true
+      - template: /azure-pipelines/BuildStageVariables.yml@self
+      - name: SkipCodesignVerify
+        value: true
 
       jobs:
       - template: /azure-pipelines/build.yml@self
         parameters:
           Is1ESPT: true
           RealSign: false
-          windowsPool: VSEngSS-MicroBuild2022-1ES
+          ShouldSkipOptimize: ${{ parameters.ShouldSkipOptimize }}
+          windowsPool: VSEng-MicroBuildVSStable
           linuxPool:
             name: AzurePipelines-EO
             demands:
@@ -44,7 +54,7 @@ extends:
             os: Linux
           macOSPool:
             name: Azure Pipelines
-            vmImage: macOS-14
+            vmImage: macOS-15
             os: macOS
           EnableMacOSBuild: false
           RunTests: false
@@ -60,7 +70,7 @@ extends:
       jobs:
       - job: insertion
         displayName: VS insertion
-        pool: VSEngSS-MicroBuild2022-1ES
+        pool: VSEng-MicroBuildVSStable
         steps:
         - checkout: self
           clean: true
@@ -95,12 +105,16 @@ extends:
             InsertionPayloadName: $(Build.Repository.Name) VALIDATION BUILD $(Build.BuildNumber) ($(Build.SourceBranch)) [Skip-SymbolCheck] [Skip-HashCheck] [Skip-SignCheck]
             InsertionDescription: |
               This PR is for **validation purposes only** for !$(System.PullRequest.PullRequestId). **Do not complete**.
-            CustomScriptExecutionCommand: src/VSSDK/NuGet/AllowUnstablePackages.ps1
+            CustomScriptExecutionCommand: $(Pipeline.Workspace)\VSInsertion-Windows\vs-insertion-script.ps1; src\VSSDK\NuGet\AllowUnstablePackages.ps1
             InsertionBuildPolicies: Request Perf DDRITs
             InsertionReviewers: $(Build.RequestedFor)
             DraftPR: false # set to true and update InsertionBuildPolicy when we can specify all the validations we want to run (https://dev.azure.com/devdiv/DevDiv/_workitems/edit/2224288)
             AutoCompletePR: false
             ShallowClone: true
+            ${{ if eq(variables['system.collectionId'], '011b8bdf-6d56-4f87-be0d-0092136884d9') }}:
+              ConnectedVSDropServiceName: 'VSEng-VSDrop-MI'
+          env:
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
         - powershell: |
             $insertionPRId = azure-pipelines/Get-InsertionPRId.ps1
             $Markdown = @"

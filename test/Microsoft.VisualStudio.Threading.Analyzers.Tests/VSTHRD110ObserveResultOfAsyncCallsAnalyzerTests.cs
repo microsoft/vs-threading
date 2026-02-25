@@ -247,6 +247,33 @@ class Test {
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
+    [Fact(Skip = "Won't fix")]
+    public async Task GetAwaiterWithIncompatibleParameters()
+    {
+        string test = /* lang=c#-test */ """
+            using System;
+            using System.Collections.Generic;
+            using System.Runtime.CompilerServices;
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                void Foo()
+                {
+                    var stack = new Stack<(int, int)>();
+                    stack.Pop();
+                }
+            }
+
+            internal static class Extensions
+            {
+                internal static TaskAwaiter<(T1, T2)> GetAwaiter<T1, T2>(this (Task<T1>, Task<T2>) tasks) => throw new NotImplementedException();
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
     [Fact]
     public async Task ConfigureAwait_ProducesDiagnostics()
     {
@@ -480,6 +507,190 @@ public async ValueTask DisposeAsync()
                 public Func<Task<int>>? VCLoadMethod;
 
                 public int? VirtualCurrencyBalances => (VCLoadMethod?.Invoke()).GetAwaiter().GetResult();
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task LocalVoidFunctionWithinAsyncTaskMethod()
+    {
+        string test = /* lang=c#-test */ """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task DoOperationAsync()
+                {
+                    DoOperationInner();
+
+                    void DoOperationInner()
+                    {
+                        [|HelperAsync()|];
+                    }
+                }
+
+                void DoOperation()
+                {
+                    [|HelperAsync()|];
+                }
+
+                Task HelperAsync() => Task.CompletedTask;
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task ExpressionLambda_ProducesNoDiagnostic()
+    {
+        string test = """
+            using System;
+            using System.Linq.Expressions;
+            using System.Threading.Tasks;
+
+            interface ILogger
+            {
+                Task InfoAsync(string message);
+            }
+
+            class MockVerifier
+            {
+                public static void Verify<T>(Expression<Func<T, Task>> expression)
+                {
+                }
+            }
+
+            class Test
+            {
+                void TestMethod()
+                {
+                    var logger = new MockLogger();
+                    MockVerifier.Verify<ILogger>(x => x.InfoAsync("test"));
+                }
+            }
+
+            class MockLogger : ILogger
+            {
+                public Task InfoAsync(string message) => Task.CompletedTask;
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task ExpressionFuncLambda_ProducesNoDiagnostic()
+    {
+        string test = """
+            using System;
+            using System.Linq.Expressions;
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                void TestMethod()
+                {
+                    SomeMethod(x => x.InfoAsync("test"));
+                }
+
+                void SomeMethod(Expression<Func<ILogger, Task>> expression)
+                {
+                }
+
+                Task InfoAsync(string message) => Task.CompletedTask;
+            }
+
+            interface ILogger
+            {
+                Task InfoAsync(string message);
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task MoqLikeScenario_ProducesNoDiagnostic()
+    {
+        string test = """
+            using System;
+            using System.Linq.Expressions;
+            using System.Threading.Tasks;
+
+            interface ILogger
+            {
+                Task InfoAsync(string message);
+            }
+
+            class Mock<T>
+            {
+                public void Verify(Expression<Func<T, Task>> expression, Times times, string message)
+                {
+                }
+            }
+
+            enum Times
+            {
+                Never
+            }
+
+            class Test
+            {
+                void TestMethod()
+                {
+                    var mock = new Mock<ILogger>();
+                    mock.Verify(x => x.InfoAsync("test"), Times.Never, "No Log should have been written");
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DirectTaskCall_StillProducesDiagnostic()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                void TestMethod()
+                {
+                    // This should still trigger VSTHRD110 - direct call not in expression
+                    [|TaskReturningMethod()|];
+                }
+
+                Task TaskReturningMethod() => Task.CompletedTask;
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task ExpressionAssignment_ProducesNoDiagnostic()
+    {
+        string test = """
+            using System;
+            using System.Linq.Expressions;
+            using System.Threading.Tasks;
+
+            interface ILogger
+            {
+                Task InfoAsync(string message);
+            }
+
+            class Test
+            {
+                void TestMethod()
+                {
+                    // Assignment to Expression<> variable should not trigger VSTHRD110
+                    Expression<Func<ILogger, Task>> expr = x => x.InfoAsync("test");
+                }
             }
             """;
 

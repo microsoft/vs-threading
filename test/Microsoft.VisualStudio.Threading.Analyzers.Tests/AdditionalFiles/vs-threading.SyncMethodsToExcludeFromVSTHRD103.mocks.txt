@@ -1,0 +1,2 @@
+# Test exclusions for VSTHRD103 analyzer
+[TestNamespace.TestClass]::SlowSyncMethod

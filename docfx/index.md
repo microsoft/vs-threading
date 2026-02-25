@@ -4,6 +4,7 @@ _layout: landing
 
 # Overview
 
-This is your docfx landing page.
+This is the documentation site for the Microsoft.VisualStudio.Threading library and analyzers.
 
-Click "Docs" across the top to get started.
+Click the Docs or Analyzers heading on the top to read the docs.
+Or click the API heading to see API-level documentation.

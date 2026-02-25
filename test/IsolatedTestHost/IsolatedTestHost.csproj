@@ -3,10 +3,11 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFrameworks>net472</TargetFrameworks>
+    <IsTestProject>false</IsTestProject>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="xunit.abstractions" />
+    <PackageReference Include="xunit.v3.core.mtp-v2" ExcludeAssets="buildTransitive" />
   </ItemGroup>
 
 </Project>

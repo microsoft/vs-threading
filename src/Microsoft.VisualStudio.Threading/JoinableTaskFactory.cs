@@ -2,16 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Security;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using JoinableTaskSynchronizationContext = Microsoft.VisualStudio.Threading.JoinableTask.JoinableTaskSynchronizationContext;
@@ -33,7 +28,7 @@ public partial class JoinableTaskFactory
     /// </summary>
     private readonly JoinableTaskContext owner;
 
-    private readonly SynchronizationContext mainThreadJobSyncContext;
+    private readonly SynchronizationContext? mainThreadJobSyncContext;
 
     /// <summary>
     /// The collection to add all created tasks to. May be <see langword="null" />.
@@ -76,7 +71,7 @@ public partial class JoinableTaskFactory
 
         this.owner = owner;
         this.jobCollection = collection;
-        this.mainThreadJobSyncContext = new JoinableTaskSynchronizationContext(this);
+        this.mainThreadJobSyncContext = owner.IsNoOpContext ? null : new JoinableTaskSynchronizationContext(this);
     }
 
     /// <summary>
@@ -1022,20 +1017,23 @@ public partial class JoinableTaskFactory
             {
                 JoinableTaskDependencyGraph.AddDependency(this.previousJoinable, joinable);
 
-                // By definition we inherit the nesting factories of our immediate nesting task.
-                ListOfOftenOne<JoinableTaskFactory> nestingFactories = this.previousJoinable.NestingFactories;
-
-                // And we may add our immediate nesting parent's factory to the list of
-                // ancestors if it isn't already in the list.
-                if (this.previousJoinable.Factory != this.factory)
+                if (!factory.Context.IsNoOpContext)
                 {
-                    if (!nestingFactories.Contains(this.previousJoinable.Factory))
-                    {
-                        nestingFactories.Add(this.previousJoinable.Factory);
-                    }
-                }
+                    // By definition we inherit the nesting factories of our immediate nesting task.
+                    ListOfOftenOne<JoinableTaskFactory> nestingFactories = this.previousJoinable.NestingFactories;
 
-                this.joinable.NestingFactories = nestingFactories;
+                    // And we may add our immediate nesting parent's factory to the list of
+                    // ancestors if it isn't already in the list.
+                    if (this.previousJoinable.Factory != this.factory)
+                    {
+                        if (!nestingFactories.Contains(this.previousJoinable.Factory))
+                        {
+                            nestingFactories.Add(this.previousJoinable.Factory);
+                        }
+                    }
+
+                    this.joinable.NestingFactories = nestingFactories;
+                }
             }
 
             if (joinable.GetTokenizedParent() is JoinableTask tokenizedParent)
@@ -1058,7 +1056,9 @@ public partial class JoinableTaskFactory
     /// A delegate wrapper that ensures the delegate is only invoked at most once.
     /// </summary>
     [DebuggerDisplay("{DelegateLabel}")]
-    internal class SingleExecuteProtector
+#pragma warning disable VSOnly // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
+    internal class SingleExecuteProtector : IPendingExecutionRequestState
+#pragma warning restore VSOnly // Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
     {
         /// <summary>
         /// Executes the delegate if it has not already executed.
@@ -1113,6 +1113,11 @@ public partial class JoinableTaskFactory
         }
 
         /// <summary>
+        /// Gets a value indicating whether the current request has been completed, and can be skipped.
+        /// </summary>
+        bool IPendingExecutionRequestState.IsCompleted => this.HasBeenExecuted;
+
+        /// <summary>
         /// Gets a value indicating whether this instance has already executed.
         /// </summary>
         internal bool HasBeenExecuted
@@ -1126,6 +1131,7 @@ public partial class JoinableTaskFactory
         /// </summary>
         internal string DelegateLabel
         {
+            [RequiresUnreferencedCode(Reasons.DiagnosticAnalysisOnly)]
             get
             {
                 return this.WalkAsyncReturnStackFrames().First(); // Top frame of the return callstack.
@@ -1207,6 +1213,7 @@ public partial class JoinableTaskFactory
         /// Walk the continuation objects inside "async state machines" to generate the return callstack.
         /// FOR DIAGNOSTIC PURPOSES ONLY.
         /// </summary>
+        [RequiresUnreferencedCode(Reasons.DiagnosticAnalysisOnly)]
         internal IEnumerable<string> WalkAsyncReturnStackFrames()
         {
             // This instance might be a wrapper of another instance of "SingleExecuteProtector".

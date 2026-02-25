@@ -1,0 +1,16 @@
+<Project>
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <SelfContained>true</SelfContained>
+    <PublishAot>true</PublishAot>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <RuntimeIdentifiers>$(AvailableRuntimeIdentifiers)</RuntimeIdentifiers>
+    <RuntimeIdentifier>$(DefaultRuntimeIdentifier)</RuntimeIdentifier>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ProjectReference>
+      <!-- Suppress spreading the RID being built here to RID-neutral projects. -->
+      <GlobalPropertiesToRemove>RuntimeIdentifier</GlobalPropertiesToRemove>
+    </ProjectReference>
+  </ItemDefinitionGroup>
+</Project>
