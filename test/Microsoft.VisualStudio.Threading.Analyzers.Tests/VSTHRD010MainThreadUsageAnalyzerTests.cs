@@ -285,6 +285,7 @@ class Test {
             ExpectedDiagnostics = { expected },
             FixedCode = fix1,
             CodeActionIndex = CodeFixIndex.VerifyOnUIThread,
+            CodeFixTestBehaviors = CodeFixTestBehaviors.SkipLocalDiagnosticCheck,
         }.RunAsync();
 
         await new CSVerify.Test
@@ -293,6 +294,7 @@ class Test {
             ExpectedDiagnostics = { expected },
             FixedCode = fix2,
             CodeActionIndex = CodeFixIndex.ThrowIfNotOnUIThreadIndex1,
+            CodeFixTestBehaviors = CodeFixTestBehaviors.SkipLocalDiagnosticCheck,
         }.RunAsync();
     }
 
@@ -587,6 +589,7 @@ class Test {
             },
             FixedCode = fix,
             CodeActionIndex = CodeFixIndex.VerifyOnUIThread,
+            CodeFixTestBehaviors = CodeFixTestBehaviors.SkipLocalDiagnosticCheck,
         }.RunAsync();
     }
 
