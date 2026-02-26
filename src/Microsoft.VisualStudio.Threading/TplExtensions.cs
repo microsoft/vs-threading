@@ -20,22 +20,26 @@ public static partial class TplExtensions
     /// A singleton completed task.
     /// </summary>
     [Obsolete("Use Task.CompletedTask instead.")]
+    [CompletedTask]
     public static readonly Task CompletedTask = Task.FromResult(default(EmptyStruct));
 
     /// <summary>
     /// A task that is already canceled.
     /// </summary>
     [Obsolete("Use Task.FromCanceled instead.")]
+    [CompletedTask]
     public static readonly Task CanceledTask = Task.FromCanceled(new CancellationToken(canceled: true));
 
     /// <summary>
     /// A completed task with a <see langword="true" /> result.
     /// </summary>
+    [CompletedTask]
     public static readonly Task<bool> TrueTask = Task.FromResult(true);
 
     /// <summary>
     /// A completed task with a <see langword="false" /> result.
     /// </summary>
+    [CompletedTask]
     public static readonly Task<bool> FalseTask = Task.FromResult(false);
 
     /// <summary>
