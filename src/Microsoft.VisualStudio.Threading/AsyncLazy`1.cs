@@ -199,13 +199,16 @@ public class AsyncLazy<T>
                     this.valueFactory = null;
                     Func<Task<T>> valueFactory = async delegate
                     {
+                        Func<Task<T>>? localValueFactory = originalValueFactory;
+                        originalValueFactory = null;
                         try
                         {
                             await resumableAwaiter;
-                            return await originalValueFactory().ConfigureAwaitRunInline();
+                            return await localValueFactory().ConfigureAwaitRunInline();
                         }
                         finally
                         {
+                            localValueFactory = null;
                             this.joinableTask = null;
                         }
                     };
