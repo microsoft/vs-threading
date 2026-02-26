@@ -285,6 +285,9 @@ class Test {
             ExpectedDiagnostics = { expected },
             FixedCode = fix1,
             CodeActionIndex = CodeFixIndex.VerifyOnUIThread,
+
+            // SkipLocalDiagnosticCheck is required because this diagnostic is reported at compilation-end
+            // (as a transitive/indirect diagnostic), not as a local one. See https://github.com/microsoft/vs-threading/issues/1364.
             CodeFixTestBehaviors = CodeFixTestBehaviors.SkipLocalDiagnosticCheck,
         }.RunAsync();
 
@@ -294,6 +297,9 @@ class Test {
             ExpectedDiagnostics = { expected },
             FixedCode = fix2,
             CodeActionIndex = CodeFixIndex.ThrowIfNotOnUIThreadIndex1,
+
+            // SkipLocalDiagnosticCheck is required because this diagnostic is reported at compilation-end
+            // (as a transitive/indirect diagnostic), not as a local one. See https://github.com/microsoft/vs-threading/issues/1364.
             CodeFixTestBehaviors = CodeFixTestBehaviors.SkipLocalDiagnosticCheck,
         }.RunAsync();
     }
@@ -589,6 +595,9 @@ class Test {
             },
             FixedCode = fix,
             CodeActionIndex = CodeFixIndex.VerifyOnUIThread,
+
+            // SkipLocalDiagnosticCheck is required because this diagnostic is reported at compilation-end
+            // (as a transitive/indirect diagnostic), not as a local one. See https://github.com/microsoft/vs-threading/issues/1364.
             CodeFixTestBehaviors = CodeFixTestBehaviors.SkipLocalDiagnosticCheck,
         }.RunAsync();
     }
