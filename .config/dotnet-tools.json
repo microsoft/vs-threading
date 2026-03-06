@@ -10,7 +10,7 @@
       "rollForward": false
     },
     "dotnet-coverage": {
-      "version": "18.4.1",
+      "version": "18.5.2",
       "commands": [
         "dotnet-coverage"
       ],
@@ -24,14 +24,14 @@
       "rollForward": false
     },
     "docfx": {
-      "version": "2.78.4",
+      "version": "2.78.5",
       "commands": [
         "docfx"
       ],
       "rollForward": false
     },
     "nerdbank.dotnetrepotools": {
-      "version": "1.1.1",
+      "version": "1.2.1",
       "commands": [
         "repo"
       ],

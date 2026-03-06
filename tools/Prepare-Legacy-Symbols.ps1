@@ -20,6 +20,20 @@ Get-ChildItem "$ArtifactStagingFolder\*.pdb" -Recurse |% {
     }
 
     if ($BinaryImagePath) {
+        # Native binaries can't have their PDBs converted to legacy (Windows) format so just skip them
+        try {
+            $assembly = [System.Reflection.AssemblyName]::GetAssemblyName($BinaryImagePath)
+            $isManaged = $true
+        }
+        catch {
+            $isManaged = $false
+        }
+
+        if (-not $isManaged) {
+            Write-Host "Skipping native binary PDB: $_" -ForegroundColor DarkYellow
+            return
+        }
+
         # Convert the PDB to legacy Windows PDBs
         Write-Host "Converting PDB for $_" -ForegroundColor DarkGray
         $WindowsPdbDir = "$($_.Directory.FullName)\$WindowsPdbSubDirName"
