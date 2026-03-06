@@ -3,7 +3,8 @@
 ## High level guidance
 
 * Review the `CONTRIBUTING.md` file for instructions to build and test the software.
-* Set the `NBGV_GitEngine` environment variable to `Disabled` before running any `dotnet` or `msbuild` commands.
+* Run the `.github\Prime-ForCopilot.ps1` script (once) before running any `dotnet` or `msbuild` commands.
+  If you see any build errors about not finding git objects or a shallow clone, it may be time to run this script again.
 
 ## Software Design
 
