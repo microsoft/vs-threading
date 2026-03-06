@@ -31,7 +31,7 @@ Get-ChildItem "$ArtifactStagingFolder\*.pdb" -Recurse |% {
 
         if (-not $isManaged) {
             Write-Host "Skipping native binary PDB: $_" -ForegroundColor DarkYellow
-            return
+            continue
         }
 
         # Convert the PDB to legacy Windows PDBs
