@@ -6,3 +6,6 @@ dotnet_diagnostic.VSTHRD012.severity = none
 
 # VSTHRD003: Avoid awaiting foreign Tasks
 dotnet_diagnostic.VSTHRD003.severity = none
+
+# VSTHRD010: Invoke single-threaded types on Main thread
+dotnet_diagnostic.VSTHRD010.severity = none
