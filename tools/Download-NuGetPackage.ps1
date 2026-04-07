@@ -42,14 +42,16 @@ if ($Version) { $packageArg = "$PackageId@$Version" }
 
 $extraArgs = @()
 if ($Source) { $extraArgs += '--source', $Source }
+if ($Version -and $Version -match '-') { $extraArgs += '--prerelease' }
 
 $prevErrorActionPreference = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
-& dotnet package download $packageArg --configfile $ConfigFile --output $OutputDirectory --verbosity $Verbosity @extraArgs 2>&1 | Out-Null
+$downloadOutput = & dotnet package download $packageArg --configfile $ConfigFile --output $OutputDirectory --verbosity $Verbosity @extraArgs 2>&1
 $downloadExitCode = $LASTEXITCODE
 $ErrorActionPreference = $prevErrorActionPreference
 
 if ($downloadExitCode -ne 0) {
+    $downloadOutput | Write-Host
     throw "Failed to download package $packageArg (exit code $downloadExitCode)."
 }
 
