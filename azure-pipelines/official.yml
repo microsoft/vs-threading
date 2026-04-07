@@ -45,8 +45,6 @@ variables:
 extends:
   template: azure-pipelines/MicroBuild.1ES.Official.yml@MicroBuildTemplate
   parameters:
-    settings:
-      networkIsolationPolicy: Permissive,CFSClean2
     sdl:
       sourceAnalysisPool: VSEng-MicroBuildVSStable
       codeSignValidation:
