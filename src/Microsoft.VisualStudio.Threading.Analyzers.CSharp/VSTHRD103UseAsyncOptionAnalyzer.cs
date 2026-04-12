@@ -132,9 +132,19 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
                     !methodSymbol.HasAsyncCompatibleReturnType())
                 {
                     string asyncMethodName = methodSymbol.Name + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix;
+
+                    // For reduced extension methods (invoked as instance.Method()), look up the async
+                    // alternative on the receiver type so that extension methods defined in a separate
+                    // static class (but applicable to the receiver) are found via includeReducedExtensionMethods.
+                    // LookupSymbols with the static declaring class as container does not return extension
+                    // methods applicable to the receiver type.
+                    INamespaceOrTypeSymbol lookupContainer = methodSymbol.ReducedFrom is { } reducedFrom && reducedFrom.Parameters.Length > 0
+                        ? (INamespaceOrTypeSymbol)reducedFrom.Parameters[0].Type
+                        : methodSymbol.ContainingType;
+
                     ImmutableArray<ISymbol> symbols = context.SemanticModel.LookupSymbols(
                         invocationExpressionSyntax.Expression.GetLocation().SourceSpan.Start,
-                        methodSymbol.ContainingType,
+                        lookupContainer,
                         asyncMethodName,
                         includeReducedExtensionMethods: true);
 

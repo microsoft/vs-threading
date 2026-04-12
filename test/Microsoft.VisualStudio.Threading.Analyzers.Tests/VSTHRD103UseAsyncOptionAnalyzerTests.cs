@@ -1410,6 +1410,55 @@ class SomeClass {
         await CSVerify.VerifyAnalyzerAsync(test);
     }
 
+    [Fact]
+    public async Task SyncExtensionMethodWhereAsyncAlternativeExistsInSameStaticClassGeneratesWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+public interface IExecutable { }
+
+public static class ExecutableExtensions
+{
+    public static string GetOutput(this IExecutable executable) => """";
+    public static Task<string> GetOutputAsync(this IExecutable executable) => Task.FromResult("""");
+}
+
+class Test
+{
+    async Task DoWorkAsync()
+    {
+        IExecutable exec = null!;
+        string result = exec.{|#0:GetOutput|}();
+    }
+}
+";
+
+        var withFix = @"
+using System.Threading.Tasks;
+
+public interface IExecutable { }
+
+public static class ExecutableExtensions
+{
+    public static string GetOutput(this IExecutable executable) => """";
+    public static Task<string> GetOutputAsync(this IExecutable executable) => Task.FromResult("""");
+}
+
+class Test
+{
+    async Task DoWorkAsync()
+    {
+        IExecutable exec = null!;
+        string result = await exec.GetOutputAsync();
+    }
+}
+";
+
+        DiagnosticResult expected = CSVerify.Diagnostic(Descriptor).WithLocation(0).WithArguments("GetOutput", "GetOutputAsync");
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
+
     private DiagnosticResult CreateDiagnostic(int line, int column, int length, string methodName)
         => CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithSpan(line, column, line, column + length).WithArguments(methodName);
 
