@@ -4,48 +4,27 @@ $SymbolServers = @(
     'https://symbols.nuget.org/download/symbols'
 )
 
-Function Unzip($Path, $OutDir) {
-    $OutDir = (New-Item -ItemType Directory -Path $OutDir -Force).FullName
-    Add-Type -AssemblyName System.IO.Compression.FileSystem
-
-    # Start by extracting to a temporary directory so that there are no file conflicts.
-    [System.IO.Compression.ZipFile]::ExtractToDirectory($Path, "$OutDir.out")
-
-    # Now move all files from the temp directory to $OutDir, overwriting any files.
-    Get-ChildItem -Path "$OutDir.out" -Recurse -File | ForEach-Object {
-        $destinationPath = Join-Path -Path $OutDir -ChildPath $_.FullName.Substring("$OutDir.out".Length).TrimStart([io.path]::DirectorySeparatorChar, [io.path]::AltDirectorySeparatorChar)
-        if (!(Test-Path -Path (Split-Path -Path $destinationPath -Parent))) {
-            New-Item -ItemType Directory -Path (Split-Path -Path $destinationPath -Parent) | Out-Null
-        }
-        Move-Item -Path $_.FullName -Destination $destinationPath -Force
-    }
-    Remove-Item -Path "$OutDir.out" -Recurse -Force
-}
-
 Function Get-SymbolsFromPackage($id, $version) {
     $symbolPackagesPath = "$PSScriptRoot/../obj/SymbolsPackages"
     New-Item -ItemType Directory -Path $symbolPackagesPath -Force | Out-Null
-    $unzippedPkgPath = Join-Path $symbolPackagesPath "$id.$version"
+    $packagePath = $null
 
     # Download the package from configured feeds (failures are non-fatal for symbol collection)
     try {
-        & "$PSScriptRoot\Download-NuGetPackage.ps1" -PackageId $id -Version $version -OutputDirectory $symbolPackagesPath -ErrorAction SilentlyContinue | Out-Null
+        $packagePath = & "$PSScriptRoot\Download-NuGetPackage.ps1" -PackageId $id -Version $version -OutputDirectory $symbolPackagesPath -ErrorAction SilentlyContinue
     }
     catch {
         Write-Warning "Failed to download package $id $version from configured feeds. Skipping if not found locally. $($_.Exception.Message)"
     }
     $global:LASTEXITCODE = 0
-    $nupkgFile = Get-ChildItem -Recurse -Path $symbolPackagesPath -Filter "$id.$version.nupkg" -ErrorAction SilentlyContinue | Select-Object -First 1
-    if (!$nupkgFile) {
+    if (!$packagePath -or !(Test-Path -LiteralPath $packagePath)) {
         Write-Warning "Package $id $version not found in configured feeds. Skipping."
         return
     }
 
-    Unzip -Path $nupkgFile.FullName -OutDir $unzippedPkgPath
-
     # Download symbols for each binary using dotnet-symbol
     $serverArgs = $SymbolServers | ForEach-Object { '--server-path'; $_ }
-    $binaries = Get-ChildItem -Recurse -LiteralPath $unzippedPkgPath -Include *.dll, *.exe
+    $binaries = Get-ChildItem -Recurse -LiteralPath $packagePath -Include *.dll, *.exe
     foreach ($binary in $binaries) {
         $prevErrorActionPreference = $ErrorActionPreference
         $ErrorActionPreference = 'Continue'
@@ -54,7 +33,7 @@ Function Get-SymbolsFromPackage($id, $version) {
     }
 
     # Output pairs of binary + PDB paths for archival
-    Get-ChildItem -Recurse -LiteralPath $unzippedPkgPath -Filter *.pdb | % {
+    Get-ChildItem -Recurse -LiteralPath $packagePath -Filter *.pdb | % {
         $rootName = Join-Path $_.Directory $_.BaseName
         if ($rootName.EndsWith('.ni')) {
             $rootName = $rootName.Substring(0, $rootName.Length - 3)
