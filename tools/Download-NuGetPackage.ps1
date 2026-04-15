@@ -37,6 +37,17 @@ if (!(Test-Path $OutputDirectory)) { New-Item -ItemType Directory -Path $OutputD
 $OutputDirectory = (Resolve-Path $OutputDirectory).Path
 $ConfigFile = (Resolve-Path $ConfigFile).Path
 
+$packageIdLower = $PackageId.ToLower()
+$packageRoot = Join-Path $OutputDirectory $packageIdLower
+
+if ($Version) {
+    $predictedPackageDir = Join-Path $packageRoot $Version
+    if (Test-Path -Path $predictedPackageDir -PathType Container) {
+        Write-Output (Resolve-Path $predictedPackageDir).Path
+        return
+    }
+}
+
 $packageArg = $PackageId
 if ($Version) { $packageArg = "$PackageId@$Version" }
 
@@ -56,16 +67,13 @@ if ($downloadExitCode -ne 0) {
 }
 
 # Return the path to the downloaded package directory (dotnet package download uses lowercase id)
-$packageIdLower = $PackageId.ToLower()
 if ($Version) {
-    $packageRoot = Join-Path $OutputDirectory $packageIdLower
     $packageDir = Get-ChildItem -Path $packageRoot -Directory -ErrorAction SilentlyContinue |
         Where-Object { $_.Name -ieq $Version } |
         Select-Object -First 1
     if ($packageDir) { $packageDir = $packageDir.FullName }
 } else {
     # When no version is specified, pick the most recently written version directory.
-    $packageRoot = Join-Path $OutputDirectory $packageIdLower
     $packageDir = Get-ChildItem -Path $packageRoot -Directory -ErrorAction SilentlyContinue |
         Sort-Object -Property LastWriteTimeUtc -Descending |
         Select-Object -First 1
@@ -75,5 +83,5 @@ if ($Version) {
 if ($packageDir -and (Test-Path $packageDir)) {
     Write-Output $packageDir
 } else {
-    Write-Error "Package directory not found after download."
+    throw "Package directory not found after download. PackageId='$PackageId'; Version='$Version'; OutputDirectory='$OutputDirectory'; PackageRoot='$packageRoot'."
 }

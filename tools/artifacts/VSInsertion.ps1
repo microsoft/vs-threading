@@ -39,9 +39,9 @@ if (Test-Path $VsixPackages) {
 }
 
 if ($InsertionOutputs -and $env:PROFILINGINPUTSPROPSNAME) {
-    $InsertOutputsProfilingInputs = Join-Path $InsertionOutputs $env:PROFILINGINPUTSPROPSNAME
-    if (Test-Path -LiteralPath $InsertOutputsProfilingInputs) {
-        $result[$InsertionOutputs] = Get-ChildItem -LiteralPath $InsertOutputsProfilingInputs # OptProf ProfilingInputs
+    $InsertionOutputsProfilingInputs = Join-Path $InsertionOutputs $env:PROFILINGINPUTSPROPSNAME
+    if (Test-Path -LiteralPath $InsertionOutputsProfilingInputs) {
+        $result[$InsertionOutputs] = Get-ChildItem -LiteralPath $InsertionOutputsProfilingInputs # OptProf ProfilingInputs
     }
 }
 
