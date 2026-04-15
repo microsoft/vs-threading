@@ -56,8 +56,30 @@ $nugetArgs += '-Verbosity',$Verbosity
 
 if ($PSCmdlet.ShouldProcess($PackageId, 'nuget install')) {
     $p = Start-Process $nugetPath $nugetArgs -NoNewWindow -Wait -PassThru
-    if ($null -ne $p.ExitCode -and $p.ExitCode -ne 0) { throw }
+    if ($null -ne $p.ExitCode -and $p.ExitCode -ne 0) {
+        throw "NuGet install failed for package '$PackageId' (version '$Version') with exit code $($p.ExitCode)."
+    }
 }
 
 # Provide the path to the installed package directory to our caller.
-Write-Output (Get-ChildItem "$PackagesDir\$PackageId.*")[0].FullName
+if ($ExcludeVersion) {
+    $packageDir = Get-ChildItem -Path $PackagesDir -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -ieq $PackageId } |
+        Select-Object -First 1
+} elseif ($Version) {
+    $expectedDirectoryName = "$PackageId.$Version"
+    $packageDir = Get-ChildItem -Path $PackagesDir -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -ieq $expectedDirectoryName } |
+        Select-Object -First 1
+} else {
+    $packageDir = Get-ChildItem -Path $PackagesDir -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -like "$PackageId.*" } |
+        Sort-Object -Property LastWriteTimeUtc -Descending |
+        Select-Object -First 1
+}
+
+if ($packageDir -and (Test-Path -Path $packageDir.FullName -PathType Container)) {
+    Write-Output $packageDir.FullName
+} else {
+    throw "Installed package directory not found. PackageId='$PackageId'; Version='$Version'; ExcludeVersion='$ExcludeVersion'; PackagesDir='$PackagesDir'."
+}

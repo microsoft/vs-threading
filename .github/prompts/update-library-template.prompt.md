@@ -37,6 +37,12 @@ The `test/Library.Tests/Library.Tests.csproj` file is very typical of this.
 Changes to this file should very typically be applied to any and all test projects in the repo.
 You are responsible for doing this in addition to re-deleting this template file.
 
+## Updating package and SDK versions
+
+After the merge, always check global.json for MSBuild Sdks with names starting with `Microsoft.VisualStudio.Internal.MicroBuild`.
+These SDK versions should match the value of the `MicroBuildVersion` property found in `Directory.Packages.props`.
+Always take the latest of the versions you see among these SDKs and the `MicroBuildVersion` property.
+
 ## Validation
 
 Validate the merge result (after resolving any conflicts, if applicable).
