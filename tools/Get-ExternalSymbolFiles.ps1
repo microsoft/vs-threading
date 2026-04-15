@@ -93,7 +93,7 @@ Function Get-PackageVersions() {
 }
 
 Function Get-PackageVersion($id) {
-    $version = Get-PackageVersions | Select-Object -ExpandProperty $id -ErrorAction SilentlyContinue
+    $version = (Get-PackageVersions)[$id]
     if (!$version) {
         Write-Error "No package version found in Directory.Packages.props for the package '$id'"
     }
