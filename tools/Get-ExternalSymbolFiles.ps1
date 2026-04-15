@@ -1,4 +1,4 @@
-[CmdletBinding(SupportsShouldProcess = $true)]
+[CmdletBinding()]
 Param (
 )
 
