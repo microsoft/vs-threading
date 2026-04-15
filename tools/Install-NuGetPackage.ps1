@@ -57,7 +57,7 @@ $nugetArgs += '-Verbosity',$Verbosity
 if ($PSCmdlet.ShouldProcess($PackageId, 'nuget install')) {
     $p = Start-Process $nugetPath $nugetArgs -NoNewWindow -Wait -PassThru
     if ($null -ne $p.ExitCode -and $p.ExitCode -ne 0) {
-        throw "NuGet install failed for package '$PackageId' (version '$requestedVersion') with exit code $exitCode."
+        throw "NuGet install failed for package '$PackageId' (version '$Version') with exit code $($p.ExitCode)."
     }
 }
 

@@ -35,7 +35,10 @@ catch {
     return
 }
 
-New-Item -ItemType Directory -Force -Path (Split-Path $OutputPath -Parent) | Out-Null
+$outputDirectory = Split-Path $OutputPath -Parent
+if ($outputDirectory) {
+    New-Item -ItemType Directory -Force -Path $outputDirectory | Out-Null
+}
 
 $toolpath = "$pdb2pdbpath/tools/Pdb2Pdb.exe"
 $arguments = $DllPath, '/out', $OutputPath, '/nowarn', '0021'
