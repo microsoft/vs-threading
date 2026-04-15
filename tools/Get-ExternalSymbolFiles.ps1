@@ -1,3 +1,7 @@
+[CmdletBinding(SupportsShouldProcess = $true)]
+Param (
+)
+
 # Symbol servers to search for PDBs, in order of priority.
 $SymbolServers = @(
     'https://msdl.microsoft.com/download/symbols'
@@ -106,6 +110,9 @@ $1stPartyPackageIds = @()
 $1stPartyPackageIds | % {
     $version = Get-PackageVersion $_
     if ($version) {
+        Write-Verbose "Downloading symbols for package '$_' version '$version'."
         Get-SymbolsFromPackage -id $_ -version $version
+    } else {
+        Write-Warning "No version found for package '$_'. Skipping symbol download."
     }
 }
