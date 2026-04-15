@@ -21,7 +21,7 @@ $NuGetPackages = "$PackagesRoot/NuGet"
 $VsixPackages = "$PackagesRoot/Vsix"
 $AzurePipelinesPath = "$RepoRoot/azure-pipelines"
 if ($env:BUILD_ARTIFACTSTAGINGDIRECTORY) {
-    $InsertionOutputs = "$env:BUILD_ARTIFACTSTAGINGDIRECTORY/InsertionOutputs"
+     $InsertionOutputs = Join-Path $env:BUILD_ARTIFACTSTAGINGDIRECTORY 'InsertionOutputs'
 }
 
 if (!(Test-Path $NuGetPackages) -and !(Test-Path $VsixPackages)) {
@@ -38,8 +38,11 @@ if (Test-Path $VsixPackages) {
     $result["$PackagesRoot"] += Get-ChildItem $VsixPackages -Recurse
 }
 
-if ($InsertionOutputs -and $env:PROFILINGINPUTSPROPSNAME -and (Test-Path "$InsertionOutputs/$env:PROFILINGINPUTSPROPSNAME")) {
-    $result[$InsertionOutputs] = (Get-ChildItem "$InsertionOutputs/$env:PROFILINGINPUTSPROPSNAME"); # OptProf ProfilingInputs
+if ($InsertionOutputs -and $env:PROFILINGINPUTSPROPSNAME) {
+    $InsertOutputsProfilingInputs = Join-Path $InsertionOutputs $env:PROFILINGINPUTSPROPSNAME
+    if (Test-Path -LiteralPath $InsertOutputsProfilingInputs) {
+        $result[$InsertionOutputs] = Get-ChildItem -LiteralPath $InsertOutputsProfilingInputs # OptProf ProfilingInputs
+    }
 }
 
 $result

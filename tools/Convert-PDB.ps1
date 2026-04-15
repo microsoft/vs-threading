@@ -10,11 +10,11 @@
 #>
 [CmdletBinding()]
 Param(
-    [Parameter(Mandatory=$true,Position=0)]
+    [Parameter(Mandatory = $true, Position = 0)]
     [string]$DllPath,
     [Parameter()]
     [string]$PdbPath,
-    [Parameter(Mandatory=$true,Position=1)]
+    [Parameter(Mandatory = $true, Position = 1)]
     [string]$OutputPath
 )
 
@@ -25,24 +25,26 @@ if ($IsMacOS -or $IsLinux) {
 
 $version = '1.1.0-beta2-21101-01'
 $baseDir = "$PSScriptRoot/../obj/tools"
-$pdb2pdbpath = "$baseDir/Microsoft.DiaSymReader.Pdb2Pdb.$version/tools/Pdb2Pdb.exe"
+$pdb2pdbpath = "$baseDir/microsoft.diasymreader.pdb2pdb/$version/tools/Pdb2Pdb.exe"
 if (-not (Test-Path $pdb2pdbpath)) {
     if (-not (Test-Path $baseDir)) { New-Item -Type Directory -Path $baseDir | Out-Null }
     $baseDir = (Resolve-Path $baseDir).Path # Normalize it
-    Write-Verbose "& (& $PSScriptRoot/Get-NuGetTool.ps1) install Microsoft.DiaSymReader.Pdb2Pdb -version $version -PackageSaveMode nuspec -OutputDirectory $baseDir -Source https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json | Out-Null"
     # This package originally comes from the https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json feed.
     # Add this feed as an upstream to whatever feed is in nuget.config if this step fails.
-    & (& $PSScriptRoot/Get-NuGetTool.ps1) install Microsoft.DiaSymReader.Pdb2Pdb -version $version -PackageSaveMode nuspec -OutputDirectory $baseDir | Out-Null
-    if ($LASTEXITCODE -ne 0) {
+    try {
+        & "$PSScriptRoot/Download-NuGetPackage.ps1" -PackageId Microsoft.DiaSymReader.Pdb2Pdb -Version $version -Source https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json -OutputDirectory $baseDir | Out-Null
+    }
+    catch {
         Write-Error "Failed to install Microsoft.DiaSymReader.Pdb2Pdb. Consider adding https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json as an upstream to your nuget.config feed."
         return
     }
+    $pdb2pdbpath = "$baseDir/microsoft.diasymreader.pdb2pdb/$version/tools/Pdb2Pdb.exe"
 }
 
-$args = $DllPath,'/out',$OutputPath,'/nowarn','0021'
+$arguments = $DllPath, '/out', $OutputPath, '/nowarn', '0021'
 if ($PdbPath) {
-    $args += '/pdb',$PdbPath
+    $arguments += '/pdb', $PdbPath
 }
 
-Write-Verbose "$pdb2pdbpath $args"
-& $pdb2pdbpath $args
+Write-Verbose "$pdb2pdbpath $arguments"
+& $pdb2pdbpath $arguments

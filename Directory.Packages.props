@@ -4,8 +4,8 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
-    <MicrosoftTestingPlatformVersion>2.1.0</MicrosoftTestingPlatformVersion>
-    <MicroBuildVersion>2.0.208</MicroBuildVersion>
+    <MicrosoftTestingPlatformVersion>2.2.1</MicrosoftTestingPlatformVersion>
+    <MicroBuildVersion>2.0.226</MicroBuildVersion>
     <CodeAnalysisVersion>3.11.0</CodeAnalysisVersion>
     <CodefixTestingVersion>1.1.3</CodefixTestingVersion>
     <CodeAnalysisAnalyzerVersion>3.11.0-beta1.26057.1</CodeAnalysisAnalyzerVersion>
@@ -41,7 +41,7 @@
     <PackageVersion Include="Xunit.StaFact" Version="3.0.13" />
   </ItemGroup>
   <ItemGroup Label="Library.Template">
-    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.5.2" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.6.2" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CrashDump" Version="$(MicrosoftTestingPlatformVersion)" />
     <PackageVersion Include="Microsoft.Testing.Extensions.HangDump" Version="$(MicrosoftTestingPlatformVersion)" />
     <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="$(MicrosoftTestingPlatformVersion)" />
