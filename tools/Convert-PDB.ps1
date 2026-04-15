@@ -23,28 +23,25 @@ if ($IsMacOS -or $IsLinux) {
     return
 }
 
-$version = '1.1.0-beta2-21101-01'
-$baseDir = "$PSScriptRoot/../obj/tools"
-$pdb2pdbpath = "$baseDir/microsoft.diasymreader.pdb2pdb/$version/tools/Pdb2Pdb.exe"
-if (-not (Test-Path $pdb2pdbpath)) {
-    if (-not (Test-Path $baseDir)) { New-Item -Type Directory -Path $baseDir | Out-Null }
-    $baseDir = (Resolve-Path $baseDir).Path # Normalize it
-    # This package originally comes from the https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json feed.
-    # Add this feed as an upstream to whatever feed is in nuget.config if this step fails.
-    try {
-        & "$PSScriptRoot/Download-NuGetPackage.ps1" -PackageId Microsoft.DiaSymReader.Pdb2Pdb -Version $version -Source https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json -OutputDirectory $baseDir | Out-Null
-    }
-    catch {
-        Write-Error "Failed to install Microsoft.DiaSymReader.Pdb2Pdb. Consider adding https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json as an upstream to your nuget.config feed."
-        return
-    }
-    $pdb2pdbpath = "$baseDir/microsoft.diasymreader.pdb2pdb/$version/tools/Pdb2Pdb.exe"
+# This package originally comes from the https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json feed.
+# Add this feed as an upstream to whatever feed is in nuget.config if this step fails.
+$packageID = 'Microsoft.DiaSymReader.Pdb2Pdb'
+$packageVersion = '1.1.0-beta2-21101-01'
+try {
+    $pdb2pdbpath = & "$PSScriptRoot/Download-NuGetPackage.ps1" -PackageId $packageID -Version $packageVersion -Source https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json
+}
+catch {
+    Write-Error "Failed to install $packageID. Consider adding https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json as an upstream to your nuget.config feed."
+    return
 }
 
+New-Item -ItemType Directory -Force -Path (Split-Path $OutputPath -Parent) | Out-Null
+
+$toolpath = "$pdb2pdbpath/tools/Pdb2Pdb.exe"
 $arguments = $DllPath, '/out', $OutputPath, '/nowarn', '0021'
 if ($PdbPath) {
     $arguments += '/pdb', $PdbPath
 }
 
-Write-Verbose "$pdb2pdbpath $arguments"
-& $pdb2pdbpath $arguments
+Write-Verbose "$toolpath $arguments"
+& $toolpath $arguments
