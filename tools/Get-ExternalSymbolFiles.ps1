@@ -25,11 +25,11 @@ Function Get-SymbolsFromPackage($id, $version) {
 
     # Download symbols for each binary using dotnet-symbol
     $serverArgs = $SymbolServers | ForEach-Object { '--server-path'; $_ }
-    $binaries = Get-ChildItem -Recurse -LiteralPath $packagePath -Include *.dll, *.exe
-    foreach ($binary in $binaries) {
+    $binaries = @(Get-ChildItem -Recurse -LiteralPath $packagePath -Include *.dll, *.exe)
+    if ($binaries) {
         $prevErrorActionPreference = $ErrorActionPreference
         $ErrorActionPreference = 'Continue'
-        & dotnet symbol --symbols @serverArgs --output $binary.DirectoryName $binary.FullName 2>&1 | Out-Null
+        & dotnet symbol --symbols @serverArgs @($binaries.FullName) 2>&1 | Out-Null
         $ErrorActionPreference = $prevErrorActionPreference
     }
 
