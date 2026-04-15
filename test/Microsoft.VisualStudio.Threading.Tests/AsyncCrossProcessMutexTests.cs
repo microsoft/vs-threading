@@ -72,7 +72,7 @@ public class AsyncCrossProcessMutexTests : TestBase, IDisposable
     public async Task EnterAsync_Contested()
     {
         // We don't allow attempted reentrancy, so create a new mutex object to use for the contested locks.
-        AsyncCrossProcessMutex mutex2 = new(this.mutex.Name);
+        using AsyncCrossProcessMutex mutex2 = new(this.mutex.Name);
 
         // Acquire and hold the mutex so that we can test timeout behavior.
         using (AsyncCrossProcessMutex.LockReleaser releaser = await this.mutex.EnterAsync())
@@ -95,7 +95,7 @@ public class AsyncCrossProcessMutexTests : TestBase, IDisposable
     public async Task TryEnterAsync_Contested()
     {
         // We don't allow attempted reentrancy, so create a new mutex object to use for the contested locks.
-        AsyncCrossProcessMutex mutex2 = new(this.mutex.Name);
+        using AsyncCrossProcessMutex mutex2 = new(this.mutex.Name);
 
         // Acquire and hold the mutex so that we can test timeout behavior.
         using (AsyncCrossProcessMutex.LockReleaser? releaser = await this.mutex.TryEnterAsync(Timeout.InfiniteTimeSpan))
