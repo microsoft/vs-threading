@@ -56,6 +56,7 @@ public class AsyncCrossProcessMutex
         Requires.NotNullOrEmpty(name);
         this.namedMutexOwner = new Thread(this.MutexOwnerThread, 256 * 1024)
         {
+            IsBackground = true,
             Name = $"{nameof(AsyncCrossProcessMutex)}-{name}",
         };
         this.mutex = new Mutex(false, name);
