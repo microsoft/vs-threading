@@ -10,13 +10,14 @@ Function Get-SymbolsFromPackage($id, $version) {
     $packagePath = $null
 
     # Download the package from configured feeds (failures are non-fatal for symbol collection)
+    $previousLastExitCode = $global:LASTEXITCODE
     try {
         $packagePath = & "$PSScriptRoot\Download-NuGetPackage.ps1" -PackageId $id -Version $version -OutputDirectory $symbolPackagesPath -ErrorAction SilentlyContinue
     }
     catch {
         Write-Warning "Failed to download package $id $version from configured feeds. Skipping if not found locally. $($_.Exception.Message)"
     }
-    $global:LASTEXITCODE = 0
+    $global:LASTEXITCODE = $previousLastExitCode
     if (!$packagePath -or !(Test-Path -LiteralPath $packagePath)) {
         Write-Warning "Package $id $version not found in configured feeds. Skipping."
         return
