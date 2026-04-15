@@ -28,7 +28,12 @@ Function Get-SymbolsFromPackage($id, $version) {
     $unzippedPkgPath = Join-Path $symbolPackagesPath "$id.$version"
 
     # Download the package from configured feeds (failures are non-fatal for symbol collection)
-    & "$PSScriptRoot\Download-NuGetPackage.ps1" -PackageId $id -Version $version -OutputDirectory $symbolPackagesPath -ErrorAction SilentlyContinue | Out-Null
+    try {
+        & "$PSScriptRoot\Download-NuGetPackage.ps1" -PackageId $id -Version $version -OutputDirectory $symbolPackagesPath -ErrorAction SilentlyContinue | Out-Null
+    }
+    catch {
+        Write-Warning "Failed to download package $id $version from configured feeds. Skipping if not found locally. $($_.Exception.Message)"
+    }
     $global:LASTEXITCODE = 0
     $nupkgFile = Get-ChildItem -Recurse -Path $symbolPackagesPath -Filter "$id.$version.nupkg" -ErrorAction SilentlyContinue | Select-Object -First 1
     if (!$nupkgFile) {
