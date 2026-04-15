@@ -80,9 +80,36 @@ Function Get-SymbolsFromPackage($id, $version) {
     }
 }
 
+Function Get-PackageVersions() {
+    if ($script:PackageVersions) {
+        return $script:PackageVersions
+    }
+
+    $propsPath = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\Directory.Packages.props')).Path
+    $output = & dotnet build $propsPath -nologo -verbosity:quiet -getItem:PackageVersion 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Failed to evaluate package versions from Directory.Packages.props.`n$($output | Out-String)"
+        return @{}
+    }
+
+    $jsonText = ($output | Out-String).Trim()
+    $jsonStart = $jsonText.IndexOf('{')
+    if ($jsonStart -lt 0) {
+        Write-Error 'Failed to locate JSON output from `dotnet build -getItem:PackageVersion`.'
+        return @{}
+    }
+
+    $packageVersions = @{}
+    foreach ($item in @((ConvertFrom-Json $jsonText.Substring($jsonStart)).Items.PackageVersion)) {
+        $packageVersions[$item.Identity] = $item.Version
+    }
+
+    $script:PackageVersions = $packageVersions
+    $packageVersions
+}
+
 Function Get-PackageVersion($id) {
-    $versionProps = [xml](Get-Content -LiteralPath $PSScriptRoot\..\Directory.Packages.props)
-    $version = $versionProps.Project.ItemGroup.PackageVersion | ? { $_.Include -eq $id } | % { $_.Version }
+    $version = Get-PackageVersions | Select-Object -ExpandProperty $id -ErrorAction SilentlyContinue
     if (!$version) {
         Write-Error "No package version found in Directory.Packages.props for the package '$id'"
     }
