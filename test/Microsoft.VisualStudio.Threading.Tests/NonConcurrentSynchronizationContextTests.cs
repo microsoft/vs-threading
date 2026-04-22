@@ -48,7 +48,7 @@ public class NonConcurrentSynchronizationContextTests : TestBase
         var eventArgs = new TaskCompletionSource<(object?, Exception)>();
         this.nonSticky.UnhandledException += (s, e) => eventArgs.SetResult((s, e));
         this.nonSticky.Post(s => throw new InvalidOperationException(), null);
-        (object sender, Exception ex) = await eventArgs.Task.WithCancellation(this.TimeoutToken);
+        (object? sender, Exception? ex) = await eventArgs.Task.WithCancellation(this.TimeoutToken);
         Assert.Same(this.nonSticky, sender);
         Assert.IsType<InvalidOperationException>(ex);
     }

@@ -157,14 +157,14 @@ public class AsyncCrossProcessMutexTests : TestBase, IDisposable
         using AsyncCrossProcessMutex mutex2 = new(this.mutex.Name);
 
         AsyncCrossProcessMutex.LockReleaser? abandonedReleaser = await this.mutex.TryEnterAsync(Timeout.InfiniteTimeSpan);
-        Assert.False(abandonedReleaser.Value.IsAbandoned);
+        Assert.False(abandonedReleaser?.IsAbandoned);
 
         // Dispose the mutex WITHOUT first releasing it.
         this.mutex.Dispose();
 
         using (AsyncCrossProcessMutex.LockReleaser? releaser2 = await mutex2.TryEnterAsync(Timeout.InfiniteTimeSpan))
         {
-            Assert.True(releaser2.Value.IsAbandoned);
+            Assert.True(releaser2?.IsAbandoned);
         }
     }
 
