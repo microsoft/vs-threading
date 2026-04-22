@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Tests for <see cref="NoMessagePumpSyncContext"/>.
@@ -34,6 +35,109 @@ public class NoMessagePumpSyncContextTests : TestBase
     public void Default_IsNoMessagePumpSyncContext()
     {
         Assert.IsType<NoMessagePumpSyncContext>(NoMessagePumpSyncContext.Default);
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="NoMessagePumpSyncContext.Post"/> schedules work on the thread pool
+    /// when no underlying sync context is provided.
+    /// </summary>
+    [Fact]
+    public async Task Post_DefaultConstructor_ExecutesOnThreadPool()
+    {
+        NoMessagePumpSyncContext sc = new();
+        TaskCompletionSource<bool> tcs = new();
+        sc.Post(_ => tcs.SetResult(Thread.CurrentThread.IsThreadPoolThread), null);
+        Assert.True(await tcs.Task.WithCancellation(this.TimeoutToken));
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="NoMessagePumpSyncContext.Send"/> executes work synchronously
+    /// on the calling thread when no underlying sync context is provided.
+    /// </summary>
+    [Fact]
+    public void Send_DefaultConstructor_ExecutesInlineOnCallingThread()
+    {
+        NoMessagePumpSyncContext sc = new();
+        int callingThreadId = Thread.CurrentThread.ManagedThreadId;
+        int? callbackThreadId = null;
+        bool callbackInvoked = false;
+
+        sc.Send(
+            _ =>
+            {
+                callbackInvoked = true;
+                callbackThreadId = Thread.CurrentThread.ManagedThreadId;
+            },
+            null);
+
+        Assert.True(callbackInvoked);
+        Assert.Equal(callingThreadId, callbackThreadId);
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="NoMessagePumpSyncContext(SynchronizationContext)"/> throws
+    /// <see cref="ArgumentNullException"/> when a null underlying context is passed.
+    /// </summary>
+    [Fact]
+    public void Constructor_WithNullUnderlyingContext_Throws()
+    {
+        Assert.Throws<ArgumentNullException>(() => new NoMessagePumpSyncContext(null!));
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="NoMessagePumpSyncContext.Post"/> rejects a null callback before
+    /// delegating to the underlying sync context.
+    /// </summary>
+    [Fact]
+    public void Post_WithNullCallback_Throws()
+    {
+        ThrowingSyncContext underlying = new();
+        NoMessagePumpSyncContext sc = new(underlying);
+
+        Assert.Throws<ArgumentNullException>(() => sc.Post(null!, null));
+        Assert.False(underlying.PostInvoked);
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="NoMessagePumpSyncContext.Send"/> rejects a null callback before
+    /// delegating to the underlying sync context.
+    /// </summary>
+    [Fact]
+    public void Send_WithNullCallback_Throws()
+    {
+        ThrowingSyncContext underlying = new();
+        NoMessagePumpSyncContext sc = new(underlying);
+
+        Assert.Throws<ArgumentNullException>(() => sc.Send(null!, null));
+        Assert.False(underlying.SendInvoked);
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="NoMessagePumpSyncContext.Post"/> delegates to the underlying
+    /// sync context when one is provided.
+    /// </summary>
+    [Fact]
+    public async Task Post_WithUnderlyingContext_DelegatesToUnderlying()
+    {
+        TaskCompletionSource<bool> tcs = new();
+        RecordingPostSyncContext underlying = new(posted: _ => tcs.SetResult(true));
+        NoMessagePumpSyncContext sc = new(underlying);
+        sc.Post(_ => { }, null);
+        Assert.True(await tcs.Task.WithCancellation(this.TimeoutToken));
+    }
+
+    /// <summary>
+    /// Verifies that <see cref="NoMessagePumpSyncContext.Send"/> delegates to the underlying
+    /// sync context when one is provided.
+    /// </summary>
+    [Fact]
+    public void Send_WithUnderlyingContext_DelegatesToUnderlying()
+    {
+        bool sendInvoked = false;
+        RecordingSendSyncContext underlying = new(sent: _ => sendInvoked = true);
+        NoMessagePumpSyncContext sc = new(underlying);
+        sc.Send(_ => { }, null);
+        Assert.True(sendInvoked);
     }
 
 #if NETFRAMEWORK
@@ -77,4 +181,50 @@ public class NoMessagePumpSyncContextTests : TestBase
         }
     }
 #endif
+
+    /// <summary>
+    /// A <see cref="SynchronizationContext"/> that invokes a callback when <see cref="Post"/> is called.
+    /// </summary>
+    private class RecordingPostSyncContext(Action<SendOrPostCallback> posted) : SynchronizationContext
+    {
+        public override void Post(SendOrPostCallback d, object? state)
+        {
+            posted(d);
+            base.Post(d, state);
+        }
+    }
+
+    /// <summary>
+    /// A <see cref="SynchronizationContext"/> that invokes a callback when <see cref="Send"/> is called.
+    /// </summary>
+    private class RecordingSendSyncContext(Action<SendOrPostCallback> sent) : SynchronizationContext
+    {
+        public override void Send(SendOrPostCallback d, object? state)
+        {
+            sent(d);
+            base.Send(d, state);
+        }
+    }
+
+    /// <summary>
+    /// A <see cref="SynchronizationContext"/> that records whether <see cref="Post"/> or <see cref="Send"/> were invoked.
+    /// </summary>
+    private class ThrowingSyncContext : SynchronizationContext
+    {
+        public bool PostInvoked { get; private set; }
+
+        public bool SendInvoked { get; private set; }
+
+        public override void Post(SendOrPostCallback d, object? state)
+        {
+            this.PostInvoked = true;
+            throw new InvalidOperationException();
+        }
+
+        public override void Send(SendOrPostCallback d, object? state)
+        {
+            this.SendInvoked = true;
+            throw new InvalidOperationException();
+        }
+    }
 }
