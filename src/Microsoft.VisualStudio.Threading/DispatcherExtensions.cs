@@ -27,6 +27,13 @@ public static class DispatcherExtensions
     /// and for each asynchronous return to the main thread after an <see langword="await"/>.
     /// </param>
     /// <returns>A <see cref="JoinableTaskFactory"/> that may be used for scheduling async work with the specified priority.</returns>
+    /// <remarks>
+    /// In addition to scheduling work on the UI thread with the specified priority,
+    /// this <see cref="JoinableTaskFactory"/> also ensures that any synchronous waits
+    /// on the main thread within <see cref="JoinableTask" /> objects created with the returned factory
+    /// will honor calls to <see cref="Dispatcher.DisableProcessing()" />, producing similar behavior
+    /// to <see cref="JoinableTaskFactory.DisableProcessing()" />.
+    /// </remarks>
     public static JoinableTaskFactory WithPriority(this JoinableTaskFactory joinableTaskFactory, Dispatcher dispatcher, DispatcherPriority priority)
     {
         Requires.NotNull(joinableTaskFactory, nameof(joinableTaskFactory));
@@ -61,6 +68,9 @@ public static class DispatcherExtensions
             : base(innerFactory)
         {
             this.dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+#if NETFRAMEWORK // Avoid trim warnings on .NET, and only .NET Framework calls CoWait anyway.
+            this.DefaultWaitPolicy = new DispatcherSynchronizationContext(dispatcher);
+#endif
             this.priority = priority;
         }
 

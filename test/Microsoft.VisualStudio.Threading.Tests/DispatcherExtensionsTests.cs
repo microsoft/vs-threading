@@ -66,6 +66,50 @@ public class DispatcherExtensionsTests : JoinableTaskTestBase
             await Task.WhenAll(idleTask.Task, normalTask.Task).WithCancellation(this.TimeoutToken);
         });
     }
+
+#if NETFRAMEWORK
+    [StaFact]
+    public void WithPriority_MatchesDisableProcessingWithinDelegate()
+    {
+        this.SimulateUIThread(delegate
+        {
+            JoinableTaskFactory? normalPriorityJtf = this.asyncPump.WithPriority(Dispatcher.CurrentDispatcher, DispatcherPriority.Normal);
+            normalPriorityJtf.Run(delegate
+            {
+                this.AssertProcessingAllowed();
+
+                using (Dispatcher.CurrentDispatcher.DisableProcessing())
+                {
+                    this.AssertProcessingDisabled();
+                }
+
+                return Task.CompletedTask;
+            });
+
+            return Task.CompletedTask;
+        });
+    }
+
+    [StaFact]
+    public void WithPriority_MatchesDisableProcessingOutsideDelegate()
+    {
+        this.SimulateUIThread(delegate
+        {
+            JoinableTaskFactory? normalPriorityJtf = this.asyncPump.WithPriority(Dispatcher.CurrentDispatcher, DispatcherPriority.Normal);
+            using (Dispatcher.CurrentDispatcher.DisableProcessing())
+            {
+                normalPriorityJtf.Run(delegate
+                {
+                    this.AssertProcessingDisabled();
+
+                    return Task.CompletedTask;
+                });
+            }
+
+            return Task.CompletedTask;
+        });
+    }
+#endif
 }
 
 

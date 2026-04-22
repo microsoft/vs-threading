@@ -99,6 +99,17 @@ public partial class JoinableTaskFactory
     }
 
     /// <summary>
+    /// Gets a <see cref="SynchronizationContext"/> on which <see cref="SynchronizationContext.Wait(IntPtr[], bool, int)"/>
+    /// should be called from <see cref="JoinableTaskSynchronizationContext.Wait(IntPtr[], bool, int)"/>
+    /// when <see cref="DisableProcessing()"/> has not been called.
+    /// </summary>
+    /// <remarks>
+    /// This allows a WPF-aware <see cref="JoinableTaskFactory"/>-derived class within this assembly
+    /// to match <c>Dispatcher.DisableProcessing()</c> behavior.
+    /// </remarks>
+    internal SynchronizationContext? DefaultWaitPolicy { get; init; }
+
+    /// <summary>
     /// Gets or sets the timeout after which no activity while synchronously blocking
     /// suggests a hang has occurred.
     /// </summary>

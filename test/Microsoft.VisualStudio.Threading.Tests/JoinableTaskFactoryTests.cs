@@ -2,8 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Runtime.InteropServices;
-using System.Threading;
 using System.Threading.Tasks;
 
 public class JoinableTaskFactoryTests : JoinableTaskTestBase
@@ -12,13 +10,6 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
         : base(logger)
     {
     }
-
-    private static bool MightCoWaitBeUsed
-#if NETFRAMEWORK
-        => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-#else
-        => false;
-#endif
 
     [Fact]
     public void OnTransitioningToMainThread_DoesNotHoldPrivateLock()
@@ -208,30 +199,6 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
             this.AssertProcessingAllowed();
             return Task.CompletedTask;
         });
-    }
-
-    private void AssertProcessingDisabled()
-    {
-        Assert.SkipUnless(MightCoWaitBeUsed, "DisableProcessing has no effect in this environment.");
-
-        // For this check to work, we need to be on the main thread.
-        Assert.True(this.asyncPump.Context.IsOnMainThread);
-        Assert.Equal(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
-
-        using CoWaitMainThreadTransition transition = new();
-        Assert.False(transition.Wait(ExpectedTimeout));
-    }
-
-    private void AssertProcessingAllowed()
-    {
-        Assert.SkipUnless(MightCoWaitBeUsed, "DisableProcessing has no effect in this environment.");
-
-        // For this check to work, we need to be on the main thread.
-        Assert.True(this.asyncPump.Context.IsOnMainThread);
-        Assert.Equal(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
-
-        using CoWaitMainThreadTransition transition = new();
-        Assert.True(transition.Wait(UnexpectedTimeout));
     }
 
 #endif

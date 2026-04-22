@@ -86,6 +86,25 @@ namespace Microsoft.VisualStudio.Threading
             }
 
             /// <summary>
+            /// Gets a <see cref="SynchronizationContext"/> on which <see cref="SynchronizationContext.Wait(IntPtr[], bool, int)"/>
+            /// should be called from <see cref="JoinableTaskSynchronizationContext.Wait(IntPtr[], bool, int)"/>
+            /// when <see cref="DisableProcessing()"/> has not been called.
+            /// </summary>
+            internal SynchronizationContext? DefaultWaitPolicy
+            {
+                get => field;
+                init
+                {
+                    field = value;
+                    if (value is not null)
+                    {
+                        // This is required so that our override of Wait is invoked.
+                        this.SetWaitNotificationRequired();
+                    }
+                }
+            }
+
+            /// <summary>
             /// Forwards the specified message to the job this instance belongs to if applicable; otherwise to the factory.
             /// </summary>
             public override void Post(SendOrPostCallback d, object? state)
@@ -182,6 +201,12 @@ namespace Microsoft.VisualStudio.Threading
                             return (int)PInvoke.WaitForMultipleObjects((uint)waitHandles.Length, (HANDLE*)pHandles, waitAll, (uint)millisecondsTimeout);
                         }
                     }
+                }
+
+                // Use a surrogate default policy if provided.
+                if (this.DefaultWaitPolicy is { } waitPolicy)
+                {
+                    return waitPolicy.Wait(waitHandles, waitAll, millisecondsTimeout);
                 }
 
                 // Fallback to sync blocking such that CoWait might be called.

@@ -333,6 +333,7 @@ public partial class JoinableTask : IJoinableTaskDependent
                                 this.mainThreadJobSyncContext = new JoinableTaskSynchronizationContext(this, true)
                                 {
                                     DisableProcessing = this.DisableProcessing,
+                                    DefaultWaitPolicy = this.owner.DefaultWaitPolicy,
                                 };
                             }
                         }
