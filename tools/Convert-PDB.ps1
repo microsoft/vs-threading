@@ -40,7 +40,7 @@ if ($outputDirectory) {
     New-Item -ItemType Directory -Force -Path $outputDirectory | Out-Null
 }
 
-$toolpath = "$pdb2pdbpath/tools/Pdb2Pdb.exe"
+$toolpath = Join-Path $pdb2pdbpath 'tools\Pdb2Pdb.exe'
 $arguments = $DllPath, '/out', $OutputPath, '/nowarn', '0021'
 if ($PdbPath) {
     $arguments += '/pdb', $PdbPath

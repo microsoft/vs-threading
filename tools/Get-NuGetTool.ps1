@@ -15,7 +15,7 @@ function Test-NuGetExecutableSignature {
         [string]$Path
     )
 
-    if (!(Test-Path $Path)) {
+    if (!(Test-Path -LiteralPath $Path)) {
         return $false
     }
 
