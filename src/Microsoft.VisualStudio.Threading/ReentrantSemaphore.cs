@@ -191,7 +191,7 @@ public abstract class ReentrantSemaphore : IDisposable
     /// <para>
     /// The following snippet demonstrates a way to use this method.
     /// </para>
-    /// <code source="../../samples/ApiSamples.cs" region="SuppressRelevance" lang="C#" />
+    /// <code source="../../samples/SuppressRelevance.cs" region="SuppressRelevance" lang="C#" />
     /// </example>
     public virtual RevertRelevance SuppressRelevance() => default;
 

@@ -330,7 +330,10 @@ public partial class JoinableTask : IJoinableTaskDependent
                         {
                             if (this.mainThreadJobSyncContext is null)
                             {
-                                this.mainThreadJobSyncContext = new JoinableTaskSynchronizationContext(this, true);
+                                this.mainThreadJobSyncContext = new JoinableTaskSynchronizationContext(this, true)
+                                {
+                                    DisableProcessing = this.DisableProcessing,
+                                };
                             }
                         }
                     }
@@ -368,6 +371,23 @@ public partial class JoinableTask : IJoinableTaskDependent
                     // If we're not blocking the threadpool, there is no reason to use a thread pool sync context.
                     return null;
                 }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether CoWait will be prohibited
+    /// during synchronously blocking waits from code actively running within this <see cref="JoinableTask"/>.
+    /// </summary>
+    internal bool DisableProcessing
+    {
+        get => field;
+        set
+        {
+            field = value;
+            if (this.mainThreadJobSyncContext is { } syncContext)
+            {
+                syncContext.DisableProcessing = value;
             }
         }
     }

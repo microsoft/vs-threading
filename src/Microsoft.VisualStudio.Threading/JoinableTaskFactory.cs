@@ -294,6 +294,56 @@ public partial class JoinableTaskFactory
         return this.RunAsync(asyncMethod, synchronouslyBlocking: false, parentToken, creationOptions: creationOptions);
     }
 
+#pragma warning disable SA1629 // Documentation text should end with a period
+    /// <summary>
+    /// Prevents filtered message pumps from running during synchronous waits for the ambient <see cref="JoinableTask"/>.
+    /// </summary>
+    /// <returns>
+    /// A value that may be disposed of when the need to suppress synchronous wait message pumps is ended.
+    /// Alternatively it may be discarded if the rest of the <see cref="JoinableTask"/> is intended to have processing disabled.
+    /// </returns>
+    /// <exception cref="InvalidOperationException">Thrown when called outside the context of a <see cref="JoinableTask"/>.</exception>
+    /// <remarks>
+    /// <para>
+    /// During a yielding <see langword="await"/> within a <see cref="JoinableTask"/>, no message pump ever runs
+    /// regardless of whether this method is called, except for the internal one that lets in only relevant work.
+    /// When user code runs within the <see cref="JoinableTask"/> delegate or its callees that ends up requiring
+    /// a synchronous block of the main thread (e.g. synchronous I/O or lock contention), this wait is typically
+    /// implemented by calling <see cref="SynchronizationContext.Wait(IntPtr[], bool, int)"/> on <see cref="SynchronizationContext.Current"/>.
+    /// The default implementation of this method allows for certain interruptions (e.g. COM RPC calls), which
+    /// <em>may</em> avoid deadlocks in certain situations.
+    /// </para>
+    /// <para>
+    /// Calling this method will replace the default implementation of <see cref="SynchronizationContext.Wait(IntPtr[], bool, int)"/>
+    /// with one that will not allow such interruptions while that <see cref="JoinableTask"/> is active and in control of
+    /// <see cref="SynchronizationContext.Current"/>.
+    /// </para>
+    /// <para>
+    /// Disabling processing has no effect on non-Windows operating systems.
+    /// </para>
+    /// <para>
+    /// Nested calls to <see cref="DisableProcessing"/> are ignored. Only the outermost call has an effect on the behavior of the ambient <see cref="JoinableTask"/>
+    /// and only disposing the return value from the outermost call will restore the default behavior.
+    /// </para>
+    /// <para>
+    /// Disposing the resulting value will revert to the default behavior.
+    /// Callers need not ever dispose of this value if the intent is to disable processing for the remainder of that
+    /// <see cref="JoinableTask"/>'s execution.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <para>
+    /// Here is a simple, common usage of this method:
+    /// </para>
+    /// <code source="../../samples/DisableProcessing.cs" region="Simple" lang="C#" />
+    /// <para>
+    /// Following are more examples of how it might be used:
+    /// </para>
+    /// <code source="../../samples/DisableProcessing.cs" region="Exhaustive" lang="C#" />
+    /// </example>
+    public ProcessingDisabledOperation DisableProcessing() => new(this.Context.AmbientTask ?? throw new InvalidOperationException(Strings.NoAmbientTask));
+#pragma warning restore SA1629 // Documentation text should end with a period
+
     /// <summary>
     /// Responds to calls to <see cref="JoinableTaskFactory.MainThreadAwaiter.OnCompleted(Action)"/>
     /// by scheduling a continuation to execute on the Main thread.
@@ -679,6 +729,37 @@ public partial class JoinableTaskFactory
         {
             Environment.FailFast("Unexpected exception thrown in critical scheduling code.", ex);
             throw Assumes.NotReachable();
+        }
+    }
+
+    /// <summary>
+    /// A struct whose disposal will revert the effect of an earlier call to <see cref="DisableProcessing"/>.
+    /// </summary>
+    public struct ProcessingDisabledOperation : IDisposable
+    {
+        private JoinableTask? owner;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ProcessingDisabledOperation"/> struct.
+        /// </summary>
+        /// <param name="owner">The owner of this struct.</param>
+        internal ProcessingDisabledOperation(JoinableTask owner)
+        {
+            if (owner.DisableProcessing is false)
+            {
+                owner.DisableProcessing = true;
+                this.owner = owner;
+            }
+        }
+
+        /// <inheritdoc/>
+        public void Dispose()
+        {
+            if (this.owner is { } owner)
+            {
+                owner.DisableProcessing = false;
+                this.owner = null;
+            }
         }
     }
 

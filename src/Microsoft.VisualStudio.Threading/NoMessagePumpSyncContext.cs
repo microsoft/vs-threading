@@ -2,7 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Buffers;
 using System.Runtime.InteropServices;
 using System.Threading;
 using global::Windows.Win32;
@@ -52,10 +51,10 @@ public class NoMessagePumpSyncContext : SynchronizationContext
         Requires.NotNull(waitHandles, nameof(waitHandles));
 
         // On .NET Framework we must take special care to NOT end up in a call to CoWait (which lets in RPC calls).
-        // Off Windows, we can't p/invoke to kernel32, but it appears that .NET Core never calls CoWait, so we can rely on default behavior.
-        // We're just going to use the OS as the switch instead of the framework so that (one day) if we drop our .NET Framework specific target,
-        // and if .NET Core ever adds CoWait support on Windows, we'll still behave properly.
-#if NET5_0_OR_GREATER
+        // Off Windows, we can't p/invoke to kernel32, but it appears that .NET never calls CoWait, so we can rely on default behavior.
+        // We're just going to use the OS as the switch instead of the runtime so that (one day) if we drop our .NET Framework specific target,
+        // and if .NET ever adds CoWait support on Windows, we'll still behave properly.
+#if NET
         if (OperatingSystem.IsWindowsVersionAtLeast(5, 1, 2600))
 #else
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))

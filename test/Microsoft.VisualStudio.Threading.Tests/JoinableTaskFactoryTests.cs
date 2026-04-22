@@ -1,7 +1,9 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 public class JoinableTaskFactoryTests : JoinableTaskTestBase
@@ -10,6 +12,13 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
         : base(logger)
     {
     }
+
+    private static bool MightCoWaitBeUsed
+#if NETFRAMEWORK
+        => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+#else
+        => false;
+#endif
 
     [Fact]
     public void OnTransitioningToMainThread_DoesNotHoldPrivateLock()
@@ -137,6 +146,95 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
             Assert.False(this.asyncPump.SwitchToMainThreadAsync(alwaysYield: false).GetAwaiter().IsCompleted);
         });
     }
+
+    [Fact]
+    public void DisableProcessing_ThrowsOutsideJoinableTask()
+    {
+        Assert.Throws<InvalidOperationException>(() => this.asyncPump.DisableProcessing());
+    }
+
+    [Fact]
+    public void DisableProcessing_InsideJoinableTask()
+    {
+        this.asyncPump.Run(delegate
+        {
+            using (this.asyncPump.DisableProcessing())
+            {
+            }
+
+            return Task.CompletedTask;
+        });
+    }
+
+    [Fact]
+    public void ProcessingDisabledOperation_Dispose_DoesNotThrowFromDefaultValue()
+    {
+        default(JoinableTaskFactory.ProcessingDisabledOperation).Dispose();
+    }
+
+#if NETFRAMEWORK
+    [StaFact]
+    public void DisableProcessing()
+    {
+        this.asyncPump.Run(() =>
+        {
+            this.AssertProcessingAllowed();
+
+            using (this.asyncPump.DisableProcessing())
+            {
+                this.AssertProcessingDisabled();
+            }
+
+            this.AssertProcessingAllowed();
+            return Task.CompletedTask;
+        });
+    }
+
+    [StaFact]
+    public void DisableProcessing_Nested()
+    {
+        this.asyncPump.Run(() =>
+        {
+            using (this.asyncPump.DisableProcessing())
+            {
+                using (this.asyncPump.DisableProcessing())
+                {
+                    this.AssertProcessingDisabled();
+                }
+
+                this.AssertProcessingDisabled();
+            }
+
+            this.AssertProcessingAllowed();
+            return Task.CompletedTask;
+        });
+    }
+
+    private void AssertProcessingDisabled()
+    {
+        Assert.SkipUnless(MightCoWaitBeUsed, "DisableProcessing has no effect in this environment.");
+
+        // For this check to work, we need to be on the main thread.
+        Assert.True(this.asyncPump.Context.IsOnMainThread);
+        Assert.Equal(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
+
+        using CoWaitMainThreadTransition transition = new();
+        Assert.False(transition.Wait(ExpectedTimeout));
+    }
+
+    private void AssertProcessingAllowed()
+    {
+        Assert.SkipUnless(MightCoWaitBeUsed, "DisableProcessing has no effect in this environment.");
+
+        // For this check to work, we need to be on the main thread.
+        Assert.True(this.asyncPump.Context.IsOnMainThread);
+        Assert.Equal(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
+
+        using CoWaitMainThreadTransition transition = new();
+        Assert.True(transition.Wait(UnexpectedTimeout));
+    }
+
+#endif
 
     /// <summary>
     /// A <see cref="JoinableTaskFactory"/> that allows a test to inject code
