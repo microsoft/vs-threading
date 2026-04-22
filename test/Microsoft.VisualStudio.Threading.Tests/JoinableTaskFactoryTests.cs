@@ -201,6 +201,25 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
         });
     }
 
+    [StaFact]
+    public void DisableProcessing_RefCounted()
+    {
+        this.asyncPump.Run(() =>
+        {
+            JoinableTaskFactory.ProcessingDisabledOperation first = this.asyncPump.DisableProcessing();
+            JoinableTaskFactory.ProcessingDisabledOperation second = this.asyncPump.DisableProcessing();
+
+            // Dispose things in a FIFO order instead of a nested LIFO order.
+            // Processing should only be re-enabled after the last reference is disposed.
+            first.Dispose();
+            this.AssertProcessingDisabled();
+            second.Dispose();
+            this.AssertProcessingAllowed();
+
+            return Task.CompletedTask;
+        });
+    }
+
 #endif
 
     /// <summary>

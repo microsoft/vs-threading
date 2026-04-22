@@ -330,11 +330,7 @@ public partial class JoinableTask : IJoinableTaskDependent
                         {
                             if (this.mainThreadJobSyncContext is null)
                             {
-                                this.mainThreadJobSyncContext = new JoinableTaskSynchronizationContext(this, true)
-                                {
-                                    DisableProcessing = this.DisableProcessing,
-                                    DefaultWaitPolicy = this.owner.DefaultWaitPolicy,
-                                };
+                                this.mainThreadJobSyncContext = new JoinableTaskSynchronizationContext(this, true);
                             }
                         }
                     }
@@ -380,7 +376,7 @@ public partial class JoinableTask : IJoinableTaskDependent
     /// Gets or sets a value indicating whether CoWait will be prohibited
     /// during synchronously blocking waits from code actively running within this <see cref="JoinableTask"/>.
     /// </summary>
-    internal bool DisableProcessing
+    internal int DisableProcessing
     {
         get => field;
         set
@@ -388,7 +384,7 @@ public partial class JoinableTask : IJoinableTaskDependent
             field = value;
             if (this.mainThreadJobSyncContext is { } syncContext)
             {
-                syncContext.DisableProcessing = value;
+                syncContext.ConsiderDisableProcessing();
             }
         }
     }

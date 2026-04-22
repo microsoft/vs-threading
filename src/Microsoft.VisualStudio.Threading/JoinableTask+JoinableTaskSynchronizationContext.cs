@@ -44,6 +44,11 @@ namespace Microsoft.VisualStudio.Threading
 
                 this.jobFactory = owner;
                 this.mainThreadAffinitized = true;
+
+                if (owner.DefaultWaitPolicy is not null)
+                {
+                    this.SetWaitNotificationRequired();
+                }
             }
 
             /// <summary>
@@ -56,6 +61,11 @@ namespace Microsoft.VisualStudio.Threading
             {
                 this.job = joinableTask;
                 this.mainThreadAffinitized = mainThreadAffinitized;
+
+                if (joinableTask.DisableProcessing > 0)
+                {
+                    this.SetWaitNotificationRequired();
+                }
             }
 
             /// <summary>
@@ -65,43 +75,6 @@ namespace Microsoft.VisualStudio.Threading
             internal bool MainThreadAffinitized
             {
                 get { return this.mainThreadAffinitized; }
-            }
-
-            /// <summary>
-            /// Gets or sets a value indicating whether synchronous waits should prohibit any message pump (e.g. CoWait).
-            /// </summary>
-            /// <value>The default value is <see langword="false" />.</value>
-            internal bool DisableProcessing
-            {
-                get => field;
-                set
-                {
-                    field = value;
-                    if (value)
-                    {
-                        // This is required so that our override of Wait is invoked.
-                        this.SetWaitNotificationRequired();
-                    }
-                }
-            }
-
-            /// <summary>
-            /// Gets a <see cref="SynchronizationContext"/> on which <see cref="SynchronizationContext.Wait(IntPtr[], bool, int)"/>
-            /// should be called from <see cref="JoinableTaskSynchronizationContext.Wait(IntPtr[], bool, int)"/>
-            /// when <see cref="DisableProcessing()"/> has not been called.
-            /// </summary>
-            internal SynchronizationContext? DefaultWaitPolicy
-            {
-                get => field;
-                init
-                {
-                    field = value;
-                    if (value is not null)
-                    {
-                        // This is required so that our override of Wait is invoked.
-                        this.SetWaitNotificationRequired();
-                    }
-                }
             }
 
             /// <summary>
@@ -184,7 +157,7 @@ namespace Microsoft.VisualStudio.Threading
             {
                 Requires.NotNull(waitHandles, nameof(waitHandles));
 
-                if (this.DisableProcessing)
+                if (this.job?.DisableProcessing > 0)
                 {
                     // On .NET Framework we must take special care to NOT end up in a call to CoWait (which lets in RPC calls).
                     // Off Windows, we can't p/invoke to kernel32, but it appears that .NET never calls CoWait, so we can rely on default behavior.
@@ -204,7 +177,7 @@ namespace Microsoft.VisualStudio.Threading
                 }
 
                 // Use a surrogate default policy if provided.
-                if (this.DefaultWaitPolicy is { } waitPolicy)
+                if (this.jobFactory.DefaultWaitPolicy is { } waitPolicy)
                 {
                     return waitPolicy.Wait(waitHandles, waitAll, millisecondsTimeout);
                 }
@@ -212,6 +185,8 @@ namespace Microsoft.VisualStudio.Threading
                 // Fallback to sync blocking such that CoWait might be called.
                 return WaitHelper(waitHandles, waitAll, millisecondsTimeout);
             }
+
+            internal void ConsiderDisableProcessing() => this.SetWaitNotificationRequired();
 
             /// <summary>
             /// Called by the joinable task when it has completed.

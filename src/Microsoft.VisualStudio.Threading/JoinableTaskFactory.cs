@@ -328,13 +328,11 @@ public partial class JoinableTaskFactory
     /// Calling this method will replace the default implementation of <see cref="SynchronizationContext.Wait(IntPtr[], bool, int)"/>
     /// with one that will not allow such interruptions while that <see cref="JoinableTask"/> is active and in control of
     /// <see cref="SynchronizationContext.Current"/>.
+    /// As this method may be called multiple times, this effect remains until all <see cref="DisableProcessing"/> invocations'
+    /// return values are disposed (in any order).
     /// </para>
     /// <para>
     /// Disabling processing has no effect on non-Windows operating systems.
-    /// </para>
-    /// <para>
-    /// Nested calls to <see cref="DisableProcessing"/> are ignored. Only the outermost call has an effect on the behavior of the ambient <see cref="JoinableTask"/>
-    /// and only disposing the return value from the outermost call will restore the default behavior.
     /// </para>
     /// <para>
     /// Disposing the resulting value will revert to the default behavior.
@@ -756,11 +754,8 @@ public partial class JoinableTaskFactory
         /// <param name="owner">The owner of this struct.</param>
         internal ProcessingDisabledOperation(JoinableTask owner)
         {
-            if (owner.DisableProcessing is false)
-            {
-                owner.DisableProcessing = true;
-                this.owner = owner;
-            }
+            owner.DisableProcessing++;
+            this.owner = owner;
         }
 
         /// <inheritdoc/>
@@ -768,7 +763,7 @@ public partial class JoinableTaskFactory
         {
             if (this.owner is { } owner)
             {
-                owner.DisableProcessing = false;
+                owner.DisableProcessing--;
                 this.owner = null;
             }
         }
