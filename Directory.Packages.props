@@ -8,7 +8,7 @@
     <MicroBuildVersion>2.0.226</MicroBuildVersion>
     <CodeAnalysisVersion>3.11.0</CodeAnalysisVersion>
     <CodefixTestingVersion>1.1.3</CodefixTestingVersion>
-    <CodeAnalysisAnalyzerVersion>3.11.0-beta1.26057.1</CodeAnalysisAnalyzerVersion>
+    <CodeAnalysisAnalyzerVersion>3.11.0-beta1.26075.3</CodeAnalysisAnalyzerVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="DNNE" Version="2.1.0" />
