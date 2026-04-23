@@ -2,11 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Windows.Win32;
+using Windows.Win32.Foundation;
 
 namespace Microsoft.VisualStudio.Threading
 {
@@ -44,6 +44,11 @@ namespace Microsoft.VisualStudio.Threading
 
                 this.jobFactory = owner;
                 this.mainThreadAffinitized = true;
+
+                if (owner.DefaultWaitPolicy is not null)
+                {
+                    this.SetWaitNotificationRequired();
+                }
             }
 
             /// <summary>
@@ -56,6 +61,11 @@ namespace Microsoft.VisualStudio.Threading
             {
                 this.job = joinableTask;
                 this.mainThreadAffinitized = mainThreadAffinitized;
+
+                if (joinableTask.DisableProcessing > 0)
+                {
+                    this.SetWaitNotificationRequired();
+                }
             }
 
             /// <summary>
@@ -133,6 +143,50 @@ namespace Microsoft.VisualStudio.Threading
                     }
                 }
             }
+
+            /// <summary>
+            /// Synchronously blocks without a message pump.
+            /// </summary>
+            /// <param name="waitHandles">An array of type <see cref="IntPtr" /> that contains the native operating system handles.</param>
+            /// <param name="waitAll">true to wait for all handles; false to wait for any handle.</param>
+            /// <param name="millisecondsTimeout">The number of milliseconds to wait, or <see cref="Timeout.Infinite" /> (-1) to wait indefinitely.</param>
+            /// <returns>
+            /// The array index of the object that satisfied the wait.
+            /// </returns>
+            public override unsafe int Wait(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout)
+            {
+                Requires.NotNull(waitHandles, nameof(waitHandles));
+
+                if (this.job?.DisableProcessing > 0)
+                {
+                    // On .NET Framework we must take special care to NOT end up in a call to CoWait (which lets in RPC calls).
+                    // Off Windows, we can't p/invoke to kernel32, but it appears that .NET never calls CoWait, so we can rely on default behavior.
+                    // We're just going to use the OS as the switch instead of the runtime so that (one day) if we drop our .NET Framework specific target,
+                    // and if .NET ever adds CoWait support on Windows, we'll still behave properly.
+#if NET
+                    if (OperatingSystem.IsWindowsVersionAtLeast(5, 1, 2600))
+#else
+                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+#endif
+                    {
+                        fixed (IntPtr* pHandles = waitHandles)
+                        {
+                            return (int)PInvoke.WaitForMultipleObjects((uint)waitHandles.Length, (HANDLE*)pHandles, waitAll, (uint)millisecondsTimeout);
+                        }
+                    }
+                }
+
+                // Use a surrogate default policy if provided.
+                if (this.jobFactory.DefaultWaitPolicy is { } waitPolicy)
+                {
+                    return waitPolicy.Wait(waitHandles, waitAll, millisecondsTimeout);
+                }
+
+                // Fallback to sync blocking such that CoWait might be called.
+                return WaitHelper(waitHandles, waitAll, millisecondsTimeout);
+            }
+
+            internal void ConsiderDisableProcessing() => this.SetWaitNotificationRequired();
 
             /// <summary>
             /// Called by the joinable task when it has completed.

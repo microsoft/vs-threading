@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>net10.0</TargetFrameworks>
     <IsTestProject>false</IsTestProject>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
   </PropertyGroup>
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
     <TargetFrameworks>$(TargetFrameworks);net10.0-windows</TargetFrameworks>

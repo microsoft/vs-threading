@@ -193,4 +193,7 @@
   <data name="SyncContextNotSet" xml:space="preserve">
     <value>No SynchronizationContext to reach the main thread has been set.</value>
   </data>
+  <data name="NoAmbientTask" xml:space="preserve">
+    <value>No JoinableTask is active.</value>
+  </data>
 </root>

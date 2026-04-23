@@ -373,6 +373,23 @@ public partial class JoinableTask : IJoinableTaskDependent
     }
 
     /// <summary>
+    /// Gets or sets a value indicating whether CoWait will be prohibited
+    /// during synchronously blocking waits from code actively running within this <see cref="JoinableTask"/>.
+    /// </summary>
+    internal int DisableProcessing
+    {
+        get => field;
+        set
+        {
+            field = value;
+            if (this.mainThreadJobSyncContext is { } syncContext)
+            {
+                syncContext.ConsiderDisableProcessing();
+            }
+        }
+    }
+
+    /// <summary>
     /// Gets a weak reference to this object.
     /// </summary>
     internal WeakReference<JoinableTask> WeakSelf

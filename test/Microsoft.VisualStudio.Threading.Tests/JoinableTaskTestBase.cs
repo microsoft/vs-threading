@@ -96,4 +96,30 @@ public abstract class JoinableTaskTestBase : TestBase
         this.dispatcherContext.Post(s => this.testFrame.Continue = false, null);
         this.PushFrame();
     }
+
+#if NETFRAMEWORK
+    protected void AssertProcessingDisabled()
+    {
+        Assert.SkipUnless(MightCoWaitBeUsed, "DisableProcessing has no effect in this environment.");
+
+        // For this check to work, we need to be on the main thread.
+        Assert.True(this.asyncPump.Context.IsOnMainThread);
+        Assert.Equal(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
+
+        using CoWaitMainThreadTransition transition = new();
+        Assert.False(transition.Wait(ExpectedTimeout));
+    }
+
+    protected void AssertProcessingAllowed()
+    {
+        Assert.SkipUnless(MightCoWaitBeUsed, "DisableProcessing has no effect in this environment.");
+
+        // For this check to work, we need to be on the main thread.
+        Assert.True(this.asyncPump.Context.IsOnMainThread);
+        Assert.Equal(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
+
+        using CoWaitMainThreadTransition transition = new();
+        Assert.True(transition.Wait(UnexpectedTimeout));
+    }
+#endif
 }

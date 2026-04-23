@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft;
@@ -34,6 +35,13 @@ public abstract class TestBase
     {
         this.Logger = logger;
     }
+
+    protected static bool MightCoWaitBeUsed
+#if NETFRAMEWORK
+        => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+#else
+        => false;
+#endif
 
     /// <summary>
     /// Gets or sets the source of <see cref="TimeoutToken"/> that influences

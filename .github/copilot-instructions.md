@@ -82,5 +82,6 @@ dotnet run --no-build -c Release --framework net9.0 -- --list-tests
 ## Coding style
 
 * Honor StyleCop rules and fix any reported build warnings *after* getting tests to pass.
-* In C# files, use namespace *statements* instead of namespace *blocks* for all new files.
+* In C# files, use namespace *statements* instead of namespace *blocks* for all new files that define namespaces.
+* Test files are *not* expected to declare namespaces.
 * Add API doc comments to all new public and internal members.

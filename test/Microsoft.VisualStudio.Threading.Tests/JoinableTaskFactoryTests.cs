@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -137,6 +137,110 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
             Assert.False(this.asyncPump.SwitchToMainThreadAsync(alwaysYield: false).GetAwaiter().IsCompleted);
         });
     }
+
+    [Fact]
+    public void DisableProcessing_ThrowsOutsideJoinableTask()
+    {
+        Assert.Throws<InvalidOperationException>(() => this.asyncPump.DisableProcessing());
+    }
+
+    [Fact]
+    public void DisableProcessing_InsideJoinableTask()
+    {
+        this.asyncPump.Run(delegate
+        {
+            using (this.asyncPump.DisableProcessing())
+            {
+            }
+
+            return Task.CompletedTask;
+        });
+    }
+
+    [Fact]
+    public void ProcessingDisabledOperation_Dispose_DoesNotThrowFromDefaultValue()
+    {
+        default(JoinableTaskFactory.ProcessingDisabledOperation).Dispose();
+    }
+
+#if NETFRAMEWORK
+    [StaFact]
+    public void DisableProcessing()
+    {
+        this.asyncPump.Run(() =>
+        {
+            this.AssertProcessingAllowed();
+
+            using (this.asyncPump.DisableProcessing())
+            {
+                this.AssertProcessingDisabled();
+            }
+
+            this.AssertProcessingAllowed();
+            return Task.CompletedTask;
+        });
+    }
+
+    [StaFact]
+    public void DisableProcessing_NestedProcessingDisabled()
+    {
+        this.asyncPump.Run(() =>
+        {
+            using (this.asyncPump.DisableProcessing())
+            {
+                using (this.asyncPump.DisableProcessing())
+                {
+                    this.AssertProcessingDisabled();
+                }
+
+                this.AssertProcessingDisabled();
+            }
+
+            this.AssertProcessingAllowed();
+            return Task.CompletedTask;
+        });
+    }
+
+    [StaFact]
+    public void DisableProcessing_NestedTasks()
+    {
+        this.asyncPump.Run(() =>
+        {
+            using (this.asyncPump.DisableProcessing())
+            {
+                this.asyncPump.Run(() =>
+                {
+                    // Child JoinableTasks do not inherit the processing-disabled state of their parents.
+                    this.AssertProcessingAllowed();
+
+                    return Task.CompletedTask;
+                });
+            }
+
+            return Task.CompletedTask;
+        });
+    }
+
+    [StaFact]
+    public void DisableProcessing_RefCounted()
+    {
+        this.asyncPump.Run(() =>
+        {
+            JoinableTaskFactory.ProcessingDisabledOperation first = this.asyncPump.DisableProcessing();
+            JoinableTaskFactory.ProcessingDisabledOperation second = this.asyncPump.DisableProcessing();
+
+            // Dispose things in a FIFO order instead of a nested LIFO order.
+            // Processing should only be re-enabled after the last reference is disposed.
+            first.Dispose();
+            this.AssertProcessingDisabled();
+            second.Dispose();
+            this.AssertProcessingAllowed();
+
+            return Task.CompletedTask;
+        });
+    }
+
+#endif
 
     /// <summary>
     /// A <see cref="JoinableTaskFactory"/> that allows a test to inject code
