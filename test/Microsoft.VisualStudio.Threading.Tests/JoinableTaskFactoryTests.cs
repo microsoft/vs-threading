@@ -182,7 +182,7 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
     }
 
     [StaFact]
-    public void DisableProcessing_Nested()
+    public void DisableProcessing_NestedProcessingDisabled()
     {
         this.asyncPump.Run(() =>
         {
@@ -197,6 +197,26 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
             }
 
             this.AssertProcessingAllowed();
+            return Task.CompletedTask;
+        });
+    }
+
+    [StaFact]
+    public void DisableProcessing_NestedTasks()
+    {
+        this.asyncPump.Run(() =>
+        {
+            using (this.asyncPump.DisableProcessing())
+            {
+                this.asyncPump.Run(() =>
+                {
+                    // Child JoinableTasks do not inherit the processing-disabled state of their parents.
+                    this.AssertProcessingAllowed();
+
+                    return Task.CompletedTask;
+                });
+            }
+
             return Task.CompletedTask;
         });
     }

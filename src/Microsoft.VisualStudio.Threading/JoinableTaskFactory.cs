@@ -328,8 +328,9 @@ public partial class JoinableTaskFactory
     /// Calling this method will replace the default implementation of <see cref="SynchronizationContext.Wait(IntPtr[], bool, int)"/>
     /// with one that will not allow such interruptions while that <see cref="JoinableTask"/> is active and in control of
     /// <see cref="SynchronizationContext.Current"/>.
-    /// As this method may be called multiple times, this effect remains until all <see cref="DisableProcessing"/> invocations'
-    /// return values are disposed (in any order).
+    /// As this method may be called multiple times, this effect remains on the target <see cref="JoinableTask"/>
+    /// until all <see cref="DisableProcessing"/> invocations' return values are disposed (in any order).
+    /// The effect only applies to the direct <see cref="JoinableTask"/>. It does not affect any of its children or parents.
     /// </para>
     /// <para>
     /// Disabling processing has no effect on non-Windows operating systems.
