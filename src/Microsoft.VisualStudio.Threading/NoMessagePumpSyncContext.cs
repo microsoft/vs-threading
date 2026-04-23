@@ -20,13 +20,31 @@ public class NoMessagePumpSyncContext : SynchronizationContext
     /// </summary>
     private static readonly SynchronizationContext DefaultInstance = new NoMessagePumpSyncContext();
 
+    private readonly SynchronizationContext? underlyingSyncContext;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="NoMessagePumpSyncContext"/> class.
     /// </summary>
+    /// <remarks>
+    /// When using this constructor, <see cref="Post"/> uses the default <see cref="SynchronizationContext"/>
+    /// behavior and schedules work on the thread pool, while <see cref="Send"/> uses the default
+    /// <see cref="SynchronizationContext"/> behavior and invokes the callback synchronously on the calling thread.
+    /// </remarks>
     public NoMessagePumpSyncContext()
     {
         // This is required so that our override of Wait is invoked.
         this.SetWaitNotificationRequired();
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="NoMessagePumpSyncContext"/> class.
+    /// </summary>
+    /// <param name="underlyingSyncContext">The <see cref="SynchronizationContext"/> that should handle calls to <see cref="Post"/> and <see cref="Send"/>.</param>
+    public NoMessagePumpSyncContext(SynchronizationContext underlyingSyncContext)
+        : this()
+    {
+        Requires.NotNull(underlyingSyncContext, nameof(underlyingSyncContext));
+        this.underlyingSyncContext = underlyingSyncContext;
     }
 
     /// <summary>
@@ -35,6 +53,36 @@ public class NoMessagePumpSyncContext : SynchronizationContext
     public static SynchronizationContext Default
     {
         get { return DefaultInstance; }
+    }
+
+    /// <inheritdoc/>
+    public override void Send(SendOrPostCallback d, object? state)
+    {
+        Requires.NotNull(d, nameof(d));
+
+        if (this.underlyingSyncContext is { } underlying)
+        {
+            underlying.Send(d, state);
+        }
+        else
+        {
+            base.Send(d, state);
+        }
+    }
+
+    /// <inheritdoc/>
+    public override void Post(SendOrPostCallback d, object? state)
+    {
+        Requires.NotNull(d, nameof(d));
+
+        if (this.underlyingSyncContext is { } underlying)
+        {
+            underlying.Post(d, state);
+        }
+        else
+        {
+            base.Post(d, state);
+        }
     }
 
     /// <summary>
