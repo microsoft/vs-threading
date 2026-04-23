@@ -1,4 +1,4 @@
-[CmdletBinding(SupportsShouldProcess = $true)]
+[CmdletBinding()]
 Param (
 )
 
@@ -70,7 +70,7 @@ Function Get-PackageVersions() {
     }
 
     $propsPath = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\Directory.Packages.props')).Path
-    $output = & dotnet build $propsPath -nologo -verbosity:quiet -getItem:PackageVersion 2>&1
+    $output = & dotnet msbuild $propsPath -nologo -verbosity:quiet -getItem:PackageVersion 2>&1
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Failed to evaluate package versions from Directory.Packages.props.`n$($output | Out-String)"
         return @{}
@@ -79,7 +79,7 @@ Function Get-PackageVersions() {
     $jsonText = ($output | Out-String).Trim()
     $jsonStart = $jsonText.IndexOf('{')
     if ($jsonStart -lt 0) {
-        Write-Error 'Failed to locate JSON output from `dotnet build -getItem:PackageVersion`.'
+        Write-Error 'Failed to locate JSON output from `dotnet msbuild -getItem:PackageVersion`.'
         return @{}
     }
 
