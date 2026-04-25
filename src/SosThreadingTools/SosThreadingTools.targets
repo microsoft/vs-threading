@@ -26,7 +26,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <GalleryManifest Include="$(IntermediateOutputPath)GalleryManifest.xml" Condition="'$(RuntimeIdentifier)'=='win-x64'" />
+    <GalleryManifest Include="$(IntermediateOutputPath)GalleryManifest.xml" Condition="'$(RuntimeIdentifier)'=='win-x64' OR '$(RuntimeIdentifier)'==''" />
   </ItemGroup>
   <ItemGroup>
     <FilesToSign Include="$(TargetDir)$(DnneNativeBinaryName).dll">
@@ -41,12 +41,23 @@
     <SignFilesDependsOn Include="StampAndIncludeGalleryManifest" />
   </ItemGroup>
 
-  <Target Name="PackBuildOutputs" DependsOnTargets="DebugSymbolsProjectOutputGroup;StampAndIncludeGalleryManifest">
+  <Target Name="_BuildForEachRuntimeIdentifier"
+          AfterTargets="Build"
+          Condition="'$(RuntimeIdentifier)' == '' AND '$(RuntimeIdentifiers)' != ''">
     <ItemGroup>
-      <TfmSpecificPackageFile Include="$(TargetPath)" PackagePath="tools\$(RuntimeIdentifier)\" />
-      <TfmSpecificPackageFile Include="$(TargetDir)$(TargetName).runtimeconfig.json" PackagePath="tools\$(RuntimeIdentifier)\" />
-      <TfmSpecificPackageFile Include="@(DebugSymbolsProjectOutputGroupOutput->'%(FinalOutputPath)')" PackagePath="symbols\$(RuntimeIdentifier)\" />
-      <TfmSpecificPackageFile Include="$(TargetDir)*.dll" PackagePath="tools\$(RuntimeIdentifier)\" />
+      <_InnerBuildRid Include="$(RuntimeIdentifiers)" />
+    </ItemGroup>
+    <MSBuild Projects="$(MSBuildProjectFullPath)"
+             Targets="Build"
+             Properties="RuntimeIdentifier=%(_InnerBuildRid.Identity)" />
+  </Target>
+
+  <Target Name="PackBuildOutputs" DependsOnTargets="StampAndIncludeGalleryManifest">
+    <ItemGroup>
+      <_PackRid Include="$(RuntimeIdentifiers)" />
+      <TfmSpecificPackageFile Include="$(TargetDir)%(_PackRid.Identity)\$(TargetName).runtimeconfig.json" PackagePath="tools\%(_PackRid.Identity)\" />
+      <TfmSpecificPackageFile Include="$(TargetDir)%(_PackRid.Identity)\$(TargetName).pdb" PackagePath="symbols\%(_PackRid.Identity)\" />
+      <TfmSpecificPackageFile Include="$(TargetDir)%(_PackRid.Identity)\*.dll" PackagePath="tools\%(_PackRid.Identity)\" />
     </ItemGroup>
   </Target>
   <Target Name="StampAndIncludeGalleryManifest" DependsOnTargets="GetBuildVersion" Condition="'@(GalleryManifest)'!=''">
