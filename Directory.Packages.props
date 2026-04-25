@@ -22,8 +22,8 @@
     <PackageVersion Include="Microsoft.CodeAnalysis.VisualBasic" Version="$(CodeAnalysisVersion)" />
     <PackageVersion Include="Microsoft.CodeAnalysis.VisualBasic.CodeFix.Testing" Version="$(CodefixTestingVersion)" />
     <PackageVersion Include="Microsoft.CodeAnalysis.VisualBasic.CodeFix.Testing.XUnit" Version="$(CodefixTestingVersion)" />
-    <PackageVersion Include="Microsoft.Diagnostics.Runtime.Utilities" Version="3.0.442202" />
-    <PackageVersion Include="Microsoft.Diagnostics.Runtime" Version="3.1.512801" />
+    <PackageVersion Include="Microsoft.Diagnostics.Runtime.Utilities" Version="4.0.722401" />
+    <PackageVersion Include="Microsoft.Diagnostics.Runtime" Version="4.0.722401" />
     <PackageVersion Include="Microsoft.VisualStudio.Interop" Version="17.14.40260" />
     <PackageVersion Include="Microsoft.VisualStudio.Shell.15.0" Version="17.14.40264" />
     <PackageVersion Include="Microsoft.VisualStudio.Shell.Framework" Version="17.14.40264" />
