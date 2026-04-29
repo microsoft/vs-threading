@@ -37,7 +37,7 @@ if (!(Test-Path $OutputDirectory)) { New-Item -ItemType Directory -Path $OutputD
 $OutputDirectory = (Resolve-Path $OutputDirectory).Path
 $ConfigFile = (Resolve-Path $ConfigFile).Path
 
-$packageIdLower = $PackageId.ToLower()
+$packageIdLower = $PackageId.ToLowerInvariant()
 $packageRoot = Join-Path $OutputDirectory $packageIdLower
 
 if ($Version) {
