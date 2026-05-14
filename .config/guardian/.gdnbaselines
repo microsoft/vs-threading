@@ -1,0 +1,72 @@
+{
+  "properties": {
+    "helpUri": "https://eng.ms/docs/microsoft-security/security/azure-security/cloudai-security-fundamentals-engineering/security-integration/guardian-wiki/microsoft-guardian/general/baselines"
+  },
+  "version": "1.0.0",
+  "baselines": {
+    "default": {
+      "name": "default",
+      "createdDate": "2026-05-14 03:47:36Z",
+      "lastUpdatedDate": "2026-05-14 03:47:36Z"
+    }
+  },
+  "results": {
+    "dbff8dc971433ca7c818c690a4ae28b107c7e546bc335b049fabe2e160f0e628": {
+      "signature": "dbff8dc971433ca7c818c690a4ae28b107c7e546bc335b049fabe2e160f0e628",
+      "alternativeSignatures": [
+        "c02350748c2f2ca142c3e8ae36ede02fda37ded67cb625a18294826debb8b022",
+        "b66593a9d8a961d03e7a676fc73a7c92acf9752f6030227a1867dc4b16280108",
+        "efb2054ac15706638108be5009009b5ba37343dce3caa258a39db002c4b88b9f"
+      ],
+      "target": "src/Microsoft.VisualStudio.Threading.Analyzers/AbstractVSTHRD110ObserveResultOfAsyncCallsAnalyzer.cs",
+      "line": 130,
+      "uriBaseId": "file:///D:/a/_work/1/s/",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "roslynanalyzers",
+      "ruleId": "CA1310",
+      "createdDate": "2026-05-14 03:47:36Z",
+      "expirationDate": "2026-10-31 04:34:32Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2026-05-14 04:34:32Z"
+    },
+    "958ce3ce50b885fffd9057ceb48c553e916907958a3e8d423a3f79a0e9388708": {
+      "signature": "958ce3ce50b885fffd9057ceb48c553e916907958a3e8d423a3f79a0e9388708",
+      "alternativeSignatures": [
+        "3f4623ce40b316b0f163abc6400237af661fc4b06722531df8d09350c1f2eddc",
+        "ad182cab3408ce61b793d348de8b5a1732b19094d97231d000e6a0ac2c873a15",
+        "066d02f45b528967d832e064f7c0ee32e8edd8c0dce2d19da340d916baa39c92"
+      ],
+      "target": "test/Microsoft.VisualStudio.Threading.Tests/JoinableTaskTokenTests.cs",
+      "line": 61,
+      "uriBaseId": "file:///D:/a/_work/1/s/",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "roslynanalyzers",
+      "ruleId": "CA1307",
+      "createdDate": "2026-05-14 03:47:36Z",
+      "expirationDate": "2026-10-31 04:34:32Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2026-05-14 04:34:32Z"
+    },
+    "d42f90bce28d3afe46faac67d711461f29995ee74a396bc9298f743af6c3bed6": {
+      "signature": "d42f90bce28d3afe46faac67d711461f29995ee74a396bc9298f743af6c3bed6",
+      "alternativeSignatures": [
+        "fe52ee2339bc08550c0f5f481b6ad5abdd2b454d4ac85937dbd9e1b84f17156e",
+        "d688160bab0f20b29f2c7d0c04997973a608a9ce5e4222ee39142cdea765bd5a",
+        "fd005193dd710be4c2450f024a68c79f2be97321323c35e043d9c282cade492c"
+      ],
+      "target": "test/Microsoft.VisualStudio.Threading.Tests/JoinableTaskTokenTests.cs",
+      "line": 194,
+      "uriBaseId": "file:///D:/a/_work/1/s/",
+      "memberOf": [
+        "default"
+      ],
+      "tool": "roslynanalyzers",
+      "ruleId": "CA1307",
+      "createdDate": "2026-05-14 03:47:36Z",
+      "expirationDate": "2026-10-31 04:34:32Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2026-05-14 04:34:32Z"
+    }
+  }
+}
