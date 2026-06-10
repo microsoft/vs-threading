@@ -790,7 +790,7 @@ public partial class AwaitExtensionsTests : TestBase
     public async Task AwaitRegKeyChange_DoesNotPreventAppTerminationOnWin7()
     {
         Assert.SkipUnless(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Windows only");
-        string testExePath = Path.Combine(
+        string testExePath = Path.GetFullPath(Path.Combine(
             AppDomain.CurrentDomain.BaseDirectory!,
             "..",
             "..",
@@ -802,7 +802,7 @@ public partial class AwaitExtensionsTests : TestBase
             "Release",
 #endif
             "net472",
-            "Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.exe");
+            "Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.exe"));
         this.Logger.WriteLine("Using testexe path: {0}", testExePath);
         var psi = new ProcessStartInfo(testExePath)
         {
