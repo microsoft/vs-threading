@@ -10,6 +10,47 @@ When required to await a task that was started earlier, start it within a delega
 `JoinableTaskFactory.RunAsync`, storing the resulting `JoinableTask` in a field or variable.
 You can safely await the `JoinableTask` later.
 
+## Suppressing warnings for completed tasks
+
+If you have a property, method, or field that returns a pre-completed task (such as a cached task with a known value),
+you can suppress this warning by applying the `[CompletedTask]` attribute to the member.
+This attribute is automatically included when you install the `Microsoft.VisualStudio.Threading.Analyzers` package.
+
+```csharp
+[Microsoft.VisualStudio.Threading.CompletedTask]
+private static readonly Task<bool> TrueTask = Task.FromResult(true);
+
+async Task MyMethodAsync()
+{
+    await TrueTask; // No warning - TrueTask is marked as a completed task
+}
+```
+
+**Important restrictions:**
+- Fields must be marked `readonly` when using this attribute
+- Properties must not have non-private setters (getter-only or private setters are allowed)
+
+### Marking external types
+
+You can also apply the attribute at the assembly level to mark members in external types that you don't control:
+
+```csharp
+[assembly: Microsoft.VisualStudio.Threading.CompletedTask(Member = "ExternalLibrary.ExternalClass.CompletedTaskProperty")]
+```
+
+This is useful when you're using third-party libraries that have pre-completed tasks but aren't annotated with the attribute.
+The `Member` property should contain the fully qualified name of the member in the format `Namespace.TypeName.MemberName`.
+
+The analyzer already recognizes the following as safe to await without the attribute:
+- `Task.CompletedTask`
+- `Task.FromResult(...)`
+- `Task.FromCanceled(...)`
+- `Task.FromException(...)`
+- `TplExtensions.CompletedTask`
+- `TplExtensions.CanceledTask`
+- `TplExtensions.TrueTask`
+- `TplExtensions.FalseTask`
+
 ## Simple examples of patterns that are flagged by this analyzer
 
 The following example would likely deadlock if `MyMethod` were called on the main thread,
