@@ -51,7 +51,7 @@ stages:
         pool:
           name: AzurePipelines-EO
           demands:
-          - ImageOverride -equals 1ESPT-Ubuntu22.04
+          - ImageOverride -equals 1ESPT-Ubuntu24.04
           os: Linux
         templateContext:
           outputs:
