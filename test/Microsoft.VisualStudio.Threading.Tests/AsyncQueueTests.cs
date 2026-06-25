@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -576,6 +577,24 @@ public class AsyncQueueTests : TestBase
         continuationTask.Wait(UnexpectedTimeout);
     }
 
+    [Fact]
+    public async Task AsyncQueueCanUseACustomQueueForElements()
+    {
+        var asyncQueue = new AsyncQueue<int>(capacity => new PrioritizedQueue(capacity));
+
+        asyncQueue.Enqueue(3);
+        asyncQueue.Enqueue(1);
+        asyncQueue.Enqueue(2);
+        asyncQueue.Complete();
+
+        Assert.Equal(1, asyncQueue.Peek());
+        Assert.Equal(1, await asyncQueue.DequeueAsync());
+        Assert.Equal(2, await asyncQueue.DequeueAsync());
+        Assert.True(asyncQueue.TryDequeue(out int item));
+        Assert.Equal(3, item);
+        Assert.False(asyncQueue.TryDequeue(out item));
+    }
+
     private class DerivedQueue<T> : AsyncQueue<T>
     {
         internal Action<T, bool>? OnEnqueuedDelegate { get; set; }
@@ -603,6 +622,43 @@ public class AsyncQueueTests : TestBase
             base.OnCompleted();
 
             this.OnCompletedDelegate?.Invoke();
+        }
+    }
+
+    /// <summary>
+    /// This "prioritied" queue implementation is not optimized for speed, nor does it allow custom types or ordering.
+    /// </summary>
+    private class PrioritizedQueue(int capacity) : ISyncQueue<int>
+    {
+        private readonly List<int> items = new List<int>(capacity);
+
+        public int Count => this.items.Count;
+
+        public void Enqueue(int value)
+        {
+            int index = this.items.BinarySearch(value);
+
+            // for more interesting types, there would be an `else`, moving to the end of items with the same priority, but you can't tell `int`s apart anyway.
+            if (index < 0)
+            {
+                index = ~index;
+            }
+
+            this.items.Insert(index, value);
+        }
+
+        public int Peek() => this.items[0];
+
+        public int Dequeue()
+        {
+            var item = this.items[0];
+            this.items.RemoveAt(0);
+            return item;
+        }
+
+        public int[] ToArray()
+        {
+            return this.items.ToArray();
         }
     }
 }

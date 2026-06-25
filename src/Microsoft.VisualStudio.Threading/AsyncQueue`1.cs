@@ -33,9 +33,14 @@ public class AsyncQueue<T> : ThreadingTools.ICancellationNotification
     private volatile TaskCompletionSource<object?>? completedSource;
 
     /// <summary>
+    /// The factory for the internal queue of elements. A Queue`1 is constructed, when this is null.
+    /// </summary>
+    private readonly Func<int, ISyncQueue<T>>? elementsQueueFactory;
+
+    /// <summary>
     /// The internal queue of elements. Lazily constructed.
     /// </summary>
-    private Queue<T>? queueElements;
+    private ISyncQueue<T>? queueElements;
 
     /// <summary>
     /// The internal queue of <see cref="DequeueAsync(CancellationToken)"/> waiters. Lazily constructed.
@@ -57,6 +62,15 @@ public class AsyncQueue<T> : ThreadingTools.ICancellationNotification
     /// </summary>
     public AsyncQueue()
     {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AsyncQueue{T}"/> class.
+    /// </summary>
+    /// <param name="elementsQueueFactory">Factory to create the queue used for items, if needed. Takes the initial capacity.</param>
+    public AsyncQueue(Func<int, ISyncQueue<T>> elementsQueueFactory)
+    {
+        this.elementsQueueFactory = elementsQueueFactory;
     }
 
     /// <summary>
@@ -202,7 +216,9 @@ public class AsyncQueue<T> : ThreadingTools.ICancellationNotification
             {
                 if (this.queueElements is null)
                 {
-                    this.queueElements = new Queue<T>(this.InitialCapacity);
+                    this.queueElements = this.elementsQueueFactory is not null
+                        ? this.elementsQueueFactory(this.InitialCapacity)
+                        : new SyncQueue<T>(this.InitialCapacity);
                 }
 
                 this.queueElements.Enqueue(value);
