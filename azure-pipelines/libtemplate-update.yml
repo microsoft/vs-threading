@@ -30,6 +30,8 @@ variables:
 extends:
   template: azure-pipelines/MicroBuild.1ES.Unofficial.yml@MicroBuildTemplate
   parameters:
+    settings:
+      networkIsolationPolicy: Permissive,CFSClean2
     sdl:
       sourceAnalysisPool:
         name: AzurePipelines-EO
@@ -45,7 +47,7 @@ extends:
         pool:
           name: AzurePipelines-EO
           demands:
-          - ImageOverride -equals 1ESPT-Ubuntu22.04
+          - ImageOverride -equals 1ESPT-Ubuntu24.04
           os: Linux
         steps:
         - checkout: self
