@@ -27,7 +27,7 @@ Before aggregating PRs, first try to fix any individual dependency update PRs wi
 
 1. For the dependency PRs with failing build or test PR checks, check out their source branch and fix any issues.
 2. Push your fixes as fresh commits to the individual dependency PRs.
-   If pushing to a repo in the `microsoft` org when the PR is authord by `renovate`, follow-up the push with a PR comment that says exactly this: "/azp run" which triggers PR checks to re-run.
+   If pushing to a repo in the `microsoft` org when the PR is authored by `renovate`, follow-up the push with a PR comment that says exactly this: "/azp run" which triggers PR checks to re-run.
 3. If you can't fix a particular PR, add a comment to the PR describing your attempt and outcome.
 
 ## Group dependency PRs that are ready to go
