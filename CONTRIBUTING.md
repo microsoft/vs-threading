@@ -7,19 +7,17 @@ FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
 contact [opencode@microsoft.com](mailto:opencode@microsoft.com)
 with any additional questions or comments.
 
-We welcome 3rd party pull requests.
-For significant changes we strongly recommend opening an issue to start a design discussion first.
-
 ## Best practices
 
 * Use Windows PowerShell or [PowerShell Core][pwsh] (including on Linux/OSX) to run .ps1 scripts.
   Some scripts set environment variables to help you, but they are only retained if you use PowerShell as your shell.
 
-### Prerequisites
+## Prerequisites
 
-* [.NET Core SDK](https://dotnet.microsoft.com/download/dotnet-core/2.2) with the version matching our [global.json](global.json) file. The version you install must be at least the version specified in the global.json file, and must be within the same hundreds version for the 3rd integer: x.y.Czz (x.y.C must match, and zz must be at least as high).
-  The easiest way to get this is to run the `init` script at the root of the repo. Use the `-InstallLocality Machine` and approve admin elevation if you wish so the SDK is always discoverable from VS. See the `init` script usage doc for more details.
-* Optional: [Visual Studio 2022](https://visualstudio.microsoft.com/)
+All dependencies can be installed by running the `init.ps1` script at the root of the repository
+using Windows PowerShell or [PowerShell Core][pwsh] (on any OS).
+Some dependencies installed by `init.ps1` may only be discoverable from the same command line environment the init script was run from due to environment variables, so be sure to launch Visual Studio or build the repo from that same environment.
+Alternatively, run `init.ps1 -InstallLocality Machine` (which may require elevation) in order to install dependencies at machine-wide locations so Visual Studio and builds work everywhere.
 
 The only prerequisite for building, testing, and deploying from this repository
 is the [.NET SDK](https://get.dot.net/).
@@ -37,12 +35,9 @@ to the feeds that packages for this repo come from, if any.
 
 ## Building
 
-This project can be built with the follow commands from a Visual Studio Developer Command Prompt,
-assuming the working directory is the root of this repository:
+This repository can be built on Windows, Linux, and OSX.
 
-```ps1
-msbuild src
-```
+Building, testing, and packing this repository can be done by using the standard dotnet CLI commands (e.g. `dotnet build`, `dotnet test`, `dotnet pack`, etc.).
 
 ## Testing
 
