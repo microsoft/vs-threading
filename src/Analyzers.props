@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <PropertyGroup>
+    <!-- This is set so that Directory.Packages.props can apply version overrides specific to analyzer projects. -->
+    <IsAnalyzerProject>true</IsAnalyzerProject>
+  </PropertyGroup>
+</Project>

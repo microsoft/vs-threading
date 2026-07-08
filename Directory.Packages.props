@@ -40,6 +40,11 @@
     <PackageVersion Include="Xunit.Combinatorial" Version="2.0.24" />
     <PackageVersion Include="Xunit.StaFact" Version="3.0.13" />
   </ItemGroup>
+  <!-- Analyzer projects must use versions of these packages that the VS host provides.
+       Pinning here ensures a dependency update bot won't silently upgrade them to versions VS can't load. -->
+  <ItemGroup Condition="'$(IsAnalyzerProject)'=='true'">
+    <PackageVersion Update="System.Memory" Version="4.5.5" />
+  </ItemGroup>
   <ItemGroup Label="Library.Template">
     <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.8.0" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CrashDump" Version="$(MicrosoftTestingPlatformVersion)" />
