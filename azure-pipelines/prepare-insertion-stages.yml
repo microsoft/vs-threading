@@ -51,7 +51,7 @@ stages:
         pool:
           name: AzurePipelines-EO
           demands:
-          - ImageOverride -equals 1ESPT-Ubuntu22.04 # Do NOT upgrade to Ubuntu24 until this is fixed: https://portal.microsofticm.com/imp/v5/incidents/details/830879871/summary
+          - ImageOverride -equals 1ESPT-Ubuntu22.04 # Do NOT upgrade this job to Ubuntu24 until this is fixed: https://portal.microsofticm.com/imp/v5/incidents/details/830879871/summary
           os: Linux
         templateContext:
           outputs:
