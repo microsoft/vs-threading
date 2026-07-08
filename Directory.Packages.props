@@ -32,13 +32,18 @@
     <PackageVersion Include="Microsoft.Windows.CsWin32" Version="0.3.296" />
     <PackageVersion Include="Nullable" Version="1.3.1" />
     <PackageVersion Include="System.Collections.Immutable" Version="8.0.0" />
-    <PackageVersion Include="System.Memory" Version="4.5.5" />
+    <PackageVersion Include="System.Memory" Version="4.6.3" />
     <PackageVersion Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
     <PackageVersion Include="System.Threading.Tasks.Extensions" Version="4.6.3" />
     <PackageVersion Include="System.ValueTuple" Version="4.6.1" />
     <PackageVersion Include="xunit.v3.core.mtp-v2" Version="3.2.2" />
     <PackageVersion Include="Xunit.Combinatorial" Version="2.0.24" />
     <PackageVersion Include="Xunit.StaFact" Version="3.0.13" />
+  </ItemGroup>
+  <!-- Analyzer projects must use versions of these packages that the VS host provides.
+       Pinning here ensures a dependency update bot won't silently upgrade them to versions VS can't load. -->
+  <ItemGroup Condition="'$(IsAnalyzerProject)'=='true'">
+    <PackageVersion Update="System.Memory" Version="4.5.5" />
   </ItemGroup>
   <ItemGroup Label="Library.Template">
     <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.8.0" />
