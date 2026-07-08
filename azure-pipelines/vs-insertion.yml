@@ -22,6 +22,8 @@ variables:
 extends:
   template: azure-pipelines/MicroBuild.1ES.Official.yml@MicroBuildTemplate
   parameters:
+    settings:
+      networkIsolationPolicy: Permissive,CFSClean2
     sdl:
       sourceAnalysisPool: VSEng-MicroBuildVSStable
       sbom:
@@ -30,8 +32,8 @@ extends:
     stages:
     - stage: insertion
       jobs:
-      - job: insertion
-        displayName: VS insertion
+      - job: upload
+        displayName: Upload VS payload
         pool: VSEng-MicroBuildVSStable
         templateContext:
           outputParentDirectory: $(Pipeline.Workspace)/CI
@@ -57,6 +59,16 @@ extends:
             packageParentPath: $(Pipeline.Workspace)/CI/VSInsertion-Windows
             allowPackageConflicts: true
             publishVstsFeed: VS
+
+      - job: insert
+        dependsOn: upload
+        displayName: VS insertion
+        pool: VSEngSS-MicroBuild2022-1ES
+        templateContext:
+          outputParentDirectory: $(Pipeline.Workspace)/CI
+        steps:
+        - checkout: none
+        - template: azure-pipelines/release-deployment-prep.yml@self
         - task: MicroBuildInsertVsPayload@5
           displayName: 🏭 Insert VS Payload
           inputs:
