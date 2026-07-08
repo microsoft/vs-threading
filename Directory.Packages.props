@@ -46,7 +46,7 @@
     <PackageVersion Update="System.Memory" Version="4.5.5" />
   </ItemGroup>
   <ItemGroup Label="Library.Template">
-    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.8.0" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.9.0" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CrashDump" Version="$(MicrosoftTestingPlatformVersion)" />
     <PackageVersion Include="Microsoft.Testing.Extensions.HangDump" Version="$(MicrosoftTestingPlatformVersion)" />
     <PackageVersion Include="Microsoft.Testing.Extensions.Telemetry" Version="$(MicrosoftTestingPlatformVersion)" />
