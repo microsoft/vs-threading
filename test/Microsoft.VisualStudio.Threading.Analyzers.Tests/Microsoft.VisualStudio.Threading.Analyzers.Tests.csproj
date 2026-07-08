@@ -6,6 +6,7 @@
     <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
     <NoWarn>$(NoWarn);NU1701</NoWarn>
     <DefineConstants Condition="'$(TargetFramework)'=='net472'">$(DefineConstants);WINDOWS</DefineConstants>
+    <AppConfig Condition="'$(TargetFramework)'=='net472'">App.net472.config</AppConfig>
     <UsesWpf Condition="'$(TargetFramework)'=='net8.0-windows'">true</UsesWpf>
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetFrameworkIdentifier)' == '.NETFramework' ">
