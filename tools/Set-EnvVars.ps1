@@ -19,7 +19,9 @@ Param(
     [string[]]$PrependPath
 )
 
-. "$PSScriptRoot\GitHubActions.ps1"
+if ($env:GITHUB_ACTIONS) {
+    . "$PSScriptRoot\GitHubActions.ps1"
+}
 
 if ($Variables.Count -eq 0) {
     return $true
@@ -82,7 +84,7 @@ if ($PrependPath) {
             Write-Host "##vso[task.prependpath]$_"
         }
         if ($env:GITHUB_ACTIONS) {
-            Add-GitHubActionsEnvVariable -Name PATH -Value $newPathValue
+            Add-GitHubActionsPath -Value $_
         }
 
         $CmdEnvScript += "SET PATH=$_$pathDelimiter%PATH%"
