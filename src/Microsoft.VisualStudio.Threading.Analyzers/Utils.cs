@@ -293,11 +293,11 @@ public static class Utils
 
         // ValueTask and ValueTask<T> have the AsyncMethodBuilderAttribute.
         return (typeSymbol.Name == nameof(Task) && typeSymbol.BelongsToNamespace(Namespaces.SystemThreadingTasks))
-            || IsIAsyncEnumerable(typeSymbol) || typeSymbol.AllInterfaces.Any(IsIAsyncEnumerable)
+            || IsIAsyncEnumerableOrEnumerator(typeSymbol) || typeSymbol.AllInterfaces.Any(IsIAsyncEnumerableOrEnumerator)
             || typeSymbol.GetAttributes().Any(ad => ad.AttributeClass?.Name == Types.AsyncMethodBuilderAttribute.TypeName && ad.AttributeClass.BelongsToNamespace(Types.AsyncMethodBuilderAttribute.Namespace));
 
-        static bool IsIAsyncEnumerable(ITypeSymbol symbol)
-            => symbol.Name == "IAsyncEnumerable" // TODO: Use nameof(IAsyncEnumerable) after upgrade to netstandard2.1
+        static bool IsIAsyncEnumerableOrEnumerator(ITypeSymbol symbol)
+            => (symbol.Name == "IAsyncEnumerable" || symbol.Name == "IAsyncEnumerator") // TODO: Use nameof after upgrade to netstandard2.1
             && symbol.BelongsToNamespace(Namespaces.SystemCollectionsGeneric);
     }
 
