@@ -4,8 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -162,7 +160,7 @@ public class AsyncAutoResetEvent
     /// <summary>
     /// Tracks someone waiting for a signal from the event.
     /// </summary>
-    private class WaiterCompletionSource : TaskCompletionSourceWithoutInlining<EmptyStruct>
+    private class WaiterCompletionSource : TaskCompletionSource<EmptyStruct>
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="WaiterCompletionSource"/> class.
@@ -171,7 +169,7 @@ public class AsyncAutoResetEvent
         /// <param name="allowInliningContinuations"><see langword="true" /> to allow continuations to be inlined upon the completer's callstack.</param>
         /// <param name="cancellationToken">The cancellation token associated with the waiter.</param>
         internal WaiterCompletionSource(AsyncAutoResetEvent owner, bool allowInliningContinuations, CancellationToken cancellationToken)
-            : base(allowInliningContinuations)
+            : base(allowInliningContinuations ? TaskCreationOptions.None : TaskCreationOptions.RunContinuationsAsynchronously)
         {
             this.CancellationToken = cancellationToken;
             this.Registration = cancellationToken.Register(NullableHelpers.AsNullableArgAction(owner.onCancellationRequestHandler), this);

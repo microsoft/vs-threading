@@ -2,12 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -135,10 +131,10 @@ namespace Microsoft.VisualStudio.Threading
         }
 
         /// <inheritdoc/>
-        internal override object CreateTaskCompletionSource() => new TaskCompletionSourceWithoutInlining<T>(allowInliningContinuations: false);
+        internal override object CreateTaskCompletionSource() => new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         /// <inheritdoc/>
-        internal override Task GetTaskFromCompletionSource(object taskCompletionSource) => ((TaskCompletionSourceWithoutInlining<T>)taskCompletionSource).Task;
+        internal override Task GetTaskFromCompletionSource(object taskCompletionSource) => ((TaskCompletionSource<T>)taskCompletionSource).Task;
 
         /// <inheritdoc/>
         internal override void CompleteTaskSourceFromWrappedTask(Task wrappedTask, object taskCompletionSource) => ((Task<T>)wrappedTask).ApplyResultTo((TaskCompletionSource<T>)taskCompletionSource);
