@@ -111,7 +111,7 @@ extends:
           displayName: 🔻 Download Variables-Windows artifact
         - powershell: $(Pipeline.Workspace)/Variables-Windows/_define.ps1
           displayName: ⚙️ Set pipeline variables based on artifacts
-        - download: CI
+        - download: current
           artifact: VSInsertion-Windows
           displayName: 🔻 Download VSInsertion-Windows artifact
         - task: MicroBuildInsertVsPayload@5
