@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -298,7 +296,7 @@ public class AsyncQueue<T> : ThreadingTools.ICancellationNotification
                     this.FreeCanceledDequeuers();
                 }
 
-                var waiterTcs = new TaskCompletionSourceWithoutInlining<T>(allowInliningContinuations: false);
+                var waiterTcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
                 waiterTcs.AttachCancellation(cancellationToken, this);
                 this.dequeuingWaiters.Enqueue(waiterTcs);
                 return waiterTcs.Task;

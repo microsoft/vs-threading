@@ -59,6 +59,87 @@ public class AsyncManualResetEventTests : TestBase
         Assert.True(inlinedContinuation.Wait(UnexpectedTimeout));
     }
 
+    /// <summary>
+    /// Verifies that inlining continuations do not delay the Task returned from SetAsync() from completing.
+    /// </summary>
+    [Fact]
+    public void SetAsyncReturnsCompletedTaskBeforeNonInlinedContinuationsComplete()
+    {
+        ManualResetEventSlim setReturned = new();
+        Task? inlinedContinuation = this.evt.WaitAsync()
+            .ContinueWith(
+                delegate
+                {
+                    // Arrange to synchronously block the continuation until released,
+                    // which would deadlock if SetAsync's Task does not complete until inlined continuations complete.
+                    Assert.True(setReturned.Wait(UnexpectedTimeout));
+                },
+                TaskContinuationOptions.ExecuteSynchronously);
+#pragma warning disable CS0618 // Type or member is obsolete
+        Task setTask = this.evt.SetAsync();
+#pragma warning restore CS0618 // Type or member is obsolete
+        Assert.True(setTask.IsCompleted);
+        Assert.True(this.evt.IsSet);
+
+        // Release the continuation so the test doesn't leak a thread.
+        setReturned.Set();
+
+        Assert.True(inlinedContinuation.Wait(UnexpectedTimeout));
+    }
+
+    /// <summary>
+    /// Verifies that inlining continuations do not delay the Task returned from SetAsync() from completing.
+    /// </summary>
+    [Fact]
+    public void SetAsyncAndWaitAsyncReturnsCompletedTaskBeforeInlinedContinuationsComplete()
+    {
+        // Reconfigure the object to allow inlining awaiters.
+        this.evt = new(allowInliningAwaiters: true);
+
+        // Arrange for an awaiter that is not only inlined, but synchronously blocks
+        // its caller, such that the SetAsync method that completes the Task cannot immediately return.
+        ManualResetEventSlim continuationStarted = new();
+        ManualResetEventSlim setReturned = new();
+        Task? inlinedContinuation = this.evt.WaitAsync()
+            .ContinueWith(
+                delegate
+                {
+                    continuationStarted.Set();
+
+                    // Arrange to synchronously block the continuation until released,
+                    // which would deadlock if SetAsync's Task does not complete until inlined continuations complete.
+                    Assert.True(setReturned.Wait(UnexpectedTimeout));
+                },
+                TaskContinuationOptions.ExecuteSynchronously);
+
+#pragma warning disable CS0618 // Type or member is obsolete
+        // First, spin off a thread to call SetAsync. This will be blocked.
+        Task.Run(() => this.evt.SetAsync(), TestContext.Current.CancellationToken);
+
+        // Now wait for the continuation to start, to verify that SetAsync has done its work,
+        // even if it can't return to us.
+        Assert.True(continuationStarted.Wait(UnexpectedTimeout));
+
+        // Verify that the event is set, even though SetAsync has not yet returned.
+        Assert.True(this.evt.IsSet);
+
+        // Now call SetAsync again. This time it should return immediately
+        // even though the first call hasn't yet, and it should return a completed Task.
+        Task setTask = this.evt.SetAsync();
+#pragma warning restore CS0618 // Type or member is obsolete
+
+        Assert.True(setTask.IsCompleted);
+
+        // Also verify that WaitAsync returns a completed Task, even though the first SetAsync call hasn't yet returned.
+        Assert.True(this.evt.WaitAsync().IsCompleted);
+
+        // Release the continuation so the test doesn't leak a thread.
+        setReturned.Set();
+
+        // Verify that the inlined continuation has completed and didn't throw.
+        Assert.True(inlinedContinuation.Wait(UnexpectedTimeout));
+    }
+
     [Fact]
     public async Task Blocking()
     {

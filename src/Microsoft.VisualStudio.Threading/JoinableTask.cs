@@ -867,28 +867,28 @@ public partial class JoinableTask : IJoinableTaskDependent
     }
 
     /// <summary>
-    /// Instantiate a <see cref="TaskCompletionSourceWithoutInlining{T}"/> that can track the ultimate result of <see cref="initialDelegate" />.
+    /// Instantiate a <see cref="TaskCompletionSource{T}"/> that can track the ultimate result of <see cref="initialDelegate" />.
     /// </summary>
     /// <returns>The new task completion source.</returns>
     /// <remarks>
     /// The implementation should be sure to instantiate a <see cref="TaskCompletionSource{TResult}"/> that will
     /// NOT inline continuations, since we'll be completing this ourselves, potentially while holding a private lock.
     /// </remarks>
-    internal virtual object CreateTaskCompletionSource() => new TaskCompletionSourceWithoutInlining<EmptyStruct>(allowInliningContinuations: false);
+    internal virtual object CreateTaskCompletionSource() => new TaskCompletionSource<EmptyStruct>(TaskCreationOptions.RunContinuationsAsynchronously);
 
     /// <summary>
-    /// Retrieves the <see cref="TaskCompletionSourceWithoutInlining{T}.Task"/> from a <see cref="TaskCompletionSourceWithoutInlining{T}"/>.
+    /// Retrieves the <see cref="TaskCompletionSource{T}.Task"/> from a <see cref="TaskCompletionSource{T}"/>.
     /// </summary>
     /// <param name="taskCompletionSource">The task completion source.</param>
-    /// <returns>The <see cref="System.Threading.Tasks.Task"/> that will complete with this <see cref="TaskCompletionSourceWithoutInlining{T}"/>.</returns>
-    internal virtual Task GetTaskFromCompletionSource(object taskCompletionSource) => ((TaskCompletionSourceWithoutInlining<EmptyStruct>)taskCompletionSource).Task;
+    /// <returns>The <see cref="System.Threading.Tasks.Task"/> that will complete with this <see cref="TaskCompletionSource{T}"/>.</returns>
+    internal virtual Task GetTaskFromCompletionSource(object taskCompletionSource) => ((TaskCompletionSource<EmptyStruct>)taskCompletionSource).Task;
 
     /// <summary>
-    /// Completes a <see cref="TaskCompletionSourceWithoutInlining{T}"/>.
+    /// Completes a <see cref="TaskCompletionSource{T}"/>.
     /// </summary>
     /// <param name="wrappedTask">The task to read a result from.</param>
-    /// <param name="taskCompletionSource">The <see cref="TaskCompletionSourceWithoutInlining{T}"/> created earlier with <see cref="CreateTaskCompletionSource()"/> to apply the result to.</param>
-    internal virtual void CompleteTaskSourceFromWrappedTask(Task wrappedTask, object taskCompletionSource) => wrappedTask.ApplyResultTo((TaskCompletionSourceWithoutInlining<EmptyStruct>)taskCompletionSource);
+    /// <param name="taskCompletionSource">The <see cref="TaskCompletionSource{T}"/> created earlier with <see cref="CreateTaskCompletionSource()"/> to apply the result to.</param>
+    internal virtual void CompleteTaskSourceFromWrappedTask(Task wrappedTask, object taskCompletionSource) => wrappedTask.ApplyResultTo((TaskCompletionSource<EmptyStruct>)taskCompletionSource);
 
     internal void SetWrappedTask(Task wrappedTask)
     {

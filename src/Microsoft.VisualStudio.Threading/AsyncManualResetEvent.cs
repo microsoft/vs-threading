@@ -2,12 +2,9 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -20,9 +17,9 @@ namespace Microsoft.VisualStudio.Threading;
 public class AsyncManualResetEvent
 {
     /// <summary>
-    /// Whether the task completion source should allow executing continuations synchronously.
+    /// Options to use while creating the <see cref="TaskCompletionSource{TResult}"/> to return from <see cref="WaitAsync()"/>.
     /// </summary>
-    private readonly bool allowInliningAwaiters;
+    private readonly TaskCreationOptions options;
 
     /// <summary>
     /// The object to lock when accessing fields.
@@ -36,21 +33,7 @@ public class AsyncManualResetEvent
     /// This should not need the volatile modifier because it is
     /// always accessed within a lock.
     /// </devremarks>
-    private TaskCompletionSourceWithoutInlining<EmptyStruct> taskCompletionSource;
-
-    /// <summary>
-    /// A flag indicating whether the event is signaled.
-    /// When this is set to true, it's possible that
-    /// <see cref="taskCompletionSource"/>.Task.IsCompleted is still false
-    /// if the completion has been scheduled asynchronously.
-    /// Thus, this field should be the definitive answer as to whether
-    /// the event is signaled because it is synchronously updated.
-    /// </summary>
-    /// <devremarks>
-    /// This should not need the volatile modifier because it is
-    /// always accessed within a lock.
-    /// </devremarks>
-    private bool isSet;
+    private TaskCompletionSource<EmptyStruct> taskCompletionSource;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AsyncManualResetEvent"/> class.
@@ -58,17 +41,14 @@ public class AsyncManualResetEvent
     /// <param name="initialState">A value indicating whether the event should be initially signaled.</param>
     /// <param name="allowInliningAwaiters">
     /// A value indicating whether to allow <see cref="WaitAsync()"/> callers' continuations to execute
-    /// on the thread that calls <see cref="SetAsync()"/> before the call returns.
-    /// <see cref="SetAsync()"/> callers should not hold private locks if this value is <see langword="true" /> to avoid deadlocks.
-    /// When <see langword="false" />, the task returned from <see cref="WaitAsync()"/> may not have fully transitioned to
-    /// its completed state by the time <see cref="SetAsync()"/> returns to its caller.
+    /// on the thread that calls <see cref="Set()"/> before the call returns.
+    /// <see cref="Set()"/> callers should not hold private locks if this value is <see langword="true" /> to avoid deadlocks.
     /// </param>
     public AsyncManualResetEvent(bool initialState = false, bool allowInliningAwaiters = false)
     {
-        this.allowInliningAwaiters = allowInliningAwaiters;
+        this.options = allowInliningAwaiters ? TaskCreationOptions.None : TaskCreationOptions.RunContinuationsAsynchronously;
 
-        this.taskCompletionSource = this.CreateTaskSource();
-        this.isSet = initialState;
+        this.taskCompletionSource = new(this.options);
         if (initialState)
         {
             this.taskCompletionSource.SetResult(EmptyStruct.Instance);
@@ -84,7 +64,7 @@ public class AsyncManualResetEvent
         {
             lock (this.syncObject)
             {
-                return this.isSet;
+                return this.taskCompletionSource.Task.IsCompleted;
             }
         }
     }
@@ -112,40 +92,21 @@ public class AsyncManualResetEvent
     /// </summary>
     /// <returns>A task that completes when the signal has been set.</returns>
     /// <remarks>
-    /// <para>
-    /// On .NET versions prior to 4.6:
-    /// This method may return before the signal set has propagated (so <see cref="IsSet"/> may return <see langword="false" /> for a bit more if called immediately).
-    /// The returned task completes when the signal has definitely been set.
-    /// </para>
-    /// <para>
-    /// On .NET 4.6 and later:
     /// This method is not asynchronous. The returned Task is always completed.
-    /// </para>
     /// </remarks>
     [Obsolete("Use Set() instead."), EditorBrowsable(EditorBrowsableState.Never)]
     public Task SetAsync()
     {
-        TaskCompletionSourceWithoutInlining<EmptyStruct>? tcs = null;
-        bool transitionRequired = false;
+        TaskCompletionSource<EmptyStruct>? tcs = null;
         lock (this.syncObject)
         {
-            transitionRequired = !this.isSet;
             tcs = this.taskCompletionSource;
-            this.isSet = true;
         }
 
-        // Snap the Task that is exposed to the outside so we return that one.
-        // Once we complete the TaskCompletionSourceWithoutInlinining's task,
-        // the Task property will return the inner Task.
+        tcs.TrySetResult(default);
+
         // SetAsync should return the same Task that WaitAsync callers would have observed previously.
-        Task result = tcs.Task;
-
-        if (transitionRequired)
-        {
-            tcs.TrySetResult(default(EmptyStruct));
-        }
-
-        return result;
+        return tcs.Task;
     }
 
     /// <summary>
@@ -165,10 +126,9 @@ public class AsyncManualResetEvent
     {
         lock (this.syncObject)
         {
-            if (this.isSet)
+            if (this.taskCompletionSource.Task.IsCompleted)
             {
-                this.taskCompletionSource = this.CreateTaskSource();
-                this.isSet = false;
+                this.taskCompletionSource = new(this.options);
             }
         }
     }
@@ -178,20 +138,12 @@ public class AsyncManualResetEvent
     /// </summary>
     /// <returns>A task that completes when the signal has been set.</returns>
     /// <remarks>
-    /// <para>
-    /// On .NET versions prior to 4.6:
-    /// This method may return before the signal set has propagated (so <see cref="IsSet"/> may return <see langword="false" /> for a bit more if called immediately).
-    /// The returned task completes when the signal has definitely been set.
-    /// </para>
-    /// <para>
-    /// On .NET 4.6 and later:
     /// This method is not asynchronous. The returned Task is always completed.
-    /// </para>
     /// </remarks>
     [Obsolete("Use PulseAll() instead."), EditorBrowsable(EditorBrowsableState.Never)]
     public Task PulseAllAsync()
     {
-        TaskCompletionSourceWithoutInlining<EmptyStruct>? tcs = null;
+        TaskCompletionSource<EmptyStruct>? tcs = null;
         lock (this.syncObject)
         {
             // Atomically replace the completion source with a new, uncompleted source
@@ -200,17 +152,13 @@ public class AsyncManualResetEvent
             // continue to return completed Tasks due to a Pulse method which should
             // execute instantaneously.
             tcs = this.taskCompletionSource;
-            this.taskCompletionSource = this.CreateTaskSource();
-            this.isSet = false;
+            this.taskCompletionSource = new(this.options);
         }
 
-        // Snap the Task that is exposed to the outside so we return that one.
-        // Once we complete the TaskCompletionSourceWithoutInlinining's task,
-        // the Task property will return the inner Task.
+        tcs.TrySetResult(default);
+
         // PulseAllAsync should return the same Task that WaitAsync callers would have observed previously.
-        Task result = tcs.Task;
-        tcs.TrySetResult(default(EmptyStruct));
-        return result;
+        return tcs.Task;
     }
 
     /// <summary>
@@ -230,13 +178,5 @@ public class AsyncManualResetEvent
     public TaskAwaiter GetAwaiter()
     {
         return this.WaitAsync().GetAwaiter();
-    }
-
-    /// <summary>
-    /// Creates a new TaskCompletionSource to represent an unset event.
-    /// </summary>
-    private TaskCompletionSourceWithoutInlining<EmptyStruct> CreateTaskSource()
-    {
-        return new TaskCompletionSourceWithoutInlining<EmptyStruct>(this.allowInliningAwaiters);
     }
 }
