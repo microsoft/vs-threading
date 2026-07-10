@@ -191,29 +191,6 @@ class Test {
     }
 
     [Fact]
-    public async Task IAsyncEnumeratorOfTReturningMethodWithoutSuffix_GeneratesWarning()
-    {
-        var test = @"
-using System.Collections.Generic;
-
-class Test {
-    IAsyncEnumerator<int> Foo() => default;
-}
-";
-
-        var withFix = @"
-using System.Collections.Generic;
-
-class Test {
-    IAsyncEnumerator<int> FooAsync() => default;
-}
-";
-
-        DiagnosticResult expected = CSVerify.Diagnostic(AddSuffixDescriptor).WithSpan(5, 27, 5, 30);
-        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
-    }
-
-    [Fact]
     public async Task HomemadeIAsyncEnumerableOfTReturningMethodWithoutSuffix_GeneratesWarning()
     {
         var test = @"
@@ -416,13 +393,13 @@ class Test {
     }
 
     [Fact]
-    public async Task IAsyncEnumeratorOfTReturningMethodWithSuffix_GeneratesNoWarning()
+    public async Task IAsyncEnumeratorOfTReturningMethodWithoutSuffix_GeneratesNoWarning()
     {
         var test = @"
 using System.Collections.Generic;
 
 class Test {
-    IAsyncEnumerator<int> FooAsync() => null;
+    IAsyncEnumerator<int> GetEnumerator() => null;
 }
 ";
         await CSVerify.VerifyAnalyzerAsync(test);
