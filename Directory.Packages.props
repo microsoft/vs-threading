@@ -6,9 +6,8 @@
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
     <MicrosoftTestingPlatformVersion>2.3.0</MicrosoftTestingPlatformVersion>
     <MicroBuildVersion>2.0.226</MicroBuildVersion>
-    <CodeAnalysisVersion>3.11.0</CodeAnalysisVersion>
+    <CodeAnalysisVersion>5.6.0</CodeAnalysisVersion>
     <CodefixTestingVersion>1.1.4</CodefixTestingVersion>
-    <CodeAnalysisAnalyzerVersion>3.11.0-beta1.26226.5</CodeAnalysisAnalyzerVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="DNNE" Version="2.1.2" />
@@ -41,11 +40,6 @@
     <PackageVersion Include="Xunit.Combinatorial" Version="2.0.24" />
     <PackageVersion Include="Xunit.StaFact" Version="3.0.13" />
   </ItemGroup>
-  <!-- Analyzer projects must use versions of these packages that the VS host provides.
-       Pinning here ensures a dependency update bot won't silently upgrade them to versions VS can't load. -->
-  <ItemGroup Condition="'$(IsAnalyzerProject)'=='true'">
-    <PackageVersion Update="System.Memory" Version="4.5.5" />
-  </ItemGroup>
   <ItemGroup Label="Library.Template">
     <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.9.0" />
     <PackageVersion Include="Microsoft.Testing.Extensions.CrashDump" Version="$(MicrosoftTestingPlatformVersion)" />
@@ -56,7 +50,7 @@
     <PackageVersion Include="xunit.v3.mtp-v2" Version="3.2.2" />
   </ItemGroup>
   <ItemGroup>
-    <GlobalPackageReference Include="Microsoft.CodeAnalysis.ResxSourceGenerator" Version="$(CodeAnalysisAnalyzerVersion)" />
+    <GlobalPackageReference Include="Microsoft.CodeAnalysis.ResxSourceGenerator" Version="5.0.0-1.25277.114" />
   </ItemGroup>
   <ItemGroup Label="Library.Template">
     <GlobalPackageReference Include="CSharpIsNullAnalyzer" Version="0.1.593" />

@@ -70,8 +70,8 @@ public class VSTHRD200UseAsyncNamingConventionCodeFix : CodeFixProvider
             Solution? updatedSolution = await Renamer.RenameSymbolAsync(
                 solution,
                 methodSymbol,
+                default,
                 this.newName,
-                solution.Workspace.Options,
                 cancellationToken).ConfigureAwait(false);
 
             return updatedSolution;

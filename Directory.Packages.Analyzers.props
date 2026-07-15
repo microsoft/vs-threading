@@ -1,0 +1,15 @@
+<Project>
+  <PropertyGroup>
+    <CodeAnalysisVersionForAnalyzers>4.14.0</CodeAnalysisVersionForAnalyzers>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- These versions are chosen to support VS 2022 Update 14. -->
+    <PackageVersion Update="Microsoft.CodeAnalysis" Version="$(CodeAnalysisVersionForAnalyzers)" />
+    <PackageVersion Update="Microsoft.CodeAnalysis.Common" Version="$(CodeAnalysisVersionForAnalyzers)" />
+    <PackageVersion Update="Microsoft.CodeAnalysis.CSharp" Version="$(CodeAnalysisVersionForAnalyzers)" />
+    <PackageVersion Update="Microsoft.CodeAnalysis.VisualBasic" Version="$(CodeAnalysisVersionForAnalyzers)" />
+    <PackageVersion Update="System.Collections.Immutable" Version="9.0.0" />
+    <PackageVersion Update="System.Memory" Version="4.6.3" />
+    <PackageVersion Update="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
+  </ItemGroup>
+</Project>
