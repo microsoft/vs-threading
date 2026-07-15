@@ -5,5 +5,7 @@
     <Using Remove="System.Net.Http" Condition="'$(TargetFrameworkIdentifier)'=='.NETFramework'" />
   </ItemGroup>
 
+  <Import Project="Directory.Packages.Analyzers.props" Condition="'$(IsAnalyzerProject)'=='true'" />
+
   <Import Project="Directory.Traversal.targets" Condition="'$(IsTraversal)'=='true'" />
 </Project>
