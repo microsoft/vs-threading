@@ -10,14 +10,14 @@
       "rollForward": false
     },
     "dotnet-coverage": {
-      "version": "18.8.0",
+      "version": "18.9.0",
       "commands": [
         "dotnet-coverage"
       ],
       "rollForward": false
     },
     "nbgv": {
-      "version": "3.10.85",
+      "version": "3.10.91",
       "commands": [
         "nbgv"
       ],
