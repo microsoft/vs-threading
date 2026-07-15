@@ -160,7 +160,7 @@ internal static class FixUtils
                 Solution? solution = await Renamer.RenameSymbolAsync(
                     document.Project.Solution,
                     methodSymbol,
-                    default,
+                    default(SymbolRenameOptions),
                     newName,
                     cancellationToken).ConfigureAwait(false);
                 document = solution.GetDocumentOrThrow(document.Id);
