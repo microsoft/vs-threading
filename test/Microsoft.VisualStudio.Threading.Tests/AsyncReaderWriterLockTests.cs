@@ -4085,6 +4085,70 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
     }
 
     [Fact]
+    public async Task UpgradeableReadLockForksAndAsksForReadLock()
+    {
+        var lck = new LockWithForkDetection();
+        using (await lck.UpgradeableReadLockAsync())
+        {
+            await Task.Run(async delegate
+            {
+                // This requests a read lock from a thread pool thread (no NonConcurrentSynchronizationContext)
+                // while holding an upgradeable read lock. This is a fork of the exclusive context and should
+                // be detected via the OnLockForkDetected virtual method.
+                using (await lck.ReadLockAsync())
+                {
+                    Assert.True(lck.IsReadLockHeld);
+                }
+            });
+        }
+
+        Assert.Equal(1, lck.ForkDetectedCount);
+        lck.Complete();
+        Assert.True(lck.Completion.Wait(UnexpectedTimeout));
+    }
+
+    [Fact]
+    public async Task UpgradeableReadLockDoesNotForkOnCorrectContext()
+    {
+        var lck = new LockWithForkDetection();
+        using (await lck.UpgradeableReadLockAsync())
+        {
+            // Request a nested read lock on the correct context (with NonConcurrentSynchronizationContext).
+            // This should NOT trigger fork detection.
+            using (await lck.ReadLockAsync())
+            {
+                Assert.True(lck.IsReadLockHeld);
+            }
+        }
+
+        Assert.Equal(0, lck.ForkDetectedCount);
+        lck.Complete();
+        Assert.True(lck.Completion.Wait(UnexpectedTimeout));
+    }
+
+    [Fact]
+    public async Task ReadLockForkFromReadOnlyContextDoesNotTriggerDetection()
+    {
+        var lck = new LockWithForkDetection();
+        using (await lck.ReadLockAsync())
+        {
+            await Task.Run(async delegate
+            {
+                // Fork from a read-only context. This should NOT trigger fork detection
+                // because read locks don't require NonConcurrentSynchronizationContext.
+                using (await lck.ReadLockAsync())
+                {
+                    Assert.True(lck.IsReadLockHeld);
+                }
+            });
+        }
+
+        Assert.Equal(0, lck.ForkDetectedCount);
+        lck.Complete();
+        Assert.True(lck.Completion.Wait(UnexpectedTimeout));
+    }
+
+    [Fact]
     public async Task WriteNestsReadWithWriteReleasedFirst()
     {
         await Assert.ThrowsAsync<InvalidOperationException>(async delegate
@@ -5325,6 +5389,18 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
         public CriticalErrorException(Exception innerException)
             : base(innerException?.Message, innerException)
         {
+        }
+    }
+
+    private class LockWithForkDetection : AsyncReaderWriterLock
+    {
+        private int forkDetectedCount;
+
+        internal int ForkDetectedCount => this.forkDetectedCount;
+
+        protected override void OnLockForkDetected()
+        {
+            Interlocked.Increment(ref this.forkDetectedCount);
         }
     }
 }
