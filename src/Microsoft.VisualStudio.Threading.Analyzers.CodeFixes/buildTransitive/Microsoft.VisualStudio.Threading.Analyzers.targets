@@ -1,8 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <AdditionalFiles Include="$(MSBuildThisFileDirectory)AdditionalFiles\**">
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)AdditionalFiles\*.txt">
       <Visible>false</Visible>
     </AdditionalFiles>
+    <Compile Include="$(MSBuildThisFileDirectory)AdditionalFiles\*.cs" Link="%(Filename)%(Extension)">
+      <Visible>false</Visible>
+    </Compile>
   </ItemGroup>
 </Project>
