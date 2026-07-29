@@ -710,6 +710,24 @@ public partial class AsyncReaderWriterLock : IDisposable
     }
 
     /// <summary>
+    /// Invoked when a nested lock request is detected from a forked execution context
+    /// of an upgradeable read lock holder — specifically, when the calling thread could hold
+    /// an active lock (it is not an STA thread) but lacks the required
+    /// <see cref="NonConcurrentSynchronizationContext"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>This typically indicates that code holding an upgradeable read lock used
+    /// <c>ConfigureAwait(false)</c> or otherwise left the <see cref="NonConcurrentSynchronizationContext"/>,
+    /// then requested a nested read lock on the forked context.</para>
+    /// <para>This method is called <em>outside</em> the lock's private synchronization object.
+    /// Implementations should be lightweight (e.g., setting a flag or posting a telemetry event).</para>
+    /// <para>The default implementation does nothing. Override to log diagnostics or telemetry.</para>
+    /// </remarks>
+    protected virtual void OnLockForkDetected()
+    {
+    }
+
+    /// <summary>
     /// Invoked when the lock detects an internal error or illegal usage pattern that
     /// indicates a serious flaw that should be immediately reported to the application
     /// and/or bring down the process to avoid hangs or data corruption.
@@ -1072,6 +1090,7 @@ public partial class AsyncReaderWriterLock : IDisposable
     {
         bool issued = false;
         bool isOrdinaryNestedLock = false; // ordinary nested lock is a nested lock always granted immediately. We don't need write ETW event to reduce noise in traces.
+        bool lockForkDetected = false;
 
         lock (this.syncObject)
         {
@@ -1097,6 +1116,21 @@ public partial class AsyncReaderWriterLock : IDisposable
                     switch (awaiter.Kind)
                     {
                         case LockKind.Read:
+                            // Detect fork from upgradeable read context: the caller holds an active
+                            // upgradeable read lock in its nesting chain but is executing on a thread
+                            // that lacks the NonConcurrentSynchronizationContext, which typically means
+                            // code used ConfigureAwait(false) and forked off the exclusive context.
+                            // We skip this when hasWrite because the write fork path below already
+                            // handles that case (with a hard failure), and we only report on the
+                            // first request (!previouslyQueued) to avoid duplicate telemetry from
+                            // PendAwaiter retries.
+                            if (!previouslyQueued && hasUpgradeableRead && !hasWrite &&
+                                this.CanCurrentThreadHoldActiveLock &&
+                                !(SynchronizationContext.Current is NonConcurrentSynchronizationContext))
+                            {
+                                lockForkDetected = true;
+                            }
+
                             if (this.issuedWriteLocks.Count == 0 && (skipPendingWriteLockCheck || this.waitingWriters.Count == 0))
                             {
                                 issued = true;
@@ -1176,6 +1210,11 @@ public partial class AsyncReaderWriterLock : IDisposable
             {
                 this.GetActiveLockSet(awaiter.Kind).Add(awaiter);
             }
+        }
+
+        if (lockForkDetected)
+        {
+            this.OnLockForkDetected();
         }
 
         if (issued)
