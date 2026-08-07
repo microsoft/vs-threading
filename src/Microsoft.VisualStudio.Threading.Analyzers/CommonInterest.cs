@@ -350,6 +350,11 @@ public static class CommonInterest
     /// <returns><see langword="true"/> if <paramref name="value"/> appears in <paramref name="text"/>; otherwise, <see langword="false"/>.</returns>
     public static bool Contains(SourceText text, char value)
     {
+        if (text is null)
+        {
+            throw new ArgumentNullException(nameof(text));
+        }
+
         for (int i = 0; i < text.Length; i++)
         {
             if (text[i] == value)
