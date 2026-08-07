@@ -25,6 +25,16 @@ all use `vs-threading.TopicA.txt` as the filename for their `AdditionalFiles` it
 
 These files may contain blank lines or comments that start with the `#` character.
 
+Files that contain a backtick use metadata type names. In these files, generic types include
+a backtick followed by the number of type parameters. For example, the metadata name for
+`DbSet<TEntity>` is ``DbSet`1``. Including the arity distinguishes a generic type from a
+non-generic type with the same name.
+
+For backward compatibility, files without any backticks match type names without regard
+to generic arity. For example, `DbSet` in such a file matches both a non-generic `DbSet`
+and every generic `DbSet<T...>` type. Add a backtick anywhere in the file to opt into
+exact metadata-name matching for every entry in that file.
+
 ## Methods that assert the main thread
 
 Code may assert it is running on the main thread by calling a method that is designed
@@ -92,3 +102,5 @@ excluded from VSTHRD103 analysis by specifying them in a configuration file.
 **Line format:** `[Namespace.TypeName]::MethodName`
 
 **Sample:** `[System.Data.SqlClient.SqlDataReader]::Read`
+
+**Generic sample:** ``[Microsoft.EntityFrameworkCore.DbSet`1]::Add``

@@ -1364,6 +1364,92 @@ namespace TestNamespace {
     }
 
     [Fact]
+    public async Task GenericTypeExclusion_DoesNotExcludeNonGenericType()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test {
+                async Task T() {
+                    TestNamespace.GenericTestClass<int>.SlowSyncMethod();
+                    TestNamespace.GenericTestClass.{|#0:SlowSyncMethod|}();
+                }
+            }
+
+            namespace TestNamespace {
+                class GenericTestClass {
+                    public static void SlowSyncMethod() { }
+                    public static Task SlowSyncMethodAsync() => Task.CompletedTask;
+                }
+
+                class GenericTestClass<T> {
+                    public static void SlowSyncMethod() { }
+                    public static Task SlowSyncMethodAsync() => Task.CompletedTask;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test, CSVerify.Diagnostic(Descriptor).WithLocation(0).WithArguments("SlowSyncMethod", "SlowSyncMethodAsync"));
+    }
+
+    [Fact]
+    public async Task NonGenericTypeExclusion_DoesNotExcludeGenericType()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test {
+                async Task T() {
+                    TestNamespace.TestClass<int>.{|#0:SlowSyncMethod|}();
+                }
+            }
+
+            namespace TestNamespace {
+                class TestClass {
+                    public static void SlowSyncMethod() { }
+                    public static Task SlowSyncMethodAsync() => Task.CompletedTask;
+                }
+
+                class TestClass<T> {
+                    public static void SlowSyncMethod() { }
+                    public static Task SlowSyncMethodAsync() => Task.CompletedTask;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test, CSVerify.Diagnostic(Descriptor).WithLocation(0).WithArguments("SlowSyncMethod", "SlowSyncMethodAsync"));
+    }
+
+    [Fact]
+    public async Task LegacyFileExclusion_MatchesAllArities()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test {
+                async Task T() {
+                    TestNamespace.LegacyTestClass.SlowSyncMethod();
+                    TestNamespace.LegacyTestClass<int>.SlowSyncMethod();
+                }
+            }
+
+            namespace TestNamespace {
+                class LegacyTestClass {
+                    public static void SlowSyncMethod() { }
+                    public static Task SlowSyncMethodAsync() => Task.CompletedTask;
+                }
+
+                class LegacyTestClass<T> {
+                    public static void SlowSyncMethod() { }
+                    public static Task SlowSyncMethodAsync() => Task.CompletedTask;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
     public async Task SyncMethodCallInAsyncMethod_NotExcludedViaAdditionalFiles_GeneratesWarning()
     {
         var test = @"
