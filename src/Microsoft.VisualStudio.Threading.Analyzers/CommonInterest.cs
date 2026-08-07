@@ -390,7 +390,7 @@ public static class CommonInterest
         return from file in analyzerOptions.AdditionalFiles.OrderBy(x => x.Path, StringComparer.Ordinal)
                let fileName = Path.GetFileName(file.Path)
                where fileNamePattern.IsMatch(fileName)
-               let text = file.GetText(cancellationToken)
+               let text = file.GetText(cancellationToken) ?? throw new InvalidOperationException($"Unable to read additional file: {file.Path}")
                select text;
     }
 
@@ -487,16 +487,14 @@ public static class CommonInterest
             }
 
             if (!this.IsMember
-                && (this.IsWildcard || typeSymbol.MetadataName == this.Type.Name)
-                && typeSymbol.BelongsToNamespace(this.Type.Namespace))
+                && ((this.IsWildcard && typeSymbol.BelongsToNamespace(this.Type.Namespace)) || this.Type.IsMatch(typeSymbol)))
             {
                 return true;
             }
 
             if (this.IsMember
                 && memberSymbol?.Name == this.Member.Name
-                && typeSymbol.MetadataName == this.Type.Name
-                && typeSymbol.BelongsToNamespace(this.Type.Namespace))
+                && this.Type.IsMatch(typeSymbol))
             {
                 return true;
             }
