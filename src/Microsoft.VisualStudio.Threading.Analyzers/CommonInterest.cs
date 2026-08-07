@@ -343,6 +343,25 @@ public static class CommonInterest
     }
 
     /// <summary>
+    /// Determines whether a character appears in source text without materializing the text as a string.
+    /// </summary>
+    /// <param name="text">The source text to search.</param>
+    /// <param name="value">The character to find.</param>
+    /// <returns><see langword="true"/> if <paramref name="value"/> appears in <paramref name="text"/>; otherwise, <see langword="false"/>.</returns>
+    public static bool Contains(SourceText text, char value)
+    {
+        for (int i = 0; i < text.Length; i++)
+        {
+            if (text[i] == value)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// Splits a qualified type name (e.g. <c>My.Namespace.MyType</c>) into its containing namespace
     /// segments and the simple type name, without allocating an intermediate joined string.
     /// </summary>
@@ -392,25 +411,6 @@ public static class CommonInterest
                where fileNamePattern.IsMatch(fileName)
                let text = file.GetText(cancellationToken) ?? throw new InvalidOperationException($"Unable to read additional file: {file.Path}")
                select text;
-    }
-
-    /// <summary>
-    /// Determines whether a character appears in source text without materializing the text as a string.
-    /// </summary>
-    /// <param name="text">The source text to search.</param>
-    /// <param name="value">The character to find.</param>
-    /// <returns><see langword="true"/> if <paramref name="value"/> appears in <paramref name="text"/>; otherwise, <see langword="false"/>.</returns>
-    public static bool Contains(SourceText text, char value)
-    {
-        for (int i = 0; i < text.Length; i++)
-        {
-            if (text[i] == value)
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private static bool TestGetAwaiterMethod(IMethodSymbol getAwaiterMethod)
