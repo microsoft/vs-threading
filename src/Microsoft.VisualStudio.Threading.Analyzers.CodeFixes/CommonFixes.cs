@@ -63,17 +63,4 @@ internal static class CommonFixes
 
         return result.ToImmutable();
     }
-
-    private static bool Contains(SourceText text, char value)
-    {
-        for (int i = 0; i < text.Length; i++)
-        {
-            if (text[i] == value)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
 }

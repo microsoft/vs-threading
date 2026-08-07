@@ -394,7 +394,13 @@ public static class CommonInterest
                select text;
     }
 
-    private static bool Contains(SourceText text, char value)
+    /// <summary>
+    /// Determines whether a character appears in source text without materializing the text as a string.
+    /// </summary>
+    /// <param name="text">The source text to search.</param>
+    /// <param name="value">The character to find.</param>
+    /// <returns><see langword="true"/> if <paramref name="value"/> appears in <paramref name="text"/>; otherwise, <see langword="false"/>.</returns>
+    public static bool Contains(SourceText text, char value)
     {
         for (int i = 0; i < text.Length; i++)
         {
