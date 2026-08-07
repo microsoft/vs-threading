@@ -328,9 +328,9 @@ public static class CommonInterest
     }
 
     public static QualifiedMember ParseAdditionalFileMethodLine(string line)
-        => ParseAdditionalFileMethodLine(line, matchAnyArity: false);
+        => ParseAdditionalFileMethodLine(line, matchAnyArity: line.IndexOf('`') < 0);
 
-    private static QualifiedMember ParseAdditionalFileMethodLine(string line, bool matchAnyArity)
+    public static QualifiedMember ParseAdditionalFileMethodLine(string line, bool matchAnyArity)
     {
         if (!CommonInterestParsing.TryParseMemberReference(line, out ReadOnlyMemory<char> typeNameMemory, out string? memberName))
         {

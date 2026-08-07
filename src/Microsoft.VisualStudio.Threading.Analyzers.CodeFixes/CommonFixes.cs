@@ -26,15 +26,19 @@ internal static class CommonFixes
     internal static async Task<ImmutableArray<QualifiedMember>> ReadMethodsAsync(CodeFixContext codeFixContext, Regex fileNamePattern, CancellationToken cancellationToken)
     {
         ImmutableArray<QualifiedMember>.Builder? result = ImmutableArray.CreateBuilder<QualifiedMember>();
-        foreach (string line in await ReadAdditionalFilesAsync(codeFixContext.Document.Project.AdditionalDocuments, fileNamePattern, cancellationToken))
+        foreach (SourceText text in await ReadAdditionalFileTextsAsync(codeFixContext.Document.Project.AdditionalDocuments, fileNamePattern, cancellationToken))
         {
-            result.Add(ParseAdditionalFileMethodLine(line));
+            bool matchAnyArity = !Contains(text, '`');
+            foreach (string line in ReadLinesFromAdditionalFile(text))
+            {
+                result.Add(ParseAdditionalFileMethodLine(line, matchAnyArity));
+            }
         }
 
         return result.ToImmutable();
     }
 
-    internal static async Task<ImmutableArray<string>> ReadAdditionalFilesAsync(IEnumerable<TextDocument> additionalFiles, Regex fileNamePattern, CancellationToken cancellationToken)
+    internal static async Task<ImmutableArray<SourceText>> ReadAdditionalFileTextsAsync(IEnumerable<TextDocument> additionalFiles, Regex fileNamePattern, CancellationToken cancellationToken)
     {
         if (additionalFiles is null)
         {
@@ -50,13 +54,26 @@ internal static class CommonFixes
                                           let fileName = Path.GetFileName(doc.Name)
                                           where fileNamePattern.IsMatch(fileName)
                                           select doc;
-        ImmutableArray<string>.Builder? result = ImmutableArray.CreateBuilder<string>();
+        ImmutableArray<SourceText>.Builder? result = ImmutableArray.CreateBuilder<SourceText>();
         foreach (TextDocument? doc in docs)
         {
-            SourceText? text = await doc.GetTextAsync(cancellationToken);
-            result.AddRange(ReadLinesFromAdditionalFile(text));
+            SourceText text = await doc.GetTextAsync(cancellationToken);
+            result.Add(text);
         }
 
         return result.ToImmutable();
+    }
+
+    private static bool Contains(SourceText text, char value)
+    {
+        for (int i = 0; i < text.Length; i++)
+        {
+            if (text[i] == value)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
