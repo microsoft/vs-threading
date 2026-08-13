@@ -40,7 +40,9 @@ public static class CommonInterest
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemThreadingTasks, nameof(Task)), nameof(Task.WaitAny)), null),
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemRuntimeCompilerServices, nameof(ConfiguredTaskAwaitable.ConfiguredTaskAwaiter)), nameof(ConfiguredTaskAwaitable.ConfiguredTaskAwaiter.GetResult)), null),
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemRuntimeCompilerServices, nameof(TaskAwaiter)), nameof(TaskAwaiter.GetResult)), null),
+        new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemRuntimeCompilerServices, nameof(TaskAwaiter) + "`1"), nameof(TaskAwaiter.GetResult)), null),
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemRuntimeCompilerServices, nameof(ValueTaskAwaiter)), nameof(ValueTaskAwaiter.GetResult)), null),
+        new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemRuntimeCompilerServices, nameof(ValueTaskAwaiter) + "`1"), nameof(ValueTaskAwaiter.GetResult)), null),
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemRuntimeCompilerServices, nameof(ConfiguredValueTaskAwaitable.ConfiguredValueTaskAwaiter)), nameof(ConfiguredValueTaskAwaitable.ConfiguredValueTaskAwaiter.GetResult)), null),
     ];
 
@@ -53,7 +55,9 @@ public static class CommonInterest
     public static readonly ImmutableArray<SyncBlockingMethod> SyncBlockingProperties =
     [
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemThreadingTasks, nameof(Task)), nameof(Task<int>.Result)), null),
+        new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemThreadingTasks, nameof(Task) + "`1"), nameof(Task<int>.Result)), null),
         new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemThreadingTasks, nameof(ValueTask)), nameof(ValueTask<int>.Result)), null),
+        new SyncBlockingMethod(new QualifiedMember(new QualifiedType(Namespaces.SystemThreadingTasks, nameof(ValueTask) + "`1"), nameof(ValueTask<int>.Result)), null),
     ];
 
     public static readonly IEnumerable<QualifiedMember> ThreadAffinityTestingMethods =
@@ -63,6 +67,7 @@ public static class CommonInterest
 
     public static readonly ImmutableArray<QualifiedMember> TaskConfigureAwait = ImmutableArray.Create(
         new QualifiedMember(new QualifiedType(Types.Task.Namespace, Types.Task.TypeName), nameof(Task.ConfigureAwait)),
+        new QualifiedMember(new QualifiedType(Types.Task.Namespace, Types.Task.TypeName + "`1"), nameof(Task.ConfigureAwait)),
         new QualifiedMember(new QualifiedType(Types.AwaitExtensions.Namespace, Types.AwaitExtensions.TypeName), Types.AwaitExtensions.ConfigureAwaitRunInline));
 
     private const RegexOptions FileNamePatternRegexOptions = RegexOptions.IgnoreCase | RegexOptions.Singleline;
@@ -71,25 +76,35 @@ public static class CommonInterest
 
     public static IEnumerable<QualifiedMember> ReadMethods(AnalyzerOptions analyzerOptions, Regex fileNamePattern, CancellationToken cancellationToken)
     {
-        foreach (string line in ReadAdditionalFiles(analyzerOptions, fileNamePattern, cancellationToken))
+        foreach (SourceText text in ReadAdditionalFileTexts(analyzerOptions, fileNamePattern, cancellationToken))
         {
-            yield return ParseAdditionalFileMethodLine(line);
+            ImmutableArray<string> lines = ReadLinesFromAdditionalFile(text).ToImmutableArray();
+            bool matchAnyArity = !lines.Any(line => line.IndexOf('`') >= 0);
+            foreach (string line in lines)
+            {
+                yield return ParseAdditionalFileMethodLine(line, matchAnyArity);
+            }
         }
     }
 
     public static IEnumerable<TypeMatchSpec> ReadTypesAndMembers(AnalyzerOptions analyzerOptions, Regex fileNamePattern, CancellationToken cancellationToken)
     {
-        foreach (string line in ReadAdditionalFiles(analyzerOptions, fileNamePattern, cancellationToken))
+        foreach (SourceText text in ReadAdditionalFileTexts(analyzerOptions, fileNamePattern, cancellationToken))
         {
-            if (!CommonInterestParsing.TryParseNegatableTypeOrMemberReference(line, out bool negated, out ReadOnlyMemory<char> typeNameMemory, out string? memberNameValue))
+            ImmutableArray<string> lines = ReadLinesFromAdditionalFile(text).ToImmutableArray();
+            bool matchAnyArity = !lines.Any(line => line.IndexOf('`') >= 0);
+            foreach (string line in lines)
             {
-                throw new InvalidOperationException($"Parsing error on line: {line}");
-            }
+                if (!CommonInterestParsing.TryParseNegatableTypeOrMemberReference(line, out bool negated, out ReadOnlyMemory<char> typeNameMemory, out string? memberNameValue))
+                {
+                    throw new InvalidOperationException($"Parsing error on line: {line}");
+                }
 
-            (ImmutableArray<string> containingNamespace, string? typeName) = SplitQualifiedIdentifier(typeNameMemory);
-            var type = new QualifiedType(containingNamespace, typeName);
-            QualifiedMember member = memberNameValue is not null ? new QualifiedMember(type, memberNameValue) : default(QualifiedMember);
-            yield return new TypeMatchSpec(type, member, negated);
+                (ImmutableArray<string> containingNamespace, string? typeName) = SplitQualifiedIdentifier(typeNameMemory);
+                var type = new QualifiedType(containingNamespace, typeName, matchAnyArity);
+                QualifiedMember member = memberNameValue is not null ? new QualifiedMember(type, memberNameValue) : default(QualifiedMember);
+                yield return new TypeMatchSpec(type, member, negated);
+            }
         }
     }
 
@@ -105,12 +120,7 @@ public static class CommonInterest
             throw new ArgumentNullException(nameof(fileNamePattern));
         }
 
-        IEnumerable<SourceText>? docs = from file in analyzerOptions.AdditionalFiles.OrderBy(x => x.Path, StringComparer.Ordinal)
-                                        let fileName = Path.GetFileName(file.Path)
-                                        where fileNamePattern.IsMatch(fileName)
-                                        let text = file.GetText(cancellationToken)
-                                        select text;
-        return docs.SelectMany(ReadLinesFromAdditionalFile);
+        return ReadAdditionalFileTexts(analyzerOptions, fileNamePattern, cancellationToken).SelectMany(ReadLinesFromAdditionalFile);
     }
 
     public static bool Contains(this ImmutableArray<QualifiedMember> methods, ISymbol symbol)
@@ -320,6 +330,9 @@ public static class CommonInterest
     }
 
     public static QualifiedMember ParseAdditionalFileMethodLine(string line)
+        => ParseAdditionalFileMethodLine(line, matchAnyArity: true);
+
+    public static QualifiedMember ParseAdditionalFileMethodLine(string line, bool matchAnyArity)
     {
         if (!CommonInterestParsing.TryParseMemberReference(line, out ReadOnlyMemory<char> typeNameMemory, out string? memberName))
         {
@@ -327,7 +340,7 @@ public static class CommonInterest
         }
 
         (ImmutableArray<string> containingNamespace, string? typeName) = SplitQualifiedIdentifier(typeNameMemory);
-        var containingType = new QualifiedType(containingNamespace, typeName);
+        var containingType = new QualifiedType(containingNamespace, typeName, matchAnyArity);
         return new QualifiedMember(containingType, memberName!);
     }
 
@@ -362,6 +375,25 @@ public static class CommonInterest
         }
 
         return (nsBuilder.ToImmutable(), typeName);
+    }
+
+    private static IEnumerable<SourceText> ReadAdditionalFileTexts(AnalyzerOptions analyzerOptions, Regex fileNamePattern, CancellationToken cancellationToken)
+    {
+        if (analyzerOptions is null)
+        {
+            throw new ArgumentNullException(nameof(analyzerOptions));
+        }
+
+        if (fileNamePattern is null)
+        {
+            throw new ArgumentNullException(nameof(fileNamePattern));
+        }
+
+        return from file in analyzerOptions.AdditionalFiles.OrderBy(x => x.Path, StringComparer.Ordinal)
+               let fileName = Path.GetFileName(file.Path)
+               where fileNamePattern.IsMatch(fileName)
+               let text = file.GetText(cancellationToken) ?? throw new InvalidOperationException($"Unable to read additional file: {file.Path}")
+               select text;
     }
 
     private static bool TestGetAwaiterMethod(IMethodSymbol getAwaiterMethod)
@@ -444,16 +476,14 @@ public static class CommonInterest
             }
 
             if (!this.IsMember
-                && (this.IsWildcard || typeSymbol.Name == this.Type.Name)
-                && typeSymbol.BelongsToNamespace(this.Type.Namespace))
+                && ((this.IsWildcard && typeSymbol.BelongsToNamespace(this.Type.Namespace)) || this.Type.IsMatch(typeSymbol)))
             {
                 return true;
             }
 
             if (this.IsMember
                 && memberSymbol?.Name == this.Member.Name
-                && typeSymbol.Name == this.Type.Name
-                && typeSymbol.BelongsToNamespace(this.Type.Namespace))
+                && this.Type.IsMatch(typeSymbol))
             {
                 return true;
             }
@@ -465,18 +495,33 @@ public static class CommonInterest
     public readonly struct QualifiedType
     {
         public QualifiedType(ImmutableArray<string> containingTypeNamespace, string typeName)
+            : this(containingTypeNamespace, typeName, matchAnyArity: false)
+        {
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="QualifiedType"/> struct.
+        /// </summary>
+        /// <param name="containingTypeNamespace">The namespace containing the type.</param>
+        /// <param name="typeName">The simple or metadata name of the type.</param>
+        /// <param name="matchAnyArity"><see langword="true"/> to match the simple name across all generic arities; otherwise, to match the metadata name exactly.</param>
+        internal QualifiedType(ImmutableArray<string> containingTypeNamespace, string typeName, bool matchAnyArity)
         {
             this.Namespace = containingTypeNamespace;
             this.Name = typeName;
+            this.MatchAnyArity = matchAnyArity;
         }
 
         public ImmutableArray<string> Namespace { get; }
 
         public string Name { get; }
 
+        private bool MatchAnyArity { get; }
+
         public bool IsMatch(ISymbol symbol)
         {
-            return symbol?.Name == this.Name
+            return symbol is not null
+                && (this.MatchAnyArity ? symbol.Name : symbol.MetadataName) == this.Name
                 && symbol.BelongsToNamespace(this.Namespace);
         }
 

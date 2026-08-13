@@ -26,15 +26,20 @@ internal static class CommonFixes
     internal static async Task<ImmutableArray<QualifiedMember>> ReadMethodsAsync(CodeFixContext codeFixContext, Regex fileNamePattern, CancellationToken cancellationToken)
     {
         ImmutableArray<QualifiedMember>.Builder? result = ImmutableArray.CreateBuilder<QualifiedMember>();
-        foreach (string line in await ReadAdditionalFilesAsync(codeFixContext.Document.Project.AdditionalDocuments, fileNamePattern, cancellationToken))
+        foreach (SourceText text in await ReadAdditionalFileTextsAsync(codeFixContext.Document.Project.AdditionalDocuments, fileNamePattern, cancellationToken))
         {
-            result.Add(ParseAdditionalFileMethodLine(line));
+            ImmutableArray<string> lines = ReadLinesFromAdditionalFile(text).ToImmutableArray();
+            bool matchAnyArity = !lines.Any(line => line.IndexOf('`') >= 0);
+            foreach (string line in lines)
+            {
+                result.Add(ParseAdditionalFileMethodLine(line, matchAnyArity));
+            }
         }
 
         return result.ToImmutable();
     }
 
-    internal static async Task<ImmutableArray<string>> ReadAdditionalFilesAsync(IEnumerable<TextDocument> additionalFiles, Regex fileNamePattern, CancellationToken cancellationToken)
+    internal static async Task<ImmutableArray<SourceText>> ReadAdditionalFileTextsAsync(IEnumerable<TextDocument> additionalFiles, Regex fileNamePattern, CancellationToken cancellationToken)
     {
         if (additionalFiles is null)
         {
@@ -50,11 +55,11 @@ internal static class CommonFixes
                                           let fileName = Path.GetFileName(doc.Name)
                                           where fileNamePattern.IsMatch(fileName)
                                           select doc;
-        ImmutableArray<string>.Builder? result = ImmutableArray.CreateBuilder<string>();
+        ImmutableArray<SourceText>.Builder? result = ImmutableArray.CreateBuilder<SourceText>();
         foreach (TextDocument? doc in docs)
         {
-            SourceText? text = await doc.GetTextAsync(cancellationToken);
-            result.AddRange(ReadLinesFromAdditionalFile(text));
+            SourceText text = await doc.GetTextAsync(cancellationToken);
+            result.Add(text);
         }
 
         return result.ToImmutable();

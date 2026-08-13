@@ -1,0 +1,2 @@
+# Backticks in comments do not opt the file into metadata-name matching: `1.
+[TestNamespace.LegacyTestClass]::SlowSyncMethod
