@@ -25,15 +25,15 @@ all use `vs-threading.TopicA.txt` as the filename for their `AdditionalFiles` it
 
 These files may contain blank lines or comments that start with the `#` character.
 
-Files that contain a backtick use metadata type names. In these files, generic types include
-a backtick followed by the number of type parameters. For example, the metadata name for
-`DbSet<TEntity>` is ``DbSet`1``. Including the arity distinguishes a generic type from a
-non-generic type with the same name.
+Configuration files with at least one entry that contains a backtick use metadata type names
+for all entries. Generic type names include a backtick followed by the number of type parameters.
+For example, the metadata name for `DbSet<TEntity>` is ``DbSet`1``. Including the arity
+distinguishes a generic type from a non-generic type with the same name.
 
-For backward compatibility, files without any backticks match type names without regard
-to generic arity. For example, `DbSet` in such a file matches both a non-generic `DbSet`
-and every generic `DbSet<T...>` type. Add a backtick anywhere in the file to opt into
-exact metadata-name matching for every entry in that file.
+For backward compatibility, configuration files whose entries contain no backticks match type
+names without regard to generic arity. For example, `DbSet` in such a file matches both a
+non-generic `DbSet` and every generic `DbSet<T...>` type. Add a backtick to any entry to opt
+the entire file into exact metadata-name matching.
 
 ## Methods that assert the main thread
 
