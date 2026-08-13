@@ -1,2 +1,2 @@
-# This file has no metadata arity markers, so its type names match every arity.
+# Backticks in comments do not opt the file into metadata-name matching: `1.
 [TestNamespace.LegacyTestClass]::SlowSyncMethod

@@ -28,8 +28,9 @@ internal static class CommonFixes
         ImmutableArray<QualifiedMember>.Builder? result = ImmutableArray.CreateBuilder<QualifiedMember>();
         foreach (SourceText text in await ReadAdditionalFileTextsAsync(codeFixContext.Document.Project.AdditionalDocuments, fileNamePattern, cancellationToken))
         {
-            bool matchAnyArity = !Contains(text, '`');
-            foreach (string line in ReadLinesFromAdditionalFile(text))
+            ImmutableArray<string> lines = ReadLinesFromAdditionalFile(text).ToImmutableArray();
+            bool matchAnyArity = !lines.Any(line => line.IndexOf('`') >= 0);
+            foreach (string line in lines)
             {
                 result.Add(ParseAdditionalFileMethodLine(line, matchAnyArity));
             }

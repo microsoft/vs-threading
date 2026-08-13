@@ -78,8 +78,9 @@ public static class CommonInterest
     {
         foreach (SourceText text in ReadAdditionalFileTexts(analyzerOptions, fileNamePattern, cancellationToken))
         {
-            bool matchAnyArity = !Contains(text, '`');
-            foreach (string line in ReadLinesFromAdditionalFile(text))
+            ImmutableArray<string> lines = ReadLinesFromAdditionalFile(text).ToImmutableArray();
+            bool matchAnyArity = !lines.Any(line => line.IndexOf('`') >= 0);
+            foreach (string line in lines)
             {
                 yield return ParseAdditionalFileMethodLine(line, matchAnyArity);
             }
@@ -90,8 +91,9 @@ public static class CommonInterest
     {
         foreach (SourceText text in ReadAdditionalFileTexts(analyzerOptions, fileNamePattern, cancellationToken))
         {
-            bool matchAnyArity = !Contains(text, '`');
-            foreach (string line in ReadLinesFromAdditionalFile(text))
+            ImmutableArray<string> lines = ReadLinesFromAdditionalFile(text).ToImmutableArray();
+            bool matchAnyArity = !lines.Any(line => line.IndexOf('`') >= 0);
+            foreach (string line in lines)
             {
                 if (!CommonInterestParsing.TryParseNegatableTypeOrMemberReference(line, out bool negated, out ReadOnlyMemory<char> typeNameMemory, out string? memberNameValue))
                 {
@@ -340,30 +342,6 @@ public static class CommonInterest
         (ImmutableArray<string> containingNamespace, string? typeName) = SplitQualifiedIdentifier(typeNameMemory);
         var containingType = new QualifiedType(containingNamespace, typeName, matchAnyArity);
         return new QualifiedMember(containingType, memberName!);
-    }
-
-    /// <summary>
-    /// Determines whether a character appears in source text without materializing the text as a string.
-    /// </summary>
-    /// <param name="text">The source text to search.</param>
-    /// <param name="value">The character to find.</param>
-    /// <returns><see langword="true"/> if <paramref name="value"/> appears in <paramref name="text"/>; otherwise, <see langword="false"/>.</returns>
-    public static bool Contains(SourceText text, char value)
-    {
-        if (text is null)
-        {
-            throw new ArgumentNullException(nameof(text));
-        }
-
-        for (int i = 0; i < text.Length; i++)
-        {
-            if (text[i] == value)
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /// <summary>
