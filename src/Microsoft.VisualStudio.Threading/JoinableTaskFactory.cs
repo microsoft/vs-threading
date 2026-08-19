@@ -23,10 +23,14 @@ namespace Microsoft.VisualStudio.Threading;
 /// </remarks>
 public partial class JoinableTaskFactory
 {
+    private static readonly SendOrPostCallback ExecuteOnePendingUnderlyingSynchronizationContextCallbackDelegate = state => ((JoinableTaskFactory)state!).ExecuteOnePendingUnderlyingSynchronizationContextCallback();
+
     /// <summary>
     /// The <see cref="JoinableTaskContext"/> that owns this instance.
     /// </summary>
     private readonly JoinableTaskContext owner;
+
+    private readonly object pendingUnderlyingSynchronizationContextCallbacksLock = new();
 
     private readonly SynchronizationContext? mainThreadJobSyncContext;
 
@@ -34,6 +38,10 @@ public partial class JoinableTaskFactory
     /// The collection to add all created tasks to. May be <see langword="null" />.
     /// </summary>
     private readonly JoinableTaskCollection? jobCollection;
+
+    private Queue<SingleExecuteProtector>? pendingUnderlyingSynchronizationContextCallbacks;
+
+    private bool underlyingSynchronizationContextCallbackPending;
 
     /// <summary>
     /// Backing field for the <see cref="HangDetectionTimeout"/> property.
@@ -414,7 +422,20 @@ public partial class JoinableTaskFactory
 
         if (this.UnderlyingSynchronizationContext is object)
         {
-            this.PostToUnderlyingSynchronizationContext(SingleExecuteProtector.ExecuteOnce, callback);
+            bool postCallback;
+            lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
+            {
+                this.pendingUnderlyingSynchronizationContextCallbacks ??= new Queue<SingleExecuteProtector>();
+                this.RemoveCompletedPendingUnderlyingSynchronizationContextCallbacks();
+                this.pendingUnderlyingSynchronizationContextCallbacks.Enqueue(callback);
+                postCallback = !this.underlyingSynchronizationContextCallbackPending;
+                this.underlyingSynchronizationContextCallbackPending = true;
+            }
+
+            if (postCallback)
+            {
+                this.PostPendingUnderlyingSynchronizationContextCallback();
+            }
         }
         else
         {
@@ -656,6 +677,66 @@ public partial class JoinableTaskFactory
         {
             Report.Fail(Strings.NotAllowedUnderURorWLock); // pops a CHK assert dialog, but doesn't throw.
             Verify.FailOperation(Strings.NotAllowedUnderURorWLock); // actually throws, even in RET.
+        }
+    }
+
+    private void ExecuteOnePendingUnderlyingSynchronizationContextCallback()
+    {
+        SingleExecuteProtector? callback = null;
+        try
+        {
+            lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
+            {
+                this.RemoveCompletedPendingUnderlyingSynchronizationContextCallbacks();
+                if (this.pendingUnderlyingSynchronizationContextCallbacks?.Count > 0)
+                {
+                    callback = this.pendingUnderlyingSynchronizationContextCallbacks.Dequeue();
+                }
+            }
+
+            callback?.TryExecute();
+        }
+        finally
+        {
+            bool postAnotherCallback;
+            lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
+            {
+                this.RemoveCompletedPendingUnderlyingSynchronizationContextCallbacks();
+                postAnotherCallback = this.pendingUnderlyingSynchronizationContextCallbacks?.Count > 0;
+                this.underlyingSynchronizationContextCallbackPending = postAnotherCallback;
+            }
+
+            if (postAnotherCallback)
+            {
+                this.PostPendingUnderlyingSynchronizationContextCallback();
+            }
+        }
+    }
+
+    private void PostPendingUnderlyingSynchronizationContextCallback()
+    {
+        try
+        {
+            this.PostToUnderlyingSynchronizationContext(ExecuteOnePendingUnderlyingSynchronizationContextCallbackDelegate, this);
+        }
+        catch
+        {
+            lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
+            {
+                this.underlyingSynchronizationContextCallbackPending = false;
+            }
+
+            throw;
+        }
+    }
+
+    private void RemoveCompletedPendingUnderlyingSynchronizationContextCallbacks()
+    {
+        Assumes.True(Monitor.IsEntered(this.pendingUnderlyingSynchronizationContextCallbacksLock));
+
+        while (this.pendingUnderlyingSynchronizationContextCallbacks?.Count > 0 && this.pendingUnderlyingSynchronizationContextCallbacks.Peek().HasBeenExecuted)
+        {
+            this.pendingUnderlyingSynchronizationContextCallbacks.Dequeue();
         }
     }
 

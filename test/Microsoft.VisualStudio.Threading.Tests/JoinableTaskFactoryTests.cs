@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Concurrent;
+using System.Threading;
 using System.Threading.Tasks;
 
 public class JoinableTaskFactoryTests : JoinableTaskTestBase
@@ -139,6 +141,48 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
     }
 
     [Fact]
+    public void PostsToUnderlyingSynchronizationContextConservatively()
+    {
+        var factory = new QueueingJoinableTaskFactory(this.context);
+        int executionCount = 0;
+
+        (JoinableTask _, Task firstQueued) = factory.QueueCallback(() => executionCount++);
+        (JoinableTask _, Task secondQueued) = factory.QueueCallback(() => executionCount++);
+        (JoinableTask _, Task thirdQueued) = factory.QueueCallback(() => executionCount++);
+        Task.WhenAll(firstQueued, secondQueued, thirdQueued).GetAwaiter().GetResult();
+
+        Assert.Single(factory.PostedCallbacks);
+        factory.ExecutePostedCallback();
+        Assert.Equal(1, executionCount);
+        Assert.Single(factory.PostedCallbacks);
+        factory.ExecutePostedCallback();
+        Assert.Equal(2, executionCount);
+        Assert.Single(factory.PostedCallbacks);
+        factory.ExecutePostedCallback();
+        Assert.Equal(3, executionCount);
+        Assert.Empty(factory.PostedCallbacks);
+    }
+
+    [Fact]
+    public void CompletedCallbacksAreRemovedBeforePostingAnotherMessage()
+    {
+        var factory = new QueueingJoinableTaskFactory(this.context);
+        int executionCount = 0;
+        (JoinableTask first, Task firstQueued) = factory.QueueCallback(() => executionCount++);
+        (JoinableTask second, Task secondQueued) = factory.QueueCallback(() => executionCount++);
+        (JoinableTask _, Task thirdQueued) = factory.QueueCallback(() => executionCount++);
+        Task.WhenAll(firstQueued, secondQueued, thirdQueued).GetAwaiter().GetResult();
+
+        first.Join();
+        second.Join();
+
+        Assert.Single(factory.PostedCallbacks);
+        factory.ExecutePostedCallback();
+        Assert.Equal(3, executionCount);
+        Assert.Empty(factory.PostedCallbacks);
+    }
+
+    [Fact]
     public void DisableProcessing_ThrowsOutsideJoinableTask()
     {
         Assert.Throws<InvalidOperationException>(() => this.asyncPump.DisableProcessing());
@@ -267,6 +311,47 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
         {
             base.OnTransitionedToMainThread(joinableTask, canceled);
             this.OnTransitionedToMainThreadCallback?.Invoke(joinableTask, canceled);
+        }
+    }
+
+    private class QueueingJoinableTaskFactory : JoinableTaskFactory
+    {
+        internal QueueingJoinableTaskFactory(JoinableTaskContext owner)
+            : base(owner)
+        {
+        }
+
+        internal ConcurrentQueue<(SendOrPostCallback Callback, object State)> PostedCallbacks { get; } = new();
+
+        internal void ExecutePostedCallback()
+        {
+            Assert.True(this.PostedCallbacks.TryDequeue(out (SendOrPostCallback Callback, object State) work));
+            (SendOrPostCallback callback, object state) = work;
+            callback(state);
+        }
+
+        internal (JoinableTask Job, Task Queued) QueueCallback(Action callback)
+        {
+            var queued = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            JoinableTask job = this.RunAsync(async delegate
+            {
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
+                var callbackCompleted = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+                this.SwitchToMainThreadAsync().GetAwaiter().OnCompleted(delegate
+                {
+                    callback();
+                    callbackCompleted.SetResult(null);
+                });
+                queued.SetResult(null);
+                await callbackCompleted.Task;
+            });
+
+            return (job, queued.Task);
+        }
+
+        protected override void PostToUnderlyingSynchronizationContext(SendOrPostCallback callback, object state)
+        {
+            this.PostedCallbacks.Enqueue((callback, state));
         }
     }
 }
