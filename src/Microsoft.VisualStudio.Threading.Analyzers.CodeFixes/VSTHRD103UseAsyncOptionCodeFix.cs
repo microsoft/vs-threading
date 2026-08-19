@@ -66,8 +66,9 @@ public class VSTHRD103UseAsyncOptionCodeFix : CodeFixProvider
             }
 
             var memberAccessExpression = blockingIdentifier?.Parent as MemberAccessExpressionSyntax;
-            IMethodSymbol? blockingMethod = memberAccessExpression is object
-                ? semanticModel.GetSymbolInfo(memberAccessExpression, context.CancellationToken).Symbol as IMethodSymbol
+            var blockingInvocation = memberAccessExpression?.Parent as InvocationExpressionSyntax;
+            IMethodSymbol? blockingMethod = blockingInvocation is object
+                ? semanticModel.GetSymbolInfo(blockingInvocation, context.CancellationToken).Symbol as IMethodSymbol
                 : null;
 
             // Check whether this code was already calling the awaiter (in a synchronous fashion).
@@ -158,7 +159,10 @@ public class VSTHRD103UseAsyncOptionCodeFix : CodeFixProvider
             SemanticModel? semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
             AnonymousFunctionExpressionSyntax? originalAnonymousMethodContainerIfApplicable = syncMethodName.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>();
             MethodDeclarationSyntax originalMethodDeclaration = syncMethodName.FirstAncestorOrSelf<MethodDeclarationSyntax>() ?? throw new InvalidOperationException("Unable to find containing method.");
-            bool isAwaitableTaskWaitAll = semanticModel?.GetSymbolInfo(syncMethodName, cancellationToken).Symbol is IMethodSymbol methodSymbol && IsAwaitableTaskWaitAll(methodSymbol);
+            InvocationExpressionSyntax? syncInvocation = syncMethodName.FirstAncestorOrSelf<InvocationExpressionSyntax>();
+            bool isAwaitableTaskWaitAll = syncInvocation is object
+                && semanticModel?.GetSymbolInfo(syncInvocation, cancellationToken).Symbol is IMethodSymbol methodSymbol
+                && IsAwaitableTaskWaitAll(methodSymbol);
 
             ISymbol? enclosingSymbol = semanticModel?.GetEnclosingSymbol(this.diagnostic.Location.SourceSpan.Start, cancellationToken);
             var hasReturnValue = ((enclosingSymbol as IMethodSymbol)?.ReturnType as INamedTypeSymbol)?.IsGenericType ?? false;
