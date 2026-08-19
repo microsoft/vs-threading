@@ -723,6 +723,12 @@ public partial class JoinableTaskFactory
         {
             lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
             {
+                this.RemoveCompletedPendingUnderlyingSynchronizationContextCallbacks();
+                if (this.pendingUnderlyingSynchronizationContextCallbacks?.Count == 0)
+                {
+                    this.pendingUnderlyingSynchronizationContextCallbacks = null;
+                }
+
                 this.underlyingSynchronizationContextCallbackPending = false;
             }
 
