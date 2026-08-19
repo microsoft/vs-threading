@@ -66,11 +66,18 @@ public class VSTHRD103UseAsyncOptionCodeFix : CodeFixProvider
             }
 
             var memberAccessExpression = blockingIdentifier?.Parent as MemberAccessExpressionSyntax;
+            IMethodSymbol? blockingMethod = memberAccessExpression is object
+                ? semanticModel.GetSymbolInfo(memberAccessExpression, context.CancellationToken).Symbol as IMethodSymbol
+                : null;
 
             // Check whether this code was already calling the awaiter (in a synchronous fashion).
             asyncAlternativeExists |= memberAccessExpression?.Expression is InvocationExpressionSyntax invoke && invoke.Expression is MemberAccessExpressionSyntax parentMemberAccess && parentMemberAccess.Name.Identifier.Text == nameof(Task.GetAwaiter);
 
-            if (!asyncAlternativeExists)
+            if (string.IsNullOrEmpty(diagnostic.Properties[VSTHRD103UseAsyncOptionAnalyzer.AsyncMethodKeyName]) && blockingMethod?.IsStatic is true)
+            {
+                asyncAlternativeExists = IsAwaitableTaskWaitAll(blockingMethod);
+            }
+            else if (!asyncAlternativeExists)
             {
                 // If we fail to recognize the container, assume it exists since the analyzer thought it would.
                 ITypeSymbol? container = memberAccessExpression is object ? semanticModel.GetTypeInfo(memberAccessExpression.Expression, context.CancellationToken).ConvertedType : null;
@@ -86,6 +93,14 @@ public class VSTHRD103UseAsyncOptionCodeFix : CodeFixProvider
 
     /// <inheritdoc />
     public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
+
+    private static bool IsAwaitableTaskWaitAll(IMethodSymbol method)
+    {
+        return method.Name == nameof(Task.WaitAll)
+            && method.ContainingType.Name == nameof(Task)
+            && method.ContainingNamespace.ToDisplayString() == typeof(Task).Namespace
+            && method.Parameters is [{ Type: IArrayTypeSymbol { ElementType.Name: nameof(Task) } }];
+    }
 
     private class ReplaceSyncMethodCallWithAwaitAsync : CodeAction
     {
@@ -143,6 +158,7 @@ public class VSTHRD103UseAsyncOptionCodeFix : CodeFixProvider
             SemanticModel? semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
             AnonymousFunctionExpressionSyntax? originalAnonymousMethodContainerIfApplicable = syncMethodName.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>();
             MethodDeclarationSyntax originalMethodDeclaration = syncMethodName.FirstAncestorOrSelf<MethodDeclarationSyntax>() ?? throw new InvalidOperationException("Unable to find containing method.");
+            bool isAwaitableTaskWaitAll = semanticModel?.GetSymbolInfo(syncMethodName, cancellationToken).Symbol is IMethodSymbol methodSymbol && IsAwaitableTaskWaitAll(methodSymbol);
 
             ISymbol? enclosingSymbol = semanticModel?.GetEnclosingSymbol(this.diagnostic.Location.SourceSpan.Start, cancellationToken);
             var hasReturnValue = ((enclosingSymbol as IMethodSymbol)?.ReturnType as INamedTypeSymbol)?.IsGenericType ?? false;
@@ -170,7 +186,14 @@ public class VSTHRD103UseAsyncOptionCodeFix : CodeFixProvider
             ExpressionSyntax syncExpression = GetSynchronousExpression(syncMethodName) ?? throw new InvalidOperationException("Unable to find sync expression.");
 
             ExpressionSyntax awaitExpression;
-            if (!string.IsNullOrEmpty(this.AlternativeAsyncMethod))
+            if (isAwaitableTaskWaitAll)
+            {
+                SimpleNameSyntax whenAllMethodName = syncMethodName.WithIdentifier(SyntaxFactory.Identifier(nameof(Task.WhenAll)));
+                awaitExpression = SyntaxFactory.AwaitExpression(
+                    syncExpression.ReplaceNode(syncMethodName, whenAllMethodName).WithoutLeadingTrivia())
+                    .WithLeadingTrivia(syncExpression.GetLeadingTrivia());
+            }
+            else if (!string.IsNullOrEmpty(this.AlternativeAsyncMethod))
             {
                 // Replace the member being called and await the invocation expression.
                 // While doing so, move leading trivia to the surrounding await expression.
