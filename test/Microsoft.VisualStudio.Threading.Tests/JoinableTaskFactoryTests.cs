@@ -339,8 +339,15 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
                 var callbackCompleted = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
                 this.SwitchToMainThreadAsync().GetAwaiter().OnCompleted(delegate
                 {
-                    callback();
-                    callbackCompleted.SetResult(null);
+                    try
+                    {
+                        callback();
+                        callbackCompleted.SetResult(null);
+                    }
+                    catch (Exception ex)
+                    {
+                        callbackCompleted.SetException(ex);
+                    }
                 });
                 queued.SetResult(null);
                 await callbackCompleted.Task;

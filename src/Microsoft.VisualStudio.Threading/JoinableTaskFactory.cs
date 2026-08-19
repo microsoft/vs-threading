@@ -703,6 +703,11 @@ public partial class JoinableTaskFactory
             {
                 this.RemoveCompletedPendingUnderlyingSynchronizationContextCallbacks();
                 postAnotherCallback = this.pendingUnderlyingSynchronizationContextCallbacks?.Count > 0;
+                if (!postAnotherCallback)
+                {
+                    this.pendingUnderlyingSynchronizationContextCallbacks = null;
+                }
+
                 this.underlyingSynchronizationContextCallbackPending = postAnotherCallback;
             }
 
