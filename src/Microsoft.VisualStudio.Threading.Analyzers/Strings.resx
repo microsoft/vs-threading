@@ -353,4 +353,22 @@ Start the work within this context, or use JoinableTaskFactory.RunAsync to start
   <data name="VSTHRD115_CodeFix_UseFactory_Title" xml:space="preserve">
     <value>Use 'JoinableTaskContext.CreateNoOpContext' instead.</value>
   </data>
+  <data name="VSTHRD003InvalidAttributeUse_Title" xml:space="preserve">
+    <value>Invalid use of CompletedTaskAttribute</value>
+  </data>
+  <data name="VSTHRD003InvalidAttributeUse_MessageFormat" xml:space="preserve">
+    <value>CompletedTaskAttribute can only be applied to readonly fields, properties without non-private setters, or methods. {0}</value>
+  </data>
+  <data name="VSTHRD003InvalidAttributeUse_FieldNotReadonly" xml:space="preserve">
+    <value>Fields must be readonly.</value>
+    <comment>Error message shown when the CompletedTaskAttribute is applied to a field that is not marked as readonly. The attribute is only valid on readonly fields to ensure the task value cannot be changed.</comment>
+  </data>
+  <data name="VSTHRD003InvalidAttributeUse_PropertyWithNonPrivateSetter" xml:space="preserve">
+    <value>Properties must not have non-private setters.</value>
+    <comment>Error message shown when the CompletedTaskAttribute is applied to a property that has a public, internal, or protected setter. The attribute is only valid on properties with private setters or no setter (getter-only) to ensure the task value cannot be changed from outside the class.</comment>
+  </data>
+  <data name="VSTHRD003InvalidAttributeUse_PropertyWithNonPrivateInit" xml:space="preserve">
+    <value>Properties with init accessors must be private.</value>
+    <comment>Error message shown when the CompletedTaskAttribute is applied to a property that has an init accessor and the property itself is not private (i.e., it's public, internal, or protected). Init accessors allow setting the property during object initialization. When using this attribute on a property with an init accessor, the entire property must be declared as private to ensure the task value cannot be changed from outside the class.</comment>
+  </data>
 </root>

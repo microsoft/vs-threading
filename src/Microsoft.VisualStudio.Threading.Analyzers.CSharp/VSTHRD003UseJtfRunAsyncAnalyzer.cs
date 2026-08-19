@@ -40,6 +40,15 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
 {
     public const string Id = "VSTHRD003";
 
+    public static readonly DiagnosticDescriptor InvalidAttributeUseDescriptor = new DiagnosticDescriptor(
+        id: Id,
+        title: new LocalizableResourceString(nameof(Strings.VSTHRD003InvalidAttributeUse_Title), Strings.ResourceManager, typeof(Strings)),
+        messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD003InvalidAttributeUse_MessageFormat), Strings.ResourceManager, typeof(Strings)),
+        helpLinkUri: Utils.GetHelpLink(Id),
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
     internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
         id: Id,
         title: new LocalizableResourceString(nameof(Strings.VSTHRD003_Title), Strings.ResourceManager, typeof(Strings)),
@@ -54,7 +63,7 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
     {
         get
         {
-            return ImmutableArray.Create(Descriptor);
+            return ImmutableArray.Create(InvalidAttributeUseDescriptor, Descriptor);
         }
     }
 
@@ -69,20 +78,77 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
         context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeArrowExpressionClause), SyntaxKind.ArrowExpressionClause);
         context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeLambdaExpression), SyntaxKind.SimpleLambdaExpression);
         context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeLambdaExpression), SyntaxKind.ParenthesizedLambdaExpression);
+        context.RegisterSymbolAction(Utils.DebuggableWrapper(this.AnalyzeSymbolForInvalidAttributeUse), SymbolKind.Field, SymbolKind.Property, SymbolKind.Method);
     }
 
-    private static bool IsSymbolAlwaysOkToAwait(ISymbol? symbol)
+    private static bool IsSymbolAlwaysOkToAwait(ISymbol? symbol, Compilation compilation)
     {
-        if (symbol is IFieldSymbol field)
+        if (symbol is null)
         {
-            // Allow the TplExtensions.CompletedTask and related fields.
-            if (field.ContainingType.Name == Types.TplExtensions.TypeName && field.BelongsToNamespace(Types.TplExtensions.Namespace) &&
-                (field.Name == Types.TplExtensions.CompletedTask || field.Name == Types.TplExtensions.CanceledTask || field.Name == Types.TplExtensions.TrueTask || field.Name == Types.TplExtensions.FalseTask))
+            return false;
+        }
+
+        // Check if the symbol has the CompletedTaskAttribute directly applied
+        if (symbol.GetAttributes().Any(attr =>
+            attr.AttributeClass?.Name == Types.CompletedTaskAttribute.TypeName &&
+            attr.AttributeClass.BelongsToNamespace(Types.CompletedTaskAttribute.Namespace)))
+        {
+            // Validate that the attribute is used correctly
+            if (symbol is IFieldSymbol fieldSymbol)
             {
-                return true;
+                // Fields must be readonly
+                if (!fieldSymbol.IsReadOnly)
+                {
+                    return false;
+                }
+            }
+            else if (symbol is IPropertySymbol propertySymbol)
+            {
+                // Properties must not have non-private setters
+                // Init accessors are only allowed if the property itself is private
+                if (propertySymbol.SetMethod is not null)
+                {
+                    if (propertySymbol.SetMethod.IsInitOnly)
+                    {
+                        // Init accessor - only allowed if property is private
+                        if (propertySymbol.DeclaredAccessibility != Accessibility.Private)
+                        {
+                            return false;
+                        }
+                    }
+                    else if (propertySymbol.SetMethod.DeclaredAccessibility != Accessibility.Private)
+                    {
+                        // Regular setter must be private
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        // Check for assembly-level CompletedTaskAttribute
+        foreach (AttributeData assemblyAttr in compilation.Assembly.GetAttributes())
+        {
+            if (assemblyAttr.AttributeClass?.Name == Types.CompletedTaskAttribute.TypeName &&
+                assemblyAttr.AttributeClass.BelongsToNamespace(Types.CompletedTaskAttribute.Namespace))
+            {
+                // Look for the Member named argument
+                foreach (KeyValuePair<string, TypedConstant> namedArg in assemblyAttr.NamedArguments)
+                {
+                    if (namedArg.Key == "Member" && namedArg.Value.Value is string memberName)
+                    {
+                        // Check if this symbol matches the specified member name
+                        if (IsSymbolMatchingMemberName(symbol, memberName))
+                        {
+                            return true;
+                        }
+                    }
+                }
             }
         }
-        else if (symbol is IPropertySymbol property)
+
+        if (symbol is IPropertySymbol property)
         {
             // Explicitly allow Task.CompletedTask
             if (property.ContainingType.Name == Types.Task.TypeName && property.BelongsToNamespace(Types.Task.Namespace) &&
@@ -93,6 +159,102 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
         }
 
         return false;
+    }
+
+    private static bool IsSymbolMatchingMemberName(ISymbol symbol, string memberName)
+    {
+        // Build the fully qualified name of the symbol
+        string fullyQualifiedName = GetFullyQualifiedName(symbol);
+
+        // Compare with the member name (case-sensitive)
+        return string.Equals(fullyQualifiedName, memberName, StringComparison.Ordinal);
+    }
+
+    private static string GetFullyQualifiedName(ISymbol symbol)
+    {
+        if (symbol.ContainingType is null)
+        {
+            return symbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+        }
+
+        // For members (properties, fields, methods), construct: Namespace.TypeName.MemberName
+        List<string> parts = new List<string>();
+
+        // Add member name
+        parts.Add(symbol.Name);
+
+        // Add containing type hierarchy
+        INamedTypeSymbol? currentType = symbol.ContainingType;
+        while (currentType is not null)
+        {
+            parts.Insert(0, currentType.Name);
+            currentType = currentType.ContainingType;
+        }
+
+        // Add namespace
+        if (symbol.ContainingNamespace is not null && !symbol.ContainingNamespace.IsGlobalNamespace)
+        {
+            parts.Insert(0, symbol.ContainingNamespace.ToDisplayString());
+        }
+
+        return string.Join(".", parts);
+    }
+
+    private void AnalyzeSymbolForInvalidAttributeUse(SymbolAnalysisContext context)
+    {
+        ISymbol symbol = context.Symbol;
+
+        // Check if the symbol has the CompletedTaskAttribute
+        AttributeData? completedTaskAttr = symbol.GetAttributes().FirstOrDefault(attr =>
+            attr.AttributeClass?.Name == Types.CompletedTaskAttribute.TypeName &&
+            attr.AttributeClass.BelongsToNamespace(Types.CompletedTaskAttribute.Namespace));
+
+        if (completedTaskAttr is null)
+        {
+            return;
+        }
+
+        string? errorMessage = null;
+
+        if (symbol is IFieldSymbol fieldSymbol)
+        {
+            // Fields must be readonly
+            if (!fieldSymbol.IsReadOnly)
+            {
+                errorMessage = Strings.VSTHRD003InvalidAttributeUse_FieldNotReadonly;
+            }
+        }
+        else if (symbol is IPropertySymbol propertySymbol)
+        {
+            // Check for init accessor (which is a special kind of setter)
+            if (propertySymbol.SetMethod is not null)
+            {
+                // Init accessors are only allowed if the property itself is private
+                if (propertySymbol.SetMethod.IsInitOnly)
+                {
+                    if (propertySymbol.DeclaredAccessibility != Accessibility.Private)
+                    {
+                        errorMessage = Strings.VSTHRD003InvalidAttributeUse_PropertyWithNonPrivateInit;
+                    }
+                }
+                else if (propertySymbol.SetMethod.DeclaredAccessibility != Accessibility.Private)
+                {
+                    // Non-private setters are not allowed
+                    errorMessage = Strings.VSTHRD003InvalidAttributeUse_PropertyWithNonPrivateSetter;
+                }
+            }
+        }
+
+        // Methods are always allowed
+        if (errorMessage is not null)
+        {
+            // Report diagnostic on the attribute location
+            Location? location = completedTaskAttr.ApplicationSyntaxReference?.GetSyntax(context.CancellationToken).GetLocation();
+            if (location is not null)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(InvalidAttributeUseDescriptor, location, errorMessage));
+            }
+        }
     }
 
     private void AnalyzeArrowExpressionClause(SyntaxNodeAnalysisContext context)
@@ -183,7 +345,7 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
                 symbolType = localSymbol.Type;
                 dataflowAnalysisCompatibleVariable = true;
                 break;
-            case IPropertySymbol propertySymbol when !IsSymbolAlwaysOkToAwait(propertySymbol):
+            case IPropertySymbol propertySymbol when !IsSymbolAlwaysOkToAwait(propertySymbol, context.Compilation):
                 symbolType = propertySymbol.Type;
 
                 if (focusedExpression is MemberAccessExpressionSyntax memberAccessExpression)
@@ -277,7 +439,7 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
                                 }
 
                                 ISymbol? definition = declarationSemanticModel.GetSymbolInfo(memberAccessSyntax, cancellationToken).Symbol;
-                                if (IsSymbolAlwaysOkToAwait(definition))
+                                if (IsSymbolAlwaysOkToAwait(definition, context.Compilation))
                                 {
                                     return null;
                                 }
@@ -288,6 +450,12 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
 
                 break;
             case IMethodSymbol methodSymbol:
+                // Check if the method itself has the CompletedTaskAttribute
+                if (IsSymbolAlwaysOkToAwait(methodSymbol, context.Compilation))
+                {
+                    return null;
+                }
+
                 if (Utils.IsTask(methodSymbol.ReturnType) && focusedExpression is InvocationExpressionSyntax invocationExpressionSyntax)
                 {
                     // Consider all arguments
