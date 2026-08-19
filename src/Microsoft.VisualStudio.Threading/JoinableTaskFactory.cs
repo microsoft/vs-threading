@@ -728,12 +728,9 @@ public partial class JoinableTaskFactory
         {
             lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
             {
-                this.RemoveCompletedPendingUnderlyingSynchronizationContextCallbacks();
-                if (this.pendingUnderlyingSynchronizationContextCallbacks?.Count == 0)
-                {
-                    this.pendingUnderlyingSynchronizationContextCallbacks = null;
-                }
-
+                // Every callback remains in its owning JoinableTask's execution queue, so abandon this
+                // secondary route when no underlying message was established.
+                this.pendingUnderlyingSynchronizationContextCallbacks = null;
                 this.underlyingSynchronizationContextCallbackPending = false;
             }
 
