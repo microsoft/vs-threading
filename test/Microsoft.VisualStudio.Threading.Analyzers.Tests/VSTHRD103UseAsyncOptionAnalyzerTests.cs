@@ -281,6 +281,31 @@ class Test {
     }
 
     [Fact]
+    public async Task TaskWaitAllWithTimeoutOffersNoFix()
+    {
+        var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    Task T() {
+        Task[] tasks = null;
+        Task.{|#0:WaitAll|}(tasks, 0);
+        Task.{|#1:WaitAll|}(tasks, TimeSpan.Zero);
+        return Task.CompletedTask;
+    }
+}
+";
+
+        DiagnosticResult[] expected =
+        [
+            CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("WaitAll"),
+            CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(1).WithArguments("WaitAll"),
+        ];
+        await CSVerify.VerifyCodeFixAsync(test, expected, test);
+    }
+
+    [Fact]
     public async Task TaskWaitAnyOffersNoFix()
     {
         var test = @"

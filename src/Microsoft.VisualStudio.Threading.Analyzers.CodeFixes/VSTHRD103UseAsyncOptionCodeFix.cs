@@ -67,7 +67,7 @@ public class VSTHRD103UseAsyncOptionCodeFix : CodeFixProvider
 
             var memberAccessExpression = blockingIdentifier?.Parent as MemberAccessExpressionSyntax;
             var blockingInvocation = memberAccessExpression?.Parent as InvocationExpressionSyntax;
-            IMethodSymbol? blockingMethod = blockingInvocation is object
+            IMethodSymbol? blockingMethod = semanticModel is object && blockingInvocation is object
                 ? semanticModel.GetSymbolInfo(blockingInvocation, context.CancellationToken).Symbol as IMethodSymbol
                 : null;
 
