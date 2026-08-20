@@ -501,7 +501,7 @@ class Test {
     }
 
     [Fact]
-    public async Task InvokeVsSolutionAfterUIThreadAssertionAndCustomConfigureAwaitFalse()
+    public async Task InvokeVsSolutionAfterUIThreadAssertionAndCustomConfigureAwaitFalseReportsWarning()
     {
         var test = @"
 using System.Runtime.CompilerServices;
@@ -527,7 +527,8 @@ class CustomAwaitable {
     public TaskAwaiter GetAwaiter() => default;
 }
 ";
-        await CSVerify.VerifyAnalyzerAsync(test);
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorAsync).WithSpan(12, 13, 12, 24).WithArguments("IVsSolution", "JoinableTaskFactory.SwitchToMainThreadAsync");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
     [Fact(Skip = "Not yet supported. See https://github.com/Microsoft/vs-threading/issues/38")]
