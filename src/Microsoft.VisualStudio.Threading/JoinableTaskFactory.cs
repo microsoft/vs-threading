@@ -1533,7 +1533,6 @@ public partial class JoinableTaskFactory
                 this.job.Factory.OnTransitionedToMainThread(this.job, !this.job.Factory.Context.IsOnMainThread);
             }
         }
-
     }
 
     private sealed class UnderlyingSynchronizationContextCallback
