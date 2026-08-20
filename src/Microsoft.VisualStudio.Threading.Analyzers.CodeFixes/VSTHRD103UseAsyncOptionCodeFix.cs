@@ -74,9 +74,9 @@ public class VSTHRD103UseAsyncOptionCodeFix : CodeFixProvider
             // Check whether this code was already calling the awaiter (in a synchronous fashion).
             asyncAlternativeExists |= memberAccessExpression?.Expression is InvocationExpressionSyntax invoke && invoke.Expression is MemberAccessExpressionSyntax parentMemberAccess && parentMemberAccess.Name.Identifier.Text == nameof(Task.GetAwaiter);
 
-            if (string.IsNullOrEmpty(diagnostic.Properties[VSTHRD103UseAsyncOptionAnalyzer.AsyncMethodKeyName]) && blockingMethod?.IsStatic is true)
+            if (string.IsNullOrEmpty(diagnostic.Properties[VSTHRD103UseAsyncOptionAnalyzer.AsyncMethodKeyName]) && semanticModel is object && blockingMethod?.IsStatic is true)
             {
-                asyncAlternativeExists = IsAwaitableTaskWaitAll(blockingMethod);
+                asyncAlternativeExists = IsAwaitableTaskWaitAll(blockingMethod, semanticModel.Compilation);
             }
             else if (!asyncAlternativeExists)
             {
@@ -95,12 +95,13 @@ public class VSTHRD103UseAsyncOptionCodeFix : CodeFixProvider
     /// <inheritdoc />
     public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
 
-    private static bool IsAwaitableTaskWaitAll(IMethodSymbol method)
+    private static bool IsAwaitableTaskWaitAll(IMethodSymbol method, Compilation compilation)
     {
+        INamedTypeSymbol? taskType = compilation.GetTypeByMetadataName(typeof(Task).FullName!);
         return method.Name == nameof(Task.WaitAll)
-            && method.ContainingType.Name == nameof(Task)
-            && method.ContainingNamespace.ToDisplayString() == typeof(Task).Namespace
-            && method.Parameters is [{ Type: IArrayTypeSymbol { ElementType.Name: nameof(Task) } }];
+            && SymbolEqualityComparer.Default.Equals(method.ContainingType, taskType)
+            && method.Parameters is [{ Type: IArrayTypeSymbol taskArray }]
+            && SymbolEqualityComparer.Default.Equals(taskArray.ElementType, taskType);
     }
 
     private class ReplaceSyncMethodCallWithAwaitAsync : CodeAction
@@ -162,7 +163,7 @@ public class VSTHRD103UseAsyncOptionCodeFix : CodeFixProvider
             InvocationExpressionSyntax? syncInvocation = syncMethodName.FirstAncestorOrSelf<InvocationExpressionSyntax>();
             bool isAwaitableTaskWaitAll = syncInvocation is object
                 && semanticModel?.GetSymbolInfo(syncInvocation, cancellationToken).Symbol is IMethodSymbol methodSymbol
-                && IsAwaitableTaskWaitAll(methodSymbol);
+                && IsAwaitableTaskWaitAll(methodSymbol, semanticModel.Compilation);
 
             ISymbol? enclosingSymbol = semanticModel?.GetEnclosingSymbol(this.diagnostic.Location.SourceSpan.Start, cancellationToken);
             var hasReturnValue = ((enclosingSymbol as IMethodSymbol)?.ReturnType as INamedTypeSymbol)?.IsGenericType ?? false;
