@@ -25,6 +25,9 @@ public partial class JoinableTaskFactory
 {
     private static readonly SendOrPostCallback ExecuteOnePendingUnderlyingSynchronizationContextCallbackDelegate = state => ((UnderlyingSynchronizationContextCallback)state!).Execute();
 
+    [ThreadStatic]
+    private static JoinableTaskFactory? synchronouslyPostingFactory;
+
     /// <summary>
     /// The <see cref="JoinableTaskContext"/> that owns this instance.
     /// </summary>
@@ -42,6 +45,8 @@ public partial class JoinableTaskFactory
     private Queue<(SendOrPostCallback Callback, object State)>? pendingUnderlyingSynchronizationContextCallbacks;
 
     private bool underlyingSynchronizationContextCallbackPending;
+
+    private TaskCompletionSource<object?>? underlyingSynchronizationContextPostCompletion;
 
     /// <summary>
     /// Backing field for the <see cref="HangDetectionTimeout"/> property.
@@ -667,19 +672,31 @@ public partial class JoinableTaskFactory
     {
         Requires.NotNull(callback, nameof(callback));
 
-        bool postCallback;
+        TaskCompletionSource<object?>? postCompletion = null;
+        Task? waitForPost = null;
         lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
         {
             this.pendingUnderlyingSynchronizationContextCallbacks ??= new Queue<(SendOrPostCallback, object)>();
             this.RemoveCompletedPendingUnderlyingSynchronizationContextCallbacks();
             this.pendingUnderlyingSynchronizationContextCallbacks.Enqueue((callback, state));
-            postCallback = !this.underlyingSynchronizationContextCallbackPending;
-            this.underlyingSynchronizationContextCallbackPending = true;
+            if (!this.underlyingSynchronizationContextCallbackPending)
+            {
+                this.underlyingSynchronizationContextCallbackPending = true;
+                postCompletion = this.underlyingSynchronizationContextPostCompletion = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            }
+            else
+            {
+                waitForPost = this.underlyingSynchronizationContextPostCompletion?.Task;
+            }
         }
 
-        if (postCallback)
+        if (postCompletion is object)
         {
-            this.PostPendingUnderlyingSynchronizationContextCallback();
+            this.PostPendingUnderlyingSynchronizationContextCallback(postCompletion);
+        }
+        else if (synchronouslyPostingFactory != this)
+        {
+            waitForPost?.GetAwaiter().GetResult();
         }
     }
 
@@ -729,42 +746,69 @@ public partial class JoinableTaskFactory
         }
         finally
         {
-            bool postAnotherCallback;
+            TaskCompletionSource<object?>? postCompletion = null;
             lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
             {
                 this.RemoveCompletedPendingUnderlyingSynchronizationContextCallbacks();
-                postAnotherCallback = this.pendingUnderlyingSynchronizationContextCallbacks?.Count > 0;
-                if (!postAnotherCallback)
+                if (this.pendingUnderlyingSynchronizationContextCallbacks?.Count > 0)
+                {
+                    postCompletion = this.underlyingSynchronizationContextPostCompletion = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+                }
+                else
                 {
                     this.pendingUnderlyingSynchronizationContextCallbacks = null;
+                    this.underlyingSynchronizationContextCallbackPending = false;
                 }
-
-                this.underlyingSynchronizationContextCallbackPending = postAnotherCallback;
             }
 
-            if (postAnotherCallback)
+            if (postCompletion is object)
             {
-                this.PostPendingUnderlyingSynchronizationContextCallback();
+                this.PostPendingUnderlyingSynchronizationContextCallback(postCompletion);
             }
         }
     }
 
-    private void PostPendingUnderlyingSynchronizationContextCallback()
+    private void PostPendingUnderlyingSynchronizationContextCallback(TaskCompletionSource<object?> postCompletion)
     {
         try
         {
-            this.PostToUnderlyingSynchronizationContextCore(ExecuteOnePendingUnderlyingSynchronizationContextCallbackDelegate, new UnderlyingSynchronizationContextCallback(this));
+            JoinableTaskFactory? priorSynchronouslyPostingFactory = synchronouslyPostingFactory;
+            synchronouslyPostingFactory = this;
+            try
+            {
+                this.PostToUnderlyingSynchronizationContextCore(ExecuteOnePendingUnderlyingSynchronizationContextCallbackDelegate, new UnderlyingSynchronizationContextCallback(this));
+            }
+            finally
+            {
+                synchronouslyPostingFactory = priorSynchronouslyPostingFactory;
+            }
+
+            lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
+            {
+                if (this.underlyingSynchronizationContextPostCompletion == postCompletion)
+                {
+                    this.underlyingSynchronizationContextPostCompletion = null;
+                }
+            }
+
+            postCompletion.SetResult(null);
         }
-        catch
+        catch (Exception ex)
         {
             lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
             {
-                // Every callback remains in its owning JoinableTask's execution queue, so abandon this
-                // secondary route when no underlying message was established.
-                this.pendingUnderlyingSynchronizationContextCallbacks = null;
-                this.underlyingSynchronizationContextCallbackPending = false;
+                if (this.underlyingSynchronizationContextPostCompletion == postCompletion)
+                {
+                    // Every callback remains in its owning JoinableTask's execution queue, so abandon this
+                    // secondary route when no underlying message was established.
+                    this.pendingUnderlyingSynchronizationContextCallbacks = null;
+                    this.underlyingSynchronizationContextCallbackPending = false;
+                    this.underlyingSynchronizationContextPostCompletion = null;
+                }
             }
 
+            postCompletion.SetException(ex);
+            _ = postCompletion.Task.Exception;
             throw;
         }
     }

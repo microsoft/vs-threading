@@ -196,6 +196,17 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
     }
 
     [Fact]
+    public void CoalescingSupportsSynchronousUnderlyingPost()
+    {
+        var factory = new SynchronouslyPostingJoinableTaskFactory(this.context);
+        int executionCount = 0;
+
+        factory.Post(() => factory.Post(() => executionCount++));
+
+        Assert.Equal(1, executionCount);
+    }
+
+    [Fact]
     public void DisableProcessing_ThrowsOutsideJoinableTask()
     {
         Assert.Throws<InvalidOperationException>(() => this.asyncPump.DisableProcessing());
@@ -350,10 +361,12 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
             {
                 await TaskScheduler.Default.SwitchTo(alwaysYield: true);
                 var callbackCompleted = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
-                this.SwitchToMainThreadAsync().GetAwaiter().OnCompleted(delegate
+                JoinableTaskFactory.MainThreadAwaiter awaiter = this.SwitchToMainThreadAsync().GetAwaiter();
+                awaiter.OnCompleted(delegate
                 {
                     try
                     {
+                        awaiter.GetResult();
                         callback();
                         callbackCompleted.SetResult(null);
                     }
@@ -402,6 +415,24 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
         protected override void PostToUnderlyingSynchronizationContext(SendOrPostCallback callback, object state)
         {
             Interlocked.Increment(ref this.postCount);
+        }
+    }
+
+    private class SynchronouslyPostingJoinableTaskFactory : JoinableTaskFactory
+    {
+        internal SynchronouslyPostingJoinableTaskFactory(JoinableTaskContext owner)
+            : base(owner)
+        {
+        }
+
+        internal void Post(Action callback)
+        {
+            this.PostToUnderlyingSynchronizationContextWithCoalescing(state => ((Action)state!).Invoke(), callback);
+        }
+
+        protected override void PostToUnderlyingSynchronizationContextCore(SendOrPostCallback callback, object state)
+        {
+            callback(state);
         }
     }
 }
