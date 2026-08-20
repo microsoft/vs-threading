@@ -98,11 +98,60 @@ public class VSTHRD104OfferAsyncOptionAnalyzer : DiagnosticAnalyzer
                 {
                     if (item.Method.IsMatch(invokedMember))
                     {
+                        if (invokedMember is IPropertySymbol { Name: nameof(Task<int>.Result) } && this.IsGuardedBySuccessfulCompletion(context, memberAccessSyntax))
+                        {
+                            return;
+                        }
+
                         Location? location = memberAccessSyntax.Name.GetLocation();
                         context.ReportDiagnostic(Diagnostic.Create(Descriptor, location));
                         this.diagnosticReported = true;
                     }
                 }
+            }
+        }
+
+        private bool IsGuardedBySuccessfulCompletion(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax resultAccess)
+        {
+            ISymbol? taskSymbol = context.SemanticModel.GetSymbolInfo(resultAccess.Expression, context.CancellationToken).Symbol;
+            if (taskSymbol is null)
+            {
+                return false;
+            }
+
+            foreach (IfStatementSyntax ifStatement in resultAccess.Ancestors().OfType<IfStatementSyntax>())
+            {
+                if (ifStatement.Statement.Span.Contains(resultAccess.Span) && ConditionProvesSuccessfulCompletion(ifStatement.Condition, taskSymbol))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+
+            bool ConditionProvesSuccessfulCompletion(ExpressionSyntax condition, ISymbol expectedTaskSymbol)
+            {
+                while (condition is ParenthesizedExpressionSyntax parenthesized)
+                {
+                    condition = parenthesized.Expression;
+                }
+
+                if (condition is BinaryExpressionSyntax { RawKind: (int)SyntaxKind.LogicalAndExpression } logicalAnd)
+                {
+                    return ConditionProvesSuccessfulCompletion(logicalAnd.Left, expectedTaskSymbol)
+                        || ConditionProvesSuccessfulCompletion(logicalAnd.Right, expectedTaskSymbol);
+                }
+
+                if (condition is not MemberAccessExpressionSyntax { Name.Identifier.ValueText: "IsCompletedSuccessfully" } completionAccess)
+                {
+                    return false;
+                }
+
+                ISymbol? completionProperty = context.SemanticModel.GetSymbolInfo(completionAccess, context.CancellationToken).Symbol;
+                ISymbol? completedTaskSymbol = context.SemanticModel.GetSymbolInfo(completionAccess.Expression, context.CancellationToken).Symbol;
+                return completionProperty is IPropertySymbol { ContainingType: { } containingType }
+                    && Utils.IsTask(containingType)
+                    && SymbolEqualityComparer.Default.Equals(expectedTaskSymbol, completedTaskSymbol);
             }
         }
     }

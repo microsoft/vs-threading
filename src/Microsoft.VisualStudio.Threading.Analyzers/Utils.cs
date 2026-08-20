@@ -324,8 +324,20 @@ public static class Utils
     public static bool HasAsyncAlternative(this IMethodSymbol methodSymbol, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return methodSymbol.ContainingType.GetMembers(methodSymbol.Name + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix)
-            .Any(alt => IsXAtLeastAsPublicAsY(alt, methodSymbol));
+        string asyncMethodName = methodSymbol.Name + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix;
+        if (methodSymbol.ContainingType.GetMembers(asyncMethodName).Any(alt => IsXAtLeastAsPublicAsY(alt, methodSymbol)))
+        {
+            return true;
+        }
+
+        if (methodSymbol.IsExtensionMethod && methodSymbol.Parameters[0].Type is INamedTypeSymbol receiverType)
+        {
+            return receiverType.GetMembers(asyncMethodName)
+                .Concat(receiverType.AllInterfaces.SelectMany(iface => iface.GetMembers(asyncMethodName)))
+                .Any(alt => IsXAtLeastAsPublicAsY(alt, methodSymbol));
+        }
+
+        return false;
     }
 
     public static bool IsXAtLeastAsPublicAsY(ISymbol x, ISymbol y)
