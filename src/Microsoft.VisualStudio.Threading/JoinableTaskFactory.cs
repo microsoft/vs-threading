@@ -725,6 +725,16 @@ public partial class JoinableTaskFactory
         }
     }
 
+    /// <summary>
+    /// Executes one callback from the private queue and, when more work is already queued,
+    /// posts its successor to the underlying synchronization context before invoking the callback.
+    /// </summary>
+    /// <remarks>
+    /// Posting the successor first ensures that code invoked by the callback can enter a nested
+    /// message loop and find the next message already available. Synchronization contexts that
+    /// execute <see cref="SynchronizationContext.Post(SendOrPostCallback, object?)"/> inline are
+    /// drained iteratively instead to avoid recursive stack growth.
+    /// </remarks>
     private void ExecuteOnePendingUnderlyingSynchronizationContextCallback()
     {
         bool continueSynchronously;
@@ -732,6 +742,8 @@ public partial class JoinableTaskFactory
         {
             continueSynchronously = false;
             (SendOrPostCallback Callback, object State)? callback = null;
+            TaskCompletionSource<object?>? postCompletion = null;
+            bool completeSynchronousDrainAfterCallback = false;
             try
             {
                 lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
@@ -741,29 +753,16 @@ public partial class JoinableTaskFactory
                     {
                         callback = this.pendingUnderlyingSynchronizationContextCallbacks.Dequeue();
                     }
-                }
 
-                if (callback is { } work)
-                {
-                    work.Callback(work.State);
-                }
-            }
-            finally
-            {
-                TaskCompletionSource<object?>? postCompletion = null;
-                lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
-                {
                     this.RemoveCompletedPendingUnderlyingSynchronizationContextCallbacks();
-                    if (this.pendingUnderlyingSynchronizationContextCallbacks?.Count > 0)
+                    if (synchronouslyPostingFactory == this)
                     {
-                        if (synchronouslyPostingFactory == this)
-                        {
-                            continueSynchronously = true;
-                        }
-                        else
-                        {
-                            postCompletion = this.underlyingSynchronizationContextPostCompletion = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
-                        }
+                        completeSynchronousDrainAfterCallback = true;
+                        continueSynchronously = this.pendingUnderlyingSynchronizationContextCallbacks?.Count > 0;
+                    }
+                    else if (this.pendingUnderlyingSynchronizationContextCallbacks?.Count > 0)
+                    {
+                        postCompletion = this.underlyingSynchronizationContextPostCompletion = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
                     }
                     else
                     {
@@ -775,6 +774,30 @@ public partial class JoinableTaskFactory
                 if (postCompletion is object)
                 {
                     this.PostPendingUnderlyingSynchronizationContextCallback(postCompletion);
+                }
+
+                if (callback is { } work)
+                {
+                    work.Callback(work.State);
+                }
+            }
+            finally
+            {
+                if (completeSynchronousDrainAfterCallback)
+                {
+                    lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
+                    {
+                        this.RemoveCompletedPendingUnderlyingSynchronizationContextCallbacks();
+                        if (this.pendingUnderlyingSynchronizationContextCallbacks?.Count > 0)
+                        {
+                            continueSynchronously = true;
+                        }
+                        else
+                        {
+                            this.pendingUnderlyingSynchronizationContextCallbacks = null;
+                            this.underlyingSynchronizationContextCallbackPending = false;
+                        }
+                    }
                 }
             }
         }

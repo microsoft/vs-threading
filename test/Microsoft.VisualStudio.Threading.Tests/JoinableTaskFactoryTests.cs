@@ -146,10 +146,13 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
         var factory = new QueueingJoinableTaskFactory(this.context);
         int executionCount = 0;
 
-        (JoinableTask _, Task firstQueued) = factory.QueueCallback(() => executionCount++);
-        (JoinableTask _, Task secondQueued) = factory.QueueCallback(() => executionCount++);
-        (JoinableTask _, Task thirdQueued) = factory.QueueCallback(() => executionCount++);
-        Task.WhenAll(firstQueued, secondQueued, thirdQueued).GetAwaiter().GetResult();
+        factory.QueueUnderlyingCallback(delegate
+        {
+            Assert.Single(factory.PostedCallbacks);
+            executionCount++;
+        });
+        factory.QueueUnderlyingCallback(() => executionCount++);
+        factory.QueueUnderlyingCallback(() => executionCount++);
 
         Assert.Single(factory.PostedCallbacks);
         factory.ExecutePostedCallback();
@@ -359,6 +362,11 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
             Assert.True(this.PostedCallbacks.TryDequeue(out (SendOrPostCallback Callback, object State) work));
             (SendOrPostCallback callback, object state) = work;
             callback(state);
+        }
+
+        internal void QueueUnderlyingCallback(Action callback)
+        {
+            this.PostToUnderlyingSynchronizationContextWithCoalescing(static state => ((Action)state!).Invoke(), callback);
         }
 
         internal (JoinableTask Job, Task Queued) QueueCallback(Action callback)
