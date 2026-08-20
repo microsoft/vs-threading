@@ -773,7 +773,7 @@ public partial class JoinableTaskFactory
 
                 if (postCompletion is object)
                 {
-                    this.PostPendingUnderlyingSynchronizationContextCallback(postCompletion);
+                    this.PostPendingUnderlyingSynchronizationContextCallback(postCompletion, propagateException: false);
                 }
 
                 if (callback is { } work)
@@ -804,7 +804,7 @@ public partial class JoinableTaskFactory
         while (continueSynchronously);
     }
 
-    private void PostPendingUnderlyingSynchronizationContextCallback(TaskCompletionSource<object?> postCompletion)
+    private void PostPendingUnderlyingSynchronizationContextCallback(TaskCompletionSource<object?> postCompletion, bool propagateException = true)
     {
         try
         {
@@ -845,7 +845,10 @@ public partial class JoinableTaskFactory
 
             postCompletion.SetException(ex);
             _ = postCompletion.Task.Exception;
-            throw;
+            if (propagateException)
+            {
+                throw;
+            }
         }
     }
 

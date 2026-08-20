@@ -186,6 +186,21 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
     }
 
     [Fact]
+    public void RepostFailureDoesNotPreventCurrentCallback()
+    {
+        var factory = new QueueingJoinableTaskFactory(this.context);
+        int executionCount = 0;
+        factory.QueueUnderlyingCallback(() => executionCount++);
+        factory.QueueUnderlyingCallback(() => executionCount++);
+        factory.FailNextPost = true;
+
+        factory.ExecutePostedCallback();
+
+        Assert.Equal(1, executionCount);
+        Assert.Empty(factory.PostedCallbacks);
+    }
+
+    [Fact]
     public void DerivedFactoryDoesNotCoalesceUnlessOptedIn()
     {
         var factory = new NonCoalescingJoinableTaskFactory(this.context);
@@ -357,6 +372,8 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
 
         internal ConcurrentQueue<(SendOrPostCallback Callback, object State)> PostedCallbacks { get; } = new();
 
+        internal bool FailNextPost { get; set; }
+
         internal void ExecutePostedCallback()
         {
             Assert.True(this.PostedCallbacks.TryDequeue(out (SendOrPostCallback Callback, object State) work));
@@ -399,6 +416,12 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
 
         protected override void PostToUnderlyingSynchronizationContextCore(SendOrPostCallback callback, object state)
         {
+            if (this.FailNextPost)
+            {
+                this.FailNextPost = false;
+                throw new InvalidOperationException();
+            }
+
             this.PostedCallbacks.Enqueue((callback, state));
         }
     }
