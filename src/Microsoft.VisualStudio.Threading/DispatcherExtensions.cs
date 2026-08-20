@@ -77,6 +77,12 @@ public static class DispatcherExtensions
         /// <inheritdoc />
         protected internal override void PostToUnderlyingSynchronizationContext(SendOrPostCallback callback, object state)
         {
+            this.PostToUnderlyingSynchronizationContextWithCoalescing(callback, state);
+        }
+
+        /// <inheritdoc />
+        protected internal override void PostToUnderlyingSynchronizationContextCore(SendOrPostCallback callback, object state)
+        {
             this.dispatcher.BeginInvoke(this.priority, callback, state);
         }
     }

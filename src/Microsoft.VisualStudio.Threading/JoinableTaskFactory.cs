@@ -39,7 +39,7 @@ public partial class JoinableTaskFactory
     /// </summary>
     private readonly JoinableTaskCollection? jobCollection;
 
-    private Queue<SingleExecuteProtector>? pendingUnderlyingSynchronizationContextCallbacks;
+    private Queue<(SendOrPostCallback Callback, object State)>? pendingUnderlyingSynchronizationContextCallbacks;
 
     private bool underlyingSynchronizationContextCallbackPending;
 
@@ -422,20 +422,7 @@ public partial class JoinableTaskFactory
 
         if (this.UnderlyingSynchronizationContext is object)
         {
-            bool postCallback;
-            lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
-            {
-                this.pendingUnderlyingSynchronizationContextCallbacks ??= new Queue<SingleExecuteProtector>();
-                this.RemoveCompletedPendingUnderlyingSynchronizationContextCallbacks();
-                this.pendingUnderlyingSynchronizationContextCallbacks.Enqueue(callback);
-                postCallback = !this.underlyingSynchronizationContextCallbackPending;
-                this.underlyingSynchronizationContextCallbackPending = true;
-            }
-
-            if (postCallback)
-            {
-                this.PostPendingUnderlyingSynchronizationContextCallback();
-            }
+            this.PostToUnderlyingSynchronizationContext(SingleExecuteProtector.ExecuteOnce, callback);
         }
         else
         {
@@ -487,6 +474,19 @@ public partial class JoinableTaskFactory
     /// <param name="callback">The callback to invoke.</param>
     /// <param name="state">State to pass to the callback.</param>
     protected internal virtual void PostToUnderlyingSynchronizationContext(SendOrPostCallback callback, object state)
+    {
+        Requires.NotNull(callback, nameof(callback));
+        Assumes.NotNull(this.UnderlyingSynchronizationContext);
+
+        this.PostToUnderlyingSynchronizationContextWithCoalescing(callback, state);
+    }
+
+    /// <summary>
+    /// Posts a message directly to the underlying synchronization context.
+    /// </summary>
+    /// <param name="callback">The callback to invoke.</param>
+    /// <param name="state">State to pass to the callback.</param>
+    protected internal virtual void PostToUnderlyingSynchronizationContextCore(SendOrPostCallback callback, object state)
     {
         Requires.NotNull(callback, nameof(callback));
         Assumes.NotNull(this.UnderlyingSynchronizationContext);
@@ -656,6 +656,34 @@ public partial class JoinableTaskFactory
     }
 
     /// <summary>
+    /// Posts a message to the underlying synchronization context while coalescing pending messages.
+    /// </summary>
+    /// <param name="callback">The callback to invoke.</param>
+    /// <param name="state">
+    /// State to pass to the callback. Implementing <see cref="IPendingExecutionRequestState"/> allows
+    /// the callback to be removed from the private queue when it has already executed by another means.
+    /// </param>
+    protected void PostToUnderlyingSynchronizationContextWithCoalescing(SendOrPostCallback callback, object state)
+    {
+        Requires.NotNull(callback, nameof(callback));
+
+        bool postCallback;
+        lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
+        {
+            this.pendingUnderlyingSynchronizationContextCallbacks ??= new Queue<(SendOrPostCallback, object)>();
+            this.RemoveCompletedPendingUnderlyingSynchronizationContextCallbacks();
+            this.pendingUnderlyingSynchronizationContextCallbacks.Enqueue((callback, state));
+            postCallback = !this.underlyingSynchronizationContextCallbackPending;
+            this.underlyingSynchronizationContextCallbackPending = true;
+        }
+
+        if (postCallback)
+        {
+            this.PostPendingUnderlyingSynchronizationContextCallback();
+        }
+    }
+
+    /// <summary>
     /// Throws an exception if an active AsyncReaderWriterLock
     /// upgradeable read or write lock is held by the caller.
     /// </summary>
@@ -682,7 +710,7 @@ public partial class JoinableTaskFactory
 
     private void ExecuteOnePendingUnderlyingSynchronizationContextCallback()
     {
-        SingleExecuteProtector? callback = null;
+        (SendOrPostCallback Callback, object State)? callback = null;
         try
         {
             lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
@@ -694,7 +722,10 @@ public partial class JoinableTaskFactory
                 }
             }
 
-            callback?.TryExecute();
+            if (callback is { } work)
+            {
+                work.Callback(work.State);
+            }
         }
         finally
         {
@@ -722,7 +753,7 @@ public partial class JoinableTaskFactory
     {
         try
         {
-            this.PostToUnderlyingSynchronizationContext(ExecuteOnePendingUnderlyingSynchronizationContextCallbackDelegate, this);
+            this.PostToUnderlyingSynchronizationContextCore(ExecuteOnePendingUnderlyingSynchronizationContextCallbackDelegate, this);
         }
         catch
         {
@@ -742,7 +773,10 @@ public partial class JoinableTaskFactory
     {
         Assumes.True(Monitor.IsEntered(this.pendingUnderlyingSynchronizationContextCallbacksLock));
 
-        while (this.pendingUnderlyingSynchronizationContextCallbacks?.Count > 0 && this.pendingUnderlyingSynchronizationContextCallbacks.Peek().HasBeenExecuted)
+#pragma warning disable VSOnly // IPendingExecutionRequestState is intended for evaluation purposes only.
+        while (this.pendingUnderlyingSynchronizationContextCallbacks?.Count > 0
+            && this.pendingUnderlyingSynchronizationContextCallbacks.Peek().State is IPendingExecutionRequestState { IsCompleted: true })
+#pragma warning restore VSOnly
         {
             this.pendingUnderlyingSynchronizationContextCallbacks.Dequeue();
         }

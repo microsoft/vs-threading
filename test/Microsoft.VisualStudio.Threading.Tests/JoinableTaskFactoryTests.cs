@@ -183,6 +183,19 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
     }
 
     [Fact]
+    public void DerivedFactoryDoesNotCoalesceUnlessOptedIn()
+    {
+        var factory = new NonCoalescingJoinableTaskFactory(this.context);
+
+        (JoinableTask _, Task firstQueued) = factory.QueueCallback();
+        (JoinableTask _, Task secondQueued) = factory.QueueCallback();
+        Task.WhenAll(firstQueued, secondQueued).GetAwaiter().GetResult();
+
+        Assert.True(SpinWait.SpinUntil(() => factory.PostCount == 2, UnexpectedTimeout));
+        Assert.Equal(2, factory.PostCount);
+    }
+
+    [Fact]
     public void DisableProcessing_ThrowsOutsideJoinableTask()
     {
         Assert.Throws<InvalidOperationException>(() => this.asyncPump.DisableProcessing());
@@ -356,9 +369,39 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
             return (job, queued.Task);
         }
 
-        protected override void PostToUnderlyingSynchronizationContext(SendOrPostCallback callback, object state)
+        protected override void PostToUnderlyingSynchronizationContextCore(SendOrPostCallback callback, object state)
         {
             this.PostedCallbacks.Enqueue((callback, state));
+        }
+    }
+
+    private class NonCoalescingJoinableTaskFactory : JoinableTaskFactory
+    {
+        private int postCount;
+
+        internal NonCoalescingJoinableTaskFactory(JoinableTaskContext owner)
+            : base(owner)
+        {
+        }
+
+        internal int PostCount => Volatile.Read(ref this.postCount);
+
+        internal (JoinableTask Job, Task Queued) QueueCallback()
+        {
+            var queued = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            JoinableTask job = this.RunAsync(async delegate
+            {
+                await TaskScheduler.Default.SwitchTo(alwaysYield: true);
+                this.SwitchToMainThreadAsync().GetAwaiter().OnCompleted(() => { });
+                queued.SetResult(null);
+            });
+
+            return (job, queued.Task);
+        }
+
+        protected override void PostToUnderlyingSynchronizationContext(SendOrPostCallback callback, object state)
+        {
+            Interlocked.Increment(ref this.postCount);
         }
     }
 }
