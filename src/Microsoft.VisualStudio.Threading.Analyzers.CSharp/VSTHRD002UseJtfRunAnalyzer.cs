@@ -85,8 +85,15 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
             return true;
         }
 
-        // Task-returning methods and delegates are covered by VSTHRD103. Nested non-Task-returning
-        // functions still need VSTHRD002 because they cannot use await.
+        SyntaxNode? containingFunction = context.Node.Ancestors().FirstOrDefault(
+            node => node is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax or BaseMethodDeclarationSyntax);
+        if (containingFunction is not AnonymousFunctionExpressionSyntax and not LocalFunctionStatementSyntax)
+        {
+            return false;
+        }
+
+        // Task-returning methods and delegates are covered by VSTHRD103. VSTHRD002 covers
+        // nested functions that do not return Task so that every synchronous wait is diagnosed.
         return context.SemanticModel.GetEnclosingSymbol(context.Node.SpanStart, context.CancellationToken) is IMethodSymbol containingMethod
             && !containingMethod.HasAsyncCompatibleReturnType();
     }
