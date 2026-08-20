@@ -400,6 +400,63 @@ class Test {
     }
 
     [Fact]
+    public async Task TaskWaitShouldReportWarning_WithinActionInTaskReturningMethod()
+    {
+        var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    Task F() {
+        Action action = () => Task.Delay(1).[|Wait|]();
+        return Task.CompletedTask;
+    }
+}
+";
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task TaskWaitShouldReportWarning_WithinActionArgumentInTaskReturningMethod()
+    {
+        var test = @"
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+class Test {
+    Task F() {
+        new List<int>().ForEach(i => { Task.Delay(1).[|Wait|](); });
+        return Task.CompletedTask;
+    }
+}
+";
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task TaskWaitShouldNotReportWarning_WithinTaskReturningDelegateInTaskReturningMethod()
+    {
+        var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    Task F() {
+        Func<Task> action = () => {
+            // VSTHRD103 covers synchronous waits in Task-returning delegates,
+            // so VSTHRD002 should not produce a duplicate diagnostic.
+            Task.Delay(1).Wait();
+            return Task.CompletedTask;
+        };
+        return Task.CompletedTask;
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
     public async Task Task_Result_ShouldReportWarning()
     {
         var test = @"
