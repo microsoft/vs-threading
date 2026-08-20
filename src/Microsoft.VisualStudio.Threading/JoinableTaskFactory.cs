@@ -23,7 +23,7 @@ namespace Microsoft.VisualStudio.Threading;
 /// </remarks>
 public partial class JoinableTaskFactory
 {
-    private static readonly SendOrPostCallback ExecuteOnePendingUnderlyingSynchronizationContextCallbackDelegate = state => ((JoinableTaskFactory)state!).ExecuteOnePendingUnderlyingSynchronizationContextCallback();
+    private static readonly SendOrPostCallback ExecuteOnePendingUnderlyingSynchronizationContextCallbackDelegate = state => ((UnderlyingSynchronizationContextCallback)state!).Execute();
 
     /// <summary>
     /// The <see cref="JoinableTaskContext"/> that owns this instance.
@@ -753,7 +753,7 @@ public partial class JoinableTaskFactory
     {
         try
         {
-            this.PostToUnderlyingSynchronizationContextCore(ExecuteOnePendingUnderlyingSynchronizationContextCallbackDelegate, this);
+            this.PostToUnderlyingSynchronizationContextCore(ExecuteOnePendingUnderlyingSynchronizationContextCallbackDelegate, new UnderlyingSynchronizationContextCallback(this));
         }
         catch
         {
@@ -1532,6 +1532,22 @@ public partial class JoinableTaskFactory
 
                 this.job.Factory.OnTransitionedToMainThread(this.job, !this.job.Factory.Context.IsOnMainThread);
             }
+        }
+
+    }
+
+    private sealed class UnderlyingSynchronizationContextCallback
+    {
+        private JoinableTaskFactory? factory;
+
+        internal UnderlyingSynchronizationContextCallback(JoinableTaskFactory factory)
+        {
+            this.factory = factory;
+        }
+
+        internal void Execute()
+        {
+            Interlocked.Exchange(ref this.factory, null)?.ExecuteOnePendingUnderlyingSynchronizationContextCallback();
         }
     }
 }
