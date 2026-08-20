@@ -330,10 +330,15 @@ public static class Utils
             return true;
         }
 
-        if (methodSymbol.IsExtensionMethod && methodSymbol.Parameters[0].Type is INamedTypeSymbol receiverType)
+        if (methodSymbol.IsExtensionMethod && !methodSymbol.Parameters.IsDefaultOrEmpty && methodSymbol.Parameters[0].Type is INamedTypeSymbol receiverType)
         {
-            return receiverType.GetMembers(asyncMethodName)
-                .Concat(receiverType.AllInterfaces.SelectMany(iface => iface.GetMembers(asyncMethodName)))
+            IEnumerable<ISymbol> receiverMembers = receiverType.AllInterfaces.SelectMany(iface => iface.GetMembers(asyncMethodName));
+            for (INamedTypeSymbol? currentType = receiverType; currentType is not null; currentType = currentType.BaseType)
+            {
+                receiverMembers = receiverMembers.Concat(currentType.GetMembers(asyncMethodName));
+            }
+
+            return receiverMembers
                 .Any(alt => IsXAtLeastAsPublicAsY(alt, methodSymbol));
         }
 

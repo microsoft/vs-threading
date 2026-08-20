@@ -98,7 +98,9 @@ public class VSTHRD104OfferAsyncOptionAnalyzer : DiagnosticAnalyzer
                 {
                     if (item.Method.IsMatch(invokedMember))
                     {
-                        if (invokedMember is IPropertySymbol { Name: nameof(Task<int>.Result) } && this.IsGuardedBySuccessfulCompletion(context, memberAccessSyntax))
+                        if (invokedMember is IPropertySymbol { Name: nameof(Task<int>.Result), ContainingType: { } containingType }
+                            && Utils.IsTask(containingType)
+                            && this.IsGuardedBySuccessfulCompletion(context, memberAccessSyntax))
                         {
                             return;
                         }
@@ -114,7 +116,7 @@ public class VSTHRD104OfferAsyncOptionAnalyzer : DiagnosticAnalyzer
         private bool IsGuardedBySuccessfulCompletion(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax resultAccess)
         {
             ISymbol? taskSymbol = context.SemanticModel.GetSymbolInfo(resultAccess.Expression, context.CancellationToken).Symbol;
-            if (taskSymbol is null)
+            if (taskSymbol is not ILocalSymbol and not IParameterSymbol)
             {
                 return false;
             }

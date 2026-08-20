@@ -122,6 +122,31 @@ public static class ServiceExtensions {
     }
 
     [Fact]
+    public async Task JTFRunFromPublicExtensionMethodWithInheritedAsyncInstanceMethod_GeneratesNoWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+public class ServiceBase {
+    public Task ClearAsync(string category) => Task.CompletedTask;
+}
+
+public class Service : ServiceBase {
+}
+
+public static class ServiceExtensions {
+    private static readonly JoinableTaskFactory Jtf = new JoinableTaskFactory(new JoinableTaskContext());
+
+    public static void Clear(this Service service, string category)
+        => Jtf.Run(() => service.ClearAsync(category));
+}
+";
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
     public async Task TaskResultGuardedByIsCompletedSuccessfully_GeneratesNoWarning()
     {
         var test = @"
@@ -168,6 +193,60 @@ public class Test {
             ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
         };
         analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithSpan(7, 25, 7, 31));
+        await analyzerTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task ValueTaskResultGuardedByIsCompletedSuccessfully_GeneratesWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+public class Test {
+    public int GetResult(ValueTask<int> task) {
+        if (task.IsCompletedSuccessfully) {
+            return task.Result;
+        }
+
+        return 0;
+    }
+}
+";
+
+        var analyzerTest = new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        };
+        analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithSpan(7, 25, 7, 31));
+        await analyzerTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task TaskPropertyResultGuardedByIsCompletedSuccessfully_GeneratesWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+public class Test {
+    private Task<int> TaskProperty => Task.FromResult(1);
+
+    public int GetResult() {
+        if (TaskProperty.IsCompletedSuccessfully) {
+            return TaskProperty.Result;
+        }
+
+        return 0;
+    }
+}
+";
+
+        var analyzerTest = new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        };
+        analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithSpan(9, 33, 9, 39));
         await analyzerTest.RunAsync();
     }
 }
