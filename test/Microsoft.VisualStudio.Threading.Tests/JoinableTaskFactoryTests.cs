@@ -201,9 +201,16 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
         var factory = new SynchronouslyPostingJoinableTaskFactory(this.context);
         int executionCount = 0;
 
-        factory.Post(() => factory.Post(() => executionCount++));
+        factory.Post(delegate
+        {
+            for (int i = 0; i < 100; i++)
+            {
+                factory.Post(() => executionCount++);
+            }
+        });
 
-        Assert.Equal(1, executionCount);
+        Assert.Equal(100, executionCount);
+        Assert.Equal(1, factory.MaximumPostDepth);
     }
 
     [Fact]
@@ -420,10 +427,15 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
 
     private class SynchronouslyPostingJoinableTaskFactory : JoinableTaskFactory
     {
+        private int currentPostDepth;
+        private int maximumPostDepth;
+
         internal SynchronouslyPostingJoinableTaskFactory(JoinableTaskContext owner)
             : base(owner)
         {
         }
+
+        internal int MaximumPostDepth => Volatile.Read(ref this.maximumPostDepth);
 
         internal void Post(Action callback)
         {
@@ -432,7 +444,16 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
 
         protected override void PostToUnderlyingSynchronizationContextCore(SendOrPostCallback callback, object state)
         {
-            callback(state);
+            int depth = Interlocked.Increment(ref this.currentPostDepth);
+            Interlocked.Exchange(ref this.maximumPostDepth, Math.Max(this.MaximumPostDepth, depth));
+            try
+            {
+                callback(state);
+            }
+            finally
+            {
+                Interlocked.Decrement(ref this.currentPostDepth);
+            }
         }
     }
 }

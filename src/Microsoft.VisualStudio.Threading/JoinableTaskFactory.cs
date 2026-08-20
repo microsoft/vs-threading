@@ -727,45 +727,58 @@ public partial class JoinableTaskFactory
 
     private void ExecuteOnePendingUnderlyingSynchronizationContextCallback()
     {
-        (SendOrPostCallback Callback, object State)? callback = null;
-        try
+        bool continueSynchronously;
+        do
         {
-            lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
+            continueSynchronously = false;
+            (SendOrPostCallback Callback, object State)? callback = null;
+            try
             {
-                this.RemoveCompletedPendingUnderlyingSynchronizationContextCallbacks();
-                if (this.pendingUnderlyingSynchronizationContextCallbacks?.Count > 0)
+                lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
                 {
-                    callback = this.pendingUnderlyingSynchronizationContextCallbacks.Dequeue();
+                    this.RemoveCompletedPendingUnderlyingSynchronizationContextCallbacks();
+                    if (this.pendingUnderlyingSynchronizationContextCallbacks?.Count > 0)
+                    {
+                        callback = this.pendingUnderlyingSynchronizationContextCallbacks.Dequeue();
+                    }
+                }
+
+                if (callback is { } work)
+                {
+                    work.Callback(work.State);
                 }
             }
-
-            if (callback is { } work)
+            finally
             {
-                work.Callback(work.State);
+                TaskCompletionSource<object?>? postCompletion = null;
+                lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
+                {
+                    this.RemoveCompletedPendingUnderlyingSynchronizationContextCallbacks();
+                    if (this.pendingUnderlyingSynchronizationContextCallbacks?.Count > 0)
+                    {
+                        if (synchronouslyPostingFactory == this)
+                        {
+                            continueSynchronously = true;
+                        }
+                        else
+                        {
+                            postCompletion = this.underlyingSynchronizationContextPostCompletion = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+                        }
+                    }
+                    else
+                    {
+                        this.pendingUnderlyingSynchronizationContextCallbacks = null;
+                        this.underlyingSynchronizationContextCallbackPending = false;
+                    }
+                }
+
+                if (postCompletion is object)
+                {
+                    this.PostPendingUnderlyingSynchronizationContextCallback(postCompletion);
+                }
             }
         }
-        finally
-        {
-            TaskCompletionSource<object?>? postCompletion = null;
-            lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
-            {
-                this.RemoveCompletedPendingUnderlyingSynchronizationContextCallbacks();
-                if (this.pendingUnderlyingSynchronizationContextCallbacks?.Count > 0)
-                {
-                    postCompletion = this.underlyingSynchronizationContextPostCompletion = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
-                }
-                else
-                {
-                    this.pendingUnderlyingSynchronizationContextCallbacks = null;
-                    this.underlyingSynchronizationContextCallbackPending = false;
-                }
-            }
-
-            if (postCompletion is object)
-            {
-                this.PostPendingUnderlyingSynchronizationContextCallback(postCompletion);
-            }
-        }
+        while (continueSynchronously);
     }
 
     private void PostPendingUnderlyingSynchronizationContextCallback(TaskCompletionSource<object?> postCompletion)
