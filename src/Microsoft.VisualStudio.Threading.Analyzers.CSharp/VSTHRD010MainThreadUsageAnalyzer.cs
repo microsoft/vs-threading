@@ -139,6 +139,7 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
                     methodsDeclaringUIThreadRequirement: methodsDeclaringUIThreadRequirement,
                     methodsAssertingUIThreadRequirement: methodsAssertingUIThreadRequirement,
                     diagnosticProperties: diagnosticProperties);
+                codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeAwait), SyntaxKind.AwaitExpression);
                 codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeInvocation), SyntaxKind.InvocationExpression);
                 codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeMemberAccess), SyntaxKind.SimpleMemberAccessExpression);
                 codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeCast), SyntaxKind.CastExpression);
@@ -330,6 +331,35 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
         internal HashSet<IMethodSymbol> MethodsAssertingUIThreadRequirement { get; }
 
         internal ImmutableDictionary<string, string?> DiagnosticProperties { get; }
+
+        internal void AnalyzeAwait(SyntaxNodeAnalysisContext context)
+        {
+            var awaitSyntax = (AwaitExpressionSyntax)context.Node;
+            SyntaxNode? methodDeclaration = context.Node.FirstAncestorOrSelf<SyntaxNode>(n => CSharpCommonInterest.MethodSyntaxKinds.Contains(n.Kind()));
+            if (methodDeclaration is object && InvalidatesMainThreadContext(awaitSyntax.Expression, context.SemanticModel, context.CancellationToken))
+            {
+                this.methodDeclarationNodes = this.methodDeclarationNodes.SetItem(methodDeclaration, ThreadingContext.Unknown);
+            }
+
+            static bool InvalidatesMainThreadContext(ExpressionSyntax awaitedExpression, SemanticModel semanticModel, CancellationToken cancellationToken)
+            {
+                ISymbol? awaitedSymbol = semanticModel.GetSymbolInfo(awaitedExpression, cancellationToken).Symbol;
+                if (awaitedSymbol is IPropertySymbol { Name: "Default", ContainingType.Name: "TaskScheduler", ContainingType: { } containingType }
+                    && containingType.BelongsToNamespace(Namespaces.SystemThreadingTasks))
+                {
+                    return true;
+                }
+
+                if (awaitedExpression is InvocationExpressionSyntax { ArgumentList.Arguments: [{ Expression: { } continueOnCapturedContext }] } invocation
+                    && semanticModel.GetSymbolInfo(invocation, cancellationToken).Symbol is IMethodSymbol { Name: "ConfigureAwait" })
+                {
+                    Optional<object?> constantValue = semanticModel.GetConstantValue(continueOnCapturedContext, cancellationToken);
+                    return constantValue.HasValue && constantValue.Value is false;
+                }
+
+                return false;
+            }
+        }
 
         internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
         {

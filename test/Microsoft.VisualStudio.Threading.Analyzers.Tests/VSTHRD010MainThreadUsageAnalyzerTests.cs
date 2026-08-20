@@ -444,7 +444,7 @@ class Test {
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
-    [Fact(Skip = "Not yet supported. See https://github.com/microsoft/vs-threading/issues/542")]
+    [Fact]
     public async Task InvokeVsSolutionAfterUIThreadAssertionAndSwitchToThreadPool()
     {
         var test = @"
@@ -471,7 +471,7 @@ class Test {
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
-    [Fact(Skip = "Not yet supported. See https://github.com/microsoft/vs-threading/issues/542")]
+    [Fact]
     public async Task InvokeVsSolutionAfterUIThreadAssertionAndConfigureAwaitFalse()
     {
         var test = @"
