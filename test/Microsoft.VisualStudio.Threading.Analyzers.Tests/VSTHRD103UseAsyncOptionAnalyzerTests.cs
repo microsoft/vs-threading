@@ -281,6 +281,25 @@ class Test {
     }
 
     [Fact]
+    public async Task TaskWaitAnyOffersNoFix()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task T() {
+        Task[] tasks = null;
+        Task.{|#0:WaitAny|}(tasks);
+        return Task.CompletedTask;
+    }
+}
+";
+
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("WaitAny");
+        await CSVerify.VerifyCodeFixAsync(test, expected, test);
+    }
+
+    [Fact]
     public async Task TaskWaitInValueTaskReturningMethodGeneratesWarning()
     {
         var test = @"
