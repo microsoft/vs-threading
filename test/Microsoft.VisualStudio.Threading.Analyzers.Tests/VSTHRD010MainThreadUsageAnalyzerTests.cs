@@ -500,6 +500,36 @@ class Test {
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
+    [Fact]
+    public async Task InvokeVsSolutionAfterUIThreadAssertionAndCustomConfigureAwaitFalse()
+    {
+        var test = @"
+using System.Runtime.CompilerServices;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    async void F() {
+        IVsSolution sln = null;
+        VerifyOnUIThread();
+
+        await new CustomAwaitable().ConfigureAwait(false);
+
+        sln.SetProperty(1000, null);
+    }
+
+    void VerifyOnUIThread() {
+    }
+}
+
+class CustomAwaitable {
+    public CustomAwaitable ConfigureAwait(bool continueOnCapturedContext) => this;
+
+    public TaskAwaiter GetAwaiter() => default;
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
     [Fact(Skip = "Not yet supported. See https://github.com/Microsoft/vs-threading/issues/38")]
     public async Task InvokeVsSolutionAfterUIThreadAssertionAndConditionalSwitchToThreadPool()
     {

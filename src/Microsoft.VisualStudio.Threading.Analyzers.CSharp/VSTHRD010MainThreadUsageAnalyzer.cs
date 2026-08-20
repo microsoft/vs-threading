@@ -351,7 +351,8 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
                 }
 
                 if (awaitedExpression is InvocationExpressionSyntax { ArgumentList.Arguments: [{ Expression: { } continueOnCapturedContext }] } invocation
-                    && semanticModel.GetSymbolInfo(invocation, cancellationToken).Symbol is IMethodSymbol { Name: "ConfigureAwait" })
+                    && semanticModel.GetSymbolInfo(invocation, cancellationToken).Symbol is IMethodSymbol { Name: "ConfigureAwait", Parameters: [{ Type.SpecialType: SpecialType.System_Boolean }], ContainingType: { Name: Types.Task.TypeName or Types.ValueTask.TypeName } configureAwaitContainingType }
+                    && configureAwaitContainingType.BelongsToNamespace(Namespaces.SystemThreadingTasks))
                 {
                     Optional<object?> constantValue = semanticModel.GetConstantValue(continueOnCapturedContext, cancellationToken);
                     return constantValue.HasValue && constantValue.Value is false;
