@@ -249,4 +249,31 @@ public class Test {
         analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithSpan(9, 33, 9, 39));
         await analyzerTest.RunAsync();
     }
+
+    [Fact]
+    public async Task TaskResultInLocalFunctionWithOuterCompletionGuard_GeneratesWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+public class Test {
+    public int GetResult(Task<int> task) {
+        if (task.IsCompletedSuccessfully) {
+            int LocalFunction() => task.Result;
+            return LocalFunction();
+        }
+
+        return 0;
+    }
+}
+";
+
+        var analyzerTest = new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        };
+        analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithSpan(7, 41, 7, 47));
+        await analyzerTest.RunAsync();
+    }
 }

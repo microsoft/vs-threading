@@ -121,7 +121,9 @@ public class VSTHRD104OfferAsyncOptionAnalyzer : DiagnosticAnalyzer
                 return false;
             }
 
-            foreach (IfStatementSyntax ifStatement in resultAccess.Ancestors().OfType<IfStatementSyntax>())
+            foreach (IfStatementSyntax ifStatement in resultAccess.Ancestors()
+                .TakeWhile(ancestor => ancestor is not LocalFunctionStatementSyntax)
+                .OfType<IfStatementSyntax>())
             {
                 if (ifStatement.Statement.Span.Contains(resultAccess.Span) && ConditionProvesSuccessfulCompletion(ifStatement.Condition, taskSymbol))
                 {
