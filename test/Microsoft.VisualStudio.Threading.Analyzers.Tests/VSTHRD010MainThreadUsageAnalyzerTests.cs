@@ -501,6 +501,32 @@ class Test {
     }
 
     [Fact]
+    public async Task InvokeVsSolutionWithinAndAfterConfigureAwaitFalseOperand()
+    {
+        var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task F() {
+        IVsSolution sln = null;
+        VerifyOnUIThread();
+
+        await Task.FromResult(sln.SetProperty(1000, null)).ConfigureAwait(false);
+
+        sln.SetProperty(1000, null);
+    }
+
+    void VerifyOnUIThread() {
+    }
+}
+";
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorAsync).WithSpan(13, 13, 13, 24).WithArguments("IVsSolution", "JoinableTaskFactory.SwitchToMainThreadAsync");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
     public async Task InvokeVsSolutionAfterUIThreadAssertionAndCustomConfigureAwaitFalseReportsWarning()
     {
         var test = @"

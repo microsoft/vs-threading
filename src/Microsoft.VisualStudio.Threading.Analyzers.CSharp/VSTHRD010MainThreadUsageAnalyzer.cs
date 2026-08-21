@@ -302,7 +302,8 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
 
     private class MethodAnalyzer
     {
-        private ImmutableDictionary<SyntaxNode, ThreadingContext> methodDeclarationNodes = ImmutableDictionary<SyntaxNode, ThreadingContext>.Empty;
+        private readonly object methodDeclarationNodesSyncObject = new object();
+        private ImmutableDictionary<SyntaxNode, ImmutableArray<ThreadingContextTransition>> methodDeclarationNodes = ImmutableDictionary<SyntaxNode, ImmutableArray<ThreadingContextTransition>>.Empty;
 
         public MethodAnalyzer(
             ImmutableArray<CommonInterest.QualifiedMember> mainThreadAssertingMethods,
@@ -338,7 +339,7 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
             SyntaxNode? methodDeclaration = context.Node.FirstAncestorOrSelf<SyntaxNode>(n => CSharpCommonInterest.MethodSyntaxKinds.Contains(n.Kind()));
             if (methodDeclaration is object && InvalidatesMainThreadContext(awaitSyntax.Expression, context.SemanticModel, context.CancellationToken))
             {
-                this.methodDeclarationNodes = this.methodDeclarationNodes.SetItem(methodDeclaration, ThreadingContext.Unknown);
+                this.RecordThreadingContext(methodDeclaration, awaitSyntax.Span.End, ThreadingContext.Unknown);
             }
 
             static bool InvalidatesMainThreadContext(ExpressionSyntax awaitedExpression, SemanticModel semanticModel, CancellationToken cancellationToken)
@@ -390,7 +391,7 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
                             }
                         }
 
-                        this.methodDeclarationNodes = this.methodDeclarationNodes.SetItem(methodDeclaration, ThreadingContext.MainThread);
+                        this.RecordThreadingContext(methodDeclaration, invocationSyntax.Span.End, ThreadingContext.MainThread);
                         return;
                     }
                 }
@@ -506,7 +507,18 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
                 SyntaxNode? methodDeclaration = context.Node.FirstAncestorOrSelf<SyntaxNode>(n => CSharpCommonInterest.MethodSyntaxKinds.Contains(n.Kind()));
                 if (methodDeclaration is object)
                 {
-                    threadingContext = this.methodDeclarationNodes.GetValueOrDefault(methodDeclaration);
+                    lock (this.methodDeclarationNodesSyncObject)
+                    {
+                        ImmutableArray<ThreadingContextTransition> transitions = this.methodDeclarationNodes.GetValueOrDefault(methodDeclaration);
+                        if (!transitions.IsDefault)
+                        {
+                            threadingContext = transitions
+                                .Where(transition => transition.Position <= context.Node.SpanStart)
+                                .OrderByDescending(transition => transition.Position)
+                                .Select(transition => transition.Context)
+                                .FirstOrDefault();
+                        }
+                    }
                 }
 
                 if (threadingContext != ThreadingContext.MainThread)
@@ -521,6 +533,33 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
             }
 
             return false;
+        }
+
+        private void RecordThreadingContext(SyntaxNode methodDeclaration, int position, ThreadingContext context)
+        {
+            lock (this.methodDeclarationNodesSyncObject)
+            {
+                ImmutableArray<ThreadingContextTransition> transitions = this.methodDeclarationNodes.GetValueOrDefault(methodDeclaration);
+                if (transitions.IsDefault)
+                {
+                    transitions = ImmutableArray<ThreadingContextTransition>.Empty;
+                }
+
+                this.methodDeclarationNodes = this.methodDeclarationNodes.SetItem(methodDeclaration, transitions.Add(new ThreadingContextTransition(position, context)));
+            }
+        }
+
+        private readonly struct ThreadingContextTransition
+        {
+            internal ThreadingContextTransition(int position, ThreadingContext context)
+            {
+                this.Position = position;
+                this.Context = context;
+            }
+
+            internal int Position { get; }
+
+            internal ThreadingContext Context { get; }
         }
     }
 }
