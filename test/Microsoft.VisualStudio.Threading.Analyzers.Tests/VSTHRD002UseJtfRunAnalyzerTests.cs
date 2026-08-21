@@ -435,6 +435,23 @@ class Test {
     }
 
     [Fact]
+    public async Task TaskWaitShouldReportWarning_WithinLocalFunctionInTaskReturningMethod()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task F() {
+        void Local() => Task.Delay(1).[|Wait|]();
+        Local();
+        return Task.CompletedTask;
+    }
+}
+";
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
     public async Task TaskWaitShouldNotReportWarning_WithinTaskReturningDelegateInTaskReturningMethod()
     {
         var test = @"

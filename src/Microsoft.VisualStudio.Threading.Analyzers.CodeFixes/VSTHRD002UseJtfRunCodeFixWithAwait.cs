@@ -71,9 +71,10 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
         target = null;
 
         var syntaxNode = (ExpressionSyntax)root.FindNode(diagnostic.Location.SourceSpan);
-        if (syntaxNode.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>() is object)
+        if (syntaxNode.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>() is object ||
+            syntaxNode.FirstAncestorOrSelf<LocalFunctionStatementSyntax>() is object)
         {
-            // We don't support converting anonymous delegates to async.
+            // We don't support converting anonymous delegates or local functions to async.
             return false;
         }
 
