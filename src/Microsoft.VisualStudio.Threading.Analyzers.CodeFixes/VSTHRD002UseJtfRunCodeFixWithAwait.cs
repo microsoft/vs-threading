@@ -198,6 +198,25 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
             return method.Parameters.IsEmpty;
         }
 
+        if (method.Name == nameof(TaskAwaiter.GetResult))
+        {
+            ExpressionSyntax? getAwaiterExpression = (invocation.Expression as MemberAccessExpressionSyntax)?.Expression;
+            while (getAwaiterExpression is ParenthesizedExpressionSyntax parenthesized)
+            {
+                getAwaiterExpression = parenthesized.Expression;
+            }
+
+            ExpressionSyntax? receiver = ((getAwaiterExpression as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax)?.Expression;
+            if (receiver is not { } awaitableReceiver
+                || semanticModel.GetSymbolInfo(awaitableReceiver, cancellationToken).Symbol is INamedTypeSymbol)
+            {
+                return false;
+            }
+
+            ITypeSymbol? receiverType = semanticModel.GetTypeInfo(awaitableReceiver, cancellationToken).Type;
+            return receiverType.IsAwaitable(semanticModel, awaitableReceiver.SpanStart);
+        }
+
         if (method.Name is nameof(Task.WaitAll) or nameof(Task.WaitAny)
             && Utils.IsTask(method.ContainingType))
         {

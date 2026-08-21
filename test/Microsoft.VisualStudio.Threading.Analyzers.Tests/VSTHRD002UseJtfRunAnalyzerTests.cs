@@ -777,6 +777,19 @@ class Test {
         _ = task.Result;
     }
 
+    async void GuardedWithNestedConditional(bool condition) {
+        var task = Task.Run(() => 1);
+        if (!task.IsCompleted) {
+            if (condition) {
+                await task;
+            } else {
+                await task;
+            }
+        }
+
+        _ = task.Result;
+    }
+
     async void AwaitedBeforeNestedBlock(bool condition) {
         var task = Task.Run(() => 1);
         await task;
@@ -1075,6 +1088,27 @@ class Test {
 
 class CustomAwaitable {
     public TaskAwaiter GetAwaiter(int value) => Task.CompletedTask.GetAwaiter();
+}
+";
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task StaticGetAwaiterFactoryDoesNotOfferCodeFix()
+    {
+        var test = @"
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
+
+class Test {
+    void F() {
+        AwaiterFactory.GetAwaiter().[|GetResult|]();
+    }
+}
+
+static class AwaiterFactory {
+    public static TaskAwaiter GetAwaiter() => Task.CompletedTask.GetAwaiter();
 }
 ";
 

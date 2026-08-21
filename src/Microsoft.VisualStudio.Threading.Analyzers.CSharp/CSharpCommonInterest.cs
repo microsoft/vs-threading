@@ -449,12 +449,17 @@ internal static class CSharpCommonInterest
             return !MayReassignTask(context, statement, taskSymbols, awaitExpression.Span.End, statement.Span.End + 1);
         }
 
+        if (statement is IfStatementSyntax { Else: { } elseClause } ifStatement)
+        {
+            return StatementDefinitelyAwaitsTask(context, ifStatement.Statement, taskSymbols)
+                && StatementDefinitelyAwaitsTask(context, elseClause.Statement, taskSymbols);
+        }
+
         if (statement is BlockSyntax block)
         {
             for (int i = block.Statements.Count - 1; i >= 0; i--)
             {
-                if (TryGetAwaitExpression(context, block.Statements[i], taskSymbols, out awaitExpression)
-                    && !MayReassignTask(context, block.Statements[i], taskSymbols, awaitExpression.Span.End, block.Statements[i].Span.End + 1))
+                if (StatementDefinitelyAwaitsTask(context, block.Statements[i], taskSymbols))
                 {
                     return true;
                 }
