@@ -65,17 +65,37 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
             {
                 compilationContext.RegisterCodeBlockStartAction<SyntaxKind>(codeBlockContext =>
                 {
-                    // We want to scan properties and methods that do not return Task or Task<T>.
                     var methodSymbol = codeBlockContext.OwningSymbol as IMethodSymbol;
                     var propertySymbol = codeBlockContext.OwningSymbol as IPropertySymbol;
-                    if (propertySymbol is object || (methodSymbol is object && !methodSymbol.HasAsyncCompatibleReturnType()))
+                    if (propertySymbol is object || methodSymbol is object)
                     {
-                        codeBlockContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => AnalyzeInvocation(c, taskSymbol)), SyntaxKind.InvocationExpression);
-                        codeBlockContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => AnalyzeMemberAccess(c, taskSymbol)), SyntaxKind.SimpleMemberAccessExpression);
+                        bool analyzeWholeCodeBlock = propertySymbol is object || !methodSymbol!.HasAsyncCompatibleReturnType();
+                        codeBlockContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => AnalyzeInvocation(c, taskSymbol, analyzeWholeCodeBlock)), SyntaxKind.InvocationExpression);
+                        codeBlockContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => AnalyzeMemberAccess(c, taskSymbol, analyzeWholeCodeBlock)), SyntaxKind.SimpleMemberAccessExpression);
                     }
                 });
             }
         });
+    }
+
+    private static bool ShouldAnalyze(SyntaxNodeAnalysisContext context, bool analyzeWholeCodeBlock)
+    {
+        if (analyzeWholeCodeBlock)
+        {
+            return true;
+        }
+
+        SyntaxNode? containingFunction = context.Node.Ancestors().FirstOrDefault(
+            node => node is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax or BaseMethodDeclarationSyntax);
+        if (containingFunction is not AnonymousFunctionExpressionSyntax and not LocalFunctionStatementSyntax)
+        {
+            return false;
+        }
+
+        // Methods and delegates with async-compatible return types are covered by VSTHRD103.
+        // VSTHRD002 covers other nested functions so that every synchronous wait is diagnosed.
+        return context.SemanticModel.GetEnclosingSymbol(context.Node.SpanStart, context.CancellationToken) is IMethodSymbol containingMethod
+            && !containingMethod.HasAsyncCompatibleReturnType();
     }
 
     private static ParameterSyntax? GetFirstParameter(AnonymousFunctionExpressionSyntax? anonymousFunctionSyntax)
@@ -136,8 +156,13 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
         CSharpCommonInterest.InspectMemberAccess(context, memberAccessSyntax, Descriptor, problematicMethods);
     }
 
-    private static void AnalyzeInvocation(SyntaxNodeAnalysisContext context, INamedTypeSymbol taskSymbol)
+    private static void AnalyzeInvocation(SyntaxNodeAnalysisContext context, INamedTypeSymbol taskSymbol, bool analyzeWholeCodeBlock)
     {
+        if (!ShouldAnalyze(context, analyzeWholeCodeBlock))
+        {
+            return;
+        }
+
         var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
         InspectMemberAccess(
             context,
@@ -146,8 +171,13 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
             taskSymbol);
     }
 
-    private static void AnalyzeMemberAccess(SyntaxNodeAnalysisContext context, INamedTypeSymbol taskSymbol)
+    private static void AnalyzeMemberAccess(SyntaxNodeAnalysisContext context, INamedTypeSymbol taskSymbol, bool analyzeWholeCodeBlock)
     {
+        if (!ShouldAnalyze(context, analyzeWholeCodeBlock))
+        {
+            return;
+        }
+
         var memberAccessSyntax = (MemberAccessExpressionSyntax)context.Node;
         InspectMemberAccess(
             context,
