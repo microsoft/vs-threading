@@ -125,7 +125,9 @@ public class VSTHRD104OfferAsyncOptionAnalyzer : DiagnosticAnalyzer
                 .TakeWhile(ancestor => ancestor is not LocalFunctionStatementSyntax)
                 .OfType<IfStatementSyntax>())
             {
-                if (ifStatement.Statement.Span.Contains(resultAccess.Span) && ConditionProvesSuccessfulCompletion(ifStatement.Condition, taskSymbol))
+                if (ifStatement.Statement.Span.Contains(resultAccess.Span)
+                    && ConditionProvesSuccessfulCompletion(ifStatement.Condition, taskSymbol)
+                    && !MayWriteSymbolBefore(ifStatement.Statement, resultAccess, taskSymbol))
                 {
                     return true;
                 }
@@ -156,6 +158,32 @@ public class VSTHRD104OfferAsyncOptionAnalyzer : DiagnosticAnalyzer
                 return completionProperty is IPropertySymbol { ContainingType: { } containingType }
                     && Utils.IsTask(containingType)
                     && SymbolEqualityComparer.Default.Equals(expectedTaskSymbol, completedTaskSymbol);
+            }
+
+            bool MayWriteSymbolBefore(StatementSyntax statement, ExpressionSyntax expression, ISymbol expectedTaskSymbol)
+            {
+                foreach (SyntaxNode node in statement.DescendantNodes().Where(node => node.SpanStart < expression.SpanStart))
+                {
+                    ExpressionSyntax? writtenExpression = node switch
+                    {
+                        AssignmentExpressionSyntax assignment => assignment.Left,
+                        PrefixUnaryExpressionSyntax prefix when prefix.IsKind(SyntaxKind.PreIncrementExpression) || prefix.IsKind(SyntaxKind.PreDecrementExpression) => prefix.Operand,
+                        PostfixUnaryExpressionSyntax postfix when postfix.IsKind(SyntaxKind.PostIncrementExpression) || postfix.IsKind(SyntaxKind.PostDecrementExpression) => postfix.Operand,
+                        ArgumentSyntax argument when argument.RefOrOutKeyword.IsKind(SyntaxKind.RefKeyword) || argument.RefOrOutKeyword.IsKind(SyntaxKind.OutKeyword) => argument.Expression,
+                        _ => null,
+                    };
+
+                    if (writtenExpression is not null && writtenExpression.DescendantNodesAndSelf()
+                        .OfType<ExpressionSyntax>()
+                        .Any(candidate => SymbolEqualityComparer.Default.Equals(
+                            context.SemanticModel.GetSymbolInfo(candidate, context.CancellationToken).Symbol,
+                            expectedTaskSymbol)))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
             }
         }
     }

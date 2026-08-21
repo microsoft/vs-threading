@@ -147,6 +147,33 @@ public static class ServiceExtensions {
     }
 
     [Fact]
+    public async Task JTFRunFromPublicExtensionMethodWithExplicitInterfaceAsyncMethod_GeneratesWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+public interface IService {
+    Task ClearAsync();
+}
+
+public class Service : IService {
+    Task IService.ClearAsync() => Task.CompletedTask;
+}
+
+public static class ServiceExtensions {
+    private static readonly JoinableTaskFactory Jtf = new JoinableTaskFactory(new JoinableTaskContext());
+
+    public static void Clear(this Service service)
+        => Jtf.Run(() => ((IService)service).ClearAsync());
+}
+";
+
+        DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(17, 16, 17, 19);
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
     public async Task TaskResultGuardedByIsCompletedSuccessfully_GeneratesNoWarning()
     {
         var test = @"
@@ -274,6 +301,63 @@ public class Test {
             ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
         };
         analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithSpan(7, 41, 7, 47));
+        await analyzerTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task TaskResultAfterReassignmentWithinCompletionGuard_GeneratesWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+public class Test {
+    public int GetResult(Task<int> task) {
+        if (task.IsCompletedSuccessfully) {
+            task = new TaskCompletionSource<int>().Task;
+            return task.Result;
+        }
+
+        return 0;
+    }
+}
+";
+
+        var analyzerTest = new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        };
+        analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithSpan(8, 25, 8, 31));
+        await analyzerTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task TaskResultAfterRefWriteWithinCompletionGuard_GeneratesWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+public class Test {
+    public int GetResult(Task<int> task) {
+        if (task.IsCompletedSuccessfully) {
+            Replace(ref task);
+            return task.Result;
+        }
+
+        return 0;
+    }
+
+    private static void Replace(ref Task<int> task)
+        => task = new TaskCompletionSource<int>().Task;
+}
+";
+
+        var analyzerTest = new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        };
+        analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithSpan(8, 25, 8, 31));
         await analyzerTest.RunAsync();
     }
 }
