@@ -1,10 +1,10 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.VSTHRD116ThreadStaticAnalyzer, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
-using VBVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.VisualBasicCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.VSTHRD116ThreadStaticAnalyzer, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
+using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.ThreadStaticAnalyzer, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
+using VBVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.VisualBasicCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.ThreadStaticAnalyzer, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
-public class VSTHRD116ThreadStaticAnalyzerTests
+public class ThreadStaticAnalyzerTests
 {
     [Fact]
     public async Task ValidUses_CSharp()

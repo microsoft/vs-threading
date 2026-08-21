@@ -13,7 +13,7 @@ namespace Microsoft.VisualStudio.Threading.Analyzers;
 /// Verifies that <see cref="System.ThreadStaticAttribute"/> is applied to static fields that are not initialized inline.
 /// </summary>
 [DiagnosticAnalyzer(LanguageNames.CSharp, LanguageNames.VisualBasic)]
-public class VSTHRD116ThreadStaticAnalyzer : DiagnosticAnalyzer
+public class ThreadStaticAnalyzer : DiagnosticAnalyzer
 {
     /// <summary>
     /// The diagnostic ID for <see cref="System.ThreadStaticAttribute"/> applied to a non-static field.
