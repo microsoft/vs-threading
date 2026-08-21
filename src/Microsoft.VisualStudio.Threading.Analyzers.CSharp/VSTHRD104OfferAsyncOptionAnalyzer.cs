@@ -164,6 +164,14 @@ public class VSTHRD104OfferAsyncOptionAnalyzer : DiagnosticAnalyzer
             {
                 foreach (SyntaxNode node in statement.DescendantNodes().Where(node => node.SpanStart < expression.SpanStart))
                 {
+                    if (node is RefExpressionSyntax refExpression
+                        && SymbolEqualityComparer.Default.Equals(
+                            context.SemanticModel.GetSymbolInfo(refExpression.Expression, context.CancellationToken).Symbol,
+                            expectedTaskSymbol))
+                    {
+                        return true;
+                    }
+
                     ExpressionSyntax? writtenExpression = node switch
                     {
                         AssignmentExpressionSyntax assignment => assignment.Left,
