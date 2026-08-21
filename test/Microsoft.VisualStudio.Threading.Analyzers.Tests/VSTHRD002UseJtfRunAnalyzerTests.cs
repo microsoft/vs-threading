@@ -584,6 +584,8 @@ class Test {
         task.ContinueWith(t => t.Wait());
         ((Task)task).ContinueWith(t => t.Wait());
         task.ContinueWith((t, s) => t.Result, new object());
+        task.ContinueWith(t => (t.GetAwaiter()).GetResult());
+        task.ContinueWith(t => ((t.ConfigureAwait(false)).GetAwaiter()).GetResult());
     }
 
     void ContinueWith(Func<Task<int>, int> del) { }

@@ -127,20 +127,20 @@ internal static class CSharpCommonInterest
 
     private static ExpressionSyntax GetTaskReceiver(MemberAccessExpressionSyntax memberAccessSyntax)
     {
-        ExpressionSyntax receiver = memberAccessSyntax.Expression;
+        ExpressionSyntax receiver = UnwrapParentheses(memberAccessSyntax.Expression);
         if (receiver is InvocationExpressionSyntax getAwaiterInvocation
             && getAwaiterInvocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "GetAwaiter" } getAwaiterAccess)
         {
-            receiver = getAwaiterAccess.Expression;
+            receiver = UnwrapParentheses(getAwaiterAccess.Expression);
         }
 
         if (receiver is InvocationExpressionSyntax configureAwaitInvocation
             && configureAwaitInvocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: nameof(Task.ConfigureAwait) } configureAwaitAccess)
         {
-            receiver = configureAwaitAccess.Expression;
+            receiver = UnwrapParentheses(configureAwaitAccess.Expression);
         }
 
-        return UnwrapParentheses(receiver);
+        return receiver;
     }
 
     private static bool HasTaskCompleted(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax)

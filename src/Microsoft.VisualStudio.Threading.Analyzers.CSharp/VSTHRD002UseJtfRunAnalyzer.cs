@@ -219,20 +219,30 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
 
     private static ISymbol? GetTaskReceiverSymbol(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax)
     {
-        ExpressionSyntax receiver = memberAccessSyntax.Expression;
+        ExpressionSyntax receiver = UnwrapParentheses(memberAccessSyntax.Expression);
         if (receiver is InvocationExpressionSyntax getAwaiterInvocation
             && getAwaiterInvocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "GetAwaiter" } getAwaiterAccess)
         {
-            receiver = getAwaiterAccess.Expression;
+            receiver = UnwrapParentheses(getAwaiterAccess.Expression);
         }
 
         if (receiver is InvocationExpressionSyntax configureAwaitInvocation
             && configureAwaitInvocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: nameof(Task.ConfigureAwait) } configureAwaitAccess)
         {
-            receiver = configureAwaitAccess.Expression;
+            receiver = UnwrapParentheses(configureAwaitAccess.Expression);
         }
 
         return context.SemanticModel.GetSymbolInfo(receiver, context.CancellationToken).Symbol;
+    }
+
+    private static ExpressionSyntax UnwrapParentheses(ExpressionSyntax expression)
+    {
+        while (expression is ParenthesizedExpressionSyntax parenthesized)
+        {
+            expression = parenthesized.Expression;
+        }
+
+        return expression;
     }
 
     private static bool IsTaskReassignedInContinuation(
