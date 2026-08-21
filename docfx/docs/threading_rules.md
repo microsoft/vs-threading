@@ -16,17 +16,17 @@ The rules are listed below with minimal examples. For a more thorough explanatio
 
 If a method has certain thread apartment requirements (STA or MTA) it must either:
 
-   1. Have an asynchronous signature, and asynchronously marshal to the appropriate
+1. Have an asynchronous signature, and asynchronously marshal to the appropriate
    thread if it isn't originally invoked on a compatible thread. The recommended
    means of switching to the main thread is:
 
-      ```csharp
+```csharp
       await joinableTaskFactoryInstance.SwitchToMainThreadAsync();
-      ```
+```
 
       OR
 
-   2. Have a synchronous signature, and throw an exception when called on the wrong thread.
+2. Have a synchronous signature, and throw an exception when called on the wrong thread.
      This can be done in Visual Studio with `ThreadHelper.ThrowIfNotOnUIThread()` or
      `ThreadHelper.ThrowIfOnUIThread()`.
 
@@ -316,7 +316,9 @@ A derived type may explicitly opt into coalescing by routing
 `PostToUnderlyingSynchronizationContext` through
 `PostToUnderlyingSynchronizationContextWithCoalescing`, and overriding
 `PostToUnderlyingSynchronizationContextCore` with the actual dispatcher
-operation:
+operation. Because `JoinableTaskFactory` is defined in another assembly, C#
+requires these `protected internal` base members to be declared `protected`
+when overridden:
 
 ```csharp
 protected override void PostToUnderlyingSynchronizationContext(
@@ -330,7 +332,7 @@ protected override void PostToUnderlyingSynchronizationContextCore(
     SendOrPostCallback callback,
     object state)
 {
-    this.dispatcher.Post(callback, state);
+    this.UnderlyingSynchronizationContext!.Post(callback, state);
 }
 ```
 
@@ -338,7 +340,9 @@ protected override void PostToUnderlyingSynchronizationContextCore(
 switches to the UI thread and for resuming on the UI thread after a yielding
 await. When coalescing is enabled, the core method may be called once for a
 sequence of pending callbacks and should only perform the underlying post; it
-should not call the coalescing helper.
+should not call the coalescing helper. Replace the synchronization-context post
+shown above with the custom dispatcher or priority operation required by the
+derived factory.
 
 Note that the `JoinableTaskFactory` class has no default constructor, so when
 implementing your own `JoinableTaskFactory`-derived type you will need to add
