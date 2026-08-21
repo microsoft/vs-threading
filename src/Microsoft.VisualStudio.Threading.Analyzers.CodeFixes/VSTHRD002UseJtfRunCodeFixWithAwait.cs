@@ -43,8 +43,10 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
         if (TryFindNodeAtSource(diagnostic, root, out ExpressionSyntax? target, out _))
         {
             SemanticModel? semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
-            if (target.FirstAncestorOrSelf<MethodDeclarationSyntax>() is null
-                || semanticModel is null
+            MethodDeclarationSyntax? containingMethod = target.FirstAncestorOrSelf<MethodDeclarationSyntax>();
+            if (semanticModel is null
+                || containingMethod is null
+                || !CanConvertToAsync(semanticModel, containingMethod, context.CancellationToken)
                 || semanticModel.GetDiagnostics(target.FullSpan, context.CancellationToken).Any(d => d.Severity == DiagnosticSeverity.Error)
                 || !CanUseAwaitCodeFix(semanticModel, target, context.CancellationToken))
             {
@@ -80,6 +82,33 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
 
     /// <inheritdoc />
     public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
+
+    private static bool CanConvertToAsync(SemanticModel semanticModel, MethodDeclarationSyntax method, CancellationToken cancellationToken)
+    {
+        if (method.Modifiers.Any(SyntaxKind.AsyncKeyword))
+        {
+            return true;
+        }
+
+        IMethodSymbol? methodSymbol = semanticModel.GetDeclaredSymbol(method, cancellationToken);
+        if (methodSymbol is null
+            || methodSymbol.Parameters.Any(parameter => parameter.RefKind != RefKind.None)
+            || methodSymbol.ReturnsByRef
+            || methodSymbol.ReturnsByRefReadonly
+            || method.DescendantNodes(
+                    node => node is not AnonymousFunctionExpressionSyntax and not LocalFunctionStatementSyntax)
+                .OfType<YieldStatementSyntax>()
+                .Any())
+        {
+            return false;
+        }
+
+        bool changesContract = !methodSymbol.HasAsyncCompatibleReturnType();
+        return !changesContract
+            || (!methodSymbol.IsVirtual
+                && !methodSymbol.IsOverride
+                && !methodSymbol.FindInterfacesImplemented().Any());
+    }
 
     private static bool TryFindNodeAtSource(Diagnostic diagnostic, SyntaxNode root, [NotNullWhen(true)] out ExpressionSyntax? target, [NotNullWhen(true)] out Func<ExpressionSyntax, CancellationToken, ExpressionSyntax>? transform)
     {

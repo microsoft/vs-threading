@@ -1342,6 +1342,64 @@ class Test {
     }
 
     [Fact]
+    public async Task CodeFixIsNotOfferedForMethodsThatCannotBeAsync()
+    {
+        var test = @"
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+class Test {
+    int RefParameter(Task<int> task, ref int value) {
+        return task.[|Result|];
+    }
+
+    int OutParameter(Task<int> task, out int value) {
+        value = 0;
+        return task.[|Result|];
+    }
+
+    IEnumerable<int> Iterator(Task<int> task) {
+        yield return task.[|Result|];
+    }
+}
+";
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task CodeFixIsNotOfferedWhenChangingMethodContract()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+interface ITest {
+    int InterfaceMethod(Task<int> task);
+}
+
+abstract class Base {
+    public abstract int OverrideMethod(Task<int> task);
+}
+
+class Test : Base, ITest {
+    public virtual int VirtualMethod(Task<int> task) {
+        return task.[|Result|];
+    }
+
+    public override int OverrideMethod(Task<int> task) {
+        return task.[|Result|];
+    }
+
+    public int InterfaceMethod(Task<int> task) {
+        return task.[|Result|];
+    }
+}
+";
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
     public async Task StaticGetAwaiterFactoryDoesNotOfferCodeFix()
     {
         var test = @"
