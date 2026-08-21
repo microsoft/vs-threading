@@ -16,17 +16,17 @@ The rules are listed below with minimal examples. For a more thorough explanatio
 
 If a method has certain thread apartment requirements (STA or MTA) it must either:
 
-1. Have an asynchronous signature, and asynchronously marshal to the appropriate
+   1. Have an asynchronous signature, and asynchronously marshal to the appropriate
    thread if it isn't originally invoked on a compatible thread. The recommended
    means of switching to the main thread is:
 
-```csharp
+      ```csharp
       await joinableTaskFactoryInstance.SwitchToMainThreadAsync();
-```
+      ```
 
       OR
 
-2. Have a synchronous signature, and throw an exception when called on the wrong thread.
+   2. Have a synchronous signature, and throw an exception when called on the wrong thread.
      This can be done in Visual Studio with `ThreadHelper.ThrowIfNotOnUIThread()` or
      `ThreadHelper.ThrowIfOnUIThread()`.
 
