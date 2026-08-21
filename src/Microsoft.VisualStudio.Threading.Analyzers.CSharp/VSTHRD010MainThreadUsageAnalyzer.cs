@@ -139,7 +139,6 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
                     methodsDeclaringUIThreadRequirement: methodsDeclaringUIThreadRequirement,
                     methodsAssertingUIThreadRequirement: methodsAssertingUIThreadRequirement,
                     diagnosticProperties: diagnosticProperties);
-                codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeAwait), SyntaxKind.AwaitExpression);
                 codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeInvocation), SyntaxKind.InvocationExpression);
                 codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeMemberAccess), SyntaxKind.SimpleMemberAccessExpression);
                 codeBlockStartContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(methodAnalyzer.AnalyzeCast), SyntaxKind.CastExpression);
@@ -333,35 +332,6 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
 
         internal ImmutableDictionary<string, string?> DiagnosticProperties { get; }
 
-        internal void AnalyzeAwait(SyntaxNodeAnalysisContext context)
-        {
-            var awaitSyntax = (AwaitExpressionSyntax)context.Node;
-            SyntaxNode? methodDeclaration = context.Node.FirstAncestorOrSelf<SyntaxNode>(n => CSharpCommonInterest.MethodSyntaxKinds.Contains(n.Kind()));
-            if (methodDeclaration is object && InvalidatesMainThreadContext(awaitSyntax.Expression, context.SemanticModel, context.CancellationToken))
-            {
-                this.RecordThreadingContext(methodDeclaration, awaitSyntax.Span.End, ThreadingContext.Unknown);
-            }
-
-            static bool InvalidatesMainThreadContext(ExpressionSyntax awaitedExpression, SemanticModel semanticModel, CancellationToken cancellationToken)
-            {
-                ISymbol? awaitedSymbol = semanticModel.GetSymbolInfo(awaitedExpression, cancellationToken).Symbol;
-                if (awaitedSymbol is IPropertySymbol { Name: "Default", ContainingType.Name: "TaskScheduler", ContainingType: { } containingType }
-                    && containingType.BelongsToNamespace(Namespaces.SystemThreadingTasks))
-                {
-                    return true;
-                }
-
-                if (awaitedExpression is InvocationExpressionSyntax { ArgumentList.Arguments: [{ Expression: { } continueOnCapturedContext }] } invocation
-                    && semanticModel.GetSymbolInfo(invocation, cancellationToken).Symbol is IMethodSymbol { Name: "ConfigureAwait", Parameters: [{ Type.SpecialType: SpecialType.System_Boolean }] })
-                {
-                    Optional<object?> constantValue = semanticModel.GetConstantValue(continueOnCapturedContext, cancellationToken);
-                    return constantValue.HasValue && constantValue.Value is false;
-                }
-
-                return false;
-            }
-        }
-
         internal void AnalyzeInvocation(SyntaxNodeAnalysisContext context)
         {
             var invocationSyntax = (InvocationExpressionSyntax)context.Node;
@@ -391,7 +361,6 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
                             }
                         }
 
-                        this.RecordThreadingContext(methodDeclaration, invocationSyntax.Span.End, ThreadingContext.MainThread);
                         return;
                     }
                 }
@@ -507,18 +476,7 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
                 SyntaxNode? methodDeclaration = context.Node.FirstAncestorOrSelf<SyntaxNode>(n => CSharpCommonInterest.MethodSyntaxKinds.Contains(n.Kind()));
                 if (methodDeclaration is object)
                 {
-                    lock (this.methodDeclarationNodesSyncObject)
-                    {
-                        ImmutableArray<ThreadingContextTransition> transitions = this.methodDeclarationNodes.GetValueOrDefault(methodDeclaration);
-                        if (!transitions.IsDefault)
-                        {
-                            threadingContext = transitions
-                                .Where(transition => transition.Position <= context.Node.SpanStart)
-                                .OrderByDescending(transition => transition.Position)
-                                .Select(transition => transition.Context)
-                                .FirstOrDefault();
-                        }
-                    }
+                    threadingContext = this.GetThreadingContext(methodDeclaration, context.Node.SpanStart, context.SemanticModel, context.CancellationToken);
                 }
 
                 if (threadingContext != ThreadingContext.MainThread)
@@ -535,17 +493,62 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
             return false;
         }
 
-        private void RecordThreadingContext(SyntaxNode methodDeclaration, int position, ThreadingContext context)
+        private ThreadingContext GetThreadingContext(SyntaxNode methodDeclaration, int position, SemanticModel semanticModel, CancellationToken cancellationToken)
         {
+            ImmutableArray<ThreadingContextTransition> transitions;
             lock (this.methodDeclarationNodesSyncObject)
             {
-                ImmutableArray<ThreadingContextTransition> transitions = this.methodDeclarationNodes.GetValueOrDefault(methodDeclaration);
+                transitions = this.methodDeclarationNodes.GetValueOrDefault(methodDeclaration);
                 if (transitions.IsDefault)
                 {
-                    transitions = ImmutableArray<ThreadingContextTransition>.Empty;
+                    transitions = this.GetThreadingContextTransitions(methodDeclaration, semanticModel, cancellationToken);
+                    this.methodDeclarationNodes = this.methodDeclarationNodes.SetItem(methodDeclaration, transitions);
+                }
+            }
+
+            return transitions
+                .Where(transition => transition.Position <= position)
+                .OrderByDescending(transition => transition.Position)
+                .Select(transition => transition.Context)
+                .FirstOrDefault();
+        }
+
+        private ImmutableArray<ThreadingContextTransition> GetThreadingContextTransitions(SyntaxNode methodDeclaration, SemanticModel semanticModel, CancellationToken cancellationToken)
+        {
+            ImmutableArray<ThreadingContextTransition>.Builder transitions = ImmutableArray.CreateBuilder<ThreadingContextTransition>();
+            foreach (SyntaxNode node in methodDeclaration.DescendantNodes().Where(node => node.FirstAncestorOrSelf<SyntaxNode>(ancestor => CSharpCommonInterest.MethodSyntaxKinds.Contains(ancestor.Kind())) == methodDeclaration))
+            {
+                if (node is InvocationExpressionSyntax invocation
+                    && semanticModel.GetSymbolInfo(invocation, cancellationToken).Symbol is IMethodSymbol invokedMethod
+                    && (this.MainThreadAssertingMethods.Contains(invokedMethod) || this.MainThreadSwitchingMethods.Contains(invokedMethod)))
+                {
+                    transitions.Add(new ThreadingContextTransition(invocation.Span.End, ThreadingContext.MainThread));
+                }
+                else if (node is AwaitExpressionSyntax awaitExpression && InvalidatesMainThreadContext(awaitExpression.Expression))
+                {
+                    transitions.Add(new ThreadingContextTransition(awaitExpression.Span.End, ThreadingContext.Unknown));
+                }
+            }
+
+            return transitions.ToImmutable();
+
+            bool InvalidatesMainThreadContext(ExpressionSyntax awaitedExpression)
+            {
+                ISymbol? awaitedSymbol = semanticModel.GetSymbolInfo(awaitedExpression, cancellationToken).Symbol;
+                if (awaitedSymbol is IPropertySymbol { Name: "Default", ContainingType.Name: "TaskScheduler", ContainingType: { } containingType }
+                    && containingType.BelongsToNamespace(Namespaces.SystemThreadingTasks))
+                {
+                    return true;
                 }
 
-                this.methodDeclarationNodes = this.methodDeclarationNodes.SetItem(methodDeclaration, transitions.Add(new ThreadingContextTransition(position, context)));
+                if (awaitedExpression is InvocationExpressionSyntax { ArgumentList.Arguments: [{ Expression: { } continueOnCapturedContext }] } invocation
+                    && semanticModel.GetSymbolInfo(invocation, cancellationToken).Symbol is IMethodSymbol { Name: "ConfigureAwait", Parameters: [{ Type.SpecialType: SpecialType.System_Boolean }] })
+                {
+                    Optional<object?> constantValue = semanticModel.GetConstantValue(continueOnCapturedContext, cancellationToken);
+                    return constantValue.HasValue && constantValue.Value is false;
+                }
+
+                return false;
             }
         }
 
