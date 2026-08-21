@@ -501,6 +501,35 @@ class Test {
     }
 
     [Fact]
+    public async Task InvokeVsSolutionAfterUIThreadAssertionAndParenthesizedConfigureAwaitFalse()
+    {
+        var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task F() {
+        IVsSolution sln = null;
+        VerifyOnUIThread();
+
+        await (SomeAsync().ConfigureAwait(false));
+
+        sln.SetProperty(1000, null);
+    }
+
+    void VerifyOnUIThread() {
+    }
+
+    async Task SomeAsync() => await Task.Yield();
+}
+";
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorAsync).WithSpan(14, 13, 14, 24).WithArguments("IVsSolution", "JoinableTaskFactory.SwitchToMainThreadAsync");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
     public async Task InvokeVsSolutionWithinAndAfterConfigureAwaitFalseOperand()
     {
         var test = @"
@@ -555,6 +584,33 @@ class CustomAwaitable {
 ";
         DiagnosticResult expected = CSVerify.Diagnostic(DescriptorAsync).WithSpan(12, 13, 12, 24).WithArguments("IVsSolution", "JoinableTaskFactory.SwitchToMainThreadAsync");
         await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task WorkerTransitionInLocalFunctionDoesNotAffectContainingMethod()
+    {
+        var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    void F() {
+        IVsSolution sln = null;
+        VerifyOnUIThread();
+
+        async Task LocalAsync() {
+            await TaskScheduler.Default;
+        }
+
+        sln.SetProperty(1000, null);
+    }
+
+    void VerifyOnUIThread() {
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 
     [Fact(Skip = "Not yet supported. See https://github.com/Microsoft/vs-threading/issues/38")]

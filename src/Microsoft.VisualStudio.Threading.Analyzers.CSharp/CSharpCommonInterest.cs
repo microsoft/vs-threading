@@ -22,6 +22,7 @@ internal static class CSharpCommonInterest
         SyntaxKind.AnonymousMethodExpression,
         SyntaxKind.SimpleLambdaExpression,
         SyntaxKind.ParenthesizedLambdaExpression,
+        SyntaxKind.LocalFunctionStatement,
         SyntaxKind.GetAccessorDeclaration,
         SyntaxKind.SetAccessorDeclaration,
         SyntaxKind.AddAccessorDeclaration,

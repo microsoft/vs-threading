@@ -506,11 +506,15 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
                 }
             }
 
-            return transitions
-                .Where(transition => transition.Position <= position)
-                .OrderByDescending(transition => transition.Position)
-                .Select(transition => transition.Context)
-                .FirstOrDefault();
+            for (int i = transitions.Length - 1; i >= 0; i--)
+            {
+                if (transitions[i].Position <= position)
+                {
+                    return transitions[i].Context;
+                }
+            }
+
+            return ThreadingContext.Unknown;
         }
 
         private ImmutableArray<ThreadingContextTransition> GetThreadingContextTransitions(SyntaxNode methodDeclaration, SemanticModel semanticModel, CancellationToken cancellationToken)
@@ -530,10 +534,15 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
                 }
             }
 
-            return transitions.ToImmutable();
+            return transitions.OrderBy(transition => transition.Position).ToImmutableArray();
 
             bool InvalidatesMainThreadContext(ExpressionSyntax awaitedExpression)
             {
+                while (awaitedExpression is ParenthesizedExpressionSyntax parenthesizedExpression)
+                {
+                    awaitedExpression = parenthesizedExpression.Expression;
+                }
+
                 ISymbol? awaitedSymbol = semanticModel.GetSymbolInfo(awaitedExpression, cancellationToken).Symbol;
                 if (awaitedSymbol is IPropertySymbol { Name: "Default", ContainingType.Name: "TaskScheduler", ContainingType: { } containingType }
                     && containingType.BelongsToNamespace(Namespaces.SystemThreadingTasks))
