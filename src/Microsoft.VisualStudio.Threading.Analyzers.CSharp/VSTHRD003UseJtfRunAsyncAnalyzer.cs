@@ -49,12 +49,21 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
+    internal static readonly DiagnosticDescriptor InvalidCompletedTaskAttributeDescriptor = new DiagnosticDescriptor(
+        id: Id,
+        title: new LocalizableResourceString(nameof(Strings.VSTHRD003_InvalidCompletedTaskAttribute_Title), Strings.ResourceManager, typeof(Strings)),
+        messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD003_InvalidCompletedTaskAttribute_MessageFormat), Strings.ResourceManager, typeof(Strings)),
+        helpLinkUri: Utils.GetHelpLink(Id),
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
     {
         get
         {
-            return ImmutableArray.Create(Descriptor);
+            return ImmutableArray.Create(Descriptor, InvalidCompletedTaskAttributeDescriptor);
         }
     }
 
@@ -69,21 +78,16 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
         context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeArrowExpressionClause), SyntaxKind.ArrowExpressionClause);
         context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeLambdaExpression), SyntaxKind.SimpleLambdaExpression);
         context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeLambdaExpression), SyntaxKind.ParenthesizedLambdaExpression);
+        context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeCompletedTaskAttribute), SyntaxKind.Attribute);
     }
 
     private static bool IsSymbolAlwaysOkToAwait(ISymbol? symbol)
     {
-        if (symbol?.GetAttributes().Any(attribute =>
-            attribute.AttributeClass?.Name == Types.CompletedTaskAttribute.TypeName &&
-            attribute.AttributeClass.ContainingType is null &&
-            attribute.AttributeClass.BelongsToNamespace(Types.CompletedTaskAttribute.Namespace)) is true)
+        if (symbol is IMethodSymbol or IFieldSymbol or IPropertySymbol &&
+            symbol.GetAttributes().Any(attribute => IsCompletedTaskAttribute(attribute.AttributeClass)))
         {
-            // Mutable members may only happen to contain a completed task at the time the attribute is applied.
-            // Restrict the convention to members whose value cannot be replaced later.
-            if (symbol is IMethodSymbol or IFieldSymbol { IsReadOnly: true } or IPropertySymbol { SetMethod: null, ReturnsByRef: false })
-            {
-                return true;
-            }
+            // Consumers take this assertion at face value. Invalid applications are diagnosed at the declaration.
+            return true;
         }
 
         if (symbol is IFieldSymbol field)
@@ -106,6 +110,37 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
         }
 
         return false;
+    }
+
+    private static bool IsCompletedTaskAttribute(INamedTypeSymbol? attributeType) =>
+        attributeType?.Name == Types.CompletedTaskAttribute.TypeName &&
+        attributeType.ContainingType is null &&
+        attributeType.BelongsToNamespace(Types.CompletedTaskAttribute.Namespace);
+
+    private void AnalyzeCompletedTaskAttribute(SyntaxNodeAnalysisContext context)
+    {
+        var attribute = (AttributeSyntax)context.Node;
+        if (context.SemanticModel.GetSymbolInfo(attribute, context.CancellationToken).Symbol is not IMethodSymbol attributeConstructor ||
+            !IsCompletedTaskAttribute(attributeConstructor.ContainingType))
+        {
+            return;
+        }
+
+        ISymbol? mutableMember = attribute.Parent?.Parent switch
+        {
+            FieldDeclarationSyntax field when !field.Modifiers.Any(SyntaxKind.ReadOnlyKeyword) =>
+                context.SemanticModel.GetDeclaredSymbol(field.Declaration.Variables[0], context.CancellationToken),
+            PropertyDeclarationSyntax property when context.SemanticModel.GetDeclaredSymbol(property, context.CancellationToken) is IPropertySymbol { SetMethod: not null } or { ReturnsByRef: true } =>
+                context.SemanticModel.GetDeclaredSymbol(property, context.CancellationToken),
+            IndexerDeclarationSyntax indexer when context.SemanticModel.GetDeclaredSymbol(indexer, context.CancellationToken) is IPropertySymbol { SetMethod: not null } or { ReturnsByRef: true } =>
+                context.SemanticModel.GetDeclaredSymbol(indexer, context.CancellationToken),
+            _ => null,
+        };
+
+        if (mutableMember is not null)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(InvalidCompletedTaskAttributeDescriptor, attribute.GetLocation(), mutableMember.Name));
+        }
     }
 
     private void AnalyzeArrowExpressionClause(SyntaxNodeAnalysisContext context)

@@ -37,8 +37,10 @@ private static readonly Task TrueTask = Task.FromResult(true);
 private static Task<bool> FalseTask { get; } = Task.FromResult(false);
 ```
 
-The analyzer intentionally does not recognize the attribute on mutable fields or settable
-properties, because their values can later be replaced with incomplete tasks.
+The analyzer reports VSTHRD003 on `[CompletedTask]` when it is applied to a mutable field,
+settable property, or ref-returning property, because its value can later be replaced with an
+incomplete task. Consumers still take the attribute at face value, so the diagnostic is reported
+at the invalid attribute application rather than at each use of the member.
 
 ## Simple examples of patterns that are flagged by this analyzer
 

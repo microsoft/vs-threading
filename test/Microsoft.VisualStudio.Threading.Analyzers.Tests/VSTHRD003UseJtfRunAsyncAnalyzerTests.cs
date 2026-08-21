@@ -37,8 +37,8 @@ class Tests
 ";
         DiagnosticResult[] expected =
         {
-            CSVerify.Diagnostic().WithLocation(15, 19),
-            CSVerify.Diagnostic().WithLocation(16, 19),
+            Diagnostic().WithLocation(15, 19),
+            Diagnostic().WithLocation(16, 19),
         };
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
@@ -71,7 +71,7 @@ class Tests
     }
 }
 ";
-        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(14, 19);
+        DiagnosticResult expected = Diagnostic().WithLocation(14, 19);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -91,7 +91,7 @@ class Tests
     }
 }
 ";
-        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(10, 59);
+        DiagnosticResult expected = Diagnostic().WithLocation(10, 59);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -111,7 +111,7 @@ class Tests
     }
 }
 ";
-        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(10, 68);
+        DiagnosticResult expected = Diagnostic().WithLocation(10, 68);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -130,7 +130,7 @@ class Tests
                 public void Test()
                 {
                     this.task = this.jtf.RunAsync(async () => await Task.Yield()).Task;
-                    this.jtf.Run(() => [|this.task|]);
+                    this.jtf.Run(() => {|VSTHRD003:this.task|});
                 }
             }
             """;
@@ -224,7 +224,7 @@ class Tests
 
     public async Task AwaitAndGetResult()
     {{
-        await [|task|].ConfigureAwait({(continueOnCapturedContext ? "true" : "false")});
+        await {{|VSTHRD003:task|}}.ConfigureAwait({(continueOnCapturedContext ? "true" : "false")});
     }}
 }}
 ";
@@ -245,7 +245,7 @@ class Tests
 
     public async Task<int> AwaitAndGetResult()
     {{
-        return await [|task|].ConfigureAwait({(continueOnCapturedContext ? "true" : "false")});
+        return await {{|VSTHRD003:task|}}.ConfigureAwait({(continueOnCapturedContext ? "true" : "false")});
     }}
 }}
 ";
@@ -265,7 +265,7 @@ class Tests
 
     public async Task AwaitAndGetResult()
     {
-        await [|task|].ConfigureAwaitRunInline();
+        await {|VSTHRD003:task|}.ConfigureAwaitRunInline();
     }
 }
 ";
@@ -285,7 +285,7 @@ class Tests
 
     public async Task<int> AwaitAndGetResult()
     {
-        return await [|task|].ConfigureAwaitRunInline();
+        return await {|VSTHRD003:task|}.ConfigureAwaitRunInline();
     }
 }
 ";
@@ -334,7 +334,7 @@ class Tests
     }
 }
 ";
-        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(11, 59);
+        DiagnosticResult expected = Diagnostic().WithLocation(11, 59);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -413,7 +413,7 @@ class Tests
     }
 }
 ";
-        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(14, 19);
+        DiagnosticResult expected = Diagnostic().WithLocation(14, 19);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -446,7 +446,7 @@ class Tests
     }
 }
 ";
-        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(14, 19);
+        DiagnosticResult expected = Diagnostic().WithLocation(14, 19);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -686,7 +686,7 @@ class Tests
     }
 }
 ";
-        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(14, 19);
+        DiagnosticResult expected = Diagnostic().WithLocation(14, 19);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -720,7 +720,7 @@ class Tests
     }
 }
 ";
-        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(16, 19);
+        DiagnosticResult expected = Diagnostic().WithLocation(16, 19);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -755,7 +755,7 @@ class Tests
     }
 }
 ";
-        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(16, 23);
+        DiagnosticResult expected = Diagnostic().WithLocation(16, 23);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -791,9 +791,9 @@ class Tests
 ";
         DiagnosticResult[] expected =
         {
-            CSVerify.Diagnostic().WithLocation(14, 19),
-            CSVerify.Diagnostic().WithLocation(15, 19),
-            CSVerify.Diagnostic().WithLocation(16, 19),
+            Diagnostic().WithLocation(14, 19),
+            Diagnostic().WithLocation(15, 19),
+            Diagnostic().WithLocation(16, 19),
         };
 
         await CSVerify.VerifyAnalyzerAsync(test, expected);
@@ -919,7 +919,7 @@ class Tests
     }
 }
 ";
-        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(17, 23);
+        DiagnosticResult expected = Diagnostic().WithLocation(17, 23);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -961,7 +961,7 @@ class Tests
     }
 }
 ";
-        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(24, 19);
+        DiagnosticResult expected = Diagnostic().WithLocation(24, 19);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -1169,26 +1169,32 @@ class Tests
 
             class Tests
             {
-                [CompletedTask]
+                [{|#0:CompletedTask|}]
                 private static Task CompletedField = Task.Delay(1);
 
-                [CompletedTask]
+                [{|#1:CompletedTask|}]
                 private static Task CompletedProperty { get; set; } = Task.Delay(1);
 
                 private static Task task = Task.Delay(1);
 
-                [CompletedTask]
+                [{|#2:CompletedTask|}]
                 private static ref Task CompletedRefProperty => ref task;
 
-                public Task GetField() => [|CompletedField|];
+                public Task GetField() => CompletedField;
 
-                public Task GetProperty() => [|CompletedProperty|];
+                public Task GetProperty() => CompletedProperty;
 
-                public Task GetRefProperty() => [|CompletedRefProperty|];
+                public Task GetRefProperty() => CompletedRefProperty;
             }
             """;
 
-        await CSVerify.VerifyAnalyzerAsync(test);
+        DiagnosticResult[] expected =
+        {
+            Diagnostic().WithLocation(0).WithArguments("CompletedField"),
+            Diagnostic().WithLocation(1).WithArguments("CompletedProperty"),
+            Diagnostic().WithLocation(2).WithArguments("CompletedRefProperty"),
+        };
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
     [Fact]
@@ -1214,7 +1220,7 @@ class Tests
                 [Microsoft.VisualStudio.Threading.Container.CompletedTask]
                 private static readonly Task CompletedField = Task.Delay(1);
 
-                public Task GetField() => [|CompletedField|];
+                public Task GetField() => {|VSTHRD003:CompletedField|};
             }
             """;
 
@@ -1412,7 +1418,7 @@ class Tests
 {
     async Task GetTask(TaskCompletionSource<int> tcs)
     {
-        await [|tcs.Task|];
+        await {|VSTHRD003:tcs.Task|};
     }
 }
 ";
@@ -1466,7 +1472,7 @@ class Tests
 
         // Assigned, but not to a newly created object.
         TaskCompletionSource<int> tcs3 = tcs2;
-        await [|tcs3.Task|];
+        await {|VSTHRD003:tcs3.Task|};
     }
 }
 ";
@@ -1582,8 +1588,8 @@ class Tests
 
     async Task GetTask()
     {
-        await [|this.MyTaskProperty|];
-        await [|MyTaskProperty|];
+        await {|VSTHRD003:this.MyTaskProperty|};
+        await {|VSTHRD003:MyTaskProperty|};
     }
 }
 ";
@@ -1648,7 +1654,7 @@ class Tests
         string test = """
             using System.Threading.Tasks;
 
-            await [|State.Task|];
+            await {|VSTHRD003:State.Task|};
 
             static class State
             {
@@ -1666,6 +1672,8 @@ class Tests
         }.RunAsync();
     }
 
+    private static DiagnosticResult Diagnostic() => new("VSTHRD003", DiagnosticSeverity.Warning);
+
     private DiagnosticResult CreateDiagnostic(int line, int column, int length) =>
-        CSVerify.Diagnostic().WithSpan(line, column, line, column + length);
+        Diagnostic().WithSpan(line, column, line, column + length);
 }
