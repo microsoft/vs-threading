@@ -299,9 +299,46 @@ The following describes how to replace the mechanism for getting to the
 UI thread in a host-independent way:
 
 You can set your own priority by creating your own derived type of
-`JoinableTaskFactory` and overriding the `PostToUnderlyingSynchronizationContext`
-method. This method is responsible both for initial switches to the UI
-thread as well as resuming on the UI thread after a yielding await.
+`JoinableTaskFactory`.
+
+The base implementation coalesces pending callbacks so that only one driver
+message at a time is queued to the underlying synchronization context. A
+derived type that does not override `PostToUnderlyingSynchronizationContext`
+inherits this behavior.
+
+For backward compatibility, an override of
+`PostToUnderlyingSynchronizationContext` remains fully authoritative and does
+not automatically coalesce. Existing derived types may suppress a post,
+redirect it, or apply semantics that the base class cannot safely assume. Such
+types therefore retain their original behavior.
+
+A derived type may explicitly opt into coalescing by routing
+`PostToUnderlyingSynchronizationContext` through
+`PostToUnderlyingSynchronizationContextWithCoalescing`, and overriding
+`PostToUnderlyingSynchronizationContextCore` with the actual dispatcher
+operation:
+
+```csharp
+protected override void PostToUnderlyingSynchronizationContext(
+    SendOrPostCallback callback,
+    object state)
+{
+    this.PostToUnderlyingSynchronizationContextWithCoalescing(callback, state);
+}
+
+protected override void PostToUnderlyingSynchronizationContextCore(
+    SendOrPostCallback callback,
+    object state)
+{
+    this.dispatcher.Post(callback, state);
+}
+```
+
+`PostToUnderlyingSynchronizationContext` is responsible both for initial
+switches to the UI thread and for resuming on the UI thread after a yielding
+await. When coalescing is enabled, the core method may be called once for a
+sequence of pending callbacks and should only perform the underlying post; it
+should not call the coalescing helper.
 
 Note that the `JoinableTaskFactory` class has no default constructor, so when
 implementing your own `JoinableTaskFactory`-derived type you will need to add

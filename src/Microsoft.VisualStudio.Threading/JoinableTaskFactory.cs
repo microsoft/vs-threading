@@ -476,6 +476,13 @@ public partial class JoinableTaskFactory
     /// </summary>
     /// <param name="callback">The callback to invoke.</param>
     /// <param name="state">State to pass to the callback.</param>
+    /// <remarks>
+    /// The base implementation coalesces pending callbacks. An override replaces that behavior entirely,
+    /// preserving the semantics of derived types written before coalescing was introduced. A derived type
+    /// may opt into coalescing by calling <see cref="PostToUnderlyingSynchronizationContextWithCoalescing"/>
+    /// from this override and overriding <see cref="PostToUnderlyingSynchronizationContextCore"/> to perform
+    /// the actual post.
+    /// </remarks>
     protected internal virtual void PostToUnderlyingSynchronizationContext(SendOrPostCallback callback, object state)
     {
         Requires.NotNull(callback, nameof(callback));
@@ -489,6 +496,10 @@ public partial class JoinableTaskFactory
     /// </summary>
     /// <param name="callback">The callback to invoke.</param>
     /// <param name="state">State to pass to the callback.</param>
+    /// <remarks>
+    /// Derived types that opt into coalescing should override this method, rather than
+    /// <see cref="PostToUnderlyingSynchronizationContext"/>, with their custom dispatcher operation.
+    /// </remarks>
     protected internal virtual void PostToUnderlyingSynchronizationContextCore(SendOrPostCallback callback, object state)
     {
         Requires.NotNull(callback, nameof(callback));
@@ -666,6 +677,11 @@ public partial class JoinableTaskFactory
     /// State to pass to the callback. Implementing <see cref="IPendingExecutionRequestState"/> allows
     /// the callback to be removed from the private queue when it has already executed by another means.
     /// </param>
+    /// <remarks>
+    /// This method is intended for derived types that override <see cref="PostToUnderlyingSynchronizationContext"/>
+    /// and explicitly opt into coalescing. Such types should also override
+    /// <see cref="PostToUnderlyingSynchronizationContextCore"/> to perform the actual dispatcher post.
+    /// </remarks>
     protected void PostToUnderlyingSynchronizationContextWithCoalescing(SendOrPostCallback callback, object state)
     {
         Requires.NotNull(callback, nameof(callback));
