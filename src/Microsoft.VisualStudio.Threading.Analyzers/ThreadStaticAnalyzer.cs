@@ -124,14 +124,20 @@ public class ThreadStaticAnalyzer : DiagnosticAnalyzer
 
     private static void AnalyzeAssignment(OperationAnalysisContext context, INamedTypeSymbol threadStaticAttribute)
     {
-        if (context.ContainingSymbol is not IMethodSymbol { MethodKind: MethodKind.StaticConstructor })
+        if (Utils.GetContainingFunction(context.Operation, context.ContainingSymbol) is not IMethodSymbol { MethodKind: MethodKind.StaticConstructor })
         {
             return;
         }
 
         var assignment = (IAssignmentOperation)context.Operation;
-        if (assignment.Target is IFieldReferenceOperation { Field: { IsStatic: true } field }
-            && HasThreadStaticAttribute(field, threadStaticAttribute))
+        IFieldSymbol? field = assignment.Target switch
+        {
+            IFieldReferenceOperation fieldReference => fieldReference.Field,
+            IPropertyReferenceOperation propertyReference => GetField(propertyReference.Property),
+            _ => null,
+        };
+
+        if (field is { IsStatic: true } && HasThreadStaticAttribute(field, threadStaticAttribute))
         {
             context.ReportDiagnostic(Diagnostic.Create(TypeInitializerAssignmentDescriptor, assignment.Syntax.GetLocation()));
         }

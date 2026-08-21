@@ -118,13 +118,24 @@ public class ThreadStaticAnalyzerTests
                 [ThreadStatic]
                 private static object field;
 
+                [field: ThreadStatic]
+                private static object Property { get; set; }
+
                 private static object otherField;
 
                 static Test()
                 {
                     {|VSTHRD117:field = new object()|};
                     {|VSTHRD117:field ??= new object()|};
+                    {|VSTHRD117:Property = new object()|};
                     otherField = new object();
+
+                    Action lambda = () => field = new object();
+
+                    void LocalFunction()
+                    {
+                        field = new object();
+                    }
                 }
 
                 private Test()
@@ -248,6 +259,8 @@ public class ThreadStaticAnalyzerTests
                 Shared Sub New()
                     {|VSTHRD117:field = New Object()|}
                     otherField = New Object()
+
+                    Dim initialize = Sub() field = New Object()
                 End Sub
 
                 Private Sub New()

@@ -1,6 +1,6 @@
 # VSTHRD117 Avoid initialization of `ThreadStatic` fields in a type initializer
 
-A static field marked with `ThreadStaticAttribute` has a separate value on each thread. A field initializer or static constructor runs only on the thread that initializes the containing type, so the field has its default value on every other thread. This also applies to auto-property backing fields marked with `[field: ThreadStatic]`.
+A static field marked with `ThreadStaticAttribute` has a separate value on each thread. A field initializer or static constructor runs only on the thread that initializes the containing type, so the field has its default value on every other thread. In C#, this also applies to auto-property backing fields marked with `[field: ThreadStatic]`.
 
 ## Examples of patterns that are flagged by this analyzer
 
