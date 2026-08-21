@@ -195,7 +195,9 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
                 _ => null,
             };
 
-            if (methodName is object && !CSharpCommonInterest.ShouldIgnoreContext(context))
+            if (methodName is object
+                && !CSharpCommonInterest.ShouldIgnoreContext(context)
+                && !CSharpUtils.IsWithinNameOf(invocationExpressionSyntax))
             {
                 ImmutableDictionary<string, string?> properties = ImmutableDictionary<string, string?>.Empty.Add("SuppressAwaitCodeFix", null);
                 context.ReportDiagnostic(Diagnostic.Create(Descriptor, methodName.GetLocation(), properties));

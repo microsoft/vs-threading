@@ -207,6 +207,12 @@ internal static class CSharpCommonInterest
             return false;
         }
 
+        if (context.SemanticModel.GetEnclosingSymbol(memberAccessSyntax.SpanStart, context.CancellationToken) is not IMethodSymbol enclosingMethod
+            || !SymbolEqualityComparer.Default.Equals(taskSymbol.ContainingSymbol, enclosingMethod))
+        {
+            return false;
+        }
+
         ImmutableHashSet<ISymbol> taskSymbols = GetSymbolAndRefAliases(context, memberAccessSyntax, taskSymbol);
         if (NestedFunctionMayReassignTask(context, memberAccessSyntax, taskSymbols))
         {
@@ -479,11 +485,16 @@ internal static class CSharpCommonInterest
 
             IEnumerable<SyntaxNode> ancestorsWithinStatement = candidate.Ancestors().TakeWhile(node => node != statement);
             bool isConditionallyExecuted = ancestorsWithinStatement.Any(
-                node => node is StatementSyntax or ConditionalExpressionSyntax or SwitchExpressionSyntax or ConditionalAccessExpressionSyntax
+                node => node is StatementSyntax
+                    or ConditionalExpressionSyntax
+                    or SwitchExpressionSyntax
+                    or ConditionalAccessExpressionSyntax
+                    or WhenClauseSyntax
                     || (node is BinaryExpressionSyntax binary
                         && (binary.IsKind(SyntaxKind.LogicalAndExpression)
                             || binary.IsKind(SyntaxKind.LogicalOrExpression)
-                            || binary.IsKind(SyntaxKind.CoalesceExpression))));
+                            || binary.IsKind(SyntaxKind.CoalesceExpression))
+                        && binary.Right.FullSpan.Contains(candidate.Span)));
             if (!isConditionallyExecuted && AwaitCompletesTask(context, candidate, taskSymbol, taskSymbols))
             {
                 awaitExpression = candidate;

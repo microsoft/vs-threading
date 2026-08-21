@@ -731,6 +731,14 @@ class Test {
         _ = task.Result;
     }
 
+    async void AwaitedInLeftShortCircuitOperand(bool condition) {
+        var task = Task.Run(() => true);
+        if (await task && condition) {
+        }
+
+        _ = task.Result;
+    }
+
     async void AwaitedInNestedBlock() {
         var task = Task.Run(() => 1);
         {
@@ -868,6 +876,18 @@ class Test {
         _ = task.[|Result|];
     }
 
+    async void AwaitInSwitchGuardIsNotDefinite(int value) {
+        var task = Task.Run(() => true);
+        switch (value) {
+            case 0 when await task:
+                break;
+            default:
+                break;
+        }
+
+        _ = task.[|Result|];
+    }
+
     async void ReassignedEarlierInResultStatement() {
         var task = Task.Run(() => 1);
         await task;
@@ -894,6 +914,17 @@ class Test {
         alias = ref task;
         if (task.IsCompleted) {
             alias = Task.Run(() => 2);
+            _ = task.[|Result|];
+        }
+    }
+
+    void CapturedTaskIsNotProvenComplete() {
+        var task = Task.Run(() => 1);
+        Local();
+        task = Task.Run(() => 2);
+
+        async void Local() {
+            await task;
             _ = task.[|Result|];
         }
     }
@@ -957,6 +988,31 @@ class Test {
 [Contoso.Threading.TaskExtensions]::WaitSynchronously
 [Contoso.Threading.CustomWaiter]::Join
 "));
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task ConfiguredSyncBlockingMethodInsideNameOfDoesNotReport()
+    {
+        var test = @"
+namespace Contoso.Threading {
+    class CustomWaiter {
+        internal void Join() { }
+    }
+}
+
+class Test {
+    void F(Contoso.Threading.CustomWaiter waiter) {
+        _ = nameof({|CS8081:waiter.Join()|});
+    }
+}
+";
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+        };
+        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncBlockingMethods.txt", "[Contoso.Threading.CustomWaiter]::Join"));
         await verifyTest.RunAsync();
     }
 
