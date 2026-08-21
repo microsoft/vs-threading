@@ -254,11 +254,12 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
     {
         bool accessIsNested = memberAccess.Ancestors().TakeWhile(node => node != continuation).Any(node => node is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax);
         int beforePosition = accessIsNested ? continuation.Span.End + 1 : memberAccess.SpanStart;
+        ImmutableHashSet<ISymbol> taskSymbols = CSharpCommonInterest.GetSymbolAndRefAliases(context, continuation, taskParameter);
 
         foreach (AssignmentExpressionSyntax assignment in continuation.DescendantNodes().OfType<AssignmentExpressionSyntax>())
         {
             if (assignment.SpanStart < beforePosition
-                && IsAssignmentToParameter(context, assignment.Left, taskParameter))
+                && IsAssignmentToParameter(context, assignment.Left, taskSymbols))
             {
                 return true;
             }
@@ -266,9 +267,11 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
 
         foreach (ArgumentSyntax argument in continuation.DescendantNodes().OfType<ArgumentSyntax>())
         {
+            ISymbol? argumentSymbol = context.SemanticModel.GetSymbolInfo(UnwrapParentheses(argument.Expression), context.CancellationToken).Symbol;
             if (argument.SpanStart < beforePosition
                 && (argument.RefKindKeyword.IsKind(SyntaxKind.RefKeyword) || argument.RefKindKeyword.IsKind(SyntaxKind.OutKeyword))
-                && SymbolEqualityComparer.Default.Equals(context.SemanticModel.GetSymbolInfo(argument.Expression, context.CancellationToken).Symbol, taskParameter))
+                && argumentSymbol is object
+                && taskSymbols.Contains(argumentSymbol))
             {
                 return true;
             }
@@ -277,14 +280,15 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
         return false;
     }
 
-    private static bool IsAssignmentToParameter(SyntaxNodeAnalysisContext context, ExpressionSyntax expression, IParameterSymbol taskParameter)
+    private static bool IsAssignmentToParameter(SyntaxNodeAnalysisContext context, ExpressionSyntax expression, IImmutableSet<ISymbol> taskSymbols)
     {
         expression = UnwrapParentheses(expression);
         if (expression is TupleExpressionSyntax tuple)
         {
-            return tuple.Arguments.Any(argument => IsAssignmentToParameter(context, argument.Expression, taskParameter));
+            return tuple.Arguments.Any(argument => IsAssignmentToParameter(context, argument.Expression, taskSymbols));
         }
 
-        return SymbolEqualityComparer.Default.Equals(context.SemanticModel.GetSymbolInfo(expression, context.CancellationToken).Symbol, taskParameter);
+        ISymbol? symbol = context.SemanticModel.GetSymbolInfo(expression, context.CancellationToken).Symbol;
+        return symbol is object && taskSymbols.Contains(symbol);
     }
 }

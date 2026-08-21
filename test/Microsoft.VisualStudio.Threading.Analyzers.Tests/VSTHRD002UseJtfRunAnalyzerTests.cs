@@ -657,6 +657,13 @@ class Test {
             (t, _) = (Task.Run(() => 6), 0);
             return t.[|Result|];
         });
+        task.ContinueWith(t => {
+            Task<int> other = Task.Run(() => 7);
+            ref Task<int> alias = ref other;
+            alias = ref t;
+            alias = Task.Run(() => 7);
+            return t.[|Result|];
+        });
     }
 }
 ";
@@ -717,6 +724,13 @@ class Test {
         Consume(await task, task.Result);
     }
 
+    async void AwaitedBeforeOtherTaskInSameStatement() {
+        var task = Task.Run(() => 1);
+        var otherTask = Task.Run(() => 2);
+        Consume(await task, await otherTask);
+        _ = task.Result;
+    }
+
     async void AwaitedInNestedBlock() {
         var task = Task.Run(() => 1);
         {
@@ -767,6 +781,10 @@ class Test {
         }
 
         if (task.IsCompletedSuccessfully) {
+            _ = task.Result;
+        }
+
+        if (task.IsCompleted || task.IsCanceled) {
             _ = task.Result;
         }
 
@@ -859,6 +877,23 @@ class Test {
     void ReassignedInsideGuard(Task<int> task) {
         if (task.IsCompleted) {
             task = Task.Run(() => 2);
+            _ = task.[|Result|];
+        }
+    }
+
+    void ReassignedThroughRefAliasInsideGuard(Task<int> task) {
+        ref Task<int> alias = ref task;
+        if (task.IsCompleted) {
+            alias = Task.Run(() => 2);
+            _ = task.[|Result|];
+        }
+    }
+
+    void ReassignedThroughReboundRefAliasInsideGuard(ref Task<int> task, ref Task<int> other) {
+        ref Task<int> alias = ref other;
+        alias = ref task;
+        if (task.IsCompleted) {
+            alias = Task.Run(() => 2);
             _ = task.[|Result|];
         }
     }
