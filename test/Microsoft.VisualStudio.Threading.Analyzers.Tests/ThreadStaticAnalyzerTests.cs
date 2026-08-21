@@ -118,8 +118,16 @@ public class ThreadStaticAnalyzerTests
                 [ThreadStatic]
                 private static object field;
 
+                [ThreadStatic]
+                private static int count;
+
                 [field: ThreadStatic]
                 private static object Property { get; set; }
+
+                [field: ThreadStatic]
+                private static event EventHandler Changed;
+
+                private static event EventHandler OtherChanged;
 
                 private static object otherField;
 
@@ -128,6 +136,12 @@ public class ThreadStaticAnalyzerTests
                     {|VSTHRD117:field = new object()|};
                     {|VSTHRD117:field ??= new object()|};
                     {|VSTHRD117:Property = new object()|};
+                    {|VSTHRD117:count++|};
+                    {|VSTHRD117:--count|};
+                    {|VSTHRD117:(otherField, (field, count)) = (new object(), (new object(), 1))|};
+                    {|VSTHRD117:Changed += OnChanged|};
+                    {|VSTHRD117:Changed -= OnChanged|};
+                    OtherChanged += OnChanged;
                     otherField = new object();
 
                     Action lambda = () => field = new object();
@@ -136,6 +150,10 @@ public class ThreadStaticAnalyzerTests
                     {
                         field = new object();
                     }
+                }
+
+                private static void OnChanged(object sender, EventArgs args)
+                {
                 }
 
                 private Test()

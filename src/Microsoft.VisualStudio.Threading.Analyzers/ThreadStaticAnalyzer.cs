@@ -83,6 +83,16 @@ public class ThreadStaticAnalyzer : DiagnosticAnalyzer
                 OperationKind.SimpleAssignment,
                 OperationKind.CompoundAssignment,
                 OperationKind.CoalesceAssignment);
+            startContext.RegisterOperationAction(
+                Utils.DebuggableWrapper(operationContext => AnalyzeIncrementOrDecrement(operationContext, threadStaticAttribute)),
+                OperationKind.Increment,
+                OperationKind.Decrement);
+            startContext.RegisterOperationAction(
+                Utils.DebuggableWrapper(operationContext => AnalyzeDeconstructionAssignment(operationContext, threadStaticAttribute)),
+                OperationKind.DeconstructionAssignment);
+            startContext.RegisterOperationAction(
+                Utils.DebuggableWrapper(operationContext => AnalyzeEventAssignment(operationContext, threadStaticAttribute)),
+                OperationKind.EventAssignment);
         });
     }
 
@@ -130,7 +140,53 @@ public class ThreadStaticAnalyzer : DiagnosticAnalyzer
         }
 
         var assignment = (IAssignmentOperation)context.Operation;
-        IFieldSymbol? field = assignment.Target switch
+        ReportIfThreadStaticTarget(context, assignment.Target, threadStaticAttribute);
+    }
+
+    private static void AnalyzeIncrementOrDecrement(OperationAnalysisContext context, INamedTypeSymbol threadStaticAttribute)
+    {
+        if (Utils.GetContainingFunction(context.Operation, context.ContainingSymbol) is not IMethodSymbol { MethodKind: MethodKind.StaticConstructor })
+        {
+            return;
+        }
+
+        var incrementOrDecrement = (IIncrementOrDecrementOperation)context.Operation;
+        ReportIfThreadStaticTarget(context, incrementOrDecrement.Target, threadStaticAttribute);
+    }
+
+    private static void AnalyzeDeconstructionAssignment(OperationAnalysisContext context, INamedTypeSymbol threadStaticAttribute)
+    {
+        if (Utils.GetContainingFunction(context.Operation, context.ContainingSymbol) is not IMethodSymbol { MethodKind: MethodKind.StaticConstructor })
+        {
+            return;
+        }
+
+        var assignment = (IDeconstructionAssignmentOperation)context.Operation;
+        ReportIfThreadStaticTarget(context, assignment.Target, threadStaticAttribute);
+    }
+
+    private static void AnalyzeEventAssignment(OperationAnalysisContext context, INamedTypeSymbol threadStaticAttribute)
+    {
+        if (Utils.GetContainingFunction(context.Operation, context.ContainingSymbol) is not IMethodSymbol { MethodKind: MethodKind.StaticConstructor })
+        {
+            return;
+        }
+
+        var assignment = (IEventAssignmentOperation)context.Operation;
+        ReportIfThreadStaticTarget(context, assignment.EventReference, threadStaticAttribute);
+    }
+
+    private static void ReportIfThreadStaticTarget(OperationAnalysisContext context, IOperation target, INamedTypeSymbol threadStaticAttribute)
+    {
+        if (IsThreadStaticTarget(context, target, threadStaticAttribute))
+        {
+            context.ReportDiagnostic(Diagnostic.Create(TypeInitializerAssignmentDescriptor, context.Operation.Syntax.GetLocation()));
+        }
+    }
+
+    private static bool IsThreadStaticTarget(OperationAnalysisContext context, IOperation target, INamedTypeSymbol threadStaticAttribute)
+    {
+        IFieldSymbol? field = target switch
         {
             IFieldReferenceOperation fieldReference => fieldReference.Field,
             IPropertyReferenceOperation propertyReference => GetField(propertyReference.Property),
@@ -139,8 +195,16 @@ public class ThreadStaticAnalyzer : DiagnosticAnalyzer
 
         if (field is { IsStatic: true } && HasThreadStaticAttribute(field, threadStaticAttribute))
         {
-            context.ReportDiagnostic(Diagnostic.Create(TypeInitializerAssignmentDescriptor, assignment.Syntax.GetLocation()));
+            return true;
         }
+
+        if (target is IEventReferenceOperation { Event: { IsStatic: true } @event }
+            && HasThreadStaticAttribute(context, @event, threadStaticAttribute))
+        {
+            return true;
+        }
+
+        return target is ITupleOperation tuple && tuple.Elements.Any(element => IsThreadStaticTarget(context, element, threadStaticAttribute));
     }
 
     private static IFieldSymbol? GetField(ISymbol symbol)
@@ -155,6 +219,47 @@ public class ThreadStaticAnalyzer : DiagnosticAnalyzer
             .FirstOrDefault(field => SymbolEqualityComparer.Default.Equals(field.AssociatedSymbol, symbol));
     }
 
-    private static bool HasThreadStaticAttribute(IFieldSymbol field, INamedTypeSymbol threadStaticAttribute)
-        => field.GetAttributes().Any(attribute => SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, threadStaticAttribute));
+    private static bool HasThreadStaticAttribute(ISymbol symbol, INamedTypeSymbol threadStaticAttribute)
+        => symbol.GetAttributes().Any(attribute => SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, threadStaticAttribute));
+
+    private static bool HasThreadStaticAttribute(OperationAnalysisContext context, IEventSymbol eventSymbol, INamedTypeSymbol threadStaticAttribute)
+    {
+        if (HasThreadStaticAttribute(eventSymbol, threadStaticAttribute))
+        {
+            return true;
+        }
+
+        // Roslyn does not expose the implicit backing field or its attributes for field-like events.
+        // Resolve field-targeted attributes from the event declaration instead.
+        foreach (SyntaxReference syntaxReference in eventSymbol.DeclaringSyntaxReferences)
+        {
+            SyntaxNode declaringSyntax = syntaxReference.GetSyntax(context.CancellationToken);
+            if (context.Operation.SemanticModel is not { } semanticModel
+                || semanticModel.SyntaxTree != declaringSyntax.SyntaxTree)
+            {
+                continue;
+            }
+
+            SyntaxNode eventDeclaration = declaringSyntax;
+            while (eventDeclaration.Parent is SyntaxNode parent
+                && !SymbolEqualityComparer.Default.Equals(
+                    semanticModel.GetDeclaredSymbol(parent, context.CancellationToken),
+                    eventSymbol.ContainingType))
+            {
+                eventDeclaration = parent;
+            }
+
+            foreach (SyntaxNode node in eventDeclaration.DescendantNodesAndSelf())
+            {
+                if (semanticModel.GetSymbolInfo(node, context.CancellationToken).Symbol is IMethodSymbol constructor
+                    && constructor.MethodKind == MethodKind.Constructor
+                    && SymbolEqualityComparer.Default.Equals(constructor.ContainingType, threadStaticAttribute))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
 }
