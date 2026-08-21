@@ -119,30 +119,46 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
 
         ExpressionSyntax? FindGetAwaiterReceiver(ExpressionSyntax? from, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (from is InvocationExpressionSyntax
+            if (from is not InvocationExpressionSyntax
                 {
                     Expression: MemberAccessExpressionSyntax
                     {
                         Name.Identifier.ValueText: nameof(TaskAwaiter.GetResult),
-                        Expression: InvocationExpressionSyntax
-                        {
-                            Expression: MemberAccessExpressionSyntax
-                            {
-                                Name.Identifier.ValueText: "GetAwaiter",
-                                Expression: ExpressionSyntax receiver,
-                            },
-                        },
-                    },
+                    } getResultAccess
                 })
             {
-                return receiver;
+                return null;
             }
 
-            return null;
+            ExpressionSyntax getAwaiterInvocationExpression = getResultAccess.Expression;
+            while (getAwaiterInvocationExpression is ParenthesizedExpressionSyntax parenthesized)
+            {
+                getAwaiterInvocationExpression = parenthesized.Expression;
+            }
+
+            return getAwaiterInvocationExpression is InvocationExpressionSyntax
+            {
+                Expression: MemberAccessExpressionSyntax
+                {
+                    Name.Identifier.ValueText: "GetAwaiter",
+                    Expression: ExpressionSyntax receiver,
+                }
+            }
+                ? receiver
+                : null;
         }
 
-        ExpressionSyntax? FindOneLevelDeepIdentifierInvocation(ExpressionSyntax? from, CancellationToken cancellationToken = default(CancellationToken)) =>
-            ((from as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax)?.Expression;
+        ExpressionSyntax? FindInstanceWaitReceiver(ExpressionSyntax? from, CancellationToken cancellationToken = default(CancellationToken)) =>
+            from is InvocationExpressionSyntax
+            {
+                Expression: MemberAccessExpressionSyntax
+                {
+                    Name.Identifier.ValueText: nameof(Task.Wait),
+                    Expression: ExpressionSyntax receiver,
+                }
+            }
+                ? receiver
+                : null;
         ExpressionSyntax? FindParentMemberAccess(ExpressionSyntax? from, CancellationToken cancellationToken = default(CancellationToken)) =>
             (from as MemberAccessExpressionSyntax)?.Expression;
 
@@ -162,10 +178,10 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
             target = parentInvocation!;
             return true;
         }
-        else if (FindOneLevelDeepIdentifierInvocation(parentInvocation) is object)
+        else if (FindInstanceWaitReceiver(parentInvocation) is object)
         {
             // This method will not return null for the provided 'target' argument
-            transform = NullableHelpers.AsNonNullReturnUnchecked<ExpressionSyntax, CancellationToken, ExpressionSyntax>(FindOneLevelDeepIdentifierInvocation);
+            transform = NullableHelpers.AsNonNullReturnUnchecked<ExpressionSyntax, CancellationToken, ExpressionSyntax>(FindInstanceWaitReceiver);
             target = parentInvocation!;
             return true;
         }

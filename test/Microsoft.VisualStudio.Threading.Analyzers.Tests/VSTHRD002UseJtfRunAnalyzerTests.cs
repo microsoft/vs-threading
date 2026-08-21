@@ -656,7 +656,18 @@ class Test {
 }
 ";
 
-        await CSVerify.VerifyAnalyzerAsync(test);
+        var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task FAsync() {
+        var task = Task.Run(() => 1);
+        _ = await Task.WhenAll(task);
+    }
+}
+";
+
+        await CSVerify.VerifyCodeFixAsync(test, withFix);
     }
 
     [Fact]
@@ -681,6 +692,16 @@ class Test {
     async void Guarded() {
         var task = Task.Run(() => 1);
         if (!task.IsCompleted) {
+            await task.ConfigureAwait(false);
+        }
+
+        _ = task.Result;
+    }
+
+    async void GuardedWithElse() {
+        var task = Task.Run(() => 1);
+        if (task.IsCompleted) {
+        } else {
             await task.ConfigureAwait(false);
         }
 
@@ -868,6 +889,33 @@ class Test {
 ";
         DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(8, 27, 8, 36);
         await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
+
+    [Fact]
+    public async Task ParenthesizedTask_GetAwaiter_GetResult_ShouldReportWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    void F() {
+        var task = Task.Run(() => 1);
+        (task.GetAwaiter()).[|GetResult|]();
+    }
+}
+";
+        var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task FAsync() {
+        var task = Task.Run(() => 1);
+        await task;
+    }
+}
+";
+
+        await CSVerify.VerifyCodeFixAsync(test, withFix);
     }
 
     [Fact]

@@ -299,9 +299,23 @@ internal static class CSharpCommonInterest
             return true;
         }
 
-        return statement is IfStatementSyntax { Else: null } ifStatement
-            && ConditionProvesCompletion(context, ifStatement.Condition, taskSymbol, conditionValue: false)
-            && StatementDefinitelyAwaitsTask(context, ifStatement.Statement, taskSymbol);
+        if (statement is not IfStatementSyntax ifStatement)
+        {
+            return false;
+        }
+
+        if (ifStatement.Else is null)
+        {
+            return ConditionProvesCompletion(context, ifStatement.Condition, taskSymbol, conditionValue: false)
+                && StatementDefinitelyAwaitsTask(context, ifStatement.Statement, taskSymbol);
+        }
+
+        return (ConditionProvesCompletion(context, ifStatement.Condition, taskSymbol, conditionValue: true)
+                && !MayReassignTask(context, ifStatement.Statement, taskSymbol)
+                && StatementDefinitelyAwaitsTask(context, ifStatement.Else.Statement, taskSymbol))
+            || (ConditionProvesCompletion(context, ifStatement.Condition, taskSymbol, conditionValue: false)
+                && StatementDefinitelyAwaitsTask(context, ifStatement.Statement, taskSymbol)
+                && !MayReassignTask(context, ifStatement.Else.Statement, taskSymbol));
     }
 
     private static bool StatementDefinitelyAwaitsTask(SyntaxNodeAnalysisContext context, StatementSyntax statement, ISymbol taskSymbol)
