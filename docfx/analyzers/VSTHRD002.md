@@ -40,6 +40,14 @@ void DoSomething()
 }
 ```
 
+Accessing a task's result is not reported when the analyzer can prove the task has completed.
+Recognized proofs include awaiting the task (directly or through `Task.WhenAll`), guarding the
+access with a completion property such as `IsCompletedSuccessfully`, and awaiting the task in
+the negative branch of such a guard.
+
+VSTHRD002 can also report project-specific synchronous blocking methods configured in
+`vs-threading.SyncBlockingMethods.txt`. See [Analyzer Configuration](configuration.md#additional-synchronous-blocking-methods-for-vsthrd002).
+
 Refer to [Asynchronous and multithreaded programming within VS using the JoinableTaskFactory][1] for more information.
 
 [1]: https://devblogs.microsoft.com/premier-developer/asynchronous-and-multithreaded-programming-within-vs-using-the-joinabletaskfactory/

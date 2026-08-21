@@ -32,7 +32,7 @@ class Test {
 
     static void SetTaskSourceIfCompleted<T>(Task<T> task, TaskCompletionSource<T> tcs) {
         if (task.IsCompleted) {
-            tcs.SetResult(task.Result);
+            tcs.SetResult(task.Result); // No VSTHRD002 because task is known to be completed.
         }
     }
 }";
@@ -41,7 +41,6 @@ class Test {
         {
             CSVerify.Diagnostic(VSTHRD103UseAsyncOptionAnalyzer.DescriptorNoAlternativeMethod).WithSpan(10, 24, 10, 33).WithArguments("GetResult"),
             CSVerify.Diagnostic(VSTHRD103UseAsyncOptionAnalyzer.Descriptor).WithSpan(11, 13, 11, 16).WithArguments("Run", "RunAsync"),
-            CSVerify.Diagnostic(VSTHRD002UseJtfRunAnalyzer.Descriptor).WithSpan(19, 32, 19, 38),
         };
 
         // All expected diagnostics should include a location

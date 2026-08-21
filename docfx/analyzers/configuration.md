@@ -104,3 +104,16 @@ excluded from VSTHRD103 analysis by specifying them in a configuration file.
 **Sample:** `[System.Data.SqlClient.SqlDataReader]::Read`
 
 **Generic sample:** ``[Microsoft.EntityFrameworkCore.DbSet`1]::Add``
+
+## Additional synchronous blocking methods for VSTHRD002
+
+Projects that wrap synchronous waits in their own APIs can configure those methods to be
+reported by VSTHRD002. Instance, static, and extension methods are supported. Because the
+analyzer cannot infer an asynchronous equivalent for a configured method, it does not offer
+the "use await instead" code fix for these diagnostics.
+
+**Filename:** `vs-threading.SyncBlockingMethods.txt`
+
+**Line format:** `[Namespace.TypeName]::MethodName`
+
+**Sample:** `[Contoso.Threading.TaskExtensions]::WaitSynchronously`

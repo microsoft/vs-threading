@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -61,6 +62,10 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
         context.RegisterCompilationStartAction(compilationContext =>
         {
             INamedTypeSymbol? taskSymbol = compilationContext.Compilation.GetTypeByMetadataName(Types.Task.FullName);
+            ImmutableArray<CommonInterest.QualifiedMember> configuredSyncBlockingMethods = CommonInterest.ReadMethods(
+                compilationContext.Options,
+                new Regex(@"^vs-threading\.SyncBlockingMethods(\..*)?.txt$", RegexOptions.IgnoreCase | RegexOptions.Singleline),
+                compilationContext.CancellationToken).ToImmutableArray();
             if (taskSymbol is object)
             {
                 compilationContext.RegisterCodeBlockStartAction<SyntaxKind>(codeBlockContext =>
@@ -70,7 +75,7 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
                     if (propertySymbol is object || methodSymbol is object)
                     {
                         bool analyzeWholeCodeBlock = propertySymbol is object || !methodSymbol!.HasAsyncCompatibleReturnType();
-                        codeBlockContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => AnalyzeInvocation(c, taskSymbol, analyzeWholeCodeBlock)), SyntaxKind.InvocationExpression);
+                        codeBlockContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => AnalyzeInvocation(c, taskSymbol, configuredSyncBlockingMethods, analyzeWholeCodeBlock)), SyntaxKind.InvocationExpression);
                         codeBlockContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => AnalyzeMemberAccess(c, taskSymbol, analyzeWholeCodeBlock)), SyntaxKind.SimpleMemberAccessExpression);
                     }
                 });
@@ -124,51 +129,77 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        // Are we in the context of an anonymous function that is passed directly in as an argument to another method?
-        AnonymousFunctionExpressionSyntax? anonymousFunctionSyntax = context.Node.FirstAncestorOrSelf<AnonymousFunctionExpressionSyntax>();
-        var anonFuncAsArgument = anonymousFunctionSyntax?.Parent as ArgumentSyntax;
-        var invocationPassingExpression = anonFuncAsArgument?.Parent?.Parent as InvocationExpressionSyntax;
-        var invokedMemberAccess = invocationPassingExpression?.Expression as MemberAccessExpressionSyntax;
-        if (invokedMemberAccess?.Name is object)
+        // A continuation's antecedent is complete throughout its delegate, including nested delegates that capture it.
+        foreach (AnonymousFunctionExpressionSyntax anonymousFunctionSyntax in context.Node.Ancestors().OfType<AnonymousFunctionExpressionSyntax>())
         {
-            // Does the anonymous function appear as the first argument to Task.ContinueWith?
-            var invokedMemberSymbol = context.SemanticModel.GetSymbolInfo(invokedMemberAccess.Name, context.CancellationToken).Symbol as IMethodSymbol;
-            if (invokedMemberSymbol?.Name == nameof(Task.ContinueWith) &&
-                Utils.IsEqualToOrDerivedFrom(invokedMemberSymbol?.ContainingType, taskSymbol) &&
-                invocationPassingExpression?.ArgumentList?.Arguments.FirstOrDefault() == anonFuncAsArgument)
+            var anonymousFunctionArgument = anonymousFunctionSyntax.Parent as ArgumentSyntax;
+            var continuationInvocation = anonymousFunctionArgument?.Parent?.Parent as InvocationExpressionSyntax;
+            if (continuationInvocation is null || continuationInvocation.ArgumentList.Arguments.FirstOrDefault() != anonymousFunctionArgument)
             {
-                // Does the member access being analyzed belong to the Task that just completed?
-                ParameterSyntax? firstParameter = GetFirstParameter(anonymousFunctionSyntax);
-                if (firstParameter is object)
-                {
-                    // Are we accessing a member of the completed task?
-                    ISymbol? invokedObjectSymbol = context.SemanticModel.GetSymbolInfo(memberAccessSyntax.Expression, context.CancellationToken).Symbol;
-                    IParameterSymbol? completedTask = context.SemanticModel.GetDeclaredSymbol(firstParameter);
-                    if (EqualityComparer<ISymbol?>.Default.Equals(invokedObjectSymbol, completedTask))
-                    {
-                        // Skip analysis since Task.Result (et. al) of a completed Task is fair game.
-                        return;
-                    }
-                }
+                continue;
+            }
+
+            var invokedMemberSymbol = context.SemanticModel.GetSymbolInfo(continuationInvocation, context.CancellationToken).Symbol as IMethodSymbol;
+            if (invokedMemberSymbol?.Name != nameof(Task.ContinueWith)
+                || !Utils.IsEqualToOrDerivedFrom(invokedMemberSymbol.ContainingType, taskSymbol))
+            {
+                continue;
+            }
+
+            ParameterSyntax? firstParameter = GetFirstParameter(anonymousFunctionSyntax);
+            if (firstParameter is object
+                && context.SemanticModel.GetDeclaredSymbol(firstParameter, context.CancellationToken) is IParameterSymbol completedTask
+                && SymbolEqualityComparer.Default.Equals(GetTaskReceiverSymbol(context, memberAccessSyntax), completedTask)
+                && !IsTaskReassignedInContinuation(context, anonymousFunctionSyntax, memberAccessSyntax, completedTask))
+            {
+                return;
             }
         }
 
         CSharpCommonInterest.InspectMemberAccess(context, memberAccessSyntax, Descriptor, problematicMethods);
     }
 
-    private static void AnalyzeInvocation(SyntaxNodeAnalysisContext context, INamedTypeSymbol taskSymbol, bool analyzeWholeCodeBlock)
+    private static void AnalyzeInvocation(
+        SyntaxNodeAnalysisContext context,
+        INamedTypeSymbol taskSymbol,
+        ImmutableArray<CommonInterest.QualifiedMember> configuredSyncBlockingMethods,
+        bool analyzeWholeCodeBlock)
     {
-        if (!ShouldAnalyze(context, analyzeWholeCodeBlock))
+        var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
+        if (ShouldAnalyze(context, analyzeWholeCodeBlock))
+        {
+            InspectMemberAccess(
+                context,
+                invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax,
+                CommonInterest.ProblematicSyncBlockingMethods,
+                taskSymbol);
+        }
+
+        if (configuredSyncBlockingMethods.IsEmpty
+            || context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax, context.CancellationToken).Symbol is not IMethodSymbol invokedMethod)
         {
             return;
         }
 
-        var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
-        InspectMemberAccess(
-            context,
-            invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax,
-            CommonInterest.ProblematicSyncBlockingMethods,
-            taskSymbol);
+        IMethodSymbol methodDefinition = invokedMethod.ReducedFrom ?? invokedMethod;
+        bool isBuiltInSyncBlockingMethod = CommonInterest.ProblematicSyncBlockingMethods.Any(
+            method => method.Method.IsMatch(invokedMethod) || method.Method.IsMatch(methodDefinition));
+        if (!isBuiltInSyncBlockingMethod
+            && configuredSyncBlockingMethods.Any(method => method.IsMatch(invokedMethod) || method.IsMatch(methodDefinition)))
+        {
+            SimpleNameSyntax? methodName = invocationExpressionSyntax.Expression switch
+            {
+                MemberAccessExpressionSyntax memberAccess => memberAccess.Name,
+                SimpleNameSyntax simpleName => simpleName,
+                _ => null,
+            };
+
+            if (methodName is object)
+            {
+                ImmutableDictionary<string, string?> properties = ImmutableDictionary<string, string?>.Empty.Add("SuppressAwaitCodeFix", null);
+                context.ReportDiagnostic(Diagnostic.Create(Descriptor, methodName.GetLocation(), properties));
+            }
+        }
     }
 
     private static void AnalyzeMemberAccess(SyntaxNodeAnalysisContext context, INamedTypeSymbol taskSymbol, bool analyzeWholeCodeBlock)
@@ -184,5 +215,54 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
             memberAccessSyntax,
             CommonInterest.SyncBlockingProperties,
             taskSymbol);
+    }
+
+    private static ISymbol? GetTaskReceiverSymbol(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax)
+    {
+        ExpressionSyntax receiver = memberAccessSyntax.Expression;
+        if (receiver is InvocationExpressionSyntax getAwaiterInvocation
+            && getAwaiterInvocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "GetAwaiter" } getAwaiterAccess)
+        {
+            receiver = getAwaiterAccess.Expression;
+        }
+
+        if (receiver is InvocationExpressionSyntax configureAwaitInvocation
+            && configureAwaitInvocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: nameof(Task.ConfigureAwait) } configureAwaitAccess)
+        {
+            receiver = configureAwaitAccess.Expression;
+        }
+
+        return context.SemanticModel.GetSymbolInfo(receiver, context.CancellationToken).Symbol;
+    }
+
+    private static bool IsTaskReassignedInContinuation(
+        SyntaxNodeAnalysisContext context,
+        AnonymousFunctionExpressionSyntax continuation,
+        MemberAccessExpressionSyntax memberAccess,
+        IParameterSymbol taskParameter)
+    {
+        bool accessIsNested = memberAccess.Ancestors().TakeWhile(node => node != continuation).Any(node => node is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax);
+        int beforePosition = accessIsNested ? continuation.Span.End + 1 : memberAccess.SpanStart;
+
+        foreach (AssignmentExpressionSyntax assignment in continuation.DescendantNodes().OfType<AssignmentExpressionSyntax>())
+        {
+            if (assignment.SpanStart < beforePosition
+                && SymbolEqualityComparer.Default.Equals(context.SemanticModel.GetSymbolInfo(assignment.Left, context.CancellationToken).Symbol, taskParameter))
+            {
+                return true;
+            }
+        }
+
+        foreach (ArgumentSyntax argument in continuation.DescendantNodes().OfType<ArgumentSyntax>())
+        {
+            if (argument.SpanStart < beforePosition
+                && (argument.RefKindKeyword.IsKind(SyntaxKind.RefKeyword) || argument.RefKindKeyword.IsKind(SyntaxKind.OutKeyword))
+                && SymbolEqualityComparer.Default.Equals(context.SemanticModel.GetSymbolInfo(argument.Expression, context.CancellationToken).Symbol, taskParameter))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

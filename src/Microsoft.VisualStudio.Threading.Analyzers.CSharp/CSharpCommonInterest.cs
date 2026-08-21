@@ -4,8 +4,10 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -113,44 +115,112 @@ internal static class CSharpCommonInterest
         }
     }
 
-    private static SyntaxNode? GetEnclosingBlock(SyntaxNode? node)
+    private static ExpressionSyntax UnwrapParentheses(ExpressionSyntax expression)
     {
-        while (node is not null)
+        while (expression is ParenthesizedExpressionSyntax parenthesized)
         {
-            if (node.IsKind(SyntaxKind.Block))
-            {
-                return node;
-            }
-
-            node = node.Parent;
+            expression = parenthesized.Expression;
         }
 
-        return null;
+        return expression;
     }
 
-    private static bool IsVariablePassedToInvocation(InvocationExpressionSyntax invocationExpr, string variableName, bool byRef)
+    private static ExpressionSyntax GetTaskReceiver(MemberAccessExpressionSyntax memberAccessSyntax)
     {
-        ArgumentListSyntax? argList = invocationExpr.ChildNodes().OfType<ArgumentListSyntax>().FirstOrDefault();
-        if (argList is null)
+        ExpressionSyntax receiver = memberAccessSyntax.Expression;
+        if (receiver is InvocationExpressionSyntax getAwaiterInvocation
+            && getAwaiterInvocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "GetAwaiter" } getAwaiterAccess)
+        {
+            receiver = getAwaiterAccess.Expression;
+        }
+
+        if (receiver is InvocationExpressionSyntax configureAwaitInvocation
+            && configureAwaitInvocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: nameof(Task.ConfigureAwait) } configureAwaitAccess)
+        {
+            receiver = configureAwaitAccess.Expression;
+        }
+
+        return UnwrapParentheses(receiver);
+    }
+
+    private static bool HasTaskCompleted(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax)
+    {
+        ISymbol? taskSymbol = context.SemanticModel.GetSymbolInfo(GetTaskReceiver(memberAccessSyntax), context.CancellationToken).Symbol;
+        if (taskSymbol is not ILocalSymbol and not IParameterSymbol)
         {
             return false;
         }
 
-        foreach (ArgumentSyntax arg in argList.ChildNodes().OfType<ArgumentSyntax>())
+        if (IsWithinCompletedTaskBranch(context, memberAccessSyntax, taskSymbol))
         {
-            // `byRef` includes `out` parameters because they are the same as `ref` except don't require initialization first.
-            if (byRef && !arg.RefKindKeyword.IsKind(SyntaxKind.RefKeyword) && !arg.RefKindKeyword.IsKind(SyntaxKind.OutKeyword))
-            {
-                continue;
-            }
+            return true;
+        }
 
-            IdentifierNameSyntax identiferName = arg.ChildNodes().OfType<IdentifierNameSyntax>().FirstOrDefault();
-            if (identiferName is null)
+        StatementSyntax? containingStatement = memberAccessSyntax.FirstAncestorOrSelf<StatementSyntax>();
+        if (containingStatement is null)
+        {
+            return false;
+        }
+
+        while (containingStatement.Parent is BlockSyntax block)
+        {
+            if (MayReassignTask(context, containingStatement, taskSymbol, containingStatement.SpanStart - 1, memberAccessSyntax.SpanStart))
             {
                 return false;
             }
 
-            if (identiferName.Identifier.ValueText == variableName)
+            int statementIndex = block.Statements.IndexOf(containingStatement);
+            for (int i = statementIndex - 1; i >= 0; i--)
+            {
+                StatementSyntax statement = block.Statements[i];
+                if (StatementCompletesTask(context, statement, taskSymbol))
+                {
+                    return true;
+                }
+
+                if (MayReassignTask(context, statement, taskSymbol))
+                {
+                    return false;
+                }
+            }
+
+            StatementSyntax? outerStatement = containingStatement.Ancestors().OfType<StatementSyntax>().FirstOrDefault(statement => statement.Parent is BlockSyntax);
+            if (outerStatement is not IfStatementSyntax and not BlockSyntax)
+            {
+                return false;
+            }
+
+            if (MayReassignTask(context, outerStatement, taskSymbol, outerStatement.SpanStart - 1, containingStatement.SpanStart))
+            {
+                return false;
+            }
+
+            containingStatement = outerStatement;
+        }
+
+        return false;
+    }
+
+    private static bool IsWithinCompletedTaskBranch(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax, ISymbol taskSymbol)
+    {
+        foreach (IfStatementSyntax ifStatement in memberAccessSyntax.Ancestors().OfType<IfStatementSyntax>())
+        {
+            IEnumerable<SyntaxNode> nodesBetweenAccessAndCondition = memberAccessSyntax.Ancestors().TakeWhile(node => node != ifStatement);
+            if (nodesBetweenAccessAndCondition.Any(node => node is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax))
+            {
+                continue;
+            }
+
+            if (ifStatement.Statement.FullSpan.Contains(memberAccessSyntax.Span)
+                && ConditionProvesCompletion(context, ifStatement.Condition, taskSymbol, conditionValue: true)
+                && !MayReassignTask(context, ifStatement, taskSymbol, ifStatement.Condition.SpanStart - 1, memberAccessSyntax.SpanStart))
+            {
+                return true;
+            }
+
+            if (ifStatement.Else?.Statement.FullSpan.Contains(memberAccessSyntax.Span) is true
+                && ConditionProvesCompletion(context, ifStatement.Condition, taskSymbol, conditionValue: false)
+                && !MayReassignTask(context, ifStatement, taskSymbol, ifStatement.Condition.SpanStart - 1, memberAccessSyntax.SpanStart))
             {
                 return true;
             }
@@ -159,132 +229,193 @@ internal static class CSharpCommonInterest
         return false;
     }
 
-    private static bool IsTaskCompletedWithWhenAll(SyntaxNodeAnalysisContext context, InvocationExpressionSyntax invocationExpr, string taskVariableName)
+    private static bool ConditionProvesCompletion(SyntaxNodeAnalysisContext context, ExpressionSyntax condition, ISymbol taskSymbol, bool conditionValue)
     {
-        // We only care about awaited invocations, because an un-awaited Task.WhenAll will be an error.
-        if (invocationExpr.Parent is not AwaitExpressionSyntax)
+        condition = UnwrapParentheses(condition);
+        if (condition is PrefixUnaryExpressionSyntax { RawKind: (int)SyntaxKind.LogicalNotExpression } logicalNot)
         {
-            return false;
+            return ConditionProvesCompletion(context, logicalNot.Operand, taskSymbol, !conditionValue);
         }
 
-        IEnumerable<MemberAccessExpressionSyntax>? memberAccessList = invocationExpr.ChildNodes().OfType<MemberAccessExpressionSyntax>();
-        if (memberAccessList.Count() != 1)
+        if (condition is BinaryExpressionSyntax binary)
         {
-            return false;
-        }
-
-        MemberAccessExpressionSyntax? memberAccess = memberAccessList.First();
-
-        // Does the invocation have the expected `Task.WhenAll` syntax? This is cheaper to verify before looking up its semantic type.
-        bool correctSyntax = memberAccess.Expression is IdentifierNameSyntax { Identifier.ValueText: Types.Task.TypeName }
-            && memberAccess.Name is IdentifierNameSyntax { Identifier.ValueText: Types.Task.WhenAll };
-
-        if (!correctSyntax)
-        {
-            return false;
-        }
-
-        // Is this `Task.WhenAll` invocation from the System.Threading.Tasks.Task type?
-        ITypeSymbol? classType = context.SemanticModel.GetTypeInfo(memberAccess.Expression).Type;
-        var correctType = classType?.Name == Types.Task.TypeName && classType.BelongsToNamespace(Types.Task.Namespace);
-        if (!correctType)
-        {
-            return false;
-        }
-
-        // Is the task variable passed as an argument to `Task.WhenAll`?
-        return IsVariablePassedToInvocation(invocationExpr, taskVariableName, byRef: false);
-    }
-
-    private static bool HasTaskCompleted(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax)
-    {
-        SyntaxNode? enclosingBlock = GetEnclosingBlock(memberAccessSyntax);
-        if (enclosingBlock is null)
-        {
-            return false;
-        }
-
-        // Get the task variable name from the problematic member access expression so that we can later try
-        // and determine if it has been used in a `Task.WhenAll` invocation.
-        // Examples:
-        //   task1.Result;
-        //   task2.GetAwaiter().GetResult();
-        string? taskVariableName = null;
-        ExpressionSyntax parentExpr = memberAccessSyntax.Expression;
-        while (parentExpr is not null)
-        {
-            if (parentExpr is IdentifierNameSyntax identifierExpr)
+            if (conditionValue && binary.IsKind(SyntaxKind.LogicalAndExpression))
             {
-                taskVariableName = identifierExpr.Identifier.ValueText;
-                break;
+                return ConditionProvesCompletion(context, binary.Left, taskSymbol, conditionValue: true)
+                    || ConditionProvesCompletion(context, binary.Right, taskSymbol, conditionValue: true);
             }
-            else if (parentExpr is MemberAccessExpressionSyntax memberAccessExpr)
+
+            if (!conditionValue && binary.IsKind(SyntaxKind.LogicalOrExpression))
             {
-                parentExpr = memberAccessExpr.Expression;
+                return ConditionProvesCompletion(context, binary.Left, taskSymbol, conditionValue: false)
+                    || ConditionProvesCompletion(context, binary.Right, taskSymbol, conditionValue: false);
             }
-            else if (parentExpr is InvocationExpressionSyntax invocExpr)
+
+            bool equalityHolds = binary.IsKind(SyntaxKind.EqualsExpression) ? conditionValue
+                : binary.IsKind(SyntaxKind.NotEqualsExpression) ? !conditionValue
+                : false;
+            if ((binary.IsKind(SyntaxKind.EqualsExpression) || binary.IsKind(SyntaxKind.NotEqualsExpression))
+                && IsRanToCompletionComparison(context, binary.Left, binary.Right, taskSymbol))
             {
-                parentExpr = invocExpr.Expression;
-            }
-            else
-            {
-                break;
+                return equalityHolds;
             }
         }
 
-        if (taskVariableName is null)
+        if (condition is MemberAccessExpressionSyntax completedProperty
+            && IsSameTask(context, completedProperty.Expression, taskSymbol)
+            && completedProperty.Name.Identifier.ValueText is nameof(Task.IsCompleted)
+                or nameof(Task.IsCanceled)
+                or nameof(Task.IsFaulted)
+                or "IsCompletedSuccessfully")
         {
-            return false;
-        }
-
-        // Find all `Task.WhenAll` invocations that precede the problematic member access, which are also in the same enclosing block.
-        IEnumerable<InvocationExpressionSyntax>? taskWhenAllInvocationList =
-            from invoc in enclosingBlock.DescendantNodes().OfType<InvocationExpressionSyntax>()
-            where memberAccessSyntax.SpanStart > invoc.Span.End &&
-                  IsTaskCompletedWithWhenAll(context, invoc, taskVariableName)
-            select invoc;
-
-        if (!taskWhenAllInvocationList.Any())
-        {
-            return false;
-        }
-
-        // If a `Task.WhenAll` invocation precedes the problematic member access, and the task variable has not been
-        // invalidated in between, then we consider the task to be completed.
-        // Example:
-        //   await Task.WhenAll(task1, task2, task3);
-        //   task1 = Task.Run(...);    // Invalidates `task1`
-        //   DoSomething(ref task2);   // Invalidates `task2`
-        //   task1.Result;             // Warn
-        //   task2.Result;             // Warn
-        //   task3.Result;             // No warning, task3 has not been invalidated in between WhenAll and this problematic member access
-        foreach (InvocationExpressionSyntax? taskWhenAllInvocation in taskWhenAllInvocationList)
-        {
-            // Has the task variable been assigned to a new task?
-            IEnumerable<AssignmentExpressionSyntax>? assignmentList =
-                from assign in enclosingBlock.DescendantNodes().OfType<AssignmentExpressionSyntax>()
-                where assign.SpanStart > taskWhenAllInvocation.Span.End &&
-                      assign.SpanStart < memberAccessSyntax.SpanStart &&
-                      ((IdentifierNameSyntax)assign.Left).Identifier.ValueText == taskVariableName
-                select assign;
-
-            if (assignmentList.Any())
-            {
-                return false;
-            }
-
-            // Has the task variable been passed by ref to a method?
-            // If so, we must assume the worst case that the method has assigned it to a new task.
-            IEnumerable<InvocationExpressionSyntax>? invocationList =
-                from invoc in enclosingBlock.DescendantNodes().OfType<InvocationExpressionSyntax>()
-                where invoc.SpanStart > taskWhenAllInvocation.Span.End &&
-                      invoc.SpanStart < memberAccessSyntax.SpanStart &&
-                      IsVariablePassedToInvocation(invoc, taskVariableName, byRef: true)
-                select invoc;
-
-            return !invocationList.Any();
+            return conditionValue;
         }
 
         return false;
     }
+
+    private static bool IsRanToCompletionComparison(SyntaxNodeAnalysisContext context, ExpressionSyntax left, ExpressionSyntax right, ISymbol taskSymbol)
+    {
+        return (IsTaskStatus(context, left, taskSymbol) && IsRanToCompletion(context, right))
+            || (IsTaskStatus(context, right, taskSymbol) && IsRanToCompletion(context, left));
+    }
+
+    private static bool IsTaskStatus(SyntaxNodeAnalysisContext context, ExpressionSyntax expression, ISymbol taskSymbol)
+        => expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: nameof(Task.Status) } statusAccess
+            && IsSameTask(context, statusAccess.Expression, taskSymbol);
+
+    private static bool IsRanToCompletion(SyntaxNodeAnalysisContext context, ExpressionSyntax expression)
+        => context.SemanticModel.GetSymbolInfo(expression, context.CancellationToken).Symbol is IFieldSymbol status
+            && status.Name == nameof(TaskStatus.RanToCompletion)
+            && status.ContainingType.Name == nameof(TaskStatus)
+            && status.ContainingType.BelongsToNamespace(Namespaces.SystemThreadingTasks);
+
+    private static bool StatementCompletesTask(SyntaxNodeAnalysisContext context, StatementSyntax statement, ISymbol taskSymbol)
+    {
+        if (TryGetAwaitExpression(statement, out AwaitExpressionSyntax? awaitExpression)
+            && AwaitCompletesTask(context, awaitExpression, taskSymbol)
+            && !MayReassignTask(context, statement, taskSymbol, awaitExpression.Span.End, statement.Span.End + 1))
+        {
+            return true;
+        }
+
+        return statement is IfStatementSyntax { Else: null } ifStatement
+            && ConditionProvesCompletion(context, ifStatement.Condition, taskSymbol, conditionValue: false)
+            && StatementDefinitelyAwaitsTask(context, ifStatement.Statement, taskSymbol);
+    }
+
+    private static bool StatementDefinitelyAwaitsTask(SyntaxNodeAnalysisContext context, StatementSyntax statement, ISymbol taskSymbol)
+    {
+        if (TryGetAwaitExpression(statement, out AwaitExpressionSyntax? awaitExpression))
+        {
+            return AwaitCompletesTask(context, awaitExpression, taskSymbol)
+                && !MayReassignTask(context, statement, taskSymbol, awaitExpression.Span.End, statement.Span.End + 1);
+        }
+
+        if (statement is BlockSyntax block)
+        {
+            for (int i = block.Statements.Count - 1; i >= 0; i--)
+            {
+                if (TryGetAwaitExpression(block.Statements[i], out awaitExpression)
+                    && AwaitCompletesTask(context, awaitExpression, taskSymbol)
+                    && !MayReassignTask(context, block.Statements[i], taskSymbol, awaitExpression.Span.End, block.Statements[i].Span.End + 1))
+                {
+                    return true;
+                }
+
+                if (MayReassignTask(context, block.Statements[i], taskSymbol))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private static bool TryGetAwaitExpression(StatementSyntax statement, [NotNullWhen(true)] out AwaitExpressionSyntax? awaitExpression)
+    {
+        static bool DescendIntoChildren(SyntaxNode node) => node is not AnonymousFunctionExpressionSyntax and not LocalFunctionStatementSyntax;
+
+        foreach (AwaitExpressionSyntax candidate in statement.DescendantNodes(DescendIntoChildren).OfType<AwaitExpressionSyntax>().Reverse())
+        {
+            IEnumerable<SyntaxNode> ancestorsWithinStatement = candidate.Ancestors().TakeWhile(node => node != statement);
+            bool isConditionallyExecuted = ancestorsWithinStatement.Any(
+                node => node is StatementSyntax or ConditionalExpressionSyntax or SwitchExpressionSyntax or ConditionalAccessExpressionSyntax
+                    || (node is BinaryExpressionSyntax binary
+                        && (binary.IsKind(SyntaxKind.LogicalAndExpression)
+                            || binary.IsKind(SyntaxKind.LogicalOrExpression)
+                            || binary.IsKind(SyntaxKind.CoalesceExpression))));
+            if (!isConditionallyExecuted)
+            {
+                awaitExpression = candidate;
+                return true;
+            }
+        }
+
+        awaitExpression = null;
+        return false;
+    }
+
+    private static bool AwaitCompletesTask(SyntaxNodeAnalysisContext context, AwaitExpressionSyntax awaitExpression, ISymbol taskSymbol)
+    {
+        ExpressionSyntax awaitedExpression = UnwrapParentheses(awaitExpression.Expression);
+        if (awaitedExpression is InvocationExpressionSyntax configureAwaitInvocation
+            && configureAwaitInvocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: nameof(Task.ConfigureAwait) } configureAwaitAccess)
+        {
+            awaitedExpression = UnwrapParentheses(configureAwaitAccess.Expression);
+        }
+
+        if (IsSameTask(context, awaitedExpression, taskSymbol))
+        {
+            return true;
+        }
+
+        if (awaitedExpression is InvocationExpressionSyntax whenAllInvocation
+            && context.SemanticModel.GetSymbolInfo(whenAllInvocation, context.CancellationToken).Symbol is IMethodSymbol whenAllMethod
+            && whenAllMethod.Name == nameof(Task.WhenAll)
+            && whenAllMethod.ContainingType.Name == nameof(Task)
+            && whenAllMethod.ContainingType.BelongsToNamespace(Namespaces.SystemThreadingTasks))
+        {
+            return whenAllInvocation.ArgumentList.Arguments.Any(argument => IsSameTask(context, argument.Expression, taskSymbol));
+        }
+
+        return false;
+    }
+
+    private static bool MayReassignTask(SyntaxNodeAnalysisContext context, SyntaxNode node, ISymbol taskSymbol)
+        => MayReassignTask(context, node, taskSymbol, node.SpanStart - 1, node.Span.End + 1);
+
+    private static bool MayReassignTask(SyntaxNodeAnalysisContext context, SyntaxNode node, ISymbol taskSymbol, int afterPosition, int beforePosition)
+    {
+        static bool DescendIntoChildren(SyntaxNode node) => node is not AnonymousFunctionExpressionSyntax and not LocalFunctionStatementSyntax;
+
+        foreach (AssignmentExpressionSyntax assignment in node.DescendantNodes(DescendIntoChildren).OfType<AssignmentExpressionSyntax>())
+        {
+            if (assignment.SpanStart > afterPosition
+                && assignment.SpanStart < beforePosition
+                && SymbolEqualityComparer.Default.Equals(context.SemanticModel.GetSymbolInfo(assignment.Left, context.CancellationToken).Symbol, taskSymbol))
+            {
+                return true;
+            }
+        }
+
+        foreach (ArgumentSyntax argument in node.DescendantNodes(DescendIntoChildren).OfType<ArgumentSyntax>())
+        {
+            if (argument.SpanStart > afterPosition
+                && argument.SpanStart < beforePosition
+                && (argument.RefKindKeyword.IsKind(SyntaxKind.RefKeyword) || argument.RefKindKeyword.IsKind(SyntaxKind.OutKeyword))
+                && IsSameTask(context, argument.Expression, taskSymbol))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsSameTask(SyntaxNodeAnalysisContext context, ExpressionSyntax expression, ISymbol taskSymbol)
+        => SymbolEqualityComparer.Default.Equals(
+            context.SemanticModel.GetSymbolInfo(UnwrapParentheses(expression), context.CancellationToken).Symbol,
+            taskSymbol);
 }

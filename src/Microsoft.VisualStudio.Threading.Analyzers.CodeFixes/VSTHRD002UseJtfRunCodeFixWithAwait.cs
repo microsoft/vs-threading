@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,6 +23,8 @@ namespace Microsoft.VisualStudio.Threading.Analyzers;
 [ExportCodeFixProvider(LanguageNames.CSharp)]
 public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
 {
+    private const string SuppressAwaitCodeFixProperty = "SuppressAwaitCodeFix";
+
     private static readonly ImmutableArray<string> ReusableFixableDiagnosticIds = ImmutableArray.Create(
         VSTHRD002UseJtfRunAnalyzer.Id);
 
@@ -30,11 +33,23 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
     public override async Task RegisterCodeFixesAsync(CodeFixContext context)
     {
         Diagnostic? diagnostic = context.Diagnostics.First();
+        if (diagnostic.Properties.ContainsKey(SuppressAwaitCodeFixProperty))
+        {
+            return;
+        }
 
         SyntaxNode root = await context.Document.GetSyntaxRootOrThrowAsync(context.CancellationToken).ConfigureAwait(false);
 
-        if (TryFindNodeAtSource(diagnostic, root, out _, out _))
+        if (TryFindNodeAtSource(diagnostic, root, out ExpressionSyntax? target, out _))
         {
+            SemanticModel? semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
+            if (semanticModel is null
+                || semanticModel.GetDiagnostics(target.FullSpan, context.CancellationToken).Any(d => d.Severity == DiagnosticSeverity.Error)
+                || !CanUseAwaitCodeFix(semanticModel, target, context.CancellationToken))
+            {
+                return;
+            }
+
             context.RegisterCodeFix(
                 CodeAction.Create(
                     Strings.VSTHRD002_CodeFix_Await_Title,
@@ -102,8 +117,30 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
             return from.ReplaceToken(name.Identifier, SyntaxFactory.Identifier(newIdentifier)).WithoutAnnotations(FixUtils.BookmarkAnnotationName);
         }
 
-        ExpressionSyntax? FindTwoLevelDeepIdentifierInvocation(ExpressionSyntax? from, CancellationToken cancellationToken = default(CancellationToken)) =>
-            ((((from as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax)?.Expression as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax)?.Expression;
+        ExpressionSyntax? FindGetAwaiterReceiver(ExpressionSyntax? from, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (from is InvocationExpressionSyntax
+                {
+                    Expression: MemberAccessExpressionSyntax
+                    {
+                        Name.Identifier.ValueText: nameof(TaskAwaiter.GetResult),
+                        Expression: InvocationExpressionSyntax
+                        {
+                            Expression: MemberAccessExpressionSyntax
+                            {
+                                Name.Identifier.ValueText: "GetAwaiter",
+                                Expression: ExpressionSyntax receiver,
+                            },
+                        },
+                    },
+                })
+            {
+                return receiver;
+            }
+
+            return null;
+        }
+
         ExpressionSyntax? FindOneLevelDeepIdentifierInvocation(ExpressionSyntax? from, CancellationToken cancellationToken = default(CancellationToken)) =>
             ((from as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax)?.Expression;
         ExpressionSyntax? FindParentMemberAccess(ExpressionSyntax? from, CancellationToken cancellationToken = default(CancellationToken)) =>
@@ -111,10 +148,10 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
 
         InvocationExpressionSyntax? parentInvocation = syntaxNode.FirstAncestorOrSelf<InvocationExpressionSyntax>();
         MemberAccessExpressionSyntax? parentMemberAccess = syntaxNode.FirstAncestorOrSelf<MemberAccessExpressionSyntax>();
-        if (FindTwoLevelDeepIdentifierInvocation(parentInvocation) is object)
+        if (FindGetAwaiterReceiver(parentInvocation) is object)
         {
             // This method will not return null for the provided 'target' argument
-            transform = NullableHelpers.AsNonNullReturnUnchecked<ExpressionSyntax, CancellationToken, ExpressionSyntax>(FindTwoLevelDeepIdentifierInvocation);
+            transform = NullableHelpers.AsNonNullReturnUnchecked<ExpressionSyntax, CancellationToken, ExpressionSyntax>(FindGetAwaiterReceiver);
             target = parentInvocation!;
             return true;
         }
@@ -143,5 +180,34 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
         {
             return false;
         }
+    }
+
+    private static bool CanUseAwaitCodeFix(SemanticModel semanticModel, ExpressionSyntax target, CancellationToken cancellationToken)
+    {
+        if (target is not InvocationExpressionSyntax invocation
+            || semanticModel.GetSymbolInfo(invocation, cancellationToken).Symbol is not IMethodSymbol method)
+        {
+            return true;
+        }
+
+        if (method.Name == nameof(Task.Wait) && Utils.IsTask(method.ContainingType))
+        {
+            return method.Parameters.IsEmpty;
+        }
+
+        if (method.Name is nameof(Task.WaitAll) or nameof(Task.WaitAny)
+            && Utils.IsTask(method.ContainingType))
+        {
+            if (method.Name == nameof(Task.WaitAny) && invocation.Parent is not ExpressionStatementSyntax)
+            {
+                return false;
+            }
+
+            return method.Parameters.All(
+                parameter => Utils.IsTask(parameter.Type)
+                    || (parameter.Type is IArrayTypeSymbol arrayType && Utils.IsTask(arrayType.ElementType)));
+        }
+
+        return true;
     }
 }
