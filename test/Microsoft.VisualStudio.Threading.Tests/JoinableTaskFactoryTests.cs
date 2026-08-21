@@ -201,6 +201,15 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
     }
 
     [Fact]
+    public void InitialPostFailurePropagates()
+    {
+        var factory = new QueueingJoinableTaskFactory(this.context) { FailNextPost = true };
+
+        Assert.Throws<InvalidOperationException>(() => factory.QueueUnderlyingCallback(() => { }));
+        Assert.Empty(factory.PostedCallbacks);
+    }
+
+    [Fact]
     public void DerivedFactoryDoesNotCoalesceUnlessOptedIn()
     {
         var factory = new NonCoalescingJoinableTaskFactory(this.context);

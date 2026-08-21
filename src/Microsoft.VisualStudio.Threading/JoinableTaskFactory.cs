@@ -46,8 +46,6 @@ public partial class JoinableTaskFactory
 
     private bool underlyingSynchronizationContextCallbackPending;
 
-    private TaskCompletionSource<object?>? underlyingSynchronizationContextPostCompletion;
-
     /// <summary>
     /// Backing field for the <see cref="HangDetectionTimeout"/> property.
     /// </summary>
@@ -672,8 +670,7 @@ public partial class JoinableTaskFactory
     {
         Requires.NotNull(callback, nameof(callback));
 
-        TaskCompletionSource<object?>? postCompletion = null;
-        Task? waitForPost = null;
+        bool postCallback = false;
         lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
         {
             this.pendingUnderlyingSynchronizationContextCallbacks ??= new Queue<(SendOrPostCallback, object)>();
@@ -682,24 +679,23 @@ public partial class JoinableTaskFactory
             if (!this.underlyingSynchronizationContextCallbackPending)
             {
                 this.underlyingSynchronizationContextCallbackPending = true;
-                postCompletion = this.underlyingSynchronizationContextPostCompletion = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
-            }
-            else
-            {
-                waitForPost = this.underlyingSynchronizationContextPostCompletion?.Task;
+                postCallback = true;
             }
         }
 
-        if (postCompletion is object)
+        if (postCallback)
         {
-            this.PostPendingUnderlyingSynchronizationContextCallback(postCompletion);
-        }
-        else if (!IsSynchronouslyPosting(this))
-        {
-            waitForPost?.GetAwaiter().GetResult();
+            this.PostPendingUnderlyingSynchronizationContextCallback(propagateException: true);
         }
     }
 
+    /// <summary>
+    /// Checks whether this thread is currently inside an underlying synchronous post for the specified factory.
+    /// </summary>
+    /// <remarks>
+    /// The full chain is tracked so nested posts across factories (for example A to B to A) recognize an
+    /// ancestor factory and drain it iteratively instead of recursively posting another driver message.
+    /// </remarks>
     private static bool IsSynchronouslyPosting(JoinableTaskFactory factory)
     {
         return synchronouslyPostingFactories?.Contains(factory) is true;
@@ -747,7 +743,7 @@ public partial class JoinableTaskFactory
         {
             continueSynchronously = false;
             (SendOrPostCallback Callback, object State)? callback = null;
-            TaskCompletionSource<object?>? postCompletion = null;
+            bool postSuccessor = false;
             bool completeSynchronousDrainAfterCallback = false;
             try
             {
@@ -767,7 +763,7 @@ public partial class JoinableTaskFactory
                     }
                     else if (this.pendingUnderlyingSynchronizationContextCallbacks?.Count > 0)
                     {
-                        postCompletion = this.underlyingSynchronizationContextPostCompletion = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+                        postSuccessor = true;
                     }
                     else
                     {
@@ -776,9 +772,9 @@ public partial class JoinableTaskFactory
                     }
                 }
 
-                if (postCompletion is object)
+                if (postSuccessor)
                 {
-                    this.PostPendingUnderlyingSynchronizationContextCallback(postCompletion, propagateException: false);
+                    this.PostPendingUnderlyingSynchronizationContextCallback(propagateException: false);
                 }
 
                 if (callback is { } work)
@@ -809,7 +805,7 @@ public partial class JoinableTaskFactory
         while (continueSynchronously);
     }
 
-    private void PostPendingUnderlyingSynchronizationContextCallback(TaskCompletionSource<object?> postCompletion, bool propagateException = true)
+    private void PostPendingUnderlyingSynchronizationContextCallback(bool propagateException)
     {
         try
         {
@@ -823,33 +819,17 @@ public partial class JoinableTaskFactory
             {
                 synchronousPostingChain.RemoveAt(synchronousPostingChain.Count - 1);
             }
-
-            lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
-            {
-                if (this.underlyingSynchronizationContextPostCompletion == postCompletion)
-                {
-                    this.underlyingSynchronizationContextPostCompletion = null;
-                }
-            }
-
-            postCompletion.SetResult(null);
         }
-        catch (Exception ex)
+        catch
         {
             lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
             {
-                if (this.underlyingSynchronizationContextPostCompletion == postCompletion)
-                {
-                    // Every callback remains in its owning JoinableTask's execution queue, so abandon this
-                    // secondary route when no underlying message was established.
-                    this.pendingUnderlyingSynchronizationContextCallbacks = null;
-                    this.underlyingSynchronizationContextCallbackPending = false;
-                    this.underlyingSynchronizationContextPostCompletion = null;
-                }
+                // Every callback remains in its owning JoinableTask's execution queue, so abandon this
+                // secondary route when no underlying message was established.
+                this.pendingUnderlyingSynchronizationContextCallbacks = null;
+                this.underlyingSynchronizationContextCallbackPending = false;
             }
 
-            postCompletion.SetException(ex);
-            _ = postCompletion.Task.Exception;
             if (propagateException)
             {
                 throw;
@@ -861,6 +841,8 @@ public partial class JoinableTaskFactory
     {
         Assumes.True(Monitor.IsEntered(this.pendingUnderlyingSynchronizationContextCallbacksLock));
 
+        // Only inspect the head to keep enqueue and drain operations O(1). Completed entries behind live work
+        // are removed as they reach the head, while coalescing still limits the underlying context to one driver.
 #pragma warning disable VSOnly // IPendingExecutionRequestState is intended for evaluation purposes only.
         while (this.pendingUnderlyingSynchronizationContextCallbacks?.Count > 0
             && this.pendingUnderlyingSynchronizationContextCallbacks.Peek().State is IPendingExecutionRequestState { IsCompleted: true })
