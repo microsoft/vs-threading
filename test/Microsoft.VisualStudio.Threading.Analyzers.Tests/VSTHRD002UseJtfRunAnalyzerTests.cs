@@ -647,6 +647,12 @@ class Test {
             alias = ref other;
             return alias.[|Result|];
         });
+        task.ContinueWith(t => {
+            ref Task<int> alias = ref t;
+            alias = Task.Run(() => 8);
+            Func<int> useResultLater = () => t.[|Result|];
+            return useResultLater();
+        });
     }
 }
 ";
@@ -744,6 +750,12 @@ class Test {
         var task = Task.Run(() => 1);
         var otherTask = Task.Run(() => 2);
         Consume(await task, await otherTask);
+        _ = task.Result;
+    }
+
+    async void AwaitedInWhenAllArray() {
+        var task = Task.Run(() => 1);
+        await Task.WhenAll(new[] { task });
         _ = task.Result;
     }
 
@@ -927,6 +939,23 @@ class Test {
 
             return 0;
         }
+    }
+
+    void LaterLambdaDoesNotInvalidateEarlierGuard(Task<int> task) {
+        if (task.IsCompleted) {
+            _ = task.Result;
+        }
+
+        Action replace = () => task = Task.Run(() => 4);
+    }
+
+    void LaterLocalFunctionStillInvalidatesEarlierGuard(Task<int> task) {
+        if (task.IsCompleted) {
+            Replace();
+            _ = task.[|Result|];
+        }
+
+        void Replace() => task = Task.Run(() => 5);
     }
 
     async void AwaitInDoWhileConditionIsNotDefinite() {
@@ -1152,6 +1181,52 @@ class Test {
 
 class CustomAwaitable {
     public TaskAwaiter GetAwaiter(int value) => Task.CompletedTask.GetAwaiter();
+}
+";
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task ParameterizedTaskGetAwaiterDoesNotUseCompletionProofOrOfferCodeFix()
+    {
+        var test = @"
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
+
+class Test {
+    void F(Task<int> task) {
+        if (task.IsCompleted) {
+            _ = task.GetAwaiter(1).[|GetResult|]();
+        }
+
+        task.ContinueWith(t => t.GetAwaiter(1).[|GetResult|]());
+    }
+}
+
+static class TaskExtensions {
+    public static TaskAwaiter<int> GetAwaiter(this Task<int> task, int mode)
+        => Task.Run(() => mode).GetAwaiter();
+}
+";
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task TaskWaitExtensionDoesNotOfferCodeFix()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    void F(Task task) {
+        task.[|Wait|](""custom"");
+    }
+}
+
+static class TaskExtensions {
+    public static void Wait(this Task task, string mode) { }
 }
 ";
 

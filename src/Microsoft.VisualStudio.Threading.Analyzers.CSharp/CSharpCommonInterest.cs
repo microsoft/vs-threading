@@ -35,9 +35,11 @@ internal static class CSharpCommonInterest
     internal static (ImmutableHashSet<ISymbol> Definite, ImmutableHashSet<ISymbol> Potential) GetSymbolAndRefAliases(
         SyntaxNodeAnalysisContext context,
         SyntaxNode node,
-        ISymbol symbol)
+        ISymbol symbol,
+        SyntaxNode? aliasSearchRoot = null,
+        bool includeAllCandidates = false)
     {
-        SyntaxNode searchRoot = node.AncestorsAndSelf().FirstOrDefault(
+        SyntaxNode searchRoot = aliasSearchRoot ?? node.AncestorsAndSelf().FirstOrDefault(
             ancestor => ancestor is AnonymousFunctionExpressionSyntax
                 or LocalFunctionStatementSyntax
                 or BaseMethodDeclarationSyntax
@@ -76,7 +78,8 @@ internal static class CSharpCommonInterest
         }
 
         foreach (SyntaxNode candidate in searchRoot.DescendantNodes(DescendIntoChildren)
-            .Where(candidate => candidate.SpanStart < node.SpanStart && candidate is VariableDeclaratorSyntax or AssignmentExpressionSyntax)
+            .Where(candidate => (includeAllCandidates || candidate.SpanStart < node.SpanStart)
+                && candidate is VariableDeclaratorSyntax or AssignmentExpressionSyntax)
             .OrderBy(candidate => candidate.SpanStart))
         {
             if (candidate is VariableDeclaratorSyntax variable
@@ -96,7 +99,8 @@ internal static class CSharpCommonInterest
                 && context.SemanticModel.GetSymbolInfo(UnwrapParentheses(refAssignment.Expression), context.CancellationToken).Symbol is ISymbol assignedFrom)
             {
                 HashSet<ISymbol> assignedTargets = GetRefTargets(assignedFrom);
-                if (DefinitelyPrecedesNode(candidate) || !refTargets.TryGetValue(reboundLocal, out HashSet<ISymbol>? existingTargets))
+                if ((!includeAllCandidates && DefinitelyPrecedesNode(candidate))
+                    || !refTargets.TryGetValue(reboundLocal, out HashSet<ISymbol>? existingTargets))
                 {
                     refTargets[reboundLocal] = assignedTargets;
                 }
@@ -220,6 +224,12 @@ internal static class CSharpCommonInterest
         }
     }
 
+    internal static ISymbol? GetTaskReceiverSymbol(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax)
+    {
+        ExpressionSyntax receiver = GetTaskReceiver(context, memberAccessSyntax);
+        return context.SemanticModel.GetSymbolInfo(receiver, context.CancellationToken).Symbol;
+    }
+
     private static ExpressionSyntax UnwrapParentheses(ExpressionSyntax expression)
     {
         while (expression is ParenthesizedExpressionSyntax parenthesized)
@@ -230,17 +240,19 @@ internal static class CSharpCommonInterest
         return expression;
     }
 
-    private static ExpressionSyntax GetTaskReceiver(MemberAccessExpressionSyntax memberAccessSyntax)
+    private static ExpressionSyntax GetTaskReceiver(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax)
     {
         ExpressionSyntax receiver = UnwrapParentheses(memberAccessSyntax.Expression);
         if (receiver is InvocationExpressionSyntax getAwaiterInvocation
-            && getAwaiterInvocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "GetAwaiter" } getAwaiterAccess)
+            && getAwaiterInvocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "GetAwaiter" } getAwaiterAccess
+            && IsSupportedGetAwaiterInvocation(context, getAwaiterInvocation, getAwaiterAccess.Expression))
         {
             receiver = UnwrapParentheses(getAwaiterAccess.Expression);
         }
 
         if (receiver is InvocationExpressionSyntax configureAwaitInvocation
-            && configureAwaitInvocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: nameof(Task.ConfigureAwait) } configureAwaitAccess)
+            && configureAwaitInvocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: nameof(Task.ConfigureAwait) } configureAwaitAccess
+            && IsSupportedConfigureAwaitInvocation(context, configureAwaitInvocation))
         {
             receiver = UnwrapParentheses(configureAwaitAccess.Expression);
         }
@@ -248,12 +260,47 @@ internal static class CSharpCommonInterest
         return receiver;
     }
 
+    private static bool IsSupportedGetAwaiterInvocation(
+        SyntaxNodeAnalysisContext context,
+        InvocationExpressionSyntax invocation,
+        ExpressionSyntax receiver)
+    {
+        if (invocation.ArgumentList.Arguments.Count != 0
+            || context.SemanticModel.GetSymbolInfo(invocation, context.CancellationToken).Symbol is not IMethodSymbol method
+            || method.ReducedFrom is object
+            || method.IsStatic
+            || !method.Parameters.IsEmpty)
+        {
+            return false;
+        }
+
+        if (IsTaskLike(method.ContainingType))
+        {
+            return true;
+        }
+
+        receiver = UnwrapParentheses(receiver);
+        return receiver is InvocationExpressionSyntax configureAwaitInvocation
+            && IsSupportedConfigureAwaitInvocation(context, configureAwaitInvocation);
+    }
+
+    private static bool IsSupportedConfigureAwaitInvocation(SyntaxNodeAnalysisContext context, InvocationExpressionSyntax invocation)
+        => invocation.ArgumentList.Arguments.Count == 1
+            && context.SemanticModel.GetSymbolInfo(invocation, context.CancellationToken).Symbol is IMethodSymbol method
+            && method.ReducedFrom is null
+            && !method.IsStatic
+            && method.Parameters.Length == 1
+            && IsTaskLike(method.ContainingType);
+
+    private static bool IsTaskLike(ITypeSymbol? type)
+        => Utils.IsTask(type)
+            || (type?.Name == nameof(ValueTask) && type.BelongsToNamespace(Namespaces.SystemThreadingTasks));
+
     private static bool HasTaskCompleted(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax)
     {
-        ExpressionSyntax taskReceiver = GetTaskReceiver(memberAccessSyntax);
+        ExpressionSyntax taskReceiver = GetTaskReceiver(context, memberAccessSyntax);
         ITypeSymbol? taskType = context.SemanticModel.GetTypeInfo(taskReceiver, context.CancellationToken).Type;
-        if (!Utils.IsTask(taskType)
-            && !(taskType?.Name == nameof(ValueTask) && taskType.BelongsToNamespace(Namespaces.SystemThreadingTasks)))
+        if (!IsTaskLike(taskType))
         {
             return false;
         }
@@ -559,6 +606,7 @@ internal static class CSharpCommonInterest
                     or SwitchExpressionSyntax
                     or ConditionalAccessExpressionSyntax
                     or WhenClauseSyntax
+                    or CatchFilterClauseSyntax
                     || (node is BinaryExpressionSyntax binary
                         && (binary.IsKind(SyntaxKind.LogicalAndExpression)
                             || binary.IsKind(SyntaxKind.LogicalOrExpression)
@@ -603,7 +651,12 @@ internal static class CSharpCommonInterest
             && whenAllMethod.ContainingType.Name == nameof(Task)
             && whenAllMethod.ContainingType.BelongsToNamespace(Namespaces.SystemThreadingTasks))
         {
-            return whenAllInvocation.ArgumentList.Arguments.Any(argument => IsOneOfSymbols(context, argument.Expression, taskSymbols));
+            return whenAllInvocation.ArgumentList.Arguments.Any(
+                argument => IsOneOfSymbols(context, argument.Expression, taskSymbols)
+                    || (argument.Expression is ImplicitArrayCreationExpressionSyntax { Initializer: { } implicitArrayInitializer }
+                        && implicitArrayInitializer.Expressions.Any(expression => IsOneOfSymbols(context, expression, taskSymbols)))
+                    || (argument.Expression is ArrayCreationExpressionSyntax { Initializer: { } arrayInitializer }
+                        && arrayInitializer.Expressions.Any(expression => IsOneOfSymbols(context, expression, taskSymbols))));
         }
 
         return false;
@@ -658,7 +711,8 @@ internal static class CSharpCommonInterest
                 or AccessorDeclarationSyntax)
             ?? node.FirstAncestorOrSelf<GlobalStatementSyntax>()?.Parent;
         return containingFunction?.DescendantNodes()
-            .Where(descendant => descendant is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax)
+            .Where(descendant => descendant is LocalFunctionStatementSyntax
+                || (descendant is AnonymousFunctionExpressionSyntax && descendant.SpanStart < node.SpanStart))
             .Any(nestedFunction => MayReassignTask(context, nestedFunction, taskSymbols)) is true;
     }
 

@@ -193,9 +193,12 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
             return true;
         }
 
-        if (method.Name == nameof(Task.Wait) && Utils.IsTask(method.ContainingType))
+        if (method.Name == nameof(Task.Wait))
         {
-            return method.Parameters.IsEmpty;
+            return method.ReducedFrom is null
+                && !method.IsStatic
+                && Utils.IsTask(method.ContainingType)
+                && method.Parameters.IsEmpty;
         }
 
         if (method.Name == nameof(TaskAwaiter.GetResult))
@@ -206,7 +209,16 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
                 getAwaiterExpression = parenthesized.Expression;
             }
 
-            ExpressionSyntax? receiver = ((getAwaiterExpression as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax)?.Expression;
+            if (getAwaiterExpression is not InvocationExpressionSyntax { ArgumentList.Arguments.Count: 0 } getAwaiterInvocation
+                || semanticModel.GetSymbolInfo(getAwaiterInvocation, cancellationToken).Symbol is not IMethodSymbol getAwaiterMethod
+                || getAwaiterMethod.ReducedFrom is object
+                || getAwaiterMethod.IsStatic
+                || !getAwaiterMethod.Parameters.IsEmpty)
+            {
+                return false;
+            }
+
+            ExpressionSyntax? receiver = (getAwaiterInvocation.Expression as MemberAccessExpressionSyntax)?.Expression;
             if (receiver is not { } awaitableReceiver
                 || semanticModel.GetSymbolInfo(awaitableReceiver, cancellationToken).Symbol is INamedTypeSymbol)
             {

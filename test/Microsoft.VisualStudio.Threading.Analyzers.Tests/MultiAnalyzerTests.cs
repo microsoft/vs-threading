@@ -62,6 +62,38 @@ class Test {
         await verifyTest.RunAsync();
     }
 
+    [Fact]
+    public async Task ConfiguredBlockingMethodWithAsyncAlternativeProducesOneDiagnostic()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class CustomWaiter {
+    public void Join() { }
+    public Task JoinAsync() => Task.CompletedTask;
+}
+
+class Test {
+    Task FAsync(CustomWaiter waiter) {
+        waiter.Join();
+        return Task.CompletedTask;
+    }
+}
+";
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            TestState = { MarkupHandling = MarkupMode.None },
+        };
+        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncBlockingMethods.txt", "[CustomWaiter]::Join"));
+        verifyTest.ExpectedDiagnostics.Add(
+            CSVerify.Diagnostic(VSTHRD103UseAsyncOptionAnalyzer.Descriptor)
+                .WithSpan(11, 16, 11, 20)
+                .WithArguments("Join", "JoinAsync"));
+        await verifyTest.RunAsync();
+    }
+
     /// <summary>
     /// Verifies that no analyzer throws due to a missing interface member.
     /// </summary>

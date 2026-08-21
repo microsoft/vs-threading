@@ -152,6 +152,17 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
             {
                 (ImmutableHashSet<ISymbol> taskSymbols, ImmutableHashSet<ISymbol> potentialTaskSymbols) =
                     CSharpCommonInterest.GetSymbolAndRefAliases(context, memberAccessSyntax, completedTask);
+                if (memberAccessSyntax.Ancestors().TakeWhile(node => node != anonymousFunctionSyntax)
+                    .Any(node => node is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax))
+                {
+                    potentialTaskSymbols = CSharpCommonInterest.GetSymbolAndRefAliases(
+                        context,
+                        memberAccessSyntax,
+                        completedTask,
+                        anonymousFunctionSyntax,
+                        includeAllCandidates: true).Potential;
+                }
+
                 ISymbol? receiverSymbol = GetTaskReceiverSymbol(context, memberAccessSyntax);
                 if (receiverSymbol is object
                     && taskSymbols.Contains(receiverSymbol)
@@ -190,7 +201,10 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
         IMethodSymbol methodDefinition = invokedMethod.ReducedFrom ?? invokedMethod;
         bool isBuiltInSyncBlockingMethod = CommonInterest.ProblematicSyncBlockingMethods.Any(
             method => method.Method.IsMatch(invokedMethod) || method.Method.IsMatch(methodDefinition));
+        bool coveredByVSTHRD103 = !ShouldAnalyze(context, analyzeWholeCodeBlock)
+            && HasAsyncAlternative(context, invocationExpressionSyntax, invokedMethod);
         if (!isBuiltInSyncBlockingMethod
+            && !coveredByVSTHRD103
             && configuredSyncBlockingMethods.Any(method => method.IsMatch(invokedMethod) || method.IsMatch(methodDefinition)))
         {
             SimpleNameSyntax? methodName = invocationExpressionSyntax.Expression switch
@@ -211,6 +225,34 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
         }
     }
 
+    private static bool HasAsyncAlternative(
+        SyntaxNodeAnalysisContext context,
+        InvocationExpressionSyntax invocation,
+        IMethodSymbol invokedMethod)
+    {
+        string asyncMethodName = invokedMethod.Name + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix;
+        INamespaceOrTypeSymbol lookupContainer = invokedMethod.ReducedFrom is { Parameters.Length: > 0 } reducedFrom
+            ? (INamespaceOrTypeSymbol)reducedFrom.Parameters[0].Type
+            : invokedMethod.ContainingType;
+        string? declaringMethodName = invocation.FirstAncestorOrSelf<MethodDeclarationSyntax>()?.Identifier.Text;
+        return context.SemanticModel.LookupSymbols(
+                invocation.Expression.SpanStart,
+                lookupContainer,
+                asyncMethodName,
+                includeReducedExtensionMethods: true)
+            .OfType<IMethodSymbol>()
+            .Any(candidate => !candidate.IsObsolete()
+                && candidate.Name != declaringMethodName
+                && candidate.HasAsyncCompatibleReturnType()
+                && HasSupersetOfParameterTypes(candidate, invokedMethod));
+    }
+
+    private static bool HasSupersetOfParameterTypes(IMethodSymbol candidateMethod, IMethodSymbol baselineMethod)
+        => baselineMethod.Parameters.Length <= candidateMethod.Parameters.Length
+            && baselineMethod.Parameters.All(
+                baselineParameter => candidateMethod.Parameters.Any(
+                    candidateParameter => SymbolEqualityComparer.Default.Equals(baselineParameter.Type, candidateParameter.Type)));
+
     private static void AnalyzeMemberAccess(SyntaxNodeAnalysisContext context, INamedTypeSymbol taskSymbol, bool analyzeWholeCodeBlock)
     {
         if (!ShouldAnalyze(context, analyzeWholeCodeBlock))
@@ -227,22 +269,7 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
     }
 
     private static ISymbol? GetTaskReceiverSymbol(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax)
-    {
-        ExpressionSyntax receiver = UnwrapParentheses(memberAccessSyntax.Expression);
-        if (receiver is InvocationExpressionSyntax getAwaiterInvocation
-            && getAwaiterInvocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: "GetAwaiter" } getAwaiterAccess)
-        {
-            receiver = UnwrapParentheses(getAwaiterAccess.Expression);
-        }
-
-        if (receiver is InvocationExpressionSyntax configureAwaitInvocation
-            && configureAwaitInvocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: nameof(Task.ConfigureAwait) } configureAwaitAccess)
-        {
-            receiver = UnwrapParentheses(configureAwaitAccess.Expression);
-        }
-
-        return context.SemanticModel.GetSymbolInfo(receiver, context.CancellationToken).Symbol;
-    }
+        => CSharpCommonInterest.GetTaskReceiverSymbol(context, memberAccessSyntax);
 
     private static ExpressionSyntax UnwrapParentheses(ExpressionSyntax expression)
     {
