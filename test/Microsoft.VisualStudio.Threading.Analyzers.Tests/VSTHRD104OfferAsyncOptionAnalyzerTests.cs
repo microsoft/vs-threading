@@ -388,4 +388,32 @@ public class Test {
         analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithSpan(9, 25, 9, 31));
         await analyzerTest.RunAsync();
     }
+
+    [Fact]
+    public async Task TaskResultAfterPriorRefAliasWriteWithinCompletionGuard_GeneratesWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+public class Test {
+    public int GetResult(Task<int> task) {
+        ref Task<int> alias = ref task;
+        if (task.IsCompletedSuccessfully) {
+            alias = new TaskCompletionSource<int>().Task;
+            return task.Result;
+        }
+
+        return 0;
+    }
+}
+";
+
+        var analyzerTest = new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        };
+        analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithSpan(9, 25, 9, 31));
+        await analyzerTest.RunAsync();
+    }
 }

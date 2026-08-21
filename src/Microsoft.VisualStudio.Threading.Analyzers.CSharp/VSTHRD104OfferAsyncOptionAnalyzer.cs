@@ -162,16 +162,23 @@ public class VSTHRD104OfferAsyncOptionAnalyzer : DiagnosticAnalyzer
 
             bool MayWriteSymbolBefore(StatementSyntax statement, ExpressionSyntax expression, ISymbol expectedTaskSymbol)
             {
+                SyntaxNode executableScope = expression.Ancestors().FirstOrDefault(ancestor =>
+                    ancestor is AnonymousFunctionExpressionSyntax
+                    or LocalFunctionStatementSyntax
+                    or BaseMethodDeclarationSyntax
+                    or AccessorDeclarationSyntax) ?? statement;
+                if (executableScope.DescendantNodes()
+                    .OfType<RefExpressionSyntax>()
+                    .Where(refExpression => refExpression.SpanStart < expression.SpanStart)
+                    .Any(refExpression => SymbolEqualityComparer.Default.Equals(
+                        context.SemanticModel.GetSymbolInfo(refExpression.Expression, context.CancellationToken).Symbol,
+                        expectedTaskSymbol)))
+                {
+                    return true;
+                }
+
                 foreach (SyntaxNode node in statement.DescendantNodes().Where(node => node.SpanStart < expression.SpanStart))
                 {
-                    if (node is RefExpressionSyntax refExpression
-                        && SymbolEqualityComparer.Default.Equals(
-                            context.SemanticModel.GetSymbolInfo(refExpression.Expression, context.CancellationToken).Symbol,
-                            expectedTaskSymbol))
-                    {
-                        return true;
-                    }
-
                     ExpressionSyntax? writtenExpression = node switch
                     {
                         AssignmentExpressionSyntax assignment => assignment.Left,
