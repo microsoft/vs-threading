@@ -586,6 +586,10 @@ class Test {
         task.ContinueWith((t, s) => t.Result, new object());
         task.ContinueWith(t => (t.GetAwaiter()).GetResult());
         task.ContinueWith(t => ((t.ConfigureAwait(false)).GetAwaiter()).GetResult());
+        task.ContinueWith(t => {
+            ref Task<int> alias = ref t;
+            return alias.Result;
+        });
     }
 
     void ContinueWith(Func<Task<int>, int> del) { }
@@ -663,6 +667,12 @@ class Test {
             alias = ref t;
             alias = Task.Run(() => 7);
             return t.[|Result|];
+        });
+        task.ContinueWith(t => {
+            Replace();
+            return t.[|Result|];
+
+            void Replace() => t = Task.Run(() => 8);
         });
     }
 }
@@ -918,6 +928,21 @@ class Test {
         }
     }
 
+    void RefAliasCompletionGuard(Task<int> task) {
+        ref Task<int> alias = ref task;
+        if (alias.IsCompleted) {
+            _ = task.Result;
+        }
+    }
+
+    void RefAliasReceiverReassignedThroughOriginal(Task<int> task) {
+        ref Task<int> alias = ref task;
+        if (alias.IsCompleted) {
+            task = Task.Run(() => 2);
+            _ = alias.[|Result|];
+        }
+    }
+
     void CapturedTaskIsNotProvenComplete() {
         var task = Task.Run(() => 1);
         Local();
@@ -1029,6 +1054,27 @@ class Test {
     }
 
     TaskAwaiter GetCustomAwaiter(Task task) => task.GetAwaiter();
+}
+";
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task ParameterizedGetAwaiterDoesNotOfferCodeFix()
+    {
+        var test = @"
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
+
+class Test {
+    void F(CustomAwaitable value) {
+        value.GetAwaiter(1).[|GetResult|]();
+    }
+}
+
+class CustomAwaitable {
+    public TaskAwaiter GetAwaiter(int value) => Task.CompletedTask.GetAwaiter();
 }
 ";
 

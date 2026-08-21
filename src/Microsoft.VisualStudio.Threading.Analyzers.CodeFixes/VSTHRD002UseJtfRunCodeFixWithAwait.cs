@@ -131,8 +131,12 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
                 getAwaiterInvocationExpression = parenthesized.Expression;
             }
 
-            var getAwaiterAccess = (getAwaiterInvocationExpression as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax;
-            return getAwaiterAccess?.Name.Identifier.ValueText == "GetAwaiter" ? getAwaiterAccess.Expression : null;
+            var getAwaiterInvocation = getAwaiterInvocationExpression as InvocationExpressionSyntax;
+            var getAwaiterAccess = getAwaiterInvocation?.Expression as MemberAccessExpressionSyntax;
+            return getAwaiterAccess?.Name.Identifier.ValueText == "GetAwaiter"
+                && getAwaiterInvocation!.ArgumentList.Arguments.Count == 0
+                ? getAwaiterAccess.Expression
+                : null;
         }
 
         ExpressionSyntax? FindInstanceWaitReceiver(ExpressionSyntax? from, CancellationToken cancellationToken = default(CancellationToken))

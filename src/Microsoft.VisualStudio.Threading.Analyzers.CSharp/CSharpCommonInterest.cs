@@ -59,7 +59,9 @@ internal static class CSharpCommonInterest
                     ? refExpression.Expression
                     : variable.Initializer.Value;
                 ISymbol? initializedFrom = context.SemanticModel.GetSymbolInfo(UnwrapParentheses(initializer), context.CancellationToken).Symbol;
-                if (initializedFrom is object && symbols.Contains(initializedFrom) && symbols.Add(local))
+                if (initializedFrom is object
+                    && (symbols.Contains(initializedFrom) || symbols.Contains(local))
+                    && (symbols.Add(initializedFrom) | symbols.Add(local)))
                 {
                     addedAlias = true;
                 }
@@ -74,7 +76,9 @@ internal static class CSharpCommonInterest
                 }
 
                 ISymbol? assignedFrom = context.SemanticModel.GetSymbolInfo(UnwrapParentheses(refExpression.Expression), context.CancellationToken).Symbol;
-                if (assignedFrom is object && symbols.Contains(assignedFrom) && symbols.Add(local))
+                if (assignedFrom is object
+                    && (symbols.Contains(assignedFrom) || symbols.Contains(local))
+                    && (symbols.Add(assignedFrom) | symbols.Add(local)))
                 {
                     addedAlias = true;
                 }
@@ -201,7 +205,15 @@ internal static class CSharpCommonInterest
 
     private static bool HasTaskCompleted(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax)
     {
-        ISymbol? taskSymbol = context.SemanticModel.GetSymbolInfo(GetTaskReceiver(memberAccessSyntax), context.CancellationToken).Symbol;
+        ExpressionSyntax taskReceiver = GetTaskReceiver(memberAccessSyntax);
+        ITypeSymbol? taskType = context.SemanticModel.GetTypeInfo(taskReceiver, context.CancellationToken).Type;
+        if (!Utils.IsTask(taskType)
+            && !(taskType?.Name == nameof(ValueTask) && taskType.BelongsToNamespace(Namespaces.SystemThreadingTasks)))
+        {
+            return false;
+        }
+
+        ISymbol? taskSymbol = context.SemanticModel.GetSymbolInfo(taskReceiver, context.CancellationToken).Symbol;
         if (taskSymbol is not ILocalSymbol and not IParameterSymbol)
         {
             return false;
@@ -219,7 +231,7 @@ internal static class CSharpCommonInterest
             return false;
         }
 
-        if (IsWithinCompletedTaskBranch(context, memberAccessSyntax, taskSymbol, taskSymbols))
+        if (IsWithinCompletedTaskBranch(context, memberAccessSyntax, taskSymbols))
         {
             return true;
         }
@@ -230,7 +242,7 @@ internal static class CSharpCommonInterest
             return false;
         }
 
-        if (TryGetAwaitExpression(context, containingStatement, taskSymbol, taskSymbols, memberAccessSyntax.SpanStart, out AwaitExpressionSyntax? precedingAwait)
+        if (TryGetAwaitExpression(context, containingStatement, taskSymbols, memberAccessSyntax.SpanStart, out AwaitExpressionSyntax? precedingAwait)
             && !MayReassignTask(context, containingStatement, taskSymbols, precedingAwait.Span.End, memberAccessSyntax.SpanStart))
         {
             return true;
@@ -247,7 +259,7 @@ internal static class CSharpCommonInterest
             for (int i = statementIndex - 1; i >= 0; i--)
             {
                 StatementSyntax statement = block.Statements[i];
-                if (StatementCompletesTask(context, statement, taskSymbol, taskSymbols))
+                if (StatementCompletesTask(context, statement, taskSymbols))
                 {
                     return true;
                 }
@@ -278,7 +290,6 @@ internal static class CSharpCommonInterest
     private static bool IsWithinCompletedTaskBranch(
         SyntaxNodeAnalysisContext context,
         MemberAccessExpressionSyntax memberAccessSyntax,
-        ISymbol taskSymbol,
         IImmutableSet<ISymbol> taskSymbols)
     {
         foreach (IfStatementSyntax ifStatement in memberAccessSyntax.Ancestors().OfType<IfStatementSyntax>())
@@ -290,14 +301,14 @@ internal static class CSharpCommonInterest
             }
 
             if (ifStatement.Statement.FullSpan.Contains(memberAccessSyntax.Span)
-                && ConditionProvesCompletion(context, ifStatement.Condition, taskSymbol, conditionValue: true)
+                && ConditionProvesCompletion(context, ifStatement.Condition, taskSymbols, conditionValue: true)
                 && !MayReassignTask(context, ifStatement, taskSymbols, ifStatement.Condition.SpanStart - 1, memberAccessSyntax.SpanStart))
             {
                 return true;
             }
 
             if (ifStatement.Else?.Statement.FullSpan.Contains(memberAccessSyntax.Span) is true
-                && ConditionProvesCompletion(context, ifStatement.Condition, taskSymbol, conditionValue: false)
+                && ConditionProvesCompletion(context, ifStatement.Condition, taskSymbols, conditionValue: false)
                 && !MayReassignTask(context, ifStatement, taskSymbols, ifStatement.Condition.SpanStart - 1, memberAccessSyntax.SpanStart))
             {
                 return true;
@@ -307,52 +318,56 @@ internal static class CSharpCommonInterest
         return false;
     }
 
-    private static bool ConditionProvesCompletion(SyntaxNodeAnalysisContext context, ExpressionSyntax condition, ISymbol taskSymbol, bool conditionValue)
+    private static bool ConditionProvesCompletion(
+        SyntaxNodeAnalysisContext context,
+        ExpressionSyntax condition,
+        IImmutableSet<ISymbol> taskSymbols,
+        bool conditionValue)
     {
         condition = UnwrapParentheses(condition);
         if (condition is PrefixUnaryExpressionSyntax { RawKind: (int)SyntaxKind.LogicalNotExpression } logicalNot)
         {
-            return ConditionProvesCompletion(context, logicalNot.Operand, taskSymbol, !conditionValue);
+            return ConditionProvesCompletion(context, logicalNot.Operand, taskSymbols, !conditionValue);
         }
 
         if (condition is BinaryExpressionSyntax binary)
         {
             if (conditionValue && binary.IsKind(SyntaxKind.LogicalAndExpression))
             {
-                return ConditionProvesCompletion(context, binary.Left, taskSymbol, conditionValue: true)
-                    || ConditionProvesCompletion(context, binary.Right, taskSymbol, conditionValue: true);
+                return ConditionProvesCompletion(context, binary.Left, taskSymbols, conditionValue: true)
+                    || ConditionProvesCompletion(context, binary.Right, taskSymbols, conditionValue: true);
             }
 
             if (!conditionValue && binary.IsKind(SyntaxKind.LogicalOrExpression))
             {
-                return ConditionProvesCompletion(context, binary.Left, taskSymbol, conditionValue: false)
-                    || ConditionProvesCompletion(context, binary.Right, taskSymbol, conditionValue: false);
+                return ConditionProvesCompletion(context, binary.Left, taskSymbols, conditionValue: false)
+                    || ConditionProvesCompletion(context, binary.Right, taskSymbols, conditionValue: false);
             }
 
             if (conditionValue && binary.IsKind(SyntaxKind.LogicalOrExpression))
             {
-                return ConditionProvesCompletion(context, binary.Left, taskSymbol, conditionValue: true)
-                    && ConditionProvesCompletion(context, binary.Right, taskSymbol, conditionValue: true);
+                return ConditionProvesCompletion(context, binary.Left, taskSymbols, conditionValue: true)
+                    && ConditionProvesCompletion(context, binary.Right, taskSymbols, conditionValue: true);
             }
 
             if (!conditionValue && binary.IsKind(SyntaxKind.LogicalAndExpression))
             {
-                return ConditionProvesCompletion(context, binary.Left, taskSymbol, conditionValue: false)
-                    && ConditionProvesCompletion(context, binary.Right, taskSymbol, conditionValue: false);
+                return ConditionProvesCompletion(context, binary.Left, taskSymbols, conditionValue: false)
+                    && ConditionProvesCompletion(context, binary.Right, taskSymbols, conditionValue: false);
             }
 
             bool equalityHolds = binary.IsKind(SyntaxKind.EqualsExpression) ? conditionValue
                 : binary.IsKind(SyntaxKind.NotEqualsExpression) ? !conditionValue
                 : false;
             if ((binary.IsKind(SyntaxKind.EqualsExpression) || binary.IsKind(SyntaxKind.NotEqualsExpression))
-                && IsRanToCompletionComparison(context, binary.Left, binary.Right, taskSymbol))
+                && IsRanToCompletionComparison(context, binary.Left, binary.Right, taskSymbols))
             {
                 return equalityHolds;
             }
         }
 
         if (condition is MemberAccessExpressionSyntax completedProperty
-            && IsSameTask(context, completedProperty.Expression, taskSymbol)
+            && IsOneOfSymbols(context, completedProperty.Expression, taskSymbols)
             && completedProperty.Name.Identifier.ValueText is nameof(Task.IsCompleted)
                 or nameof(Task.IsCanceled)
                 or nameof(Task.IsFaulted)
@@ -364,15 +379,19 @@ internal static class CSharpCommonInterest
         return false;
     }
 
-    private static bool IsRanToCompletionComparison(SyntaxNodeAnalysisContext context, ExpressionSyntax left, ExpressionSyntax right, ISymbol taskSymbol)
+    private static bool IsRanToCompletionComparison(
+        SyntaxNodeAnalysisContext context,
+        ExpressionSyntax left,
+        ExpressionSyntax right,
+        IImmutableSet<ISymbol> taskSymbols)
     {
-        return (IsTaskStatus(context, left, taskSymbol) && IsRanToCompletion(context, right))
-            || (IsTaskStatus(context, right, taskSymbol) && IsRanToCompletion(context, left));
+        return (IsTaskStatus(context, left, taskSymbols) && IsRanToCompletion(context, right))
+            || (IsTaskStatus(context, right, taskSymbols) && IsRanToCompletion(context, left));
     }
 
-    private static bool IsTaskStatus(SyntaxNodeAnalysisContext context, ExpressionSyntax expression, ISymbol taskSymbol)
+    private static bool IsTaskStatus(SyntaxNodeAnalysisContext context, ExpressionSyntax expression, IImmutableSet<ISymbol> taskSymbols)
         => expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: nameof(Task.Status) } statusAccess
-            && IsSameTask(context, statusAccess.Expression, taskSymbol);
+            && IsOneOfSymbols(context, statusAccess.Expression, taskSymbols);
 
     private static bool IsRanToCompletion(SyntaxNodeAnalysisContext context, ExpressionSyntax expression)
         => context.SemanticModel.GetSymbolInfo(expression, context.CancellationToken).Symbol is IFieldSymbol status
@@ -383,10 +402,9 @@ internal static class CSharpCommonInterest
     private static bool StatementCompletesTask(
         SyntaxNodeAnalysisContext context,
         StatementSyntax statement,
-        ISymbol taskSymbol,
         IImmutableSet<ISymbol> taskSymbols)
     {
-        if (TryGetAwaitExpression(context, statement, taskSymbol, taskSymbols, out AwaitExpressionSyntax? awaitExpression)
+        if (TryGetAwaitExpression(context, statement, taskSymbols, out AwaitExpressionSyntax? awaitExpression)
             && !MayReassignTask(context, statement, taskSymbols, awaitExpression.Span.End, statement.Span.End + 1))
         {
             return true;
@@ -394,7 +412,7 @@ internal static class CSharpCommonInterest
 
         if (statement is BlockSyntax block)
         {
-            return StatementDefinitelyAwaitsTask(context, block, taskSymbol, taskSymbols);
+            return StatementDefinitelyAwaitsTask(context, block, taskSymbols);
         }
 
         if (statement is not IfStatementSyntax ifStatement)
@@ -409,25 +427,24 @@ internal static class CSharpCommonInterest
 
         if (ifStatement.Else is null)
         {
-            return ConditionProvesCompletion(context, ifStatement.Condition, taskSymbol, conditionValue: false)
-                && StatementDefinitelyAwaitsTask(context, ifStatement.Statement, taskSymbol, taskSymbols);
+            return ConditionProvesCompletion(context, ifStatement.Condition, taskSymbols, conditionValue: false)
+                && StatementDefinitelyAwaitsTask(context, ifStatement.Statement, taskSymbols);
         }
 
-        return (ConditionProvesCompletion(context, ifStatement.Condition, taskSymbol, conditionValue: true)
+        return (ConditionProvesCompletion(context, ifStatement.Condition, taskSymbols, conditionValue: true)
                 && !MayReassignTask(context, ifStatement.Statement, taskSymbols)
-                && StatementDefinitelyAwaitsTask(context, ifStatement.Else.Statement, taskSymbol, taskSymbols))
-            || (ConditionProvesCompletion(context, ifStatement.Condition, taskSymbol, conditionValue: false)
-                && StatementDefinitelyAwaitsTask(context, ifStatement.Statement, taskSymbol, taskSymbols)
+                && StatementDefinitelyAwaitsTask(context, ifStatement.Else.Statement, taskSymbols))
+            || (ConditionProvesCompletion(context, ifStatement.Condition, taskSymbols, conditionValue: false)
+                && StatementDefinitelyAwaitsTask(context, ifStatement.Statement, taskSymbols)
                 && !MayReassignTask(context, ifStatement.Else.Statement, taskSymbols));
     }
 
     private static bool StatementDefinitelyAwaitsTask(
         SyntaxNodeAnalysisContext context,
         StatementSyntax statement,
-        ISymbol taskSymbol,
         IImmutableSet<ISymbol> taskSymbols)
     {
-        if (TryGetAwaitExpression(context, statement, taskSymbol, taskSymbols, out AwaitExpressionSyntax? awaitExpression))
+        if (TryGetAwaitExpression(context, statement, taskSymbols, out AwaitExpressionSyntax? awaitExpression))
         {
             return !MayReassignTask(context, statement, taskSymbols, awaitExpression.Span.End, statement.Span.End + 1);
         }
@@ -436,7 +453,7 @@ internal static class CSharpCommonInterest
         {
             for (int i = block.Statements.Count - 1; i >= 0; i--)
             {
-                if (TryGetAwaitExpression(context, block.Statements[i], taskSymbol, taskSymbols, out awaitExpression)
+                if (TryGetAwaitExpression(context, block.Statements[i], taskSymbols, out awaitExpression)
                     && !MayReassignTask(context, block.Statements[i], taskSymbols, awaitExpression.Span.End, block.Statements[i].Span.End + 1))
                 {
                     return true;
@@ -455,15 +472,13 @@ internal static class CSharpCommonInterest
     private static bool TryGetAwaitExpression(
         SyntaxNodeAnalysisContext context,
         StatementSyntax statement,
-        ISymbol taskSymbol,
         IImmutableSet<ISymbol> taskSymbols,
         [NotNullWhen(true)] out AwaitExpressionSyntax? awaitExpression)
-        => TryGetAwaitExpression(context, statement, taskSymbol, taskSymbols, statement.Span.End + 1, out awaitExpression);
+        => TryGetAwaitExpression(context, statement, taskSymbols, statement.Span.End + 1, out awaitExpression);
 
     private static bool TryGetAwaitExpression(
         SyntaxNodeAnalysisContext context,
         StatementSyntax statement,
-        ISymbol taskSymbol,
         IImmutableSet<ISymbol> taskSymbols,
         int beforePosition,
         [NotNullWhen(true)] out AwaitExpressionSyntax? awaitExpression)
@@ -495,7 +510,7 @@ internal static class CSharpCommonInterest
                             || binary.IsKind(SyntaxKind.LogicalOrExpression)
                             || binary.IsKind(SyntaxKind.CoalesceExpression))
                         && binary.Right.FullSpan.Contains(candidate.Span)));
-            if (!isConditionallyExecuted && AwaitCompletesTask(context, candidate, taskSymbol, taskSymbols))
+            if (!isConditionallyExecuted && AwaitCompletesTask(context, candidate, taskSymbols))
             {
                 awaitExpression = candidate;
                 return true;
@@ -509,7 +524,6 @@ internal static class CSharpCommonInterest
     private static bool AwaitCompletesTask(
         SyntaxNodeAnalysisContext context,
         AwaitExpressionSyntax awaitExpression,
-        ISymbol taskSymbol,
         IImmutableSet<ISymbol> taskSymbols)
     {
         if (MayReassignTask(context, awaitExpression.Expression, taskSymbols))
@@ -524,7 +538,7 @@ internal static class CSharpCommonInterest
             awaitedExpression = UnwrapParentheses(configureAwaitAccess.Expression);
         }
 
-        if (IsSameTask(context, awaitedExpression, taskSymbol))
+        if (IsOneOfSymbols(context, awaitedExpression, taskSymbols))
         {
             return true;
         }
@@ -535,7 +549,7 @@ internal static class CSharpCommonInterest
             && whenAllMethod.ContainingType.Name == nameof(Task)
             && whenAllMethod.ContainingType.BelongsToNamespace(Namespaces.SystemThreadingTasks))
         {
-            return whenAllInvocation.ArgumentList.Arguments.Any(argument => IsSameTask(context, argument.Expression, taskSymbol));
+            return whenAllInvocation.ArgumentList.Arguments.Any(argument => IsOneOfSymbols(context, argument.Expression, taskSymbols));
         }
 
         return false;
@@ -600,11 +614,6 @@ internal static class CSharpCommonInterest
 
         return IsOneOfSymbols(context, expression, taskSymbols);
     }
-
-    private static bool IsSameTask(SyntaxNodeAnalysisContext context, ExpressionSyntax expression, ISymbol taskSymbol)
-        => SymbolEqualityComparer.Default.Equals(
-            context.SemanticModel.GetSymbolInfo(UnwrapParentheses(expression), context.CancellationToken).Symbol,
-            taskSymbol);
 
     private static bool IsOneOfSymbols(SyntaxNodeAnalysisContext context, ExpressionSyntax expression, IImmutableSet<ISymbol> symbols)
     {

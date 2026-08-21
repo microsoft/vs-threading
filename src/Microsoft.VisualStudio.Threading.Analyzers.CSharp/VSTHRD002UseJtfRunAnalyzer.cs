@@ -148,11 +148,16 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
 
             ParameterSyntax? firstParameter = GetFirstParameter(anonymousFunctionSyntax);
             if (firstParameter is object
-                && context.SemanticModel.GetDeclaredSymbol(firstParameter, context.CancellationToken) is IParameterSymbol completedTask
-                && SymbolEqualityComparer.Default.Equals(GetTaskReceiverSymbol(context, memberAccessSyntax), completedTask)
-                && !IsTaskReassignedInContinuation(context, anonymousFunctionSyntax, memberAccessSyntax, completedTask))
+                && context.SemanticModel.GetDeclaredSymbol(firstParameter, context.CancellationToken) is IParameterSymbol completedTask)
             {
-                return;
+                ImmutableHashSet<ISymbol> taskSymbols = CSharpCommonInterest.GetSymbolAndRefAliases(context, anonymousFunctionSyntax, completedTask);
+                ISymbol? receiverSymbol = GetTaskReceiverSymbol(context, memberAccessSyntax);
+                if (receiverSymbol is object
+                    && taskSymbols.Contains(receiverSymbol)
+                    && !IsTaskReassignedInContinuation(context, anonymousFunctionSyntax, memberAccessSyntax, taskSymbols))
+                {
+                    return;
+                }
             }
         }
 
@@ -252,15 +257,16 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
         SyntaxNodeAnalysisContext context,
         AnonymousFunctionExpressionSyntax continuation,
         MemberAccessExpressionSyntax memberAccess,
-        IParameterSymbol taskParameter)
+        ImmutableHashSet<ISymbol> taskSymbols)
     {
         bool accessIsNested = memberAccess.Ancestors().TakeWhile(node => node != continuation).Any(node => node is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax);
         int beforePosition = accessIsNested ? continuation.Span.End + 1 : memberAccess.SpanStart;
-        ImmutableHashSet<ISymbol> taskSymbols = CSharpCommonInterest.GetSymbolAndRefAliases(context, continuation, taskParameter);
 
         foreach (AssignmentExpressionSyntax assignment in continuation.DescendantNodes().OfType<AssignmentExpressionSyntax>())
         {
-            if (assignment.SpanStart < beforePosition
+            bool isDeferredWrite = assignment.Ancestors().TakeWhile(node => node != continuation)
+                .Any(node => node is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax);
+            if ((assignment.SpanStart < beforePosition || isDeferredWrite)
                 && IsAssignmentToParameter(context, assignment.Left, taskSymbols))
             {
                 return true;
@@ -270,7 +276,9 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
         foreach (ArgumentSyntax argument in continuation.DescendantNodes().OfType<ArgumentSyntax>())
         {
             ISymbol? argumentSymbol = context.SemanticModel.GetSymbolInfo(UnwrapParentheses(argument.Expression), context.CancellationToken).Symbol;
-            if (argument.SpanStart < beforePosition
+            bool isDeferredWrite = argument.Ancestors().TakeWhile(node => node != continuation)
+                .Any(node => node is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax);
+            if ((argument.SpanStart < beforePosition || isDeferredWrite)
                 && (argument.RefKindKeyword.IsKind(SyntaxKind.RefKeyword) || argument.RefKindKeyword.IsKind(SyntaxKind.OutKeyword))
                 && argumentSymbol is object
                 && taskSymbols.Contains(argumentSymbol))
