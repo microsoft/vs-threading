@@ -1,8 +1,8 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.ThreadStaticAnalyzer, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
-using VBVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.VisualBasicCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.ThreadStaticAnalyzer, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
+using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.CSharpThreadStaticAnalyzer, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
+using VBVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.VisualBasicCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.VisualBasicThreadStaticAnalyzer, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
 public class ThreadStaticAnalyzerTests
 {
@@ -47,6 +47,29 @@ public class ThreadStaticAnalyzerTests
                 [field: ThreadStatic]
                 private object {|VSTHRD116:Property|} { get; set; } = new object();
 
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task FieldLikeEvents_CSharp()
+    {
+        const string test = """
+            using System;
+            using ThreadLocal = System.ThreadStaticAttribute;
+
+            class Test
+            {
+                [field: ThreadStatic]
+                private event EventHandler {|VSTHRD116:First|};
+
+                [field: global::System.ThreadStaticAttribute]
+                private event EventHandler {|VSTHRD116:Second|}, {|VSTHRD116:Third|};
+
+                [field: ThreadLocal]
+                private static event EventHandler StaticEvent;
             }
             """;
 
@@ -160,6 +183,28 @@ public class ThreadStaticAnalyzerTests
                 {
                     field = new object();
                 }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task AssignmentExpressionsInTypeInitializers_CSharp()
+    {
+        const string test = """
+            using System;
+
+            class Test
+            {
+                [ThreadStatic]
+                private static int field;
+
+                private static int OtherField = {|VSTHRD117:field = 1|};
+
+                private static int OtherProperty { get; } = {|VSTHRD117:field++|};
+
+                private static Func<int> Deferred = () => field++;
             }
             """;
 

@@ -10,10 +10,9 @@ using Microsoft.CodeAnalysis.Operations;
 namespace Microsoft.VisualStudio.Threading.Analyzers;
 
 /// <summary>
-/// Verifies that <see cref="System.ThreadStaticAttribute"/> is applied to static fields that are not initialized inline.
+/// Verifies that <see cref="System.ThreadStaticAttribute"/> is applied to static fields that are not initialized by the type initializer.
 /// </summary>
-[DiagnosticAnalyzer(LanguageNames.CSharp, LanguageNames.VisualBasic)]
-public class ThreadStaticAnalyzer : DiagnosticAnalyzer
+public abstract class ThreadStaticAnalyzer : DiagnosticAnalyzer
 {
     /// <summary>
     /// The diagnostic ID for <see cref="System.ThreadStaticAttribute"/> applied to a non-static field.
@@ -94,6 +93,22 @@ public class ThreadStaticAnalyzer : DiagnosticAnalyzer
                 Utils.DebuggableWrapper(operationContext => AnalyzeEventAssignment(operationContext, threadStaticAttribute)),
                 OperationKind.EventAssignment);
         });
+
+        this.InitializeLanguageSpecific(context);
+    }
+
+    /// <summary>
+    /// Gets the descriptor for <see cref="System.ThreadStaticAttribute"/> applied to a non-static field.
+    /// </summary>
+    /// <returns>The diagnostic descriptor.</returns>
+    protected static DiagnosticDescriptor GetNonStaticFieldDescriptor() => NonStaticFieldDescriptor;
+
+    /// <summary>
+    /// Registers language-specific analysis callbacks.
+    /// </summary>
+    /// <param name="context">The analysis context.</param>
+    protected virtual void InitializeLanguageSpecific(AnalysisContext context)
+    {
     }
 
     private static void AnalyzeFieldLikeSymbol(SymbolAnalysisContext context, INamedTypeSymbol threadStaticAttribute)
@@ -134,7 +149,7 @@ public class ThreadStaticAnalyzer : DiagnosticAnalyzer
 
     private static void AnalyzeAssignment(OperationAnalysisContext context, INamedTypeSymbol threadStaticAttribute)
     {
-        if (Utils.GetContainingFunction(context.Operation, context.ContainingSymbol) is not IMethodSymbol { MethodKind: MethodKind.StaticConstructor })
+        if (!IsExecutedByTypeInitializer(context))
         {
             return;
         }
@@ -145,7 +160,7 @@ public class ThreadStaticAnalyzer : DiagnosticAnalyzer
 
     private static void AnalyzeIncrementOrDecrement(OperationAnalysisContext context, INamedTypeSymbol threadStaticAttribute)
     {
-        if (Utils.GetContainingFunction(context.Operation, context.ContainingSymbol) is not IMethodSymbol { MethodKind: MethodKind.StaticConstructor })
+        if (!IsExecutedByTypeInitializer(context))
         {
             return;
         }
@@ -156,7 +171,7 @@ public class ThreadStaticAnalyzer : DiagnosticAnalyzer
 
     private static void AnalyzeDeconstructionAssignment(OperationAnalysisContext context, INamedTypeSymbol threadStaticAttribute)
     {
-        if (Utils.GetContainingFunction(context.Operation, context.ContainingSymbol) is not IMethodSymbol { MethodKind: MethodKind.StaticConstructor })
+        if (!IsExecutedByTypeInitializer(context))
         {
             return;
         }
@@ -167,7 +182,7 @@ public class ThreadStaticAnalyzer : DiagnosticAnalyzer
 
     private static void AnalyzeEventAssignment(OperationAnalysisContext context, INamedTypeSymbol threadStaticAttribute)
     {
-        if (Utils.GetContainingFunction(context.Operation, context.ContainingSymbol) is not IMethodSymbol { MethodKind: MethodKind.StaticConstructor })
+        if (!IsExecutedByTypeInitializer(context))
         {
             return;
         }
@@ -205,6 +220,27 @@ public class ThreadStaticAnalyzer : DiagnosticAnalyzer
         }
 
         return target is ITupleOperation tuple && tuple.Elements.Any(element => IsThreadStaticTarget(context, element, threadStaticAttribute));
+    }
+
+    private static bool IsExecutedByTypeInitializer(OperationAnalysisContext context)
+    {
+        if (Utils.GetContainingFunction(context.Operation, context.ContainingSymbol) is IMethodSymbol containingMethod)
+        {
+            return containingMethod.MethodKind == MethodKind.StaticConstructor;
+        }
+
+        for (IOperation? operation = context.Operation.Parent; operation is not null; operation = operation.Parent)
+        {
+            switch (operation)
+            {
+                case IFieldInitializerOperation fieldInitializer:
+                    return fieldInitializer.InitializedFields.Any(static field => field.IsStatic);
+                case IPropertyInitializerOperation propertyInitializer:
+                    return propertyInitializer.InitializedProperties.Any(static property => property.IsStatic);
+            }
+        }
+
+        return false;
     }
 
     private static IFieldSymbol? GetField(ISymbol symbol)
