@@ -119,13 +119,8 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
 
         ExpressionSyntax? FindGetAwaiterReceiver(ExpressionSyntax? from, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (from is not InvocationExpressionSyntax
-                {
-                    Expression: MemberAccessExpressionSyntax
-                    {
-                        Name.Identifier.ValueText: nameof(TaskAwaiter.GetResult),
-                    } getResultAccess
-                })
+            var getResultAccess = (from as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax;
+            if (getResultAccess?.Name.Identifier.ValueText != nameof(TaskAwaiter.GetResult))
             {
                 return null;
             }
@@ -136,29 +131,16 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
                 getAwaiterInvocationExpression = parenthesized.Expression;
             }
 
-            return getAwaiterInvocationExpression is InvocationExpressionSyntax
-            {
-                Expression: MemberAccessExpressionSyntax
-                {
-                    Name.Identifier.ValueText: "GetAwaiter",
-                    Expression: ExpressionSyntax receiver,
-                }
-            }
-                ? receiver
-                : null;
+            var getAwaiterAccess = (getAwaiterInvocationExpression as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax;
+            return getAwaiterAccess?.Name.Identifier.ValueText == "GetAwaiter" ? getAwaiterAccess.Expression : null;
         }
 
-        ExpressionSyntax? FindInstanceWaitReceiver(ExpressionSyntax? from, CancellationToken cancellationToken = default(CancellationToken)) =>
-            from is InvocationExpressionSyntax
-            {
-                Expression: MemberAccessExpressionSyntax
-                {
-                    Name.Identifier.ValueText: nameof(Task.Wait),
-                    Expression: ExpressionSyntax receiver,
-                }
-            }
-                ? receiver
-                : null;
+        ExpressionSyntax? FindInstanceWaitReceiver(ExpressionSyntax? from, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            var waitAccess = (from as InvocationExpressionSyntax)?.Expression as MemberAccessExpressionSyntax;
+            return waitAccess?.Name.Identifier.ValueText == nameof(Task.Wait) ? waitAccess.Expression : null;
+        }
+
         ExpressionSyntax? FindParentMemberAccess(ExpressionSyntax? from, CancellationToken cancellationToken = default(CancellationToken)) =>
             (from as MemberAccessExpressionSyntax)?.Expression;
 
