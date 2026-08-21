@@ -444,7 +444,7 @@ class Test {
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
-    [Fact(Skip = "Not yet supported. See https://github.com/microsoft/vs-threading/issues/542")]
+    [Fact]
     public async Task InvokeVsSolutionAfterUIThreadAssertionAndSwitchToThreadPool()
     {
         var test = @"
@@ -471,7 +471,7 @@ class Test {
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
-    [Fact(Skip = "Not yet supported. See https://github.com/microsoft/vs-threading/issues/542")]
+    [Fact]
     public async Task InvokeVsSolutionAfterUIThreadAssertionAndConfigureAwaitFalse()
     {
         var test = @"
@@ -498,6 +498,119 @@ class Test {
 ";
         DiagnosticResult expected = CSVerify.Diagnostic(DescriptorAsync).WithSpan(14, 13, 14, 24).WithArguments("IVsSolution", "JoinableTaskFactory.SwitchToMainThreadAsync");
         await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task InvokeVsSolutionAfterUIThreadAssertionAndParenthesizedConfigureAwaitFalse()
+    {
+        var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task F() {
+        IVsSolution sln = null;
+        VerifyOnUIThread();
+
+        await (SomeAsync().ConfigureAwait(false));
+
+        sln.SetProperty(1000, null);
+    }
+
+    void VerifyOnUIThread() {
+    }
+
+    async Task SomeAsync() => await Task.Yield();
+}
+";
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorAsync).WithSpan(14, 13, 14, 24).WithArguments("IVsSolution", "JoinableTaskFactory.SwitchToMainThreadAsync");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task InvokeVsSolutionWithinAndAfterConfigureAwaitFalseOperand()
+    {
+        var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task F() {
+        IVsSolution sln = null;
+        VerifyOnUIThread();
+
+        await Task.FromResult(sln.SetProperty(1000, null)).ConfigureAwait(false);
+
+        sln.SetProperty(1000, null);
+    }
+
+    void VerifyOnUIThread() {
+    }
+}
+";
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorAsync).WithSpan(13, 13, 13, 24).WithArguments("IVsSolution", "JoinableTaskFactory.SwitchToMainThreadAsync");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task InvokeVsSolutionAfterUIThreadAssertionAndCustomConfigureAwaitFalseReportsWarning()
+    {
+        var test = @"
+using System.Runtime.CompilerServices;
+using Microsoft.VisualStudio.Shell.Interop;
+
+class Test {
+    async void F() {
+        IVsSolution sln = null;
+        VerifyOnUIThread();
+
+        await new CustomAwaitable().ConfigureAwait(false);
+
+        sln.SetProperty(1000, null);
+    }
+
+    void VerifyOnUIThread() {
+    }
+}
+
+class CustomAwaitable {
+    public CustomAwaitable ConfigureAwait(bool continueOnCapturedContext) => this;
+
+    public TaskAwaiter GetAwaiter() => default;
+}
+";
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorAsync).WithSpan(12, 13, 12, 24).WithArguments("IVsSolution", "JoinableTaskFactory.SwitchToMainThreadAsync");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task WorkerTransitionInLocalFunctionDoesNotAffectContainingMethod()
+    {
+        var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    void F() {
+        IVsSolution sln = null;
+        VerifyOnUIThread();
+
+        async Task LocalAsync() {
+            await TaskScheduler.Default;
+        }
+
+        sln.SetProperty(1000, null);
+    }
+
+    void VerifyOnUIThread() {
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 
     [Fact(Skip = "Not yet supported. See https://github.com/Microsoft/vs-threading/issues/38")]
