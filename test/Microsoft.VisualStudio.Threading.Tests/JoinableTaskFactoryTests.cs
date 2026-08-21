@@ -500,7 +500,18 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
         protected override void PostToUnderlyingSynchronizationContextCore(SendOrPostCallback callback, object state)
         {
             int depth = Interlocked.Increment(ref this.currentPostDepth);
-            Interlocked.Exchange(ref this.maximumPostDepth, Math.Max(this.MaximumPostDepth, depth));
+            int observedMaximum = this.MaximumPostDepth;
+            while (depth > observedMaximum)
+            {
+                int priorMaximum = Interlocked.CompareExchange(ref this.maximumPostDepth, depth, observedMaximum);
+                if (priorMaximum == observedMaximum)
+                {
+                    break;
+                }
+
+                observedMaximum = priorMaximum;
+            }
+
             try
             {
                 callback(state);
