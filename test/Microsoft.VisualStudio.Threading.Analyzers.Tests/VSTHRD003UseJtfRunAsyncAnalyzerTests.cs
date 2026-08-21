@@ -1099,13 +1099,22 @@ class Tests
 
             class Tests
             {
-                private static Task task;
+                private static Task task = Task.WhenAll(Task.CompletedTask);
 
                 [CompletedTask]
-                private static readonly Task CompletedField = Task.Delay(1);
+                private static readonly Task CompletedField = Task.WhenAll(Task.CompletedTask);
 
                 [CompletedTask]
-                private static Task CompletedProperty { get; } = Task.Delay(1);
+                private static Task CompletedProperty { get; } = Task.WhenAll(Task.CompletedTask);
+
+                [CompletedTask]
+                private static Task CompletedExpressionProperty => task;
+
+                [CompletedTask]
+                private static Task CompletedExpressionGetter
+                {
+                    get => task;
+                }
 
                 [CompletedTask]
                 private static Task CompletedBlockProperty
@@ -1119,15 +1128,19 @@ class Tests
                 [CompletedTask]
                 private static Task ReturnCompletedTask(Task task)
                 {
-                    return task;
+                    return Task.WhenAll(Task.CompletedTask);
                 }
 
                 [CompletedTask]
-                private static Task ReturnCompletedTaskExpression(Task task) => task;
+                private static Task ReturnCompletedTaskExpression(Task task) => Task.WhenAll(Task.CompletedTask);
 
                 public Task GetField() => CompletedField;
 
                 public Task GetProperty() => CompletedProperty;
+
+                public Task GetExpressionProperty() => CompletedExpressionProperty;
+
+                public Task GetExpressionGetter() => CompletedExpressionGetter;
 
                 public Task GetBlockProperty() => CompletedBlockProperty;
 
@@ -1140,7 +1153,7 @@ class Tests
                     [CompletedTask]
                     static Task ReturnCompletedTaskLocal(Task task)
                     {
-                        return task;
+                        return Task.WhenAll(Task.CompletedTask);
                     }
 
                     return ReturnCompletedTaskLocal(task);
@@ -1170,17 +1183,19 @@ class Tests
             class Tests
             {
                 [{|#0:CompletedTask|}]
-                private static Task CompletedField = Task.Delay(1);
+                private static Task CompletedField1 = Task.WhenAll(Task.CompletedTask), CompletedField2 = Task.WhenAll(Task.CompletedTask);
 
                 [{|#1:CompletedTask|}]
-                private static Task CompletedProperty { get; set; } = Task.Delay(1);
+                private static Task CompletedProperty { get; set; } = Task.WhenAll(Task.CompletedTask);
 
-                private static Task task = Task.Delay(1);
+                private static Task task = Task.WhenAll(Task.CompletedTask);
 
                 [{|#2:CompletedTask|}]
                 private static ref Task CompletedRefProperty => ref task;
 
-                public Task GetField() => CompletedField;
+                public Task GetField1() => CompletedField1;
+
+                public Task GetField2() => CompletedField2;
 
                 public Task GetProperty() => CompletedProperty;
 
@@ -1190,11 +1205,39 @@ class Tests
 
         DiagnosticResult[] expected =
         {
-            InvalidCompletedTaskAttributeDiagnostic().WithLocation(0).WithArguments("CompletedField"),
+            InvalidCompletedTaskAttributeDiagnostic().WithLocation(0).WithArguments("CompletedField1, CompletedField2"),
             InvalidCompletedTaskAttributeDiagnostic().WithLocation(1).WithArguments("CompletedProperty"),
             InvalidCompletedTaskAttributeDiagnostic().WithLocation(2).WithArguments("CompletedRefProperty"),
         };
         await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task ReportWarningForForeignTasksReturnedFromExpressionBodiedMembers()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Tests
+            {
+                private static Task task = Task.WhenAll(Task.CompletedTask);
+
+                private static Task ExpressionProperty => {|VSTHRD003:task|};
+
+                private static Task ExpressionGetter
+                {
+                    get => {|VSTHRD003:task|};
+                }
+
+                private static Task GetTask()
+                {
+                    Task LocalFunction() => {|VSTHRD003:task|};
+                    return LocalFunction();
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 
     [Fact]

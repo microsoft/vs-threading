@@ -19,8 +19,8 @@ fully qualified name `Microsoft.VisualStudio.Threading.CompletedTaskAttribute` i
 ```csharp
 namespace Microsoft.VisualStudio.Threading
 {
-    [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Method)]
-    internal sealed class CompletedTaskAttribute : Attribute
+    [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property | System.AttributeTargets.Method)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
     {
     }
 }

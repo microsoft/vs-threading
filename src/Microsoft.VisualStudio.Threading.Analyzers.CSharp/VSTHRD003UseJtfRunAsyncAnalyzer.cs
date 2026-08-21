@@ -128,38 +128,54 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        ISymbol? mutableMember = attribute.Parent?.Parent switch
+        string? mutableMemberName;
+        switch (attribute.Parent?.Parent)
         {
-            FieldDeclarationSyntax field when !field.Modifiers.Any(SyntaxKind.ReadOnlyKeyword) =>
-                context.SemanticModel.GetDeclaredSymbol(field.Declaration.Variables[0], context.CancellationToken),
-            PropertyDeclarationSyntax property when context.SemanticModel.GetDeclaredSymbol(property, context.CancellationToken) is IPropertySymbol { SetMethod: not null } or { ReturnsByRef: true } =>
-                context.SemanticModel.GetDeclaredSymbol(property, context.CancellationToken),
-            IndexerDeclarationSyntax indexer when context.SemanticModel.GetDeclaredSymbol(indexer, context.CancellationToken) is IPropertySymbol { SetMethod: not null } or { ReturnsByRef: true } =>
-                context.SemanticModel.GetDeclaredSymbol(indexer, context.CancellationToken),
-            _ => null,
-        };
+            case FieldDeclarationSyntax field when !field.Modifiers.Any(SyntaxKind.ReadOnlyKeyword):
+                mutableMemberName = string.Join(", ", field.Declaration.Variables.Select(variable => variable.Identifier.ValueText));
+                break;
+            case PropertyDeclarationSyntax property:
+                IPropertySymbol? propertySymbol = context.SemanticModel.GetDeclaredSymbol(property, context.CancellationToken);
+                mutableMemberName = propertySymbol is { SetMethod: not null } || propertySymbol is { ReturnsByRef: true } ? propertySymbol.Name : null;
+                break;
+            case IndexerDeclarationSyntax indexer:
+                IPropertySymbol? indexerSymbol = context.SemanticModel.GetDeclaredSymbol(indexer, context.CancellationToken);
+                mutableMemberName = indexerSymbol is { SetMethod: not null } || indexerSymbol is { ReturnsByRef: true } ? indexerSymbol.Name : null;
+                break;
+            default:
+                mutableMemberName = null;
+                break;
+        }
 
-        if (mutableMember is not null)
+        if (mutableMemberName is not null)
         {
-            context.ReportDiagnostic(Diagnostic.Create(InvalidCompletedTaskAttributeDescriptor, attribute.GetLocation(), mutableMember.Name));
+            context.ReportDiagnostic(Diagnostic.Create(InvalidCompletedTaskAttributeDescriptor, attribute.GetLocation(), mutableMemberName));
         }
     }
 
     private void AnalyzeArrowExpressionClause(SyntaxNodeAnalysisContext context)
     {
         var arrowExpressionClause = (ArrowExpressionClauseSyntax)context.Node;
-        if (arrowExpressionClause.Parent is MethodDeclarationSyntax methodDeclaration)
+        ISymbol? containingSymbol = arrowExpressionClause.Parent switch
         {
-            if (IsSymbolAlwaysOkToAwait(context.SemanticModel.GetDeclaredSymbol(methodDeclaration, context.CancellationToken)))
-            {
-                return;
-            }
+            MethodDeclarationSyntax method => context.SemanticModel.GetDeclaredSymbol(method, context.CancellationToken),
+            LocalFunctionStatementSyntax localFunction => context.SemanticModel.GetDeclaredSymbol(localFunction, context.CancellationToken),
+            PropertyDeclarationSyntax property => context.SemanticModel.GetDeclaredSymbol(property, context.CancellationToken),
+            IndexerDeclarationSyntax indexer => context.SemanticModel.GetDeclaredSymbol(indexer, context.CancellationToken),
+            AccessorDeclarationSyntax { Parent.Parent: PropertyDeclarationSyntax property } => context.SemanticModel.GetDeclaredSymbol(property, context.CancellationToken),
+            AccessorDeclarationSyntax { Parent.Parent: IndexerDeclarationSyntax indexer } => context.SemanticModel.GetDeclaredSymbol(indexer, context.CancellationToken),
+            _ => null,
+        };
 
-            Diagnostic? diagnostic = this.AnalyzeAwaitedOrReturnedExpression(arrowExpressionClause.Expression, context, context.CancellationToken);
-            if (diagnostic is object)
-            {
-                context.ReportDiagnostic(diagnostic);
-            }
+        if (containingSymbol is null || IsSymbolAlwaysOkToAwait(containingSymbol))
+        {
+            return;
+        }
+
+        Diagnostic? diagnostic = this.AnalyzeAwaitedOrReturnedExpression(arrowExpressionClause.Expression, context, context.CancellationToken);
+        if (diagnostic is object)
+        {
+            context.ReportDiagnostic(diagnostic);
         }
     }
 
