@@ -69,14 +69,14 @@ public class ThreadStaticAnalyzer : DiagnosticAnalyzer
             }
 
             startContext.RegisterSymbolAction(
-                symbolContext => AnalyzeFieldLikeSymbol(symbolContext, threadStaticAttribute),
+                Utils.DebuggableWrapper(symbolContext => AnalyzeFieldLikeSymbol(symbolContext, threadStaticAttribute)),
                 SymbolKind.Field,
                 SymbolKind.Property);
             startContext.RegisterOperationAction(
-                operationContext => AnalyzeFieldInitializer(operationContext, threadStaticAttribute),
+                Utils.DebuggableWrapper(operationContext => AnalyzeFieldInitializer(operationContext, threadStaticAttribute)),
                 OperationKind.FieldInitializer);
             startContext.RegisterOperationAction(
-                operationContext => AnalyzePropertyInitializer(operationContext, threadStaticAttribute),
+                Utils.DebuggableWrapper(operationContext => AnalyzePropertyInitializer(operationContext, threadStaticAttribute)),
                 OperationKind.PropertyInitializer);
         });
     }
