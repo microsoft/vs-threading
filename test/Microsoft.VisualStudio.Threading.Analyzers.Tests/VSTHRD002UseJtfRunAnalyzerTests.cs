@@ -653,6 +653,14 @@ class Test {
             Func<int> useResultLater = () => t.[|Result|];
             return useResultLater();
         });
+        task.ContinueWith(t => {
+            Func<int> useResultLater = () => {
+                ref Task<int> alias = ref t;
+                alias = Task.Run(() => 9);
+                return t.[|Result|];
+            };
+            return useResultLater();
+        });
     }
 }
 ";
@@ -759,6 +767,12 @@ class Test {
         _ = task.Result;
     }
 
+    async void AwaitedInConditionalCondition() {
+        var task = Task.Run(() => true);
+        _ = (await task) ? 1 : 0;
+        _ = task.Result;
+    }
+
     async void AwaitedInLeftShortCircuitOperand(bool condition) {
         var task = Task.Run(() => true);
         if (await task && condition) {
@@ -808,6 +822,17 @@ class Test {
         _ = task.Result;
     }
 
+    async void GuardedInsideNestedBlock() {
+        var task = Task.Run(() => 1);
+        {
+            if (!task.IsCompleted) {
+                await task;
+            }
+        }
+
+        _ = task.Result;
+    }
+
     async void AwaitedBeforeNestedBlock(bool condition) {
         var task = Task.Run(() => 1);
         await task;
@@ -839,6 +864,9 @@ class Test {
 
         if (task.Status == TaskStatus.RanToCompletion) {
             _ = task.Result;
+        }
+
+        if (task.IsCompleted && task.Result == 1) {
         }
     }
 
@@ -955,7 +983,10 @@ class Test {
             _ = task.[|Result|];
         }
 
-        void Replace() => task = Task.Run(() => 5);
+        void Replace() {
+            ref Task<int> alias = ref task;
+            alias = Task.Run(() => 5);
+        }
     }
 
     async void AwaitInDoWhileConditionIsNotDefinite() {
@@ -1211,6 +1242,28 @@ static class TaskExtensions {
 ";
 
         await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task ConfiguredAwaitExtensionDoesNotProveOriginalTaskCompleted()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    async void F(Task<int> task) {
+        await task.ConfigureAwait(""custom"");
+        _ = task.[|Result|];
+    }
+}
+
+static class TaskExtensions {
+    public static Task<int> ConfigureAwait(this Task<int> task, string mode)
+        => Task.Run(() => mode.Length);
+}
+";
+
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 
     [Fact]

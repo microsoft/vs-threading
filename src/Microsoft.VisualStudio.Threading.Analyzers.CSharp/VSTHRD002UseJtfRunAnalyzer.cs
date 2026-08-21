@@ -66,6 +66,10 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
                 compilationContext.Options,
                 new Regex(@"^vs-threading\.SyncBlockingMethods(\..*)?.txt$", RegexOptions.IgnoreCase | RegexOptions.Singleline),
                 compilationContext.CancellationToken).ToImmutableArray();
+            ImmutableArray<CommonInterest.QualifiedMember> methodsExcludedFromVSTHRD103 = CommonInterest.ReadMethods(
+                compilationContext.Options,
+                CommonInterest.FileNamePatternForSyncMethodsToExcludeFromVSTHRD103,
+                compilationContext.CancellationToken).ToImmutableArray();
             if (taskSymbol is object)
             {
                 compilationContext.RegisterCodeBlockStartAction<SyntaxKind>(codeBlockContext =>
@@ -75,7 +79,9 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
                     if (propertySymbol is object || methodSymbol is object)
                     {
                         bool analyzeWholeCodeBlock = propertySymbol is object || !methodSymbol!.HasAsyncCompatibleReturnType();
-                        codeBlockContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => AnalyzeInvocation(c, taskSymbol, configuredSyncBlockingMethods, analyzeWholeCodeBlock)), SyntaxKind.InvocationExpression);
+                        codeBlockContext.RegisterSyntaxNodeAction(
+                            Utils.DebuggableWrapper(c => AnalyzeInvocation(c, taskSymbol, configuredSyncBlockingMethods, methodsExcludedFromVSTHRD103, analyzeWholeCodeBlock)),
+                            SyntaxKind.InvocationExpression);
                         codeBlockContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => AnalyzeMemberAccess(c, taskSymbol, analyzeWholeCodeBlock)), SyntaxKind.SimpleMemberAccessExpression);
                     }
                 });
@@ -155,12 +161,12 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
                 if (memberAccessSyntax.Ancestors().TakeWhile(node => node != anonymousFunctionSyntax)
                     .Any(node => node is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax))
                 {
-                    potentialTaskSymbols = CSharpCommonInterest.GetSymbolAndRefAliases(
+                    potentialTaskSymbols = potentialTaskSymbols.Union(CSharpCommonInterest.GetSymbolAndRefAliases(
                         context,
                         memberAccessSyntax,
                         completedTask,
                         anonymousFunctionSyntax,
-                        includeAllCandidates: true).Potential;
+                        includeAllCandidates: true).Potential);
                 }
 
                 ISymbol? receiverSymbol = GetTaskReceiverSymbol(context, memberAccessSyntax);
@@ -180,6 +186,7 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
         SyntaxNodeAnalysisContext context,
         INamedTypeSymbol taskSymbol,
         ImmutableArray<CommonInterest.QualifiedMember> configuredSyncBlockingMethods,
+        ImmutableArray<CommonInterest.QualifiedMember> methodsExcludedFromVSTHRD103,
         bool analyzeWholeCodeBlock)
     {
         var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
@@ -201,7 +208,9 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
         IMethodSymbol methodDefinition = invokedMethod.ReducedFrom ?? invokedMethod;
         bool isBuiltInSyncBlockingMethod = CommonInterest.ProblematicSyncBlockingMethods.Any(
             method => method.Method.IsMatch(invokedMethod) || method.Method.IsMatch(methodDefinition));
-        bool coveredByVSTHRD103 = !ShouldAnalyze(context, analyzeWholeCodeBlock)
+        bool coveredByVSTHRD103 = !methodsExcludedFromVSTHRD103.Contains(invokedMethod)
+            && !methodsExcludedFromVSTHRD103.Contains(methodDefinition)
+            && !ShouldAnalyze(context, analyzeWholeCodeBlock)
             && HasAsyncAlternative(context, invocationExpressionSyntax, invokedMethod);
         if (!isBuiltInSyncBlockingMethod
             && !coveredByVSTHRD103

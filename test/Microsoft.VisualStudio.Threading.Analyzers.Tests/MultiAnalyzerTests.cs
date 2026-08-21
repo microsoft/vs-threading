@@ -94,6 +94,38 @@ class Test {
         await verifyTest.RunAsync();
     }
 
+    [Fact]
+    public async Task VSTHRD103ExclusionLeavesConfiguredVSTHRD002Diagnostic()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class CustomWaiter {
+    public void Join() { }
+    public Task JoinAsync() => Task.CompletedTask;
+}
+
+class Test {
+    Task FAsync(CustomWaiter waiter) {
+        waiter.Join();
+        return Task.CompletedTask;
+    }
+}
+";
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            TestState = { MarkupHandling = MarkupMode.None },
+        };
+        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncBlockingMethods.txt", "[CustomWaiter]::Join"));
+        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncMethodsToExcludeFromVSTHRD103.txt", "[CustomWaiter]::Join"));
+        verifyTest.ExpectedDiagnostics.Add(
+            CSVerify.Diagnostic(VSTHRD002UseJtfRunAnalyzer.Descriptor)
+                .WithSpan(11, 16, 11, 20));
+        await verifyTest.RunAsync();
+    }
+
     /// <summary>
     /// Verifies that no analyzer throws due to a missing interface member.
     /// </summary>

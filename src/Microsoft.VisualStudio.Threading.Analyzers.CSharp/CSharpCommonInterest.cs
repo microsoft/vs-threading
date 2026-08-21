@@ -224,6 +224,9 @@ internal static class CSharpCommonInterest
         }
     }
 
+    /// <summary>
+    /// Gets the symbol represented by the normalized task-like receiver of a blocking member access.
+    /// </summary>
     internal static ISymbol? GetTaskReceiverSymbol(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax)
     {
         ExpressionSyntax receiver = GetTaskReceiver(context, memberAccessSyntax);
@@ -394,6 +397,22 @@ internal static class CSharpCommonInterest
                 continue;
             }
 
+            foreach (BinaryExpressionSyntax binary in memberAccessSyntax.Ancestors()
+                .TakeWhile(node => node != ifStatement)
+                .OfType<BinaryExpressionSyntax>())
+            {
+                bool leftProvesCompletion = binary.Right.FullSpan.Contains(memberAccessSyntax.Span)
+                    && ((binary.IsKind(SyntaxKind.LogicalAndExpression)
+                            && ConditionProvesCompletion(context, binary.Left, taskSymbols, conditionValue: true))
+                        || (binary.IsKind(SyntaxKind.LogicalOrExpression)
+                            && ConditionProvesCompletion(context, binary.Left, taskSymbols, conditionValue: false)));
+                if (leftProvesCompletion
+                    && !MayReassignTask(context, binary, potentialTaskSymbols, binary.Left.Span.End, memberAccessSyntax.SpanStart))
+                {
+                    return true;
+                }
+            }
+
             if (ifStatement.Statement.FullSpan.Contains(memberAccessSyntax.Span)
                 && ConditionProvesCompletion(context, ifStatement.Condition, taskSymbols, conditionValue: true)
                 && !MayReassignTask(context, ifStatement, potentialTaskSymbols, ifStatement.Condition.SpanStart - 1, memberAccessSyntax.SpanStart))
@@ -545,9 +564,15 @@ internal static class CSharpCommonInterest
             return !MayReassignTask(context, statement, potentialTaskSymbols, awaitExpression.Span.End, statement.Span.End + 1);
         }
 
-        if (statement is IfStatementSyntax { Else: { } elseClause } ifStatement)
+        if (statement is IfStatementSyntax ifStatement)
         {
-            return StatementDefinitelyAwaitsTask(context, ifStatement.Statement, taskSymbols, potentialTaskSymbols)
+            if (StatementCompletesTask(context, ifStatement, taskSymbols, potentialTaskSymbols))
+            {
+                return true;
+            }
+
+            return ifStatement.Else is { } elseClause
+                && StatementDefinitelyAwaitsTask(context, ifStatement.Statement, taskSymbols, potentialTaskSymbols)
                 && StatementDefinitelyAwaitsTask(context, elseClause.Statement, taskSymbols, potentialTaskSymbols);
         }
 
@@ -602,11 +627,12 @@ internal static class CSharpCommonInterest
             IEnumerable<SyntaxNode> ancestorsWithinStatement = candidate.Ancestors().TakeWhile(node => node != statement);
             bool isConditionallyExecuted = ancestorsWithinStatement.Any(
                 node => node is StatementSyntax
-                    or ConditionalExpressionSyntax
                     or SwitchExpressionSyntax
                     or ConditionalAccessExpressionSyntax
                     or WhenClauseSyntax
                     or CatchFilterClauseSyntax
+                    || (node is ConditionalExpressionSyntax conditional
+                        && !conditional.Condition.FullSpan.Contains(candidate.Span))
                     || (node is BinaryExpressionSyntax binary
                         && (binary.IsKind(SyntaxKind.LogicalAndExpression)
                             || binary.IsKind(SyntaxKind.LogicalOrExpression)
@@ -635,7 +661,8 @@ internal static class CSharpCommonInterest
 
         ExpressionSyntax awaitedExpression = UnwrapParentheses(awaitExpression.Expression);
         if (awaitedExpression is InvocationExpressionSyntax configureAwaitInvocation
-            && configureAwaitInvocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: nameof(Task.ConfigureAwait) } configureAwaitAccess)
+            && configureAwaitInvocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: nameof(Task.ConfigureAwait) } configureAwaitAccess
+            && IsSupportedConfigureAwaitInvocation(context, configureAwaitInvocation))
         {
             awaitedExpression = UnwrapParentheses(configureAwaitAccess.Expression);
         }
@@ -713,7 +740,22 @@ internal static class CSharpCommonInterest
         return containingFunction?.DescendantNodes()
             .Where(descendant => descendant is LocalFunctionStatementSyntax
                 || (descendant is AnonymousFunctionExpressionSyntax && descendant.SpanStart < node.SpanStart))
-            .Any(nestedFunction => MayReassignTask(context, nestedFunction, taskSymbols)) is true;
+            .Any(nestedFunction =>
+            {
+                ImmutableHashSet<ISymbol>.Builder nestedTaskSymbols = ImmutableHashSet.CreateBuilder<ISymbol>(SymbolEqualityComparer.Default);
+                nestedTaskSymbols.UnionWith(taskSymbols);
+                foreach (ISymbol taskSymbol in taskSymbols)
+                {
+                    nestedTaskSymbols.UnionWith(GetSymbolAndRefAliases(
+                        context,
+                        nestedFunction,
+                        taskSymbol,
+                        nestedFunction,
+                        includeAllCandidates: true).Potential);
+                }
+
+                return MayReassignTask(context, nestedFunction, nestedTaskSymbols.ToImmutable());
+            }) is true;
     }
 
     private static bool IsAssignmentToTask(SyntaxNodeAnalysisContext context, ExpressionSyntax expression, IImmutableSet<ISymbol> taskSymbols)
