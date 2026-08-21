@@ -92,8 +92,8 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
             return false;
         }
 
-        // Task-returning methods and delegates are covered by VSTHRD103. VSTHRD002 covers
-        // nested functions that do not return Task so that every synchronous wait is diagnosed.
+        // Methods and delegates with async-compatible return types are covered by VSTHRD103.
+        // VSTHRD002 covers other nested functions so that every synchronous wait is diagnosed.
         return context.SemanticModel.GetEnclosingSymbol(context.Node.SpanStart, context.CancellationToken) is IMethodSymbol containingMethod
             && !containingMethod.HasAsyncCompatibleReturnType();
     }
