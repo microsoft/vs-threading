@@ -21,9 +21,9 @@ public class ThreadStaticAnalyzer : DiagnosticAnalyzer
     public const string NonStaticFieldId = "VSTHRD116";
 
     /// <summary>
-    /// The diagnostic ID for a <see cref="System.ThreadStaticAttribute"/> field initialized inline.
+    /// The diagnostic ID for a <see cref="System.ThreadStaticAttribute"/> field initialized by the type initializer.
     /// </summary>
-    public const string InlineInitializationId = "VSTHRD117";
+    public const string TypeInitializerAssignmentId = "VSTHRD117";
 
     /// <summary>
     /// The descriptor for <see cref="System.ThreadStaticAttribute"/> applied to a non-static field.
@@ -39,20 +39,20 @@ public class ThreadStaticAnalyzer : DiagnosticAnalyzer
         isEnabledByDefault: true);
 
     /// <summary>
-    /// The descriptor for a <see cref="System.ThreadStaticAttribute"/> field initialized inline.
+    /// The descriptor for a <see cref="System.ThreadStaticAttribute"/> field initialized by the type initializer.
     /// </summary>
-    internal static readonly DiagnosticDescriptor InlineInitializationDescriptor = new DiagnosticDescriptor(
-        id: InlineInitializationId,
+    internal static readonly DiagnosticDescriptor TypeInitializerAssignmentDescriptor = new DiagnosticDescriptor(
+        id: TypeInitializerAssignmentId,
         title: new LocalizableResourceString(nameof(Strings.VSTHRD117_Title), Strings.ResourceManager, typeof(Strings)),
         messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD117_MessageFormat), Strings.ResourceManager, typeof(Strings)),
         description: null,
-        helpLinkUri: Utils.GetHelpLink(InlineInitializationId),
+        helpLinkUri: Utils.GetHelpLink(TypeInitializerAssignmentId),
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
     /// <inheritdoc />
-    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(NonStaticFieldDescriptor, InlineInitializationDescriptor);
+    public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(NonStaticFieldDescriptor, TypeInitializerAssignmentDescriptor);
 
     /// <inheritdoc />
     public override void Initialize(AnalysisContext context)
@@ -78,6 +78,11 @@ public class ThreadStaticAnalyzer : DiagnosticAnalyzer
             startContext.RegisterOperationAction(
                 Utils.DebuggableWrapper(operationContext => AnalyzePropertyInitializer(operationContext, threadStaticAttribute)),
                 OperationKind.PropertyInitializer);
+            startContext.RegisterOperationAction(
+                Utils.DebuggableWrapper(operationContext => AnalyzeAssignment(operationContext, threadStaticAttribute)),
+                OperationKind.SimpleAssignment,
+                OperationKind.CompoundAssignment,
+                OperationKind.CoalesceAssignment);
         });
     }
 
@@ -104,7 +109,7 @@ public class ThreadStaticAnalyzer : DiagnosticAnalyzer
         var initializer = (IFieldInitializerOperation)context.Operation;
         if (initializer.InitializedFields.Any(field => field.IsStatic && HasThreadStaticAttribute(field, threadStaticAttribute)))
         {
-            context.ReportDiagnostic(Diagnostic.Create(InlineInitializationDescriptor, initializer.Syntax.GetLocation()));
+            context.ReportDiagnostic(Diagnostic.Create(TypeInitializerAssignmentDescriptor, initializer.Syntax.GetLocation()));
         }
     }
 
@@ -113,7 +118,22 @@ public class ThreadStaticAnalyzer : DiagnosticAnalyzer
         var initializer = (IPropertyInitializerOperation)context.Operation;
         if (initializer.InitializedProperties.Any(property => property.IsStatic && GetField(property) is IFieldSymbol field && HasThreadStaticAttribute(field, threadStaticAttribute)))
         {
-            context.ReportDiagnostic(Diagnostic.Create(InlineInitializationDescriptor, initializer.Syntax.GetLocation()));
+            context.ReportDiagnostic(Diagnostic.Create(TypeInitializerAssignmentDescriptor, initializer.Syntax.GetLocation()));
+        }
+    }
+
+    private static void AnalyzeAssignment(OperationAnalysisContext context, INamedTypeSymbol threadStaticAttribute)
+    {
+        if (context.ContainingSymbol is not IMethodSymbol { MethodKind: MethodKind.StaticConstructor })
+        {
+            return;
+        }
+
+        var assignment = (IAssignmentOperation)context.Operation;
+        if (assignment.Target is IFieldReferenceOperation { Field: { IsStatic: true } field }
+            && HasThreadStaticAttribute(field, threadStaticAttribute))
+        {
+            context.ReportDiagnostic(Diagnostic.Create(TypeInitializerAssignmentDescriptor, assignment.Syntax.GetLocation()));
         }
     }
 

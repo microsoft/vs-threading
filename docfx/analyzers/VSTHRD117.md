@@ -1,6 +1,6 @@
-# VSTHRD117 Avoid inline initialization of `ThreadStatic` fields
+# VSTHRD117 Avoid initialization of `ThreadStatic` fields in a type initializer
 
-A static field marked with `ThreadStaticAttribute` has a separate value on each thread. An inline initializer runs only on the thread that initializes the containing type, so the field has its default value on every other thread. This also applies to auto-property backing fields marked with `[field: ThreadStatic]`.
+A static field marked with `ThreadStaticAttribute` has a separate value on each thread. A field initializer or static constructor runs only on the thread that initializes the containing type, so the field has its default value on every other thread. This also applies to auto-property backing fields marked with `[field: ThreadStatic]`.
 
 ## Examples of patterns that are flagged by this analyzer
 
@@ -12,6 +12,19 @@ class Example
 }
 ```
 
+```csharp
+class Example
+{
+    [ThreadStatic]
+    private static object value;
+
+    static Example()
+    {
+        value = new object();
+    }
+}
+```
+
 ```vb
 Class Example
     <ThreadStatic>
@@ -19,9 +32,20 @@ Class Example
 End Class
 ```
 
+```vb
+Class Example
+    <ThreadStatic>
+    Private Shared value As Object
+
+    Shared Sub New()
+        value = New Object()
+    End Sub
+End Class
+```
+
 ## Solution
 
-Remove the inline initializer and initialize the value independently on each thread, typically by using lazy initialization at the point of use.
+Remove the initializer or static-constructor assignment and initialize the value independently on each thread, typically by using lazy initialization at the point of use.
 
 ```csharp
 class Example

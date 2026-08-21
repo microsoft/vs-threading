@@ -24,10 +24,6 @@ public class ThreadStaticAnalyzerTests
                 [field: ThreadStatic]
                 private static object Property { get; set; }
 
-                static Test()
-                {
-                    field = new object();
-                }
             }
             """;
 
@@ -112,6 +108,36 @@ public class ThreadStaticAnalyzerTests
     }
 
     [Fact]
+    public async Task StaticConstructorAssignment_CSharp()
+    {
+        const string test = """
+            using System;
+
+            class Test
+            {
+                [ThreadStatic]
+                private static object field;
+
+                private static object otherField;
+
+                static Test()
+                {
+                    {|VSTHRD117:field = new object()|};
+                    {|VSTHRD117:field ??= new object()|};
+                    otherField = new object();
+                }
+
+                private Test()
+                {
+                    field = new object();
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
     public async Task UnrelatedAttributeAndUnattributedFields_CSharp()
     {
         const string test = """
@@ -148,9 +174,6 @@ public class ThreadStaticAnalyzerTests
                 <ThreadLocal>
                 Private Shared aliasedField As Integer
 
-                Shared Sub New()
-                    field = New Object()
-                End Sub
             End Class
             """;
 
@@ -204,6 +227,32 @@ public class ThreadStaticAnalyzerTests
             Class Test
                 <ThreadStatic>
                 Private {|VSTHRD116:field|} As Object = New Object()
+            End Class
+            """;
+
+        await VBVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task SharedConstructorAssignment_VisualBasic()
+    {
+        const string test = """
+            Imports System
+
+            Class Test
+                <ThreadStatic>
+                Private Shared field As Object
+
+                Private Shared otherField As Object
+
+                Shared Sub New()
+                    {|VSTHRD117:field = New Object()|}
+                    otherField = New Object()
+                End Sub
+
+                Private Sub New()
+                    field = New Object()
+                End Sub
             End Class
             """;
 

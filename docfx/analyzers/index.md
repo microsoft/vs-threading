@@ -30,7 +30,7 @@ ID | Title | Severity | Supports | Default diagnostic severity
 [VSTHRD114](VSTHRD114.md) | Avoid returning null from a `Task`-returning method. | Advisory | | Warning
 [VSTHRD115](VSTHRD115.md) | Avoid creating a JoinableTaskContext with an explicit `null` `SynchronizationContext` | Advisory | | Warning
 [VSTHRD116](VSTHRD116.md) | Use `ThreadStaticAttribute` only with static fields | Advisory | | Warning
-[VSTHRD117](VSTHRD117.md) | Avoid inline initialization of `ThreadStatic` fields | Advisory | | Warning
+[VSTHRD117](VSTHRD117.md) | Avoid initialization of `ThreadStatic` fields in a type initializer | Advisory | | Warning
 [VSTHRD200](VSTHRD200.md) | Use `Async` naming convention | Guideline | [VSTHRD103](VSTHRD103.md) | Warning
 
 ## Severity descriptions
