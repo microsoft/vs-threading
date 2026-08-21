@@ -43,7 +43,8 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
         if (TryFindNodeAtSource(diagnostic, root, out ExpressionSyntax? target, out _))
         {
             SemanticModel? semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
-            if (semanticModel is null
+            if (target.FirstAncestorOrSelf<MethodDeclarationSyntax>() is null
+                || semanticModel is null
                 || semanticModel.GetDiagnostics(target.FullSpan, context.CancellationToken).Any(d => d.Severity == DiagnosticSeverity.Error)
                 || !CanUseAwaitCodeFix(semanticModel, target, context.CancellationToken))
             {

@@ -984,8 +984,8 @@ class Test {
         }
 
         void Replace() {
-            ref Task<int> alias = ref task;
-            alias = Task.Run(() => 5);
+            Action nestedReplace = () => task = Task.Run(() => 5);
+            nestedReplace();
         }
     }
 
@@ -1154,6 +1154,33 @@ class Test {
     }
 
     [Fact]
+    public async Task ConfiguredGenericExtensionReceiverDoesNotThrow()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task FAsync(object value) {
+        value.[|WaitSynchronously|]();
+        return Task.CompletedTask;
+    }
+}
+
+static class Extensions {
+    public static void WaitSynchronously<T>(this T value) { }
+}
+";
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            FixedCode = test,
+        };
+        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncBlockingMethods.txt", "[Extensions]::WaitSynchronously"));
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
     public async Task ConfiguredSyncBlockingMethodInsideNameOfDoesNotReport()
     {
         var test = @"
@@ -1280,6 +1307,34 @@ class Test {
 
 static class TaskExtensions {
     public static void Wait(this Task task, string mode) { }
+}
+";
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            FixedCode = test,
+        };
+        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncBlockingMethods.txt", "[TaskExtensions]::Wait"));
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task CodeFixIsNotOfferedOutsideMethodDeclarations()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Test() {
+        Task.Delay(1).[|Wait|]();
+    }
+
+    int Value {
+        get {
+            return Task.FromResult(1).[|Result|];
+        }
+    }
 }
 ";
 

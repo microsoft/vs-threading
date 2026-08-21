@@ -210,7 +210,7 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
             method => method.Method.IsMatch(invokedMethod) || method.Method.IsMatch(methodDefinition));
         bool coveredByVSTHRD103 = !methodsExcludedFromVSTHRD103.Contains(invokedMethod)
             && !methodsExcludedFromVSTHRD103.Contains(methodDefinition)
-            && !ShouldAnalyze(context, analyzeWholeCodeBlock)
+            && IsInTaskReturningMethodOrDelegate(context)
             && HasAsyncAlternative(context, invocationExpressionSyntax, invokedMethod);
         if (!isBuiltInSyncBlockingMethod
             && !coveredByVSTHRD103
@@ -240,9 +240,21 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
         IMethodSymbol invokedMethod)
     {
         string asyncMethodName = invokedMethod.Name + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix;
-        INamespaceOrTypeSymbol lookupContainer = invokedMethod.ReducedFrom is { Parameters.Length: > 0 } reducedFrom
-            ? (INamespaceOrTypeSymbol)reducedFrom.Parameters[0].Type
-            : invokedMethod.ContainingType;
+        INamespaceOrTypeSymbol lookupContainer = invokedMethod.ContainingType;
+        if (invokedMethod.ReducedFrom is object)
+        {
+            ExpressionSyntax? receiver = invocation.Expression is MemberAccessExpressionSyntax memberAccess
+                ? memberAccess.Expression
+                : invocation.FirstAncestorOrSelf<ConditionalAccessExpressionSyntax>()?.Expression;
+            if (receiver is null
+                || context.SemanticModel.GetTypeInfo(receiver, context.CancellationToken).Type is not INamespaceOrTypeSymbol receiverType)
+            {
+                return false;
+            }
+
+            lookupContainer = receiverType;
+        }
+
         string? declaringMethodName = invocation.FirstAncestorOrSelf<MethodDeclarationSyntax>()?.Identifier.Text;
         return context.SemanticModel.LookupSymbols(
                 invocation.Expression.SpanStart,
@@ -261,6 +273,20 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
             && baselineMethod.Parameters.All(
                 baselineParameter => candidateMethod.Parameters.Any(
                     candidateParameter => SymbolEqualityComparer.Default.Equals(baselineParameter.Type, candidateParameter.Type)));
+
+    private static bool IsInTaskReturningMethodOrDelegate(SyntaxNodeAnalysisContext context)
+    {
+        SyntaxNode? containingFunction = context.Node.Ancestors().FirstOrDefault(
+            node => node is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax or MethodDeclarationSyntax);
+        IMethodSymbol? containingMethod = containingFunction switch
+        {
+            AnonymousFunctionExpressionSyntax anonymousFunction => context.SemanticModel.GetSymbolInfo(anonymousFunction, context.CancellationToken).Symbol as IMethodSymbol,
+            LocalFunctionStatementSyntax localFunction => context.SemanticModel.GetDeclaredSymbol(localFunction, context.CancellationToken),
+            MethodDeclarationSyntax method => context.SemanticModel.GetDeclaredSymbol(method, context.CancellationToken),
+            _ => null,
+        };
+        return containingMethod?.HasAsyncCompatibleReturnType() is true;
+    }
 
     private static void AnalyzeMemberAccess(SyntaxNodeAnalysisContext context, INamedTypeSymbol taskSymbol, bool analyzeWholeCodeBlock)
     {

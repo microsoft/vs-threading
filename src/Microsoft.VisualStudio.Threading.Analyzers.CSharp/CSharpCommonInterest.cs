@@ -204,13 +204,17 @@ internal static class CSharpCommonInterest
         }
 
         ITypeSymbol? typeReceiver = context.SemanticModel.GetTypeInfo(memberAccessSyntax.Expression).Type;
-        if (typeReceiver is object)
+        ISymbol? accessedSymbol = memberAccessSyntax.Parent is InvocationExpressionSyntax invocation
+            ? context.SemanticModel.GetSymbolInfo(invocation, context.CancellationToken).Symbol
+            : context.SemanticModel.GetSymbolInfo(memberAccessSyntax, context.CancellationToken).Symbol;
+        if (typeReceiver is object && accessedSymbol is object)
         {
             foreach (CommonInterest.SyncBlockingMethod item in problematicMethods)
             {
                 if (memberAccessSyntax.Name.Identifier.Text == item.Method.Name &&
                     typeReceiver.Name == item.Method.ContainingType.Name &&
-                    typeReceiver.BelongsToNamespace(item.Method.ContainingType.Namespace))
+                    typeReceiver.BelongsToNamespace(item.Method.ContainingType.Namespace) &&
+                    IsBuiltInBlockingMember(context, accessedSymbol, item.Method))
                 {
                     if (HasTaskCompleted(context, memberAccessSyntax))
                     {
@@ -241,6 +245,27 @@ internal static class CSharpCommonInterest
         }
 
         return expression;
+    }
+
+    private static bool IsBuiltInBlockingMember(
+        SyntaxNodeAnalysisContext context,
+        ISymbol accessedSymbol,
+        CommonInterest.QualifiedMember expectedMember)
+    {
+        if (accessedSymbol is not IMethodSymbol { ReducedFrom: not null } reducedMethod)
+        {
+            return true;
+        }
+
+        if (expectedMember.Name != nameof(Task.Wait)
+            || context.Compilation.GetTypeByMetadataName(Types.Task.FullName) is not INamedTypeSymbol taskType)
+        {
+            return false;
+        }
+
+        return reducedMethod.Parameters.IsEmpty
+            && reducedMethod.ReturnsVoid
+            && Utils.IsEqualToOrDerivedFrom(reducedMethod.ReceiverType, taskType);
     }
 
     private static ExpressionSyntax GetTaskReceiver(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax)
@@ -737,25 +762,37 @@ internal static class CSharpCommonInterest
                 or BaseMethodDeclarationSyntax
                 or AccessorDeclarationSyntax)
             ?? node.FirstAncestorOrSelf<GlobalStatementSyntax>()?.Parent;
+        bool FunctionMayReassignTask(SyntaxNode nestedFunction, IImmutableSet<ISymbol> containingTaskSymbols)
+        {
+            ImmutableHashSet<ISymbol>.Builder nestedTaskSymbols = ImmutableHashSet.CreateBuilder<ISymbol>(SymbolEqualityComparer.Default);
+            nestedTaskSymbols.UnionWith(containingTaskSymbols);
+            foreach (ISymbol taskSymbol in containingTaskSymbols)
+            {
+                nestedTaskSymbols.UnionWith(GetSymbolAndRefAliases(
+                    context,
+                    nestedFunction,
+                    taskSymbol,
+                    nestedFunction,
+                    includeAllCandidates: true).Potential);
+            }
+
+            IImmutableSet<ISymbol> nestedSymbols = nestedTaskSymbols.ToImmutable();
+            if (MayReassignTask(context, nestedFunction, nestedSymbols))
+            {
+                return true;
+            }
+
+            return nestedFunction.DescendantNodes(
+                    descendant => descendant == nestedFunction
+                        || descendant is not AnonymousFunctionExpressionSyntax and not LocalFunctionStatementSyntax)
+                .Where(descendant => descendant is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax)
+                .Any(descendant => FunctionMayReassignTask(descendant, nestedSymbols));
+        }
+
         return containingFunction?.DescendantNodes()
             .Where(descendant => descendant is LocalFunctionStatementSyntax
                 || (descendant is AnonymousFunctionExpressionSyntax && descendant.SpanStart < node.SpanStart))
-            .Any(nestedFunction =>
-            {
-                ImmutableHashSet<ISymbol>.Builder nestedTaskSymbols = ImmutableHashSet.CreateBuilder<ISymbol>(SymbolEqualityComparer.Default);
-                nestedTaskSymbols.UnionWith(taskSymbols);
-                foreach (ISymbol taskSymbol in taskSymbols)
-                {
-                    nestedTaskSymbols.UnionWith(GetSymbolAndRefAliases(
-                        context,
-                        nestedFunction,
-                        taskSymbol,
-                        nestedFunction,
-                        includeAllCandidates: true).Potential);
-                }
-
-                return MayReassignTask(context, nestedFunction, nestedTaskSymbols.ToImmutable());
-            }) is true;
+            .Any(nestedFunction => FunctionMayReassignTask(nestedFunction, taskSymbols)) is true;
     }
 
     private static bool IsAssignmentToTask(SyntaxNodeAnalysisContext context, ExpressionSyntax expression, IImmutableSet<ISymbol> taskSymbols)
