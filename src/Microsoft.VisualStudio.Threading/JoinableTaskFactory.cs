@@ -23,6 +23,12 @@ namespace Microsoft.VisualStudio.Threading;
 /// </remarks>
 public partial class JoinableTaskFactory
 {
+    private static readonly ContextCallback ExecutePendingUnderlyingSynchronizationContextCallbackDelegate = state =>
+    {
+        var callback = ((SendOrPostCallback Callback, object State))state!;
+        callback.Callback(callback.State);
+    };
+
     private static readonly SendOrPostCallback ExecuteOnePendingUnderlyingSynchronizationContextCallbackDelegate = state => ((UnderlyingSynchronizationContextCallback)state!).Execute();
 
     [ThreadStatic]
@@ -42,7 +48,7 @@ public partial class JoinableTaskFactory
     /// </summary>
     private readonly JoinableTaskCollection? jobCollection;
 
-    private Queue<(SendOrPostCallback Callback, object State)>? pendingUnderlyingSynchronizationContextCallbacks;
+    private Queue<(SendOrPostCallback Callback, object State, ExecutionContext? ExecutionContext)>? pendingUnderlyingSynchronizationContextCallbacks;
 
     private bool underlyingSynchronizationContextCallbackPending;
 
@@ -686,12 +692,13 @@ public partial class JoinableTaskFactory
     {
         Requires.NotNull(callback, nameof(callback));
 
+        ExecutionContext? executionContext = ExecutionContext.Capture();
         bool postCallback = false;
         lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
         {
-            this.pendingUnderlyingSynchronizationContextCallbacks ??= new Queue<(SendOrPostCallback, object)>();
+            this.pendingUnderlyingSynchronizationContextCallbacks ??= new Queue<(SendOrPostCallback, object, ExecutionContext?)>();
             this.RemoveCompletedPendingUnderlyingSynchronizationContextCallbacks();
-            this.pendingUnderlyingSynchronizationContextCallbacks.Enqueue((callback, state));
+            this.pendingUnderlyingSynchronizationContextCallbacks.Enqueue((callback, state, executionContext));
             if (!this.underlyingSynchronizationContextCallbackPending)
             {
                 this.underlyingSynchronizationContextCallbackPending = true;
@@ -758,7 +765,7 @@ public partial class JoinableTaskFactory
         do
         {
             continueSynchronously = false;
-            (SendOrPostCallback Callback, object State)? callback = null;
+            (SendOrPostCallback Callback, object State, ExecutionContext? ExecutionContext)? callback = null;
             bool postSuccessor = false;
             bool completeSynchronousDrainAfterCallback = false;
             try
@@ -795,7 +802,14 @@ public partial class JoinableTaskFactory
 
                 if (callback is { } work)
                 {
-                    work.Callback(work.State);
+                    if (work.ExecutionContext is object)
+                    {
+                        ExecutionContext.Run(work.ExecutionContext, ExecutePendingUnderlyingSynchronizationContextCallbackDelegate, (work.Callback, work.State));
+                    }
+                    else
+                    {
+                        work.Callback(work.State);
+                    }
                 }
             }
             finally
@@ -827,12 +841,23 @@ public partial class JoinableTaskFactory
         {
             List<JoinableTaskFactory> synchronousPostingChain = synchronouslyPostingFactories ??= new();
             synchronousPostingChain.Add(this);
+            bool restoreFlow = !ExecutionContext.IsFlowSuppressed();
+            if (restoreFlow)
+            {
+                ExecutionContext.SuppressFlow();
+            }
+
             try
             {
                 this.PostToUnderlyingSynchronizationContextCore(ExecuteOnePendingUnderlyingSynchronizationContextCallbackDelegate, new UnderlyingSynchronizationContextCallback(this));
             }
             finally
             {
+                if (restoreFlow)
+                {
+                    ExecutionContext.RestoreFlow();
+                }
+
                 synchronousPostingChain.RemoveAt(synchronousPostingChain.Count - 1);
             }
         }

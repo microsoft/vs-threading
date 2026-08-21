@@ -255,6 +255,45 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
         Assert.Equal(1, secondFactory.MaximumPostDepth);
     }
 
+    [Theory]
+    [InlineData(true, true)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public void CoalescingPreservesExecutionContextPerCallback(bool firstFlowsExecutionContext, bool secondFlowsExecutionContext)
+    {
+        var factory = new QueueingJoinableTaskFactory(this.context);
+        var asyncLocal = new System.Threading.AsyncLocal<string?>();
+        string? firstObservedValue = null;
+        string? secondObservedValue = null;
+
+        asyncLocal.Value = "first";
+        QueueCallback(firstFlowsExecutionContext, () => firstObservedValue = asyncLocal.Value);
+        asyncLocal.Value = "second";
+        QueueCallback(secondFlowsExecutionContext, () => secondObservedValue = asyncLocal.Value);
+        asyncLocal.Value = null;
+
+        factory.ExecutePostedCallback();
+        factory.ExecutePostedCallback();
+
+        Assert.Equal(firstFlowsExecutionContext ? "first" : null, firstObservedValue);
+        Assert.Equal(secondFlowsExecutionContext ? "second" : null, secondObservedValue);
+
+        void QueueCallback(bool flowExecutionContext, Action callback)
+        {
+            if (flowExecutionContext)
+            {
+                factory.QueueUnderlyingCallback(callback);
+            }
+            else
+            {
+                using (ExecutionContext.SuppressFlow())
+                {
+                    factory.QueueUnderlyingCallback(callback);
+                }
+            }
+        }
+    }
+
     [Fact]
     public void DisableProcessing_ThrowsOutsideJoinableTask()
     {
