@@ -1674,7 +1674,7 @@ class Tests
 
     private static DiagnosticResult Diagnostic() => new("VSTHRD003", DiagnosticSeverity.Warning);
 
-    private static DiagnosticResult InvalidCompletedTaskAttributeDiagnostic() => new("VSTHRD116", DiagnosticSeverity.Warning);
+    private static DiagnosticResult InvalidCompletedTaskAttributeDiagnostic() => new("VSTHRD013", DiagnosticSeverity.Warning);
 
     private DiagnosticResult CreateDiagnostic(int line, int column, int length) =>
         Diagnostic().WithSpan(line, column, line, column + length);

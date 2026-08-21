@@ -1,4 +1,4 @@
-# VSTHRD116 Apply `CompletedTaskAttribute` only to immutable members
+# VSTHRD013 Apply `CompletedTaskAttribute` only to immutable members
 
 `Microsoft.VisualStudio.Threading.CompletedTaskAttribute` tells VSTHRD003 that a member always
 produces a completed task. Applying it to a mutable member is unsafe because the member can later

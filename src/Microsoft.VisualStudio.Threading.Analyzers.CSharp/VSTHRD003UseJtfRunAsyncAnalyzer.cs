@@ -40,7 +40,7 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
 {
     public const string Id = "VSTHRD003";
 
-    public const string InvalidCompletedTaskAttributeId = "VSTHRD116";
+    public const string InvalidCompletedTaskAttributeId = "VSTHRD013";
 
     internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
         id: Id,
@@ -53,8 +53,8 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
 
     internal static readonly DiagnosticDescriptor InvalidCompletedTaskAttributeDescriptor = new DiagnosticDescriptor(
         id: InvalidCompletedTaskAttributeId,
-        title: new LocalizableResourceString(nameof(Strings.VSTHRD116_Title), Strings.ResourceManager, typeof(Strings)),
-        messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD116_MessageFormat), Strings.ResourceManager, typeof(Strings)),
+        title: new LocalizableResourceString(nameof(Strings.VSTHRD013_Title), Strings.ResourceManager, typeof(Strings)),
+        messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD013_MessageFormat), Strings.ResourceManager, typeof(Strings)),
         helpLinkUri: Utils.GetHelpLink(InvalidCompletedTaskAttributeId),
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Warning,
