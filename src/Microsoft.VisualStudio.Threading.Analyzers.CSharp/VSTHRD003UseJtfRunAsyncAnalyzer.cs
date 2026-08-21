@@ -73,6 +73,19 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
 
     private static bool IsSymbolAlwaysOkToAwait(ISymbol? symbol)
     {
+        if (symbol?.GetAttributes().Any(attribute =>
+            attribute.AttributeClass?.Name == Types.CompletedTaskAttribute.TypeName &&
+            attribute.AttributeClass.ContainingType is null &&
+            attribute.AttributeClass.BelongsToNamespace(Types.CompletedTaskAttribute.Namespace)) is true)
+        {
+            // Mutable members may only happen to contain a completed task at the time the attribute is applied.
+            // Restrict the convention to members whose value cannot be replaced later.
+            if (symbol is IMethodSymbol or IFieldSymbol { IsReadOnly: true } or IPropertySymbol { SetMethod: null, ReturnsByRef: false })
+            {
+                return true;
+            }
+        }
+
         if (symbol is IFieldSymbol field)
         {
             // Allow the TplExtensions.CompletedTask and related fields.
@@ -98,8 +111,13 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
     private void AnalyzeArrowExpressionClause(SyntaxNodeAnalysisContext context)
     {
         var arrowExpressionClause = (ArrowExpressionClauseSyntax)context.Node;
-        if (arrowExpressionClause.Parent is MethodDeclarationSyntax)
+        if (arrowExpressionClause.Parent is MethodDeclarationSyntax methodDeclaration)
         {
+            if (IsSymbolAlwaysOkToAwait(context.SemanticModel.GetDeclaredSymbol(methodDeclaration, context.CancellationToken)))
+            {
+                return;
+            }
+
             Diagnostic? diagnostic = this.AnalyzeAwaitedOrReturnedExpression(arrowExpressionClause.Expression, context, context.CancellationToken);
             if (diagnostic is object)
             {
@@ -124,6 +142,20 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
     private void AnalyzeReturnStatement(SyntaxNodeAnalysisContext context)
     {
         var returnStatement = (ReturnStatementSyntax)context.Node;
+        CSharpUtils.ContainingFunctionData containingFunction = CSharpUtils.GetContainingFunction(returnStatement);
+        ISymbol? containingSymbol = containingFunction.Function switch
+        {
+            MethodDeclarationSyntax methodDeclaration => context.SemanticModel.GetDeclaredSymbol(methodDeclaration, context.CancellationToken),
+            LocalFunctionStatementSyntax localFunction => context.SemanticModel.GetDeclaredSymbol(localFunction, context.CancellationToken),
+            AccessorDeclarationSyntax { Parent.Parent: PropertyDeclarationSyntax propertyDeclaration } => context.SemanticModel.GetDeclaredSymbol(propertyDeclaration, context.CancellationToken),
+            AccessorDeclarationSyntax { Parent.Parent: IndexerDeclarationSyntax indexerDeclaration } => context.SemanticModel.GetDeclaredSymbol(indexerDeclaration, context.CancellationToken),
+            _ => null,
+        };
+        if (IsSymbolAlwaysOkToAwait(containingSymbol))
+        {
+            return;
+        }
+
         Diagnostic? diagnostic = this.AnalyzeAwaitedOrReturnedExpression(returnStatement.Expression, context, context.CancellationToken);
         if (diagnostic is object)
         {
@@ -228,7 +260,7 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
                 symbolType = parameterSymbol.Type;
                 dataflowAnalysisCompatibleVariable = true;
                 break;
-            case IFieldSymbol fieldSymbol:
+            case IFieldSymbol fieldSymbol when !IsSymbolAlwaysOkToAwait(fieldSymbol):
                 symbolType = fieldSymbol.Type;
 
                 // If the field is readonly and initialized with Task.FromResult, it's OK.
@@ -287,7 +319,7 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
                 }
 
                 break;
-            case IMethodSymbol methodSymbol:
+            case IMethodSymbol methodSymbol when !IsSymbolAlwaysOkToAwait(methodSymbol):
                 if (Utils.IsTask(methodSymbol.ReturnType) && focusedExpression is InvocationExpressionSyntax invocationExpressionSyntax)
                 {
                     // Consider all arguments
@@ -306,6 +338,8 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
                 }
 
                 return null;
+            case IFieldSymbol or IMethodSymbol:
+                return null;
             default:
                 return null;
         }
@@ -317,6 +351,15 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
 
         // Report warning if the task was not initialized within the current delegate or lambda expression
         containingFunc ??= CSharpUtils.GetContainingFunction(focusedExpression);
+        if (containingFunc.Value.BlockOrExpression is null &&
+            symbolToConsider.Symbol is ILocalSymbol &&
+            focusedExpression.Ancestors().Any(ancestor => ancestor is GlobalStatementSyntax))
+        {
+            // Top-level locals belong to the compiler-generated Main method, even though there is no
+            // method declaration in syntax for GetContainingFunction to discover.
+            return null;
+        }
+
         if (containingFunc.Value.BlockOrExpression is BlockSyntax delegateBlock)
         {
             if (dataflowAnalysisCompatibleVariable)

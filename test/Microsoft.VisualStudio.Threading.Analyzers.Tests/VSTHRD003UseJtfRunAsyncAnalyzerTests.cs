@@ -116,6 +116,29 @@ class Tests
     }
 
     [Fact]
+    public async Task ReportWarningWhenTaskFieldAssignedOutsideExpressionLambdaIsReturnedFromJtfRun()
+    {
+        string test = """
+            using System.Threading.Tasks;
+            using Microsoft.VisualStudio.Threading;
+
+            class Tests
+            {
+                private Task task;
+                private JoinableTaskFactory jtf;
+
+                public void Test()
+                {
+                    this.task = this.jtf.RunAsync(async () => await Task.Yield()).Task;
+                    this.jtf.Run(() => [|this.task|]);
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
     public async Task ReportWarningWhenTaskIsReturnedDirectlyFromMethod()
     {
         var test = @"
@@ -1059,6 +1082,146 @@ class Tests
     }
 
     [Fact]
+    public async Task DoNotReportWarningForMembersMarkedAsCompletedTasks()
+    {
+        string test = """
+            using System;
+            using System.Threading.Tasks;
+            using Microsoft.VisualStudio.Threading;
+
+            namespace Microsoft.VisualStudio.Threading
+            {
+                [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Method)]
+                internal sealed class CompletedTaskAttribute : Attribute
+                {
+                }
+            }
+
+            class Tests
+            {
+                private static Task task;
+
+                [CompletedTask]
+                private static readonly Task CompletedField = Task.Delay(1);
+
+                [CompletedTask]
+                private static Task CompletedProperty { get; } = Task.Delay(1);
+
+                [CompletedTask]
+                private static Task CompletedBlockProperty
+                {
+                    get
+                    {
+                        return task;
+                    }
+                }
+
+                [CompletedTask]
+                private static Task ReturnCompletedTask(Task task)
+                {
+                    return task;
+                }
+
+                [CompletedTask]
+                private static Task ReturnCompletedTaskExpression(Task task) => task;
+
+                public Task GetField() => CompletedField;
+
+                public Task GetProperty() => CompletedProperty;
+
+                public Task GetBlockProperty() => CompletedBlockProperty;
+
+                public Task GetMethodResult(Task task) => ReturnCompletedTask(task);
+
+                public Task GetExpressionMethodResult(Task task) => ReturnCompletedTaskExpression(task);
+
+                public Task GetLocalFunctionResult(Task task)
+                {
+                    [CompletedTask]
+                    static Task ReturnCompletedTaskLocal(Task task)
+                    {
+                        return task;
+                    }
+
+                    return ReturnCompletedTaskLocal(task);
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task ReportWarningForMutableMembersMarkedAsCompletedTasks()
+    {
+        string test = """
+            using System;
+            using System.Threading.Tasks;
+            using Microsoft.VisualStudio.Threading;
+
+            namespace Microsoft.VisualStudio.Threading
+            {
+                [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Method)]
+                internal sealed class CompletedTaskAttribute : Attribute
+                {
+                }
+            }
+
+            class Tests
+            {
+                [CompletedTask]
+                private static Task CompletedField = Task.Delay(1);
+
+                [CompletedTask]
+                private static Task CompletedProperty { get; set; } = Task.Delay(1);
+
+                private static Task task = Task.Delay(1);
+
+                [CompletedTask]
+                private static ref Task CompletedRefProperty => ref task;
+
+                public Task GetField() => [|CompletedField|];
+
+                public Task GetProperty() => [|CompletedProperty|];
+
+                public Task GetRefProperty() => [|CompletedRefProperty|];
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task ReportWarningForNestedCompletedTaskAttributeLookalike()
+    {
+        string test = """
+            using System;
+            using System.Threading.Tasks;
+
+            namespace Microsoft.VisualStudio.Threading
+            {
+                internal static class Container
+                {
+                    [AttributeUsage(AttributeTargets.Field)]
+                    internal sealed class CompletedTaskAttribute : Attribute
+                    {
+                    }
+                }
+            }
+
+            class Tests
+            {
+                [Microsoft.VisualStudio.Threading.Container.CompletedTask]
+                private static readonly Task CompletedField = Task.Delay(1);
+
+                public Task GetField() => [|CompletedField|];
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
     public async Task DoNotReportWarningWhenTaskFromResultIsReturnedDirectlyFromMethod()
     {
         var test = @"
@@ -1451,6 +1614,56 @@ class Tests
             }
             """;
         await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningForTopLevelLocals()
+    {
+        string test = """
+            using System;
+            using System.Threading;
+            using System.Threading.Tasks;
+
+            using var cts = new CancellationTokenSource();
+            Task loopTask = Task.Run(() => Console.WriteLine("loop"), cts.Token);
+            Task serverTask = Task.Run(() => Console.WriteLine("server"), cts.Token);
+            Task exitTask = Task.Run(() => cts.Cancel(), cts.Token);
+
+            await Task.WhenAny(loopTask, serverTask, exitTask);
+            """;
+
+        await new CSVerify.Test
+        {
+            TestState =
+            {
+                Sources = { test },
+                OutputKind = OutputKind.ConsoleApplication,
+            },
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task ReportWarningForForeignFieldInTopLevelStatements()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            await [|State.Task|];
+
+            static class State
+            {
+                internal static Task Task = System.Threading.Tasks.Task.Delay(1);
+            }
+            """;
+
+        await new CSVerify.Test
+        {
+            TestState =
+            {
+                Sources = { test },
+                OutputKind = OutputKind.ConsoleApplication,
+            },
+        }.RunAsync();
     }
 
     private DiagnosticResult CreateDiagnostic(int line, int column, int length) =>

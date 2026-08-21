@@ -97,6 +97,22 @@ public static class Types
     }
 
     /// <summary>
+    /// Contains descriptors for the convention-based CompletedTaskAttribute type.
+    /// </summary>
+    public static class CompletedTaskAttribute
+    {
+        /// <summary>
+        /// The name of the attribute type.
+        /// </summary>
+        public const string TypeName = nameof(CompletedTaskAttribute);
+
+        /// <summary>
+        /// The namespace containing the attribute type.
+        /// </summary>
+        public static readonly ImmutableArray<string> Namespace = Namespaces.MicrosoftVisualStudioThreading;
+    }
+
+    /// <summary>
     /// Contains descriptors for the JoinableTaskFactory type.
     /// </summary>
     public static class JoinableTaskFactory
