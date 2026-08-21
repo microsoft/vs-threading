@@ -151,6 +151,11 @@ internal static class CSharpCommonInterest
             return false;
         }
 
+        if (NestedFunctionMayReassignTask(context, memberAccessSyntax, taskSymbol))
+        {
+            return false;
+        }
+
         if (IsWithinCompletedTaskBranch(context, memberAccessSyntax, taskSymbol))
         {
             return true;
@@ -160,6 +165,13 @@ internal static class CSharpCommonInterest
         if (containingStatement is null)
         {
             return false;
+        }
+
+        if (TryGetAwaitExpression(containingStatement, memberAccessSyntax.SpanStart, out AwaitExpressionSyntax? precedingAwait)
+            && AwaitCompletesTask(context, precedingAwait, taskSymbol)
+            && !MayReassignTask(context, containingStatement, taskSymbol, precedingAwait.Span.End, memberAccessSyntax.SpanStart))
+        {
+            return true;
         }
 
         while (containingStatement.Parent is BlockSyntax block)
@@ -299,7 +311,17 @@ internal static class CSharpCommonInterest
             return true;
         }
 
+        if (statement is BlockSyntax block)
+        {
+            return StatementDefinitelyAwaitsTask(context, block, taskSymbol);
+        }
+
         if (statement is not IfStatementSyntax ifStatement)
+        {
+            return false;
+        }
+
+        if (MayReassignTask(context, ifStatement.Condition, taskSymbol))
         {
             return false;
         }
@@ -348,11 +370,25 @@ internal static class CSharpCommonInterest
     }
 
     private static bool TryGetAwaitExpression(StatementSyntax statement, [NotNullWhen(true)] out AwaitExpressionSyntax? awaitExpression)
+        => TryGetAwaitExpression(statement, statement.Span.End + 1, out awaitExpression);
+
+    private static bool TryGetAwaitExpression(StatementSyntax statement, int beforePosition, [NotNullWhen(true)] out AwaitExpressionSyntax? awaitExpression)
     {
         static bool DescendIntoChildren(SyntaxNode node) => node is not AnonymousFunctionExpressionSyntax and not LocalFunctionStatementSyntax;
 
+        if (statement is WhileStatementSyntax or DoStatementSyntax or ForStatementSyntax or ForEachStatementSyntax or ForEachVariableStatementSyntax)
+        {
+            awaitExpression = null;
+            return false;
+        }
+
         foreach (AwaitExpressionSyntax candidate in statement.DescendantNodes(DescendIntoChildren).OfType<AwaitExpressionSyntax>().Reverse())
         {
+            if (candidate.Span.End >= beforePosition)
+            {
+                continue;
+            }
+
             IEnumerable<SyntaxNode> ancestorsWithinStatement = candidate.Ancestors().TakeWhile(node => node != statement);
             bool isConditionallyExecuted = ancestorsWithinStatement.Any(
                 node => node is StatementSyntax or ConditionalExpressionSyntax or SwitchExpressionSyntax or ConditionalAccessExpressionSyntax
@@ -373,6 +409,11 @@ internal static class CSharpCommonInterest
 
     private static bool AwaitCompletesTask(SyntaxNodeAnalysisContext context, AwaitExpressionSyntax awaitExpression, ISymbol taskSymbol)
     {
+        if (MayReassignTask(context, awaitExpression.Expression, taskSymbol))
+        {
+            return false;
+        }
+
         ExpressionSyntax awaitedExpression = UnwrapParentheses(awaitExpression.Expression);
         if (awaitedExpression is InvocationExpressionSyntax configureAwaitInvocation
             && configureAwaitInvocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: nameof(Task.ConfigureAwait) } configureAwaitAccess)
@@ -402,19 +443,20 @@ internal static class CSharpCommonInterest
 
     private static bool MayReassignTask(SyntaxNodeAnalysisContext context, SyntaxNode node, ISymbol taskSymbol, int afterPosition, int beforePosition)
     {
-        static bool DescendIntoChildren(SyntaxNode node) => node is not AnonymousFunctionExpressionSyntax and not LocalFunctionStatementSyntax;
+        bool DescendIntoChildren(SyntaxNode child) =>
+            child == node || child is not AnonymousFunctionExpressionSyntax and not LocalFunctionStatementSyntax;
 
-        foreach (AssignmentExpressionSyntax assignment in node.DescendantNodes(DescendIntoChildren).OfType<AssignmentExpressionSyntax>())
+        foreach (AssignmentExpressionSyntax assignment in node.DescendantNodesAndSelf(DescendIntoChildren).OfType<AssignmentExpressionSyntax>())
         {
             if (assignment.SpanStart > afterPosition
                 && assignment.SpanStart < beforePosition
-                && SymbolEqualityComparer.Default.Equals(context.SemanticModel.GetSymbolInfo(assignment.Left, context.CancellationToken).Symbol, taskSymbol))
+                && IsAssignmentToTask(context, assignment.Left, taskSymbol))
             {
                 return true;
             }
         }
 
-        foreach (ArgumentSyntax argument in node.DescendantNodes(DescendIntoChildren).OfType<ArgumentSyntax>())
+        foreach (ArgumentSyntax argument in node.DescendantNodesAndSelf(DescendIntoChildren).OfType<ArgumentSyntax>())
         {
             if (argument.SpanStart > afterPosition
                 && argument.SpanStart < beforePosition
@@ -426,6 +468,26 @@ internal static class CSharpCommonInterest
         }
 
         return false;
+    }
+
+    private static bool NestedFunctionMayReassignTask(SyntaxNodeAnalysisContext context, SyntaxNode node, ISymbol taskSymbol)
+    {
+        SyntaxNode? containingFunction = node.Ancestors().FirstOrDefault(
+            ancestor => ancestor is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax or BaseMethodDeclarationSyntax);
+        return containingFunction?.DescendantNodes()
+            .Where(descendant => descendant is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax)
+            .Any(nestedFunction => MayReassignTask(context, nestedFunction, taskSymbol)) is true;
+    }
+
+    private static bool IsAssignmentToTask(SyntaxNodeAnalysisContext context, ExpressionSyntax expression, ISymbol taskSymbol)
+    {
+        expression = UnwrapParentheses(expression);
+        if (expression is TupleExpressionSyntax tuple)
+        {
+            return tuple.Arguments.Any(argument => IsAssignmentToTask(context, argument.Expression, taskSymbol));
+        }
+
+        return IsSameTask(context, expression, taskSymbol);
     }
 
     private static bool IsSameTask(SyntaxNodeAnalysisContext context, ExpressionSyntax expression, ISymbol taskSymbol)

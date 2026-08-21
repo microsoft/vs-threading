@@ -190,11 +190,12 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
             SimpleNameSyntax? methodName = invocationExpressionSyntax.Expression switch
             {
                 MemberAccessExpressionSyntax memberAccess => memberAccess.Name,
+                MemberBindingExpressionSyntax memberBinding => memberBinding.Name,
                 SimpleNameSyntax simpleName => simpleName,
                 _ => null,
             };
 
-            if (methodName is object)
+            if (methodName is object && !CSharpCommonInterest.ShouldIgnoreContext(context))
             {
                 ImmutableDictionary<string, string?> properties = ImmutableDictionary<string, string?>.Empty.Add("SuppressAwaitCodeFix", null);
                 context.ReportDiagnostic(Diagnostic.Create(Descriptor, methodName.GetLocation(), properties));
@@ -257,7 +258,7 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
         foreach (AssignmentExpressionSyntax assignment in continuation.DescendantNodes().OfType<AssignmentExpressionSyntax>())
         {
             if (assignment.SpanStart < beforePosition
-                && SymbolEqualityComparer.Default.Equals(context.SemanticModel.GetSymbolInfo(assignment.Left, context.CancellationToken).Symbol, taskParameter))
+                && IsAssignmentToParameter(context, assignment.Left, taskParameter))
             {
                 return true;
             }
@@ -274,5 +275,16 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
         }
 
         return false;
+    }
+
+    private static bool IsAssignmentToParameter(SyntaxNodeAnalysisContext context, ExpressionSyntax expression, IParameterSymbol taskParameter)
+    {
+        expression = UnwrapParentheses(expression);
+        if (expression is TupleExpressionSyntax tuple)
+        {
+            return tuple.Arguments.Any(argument => IsAssignmentToParameter(context, argument.Expression, taskParameter));
+        }
+
+        return SymbolEqualityComparer.Default.Equals(context.SemanticModel.GetSymbolInfo(expression, context.CancellationToken).Symbol, taskParameter);
     }
 }

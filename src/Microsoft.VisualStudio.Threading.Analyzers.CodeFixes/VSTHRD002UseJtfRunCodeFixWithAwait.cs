@@ -167,7 +167,8 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
             target = parentInvocation!;
             return true;
         }
-        else if (FindParentMemberAccess(parentMemberAccess) is object)
+        else if (parentMemberAccess?.Name.Identifier.ValueText == nameof(Task<object>.Result)
+            && FindParentMemberAccess(parentMemberAccess) is object)
         {
             // This method will not return null for the provided 'target' argument
             transform = NullableHelpers.AsNonNullReturnUnchecked<ExpressionSyntax, CancellationToken, ExpressionSyntax>(FindParentMemberAccess);
