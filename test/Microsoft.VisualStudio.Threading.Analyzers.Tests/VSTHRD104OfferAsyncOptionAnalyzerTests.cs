@@ -416,4 +416,35 @@ public class Test {
         analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithSpan(9, 25, 9, 31));
         await analyzerTest.RunAsync();
     }
+
+    [Fact]
+    public async Task TaskResultAfterRefWriteInCompletionCondition_GeneratesWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+public class Test {
+    public int GetResult(Task<int> task) {
+        if (task.IsCompletedSuccessfully && Replace(ref task)) {
+            return task.Result;
+        }
+
+        return 0;
+    }
+
+    private static bool Replace(ref Task<int> task) {
+        task = new TaskCompletionSource<int>().Task;
+        return true;
+    }
+}
+";
+
+        var analyzerTest = new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        };
+        analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithSpan(7, 25, 7, 31));
+        await analyzerTest.RunAsync();
+    }
 }

@@ -332,16 +332,21 @@ public static class Utils
 
         if (methodSymbol.IsExtensionMethod && !methodSymbol.Parameters.IsDefaultOrEmpty && methodSymbol.Parameters[0].Type is INamedTypeSymbol receiverType)
         {
-            IEnumerable<ISymbol> receiverMembers = receiverType.TypeKind == TypeKind.Interface
-                ? receiverType.AllInterfaces.SelectMany(iface => iface.GetMembers(asyncMethodName))
-                : Enumerable.Empty<ISymbol>();
-            for (INamedTypeSymbol? currentType = receiverType; currentType is not null; currentType = currentType.BaseType)
+            if (receiverType.TypeKind == TypeKind.Interface
+                && receiverType.AllInterfaces.Any(iface => iface.GetMembers(asyncMethodName).Any(alt => IsXAtLeastAsPublicAsY(alt, methodSymbol))))
             {
-                receiverMembers = receiverMembers.Concat(currentType.GetMembers(asyncMethodName));
+                return true;
             }
 
-            return receiverMembers
-                .Any(alt => IsXAtLeastAsPublicAsY(alt, methodSymbol));
+            for (INamedTypeSymbol? currentType = receiverType; currentType is not null; currentType = currentType.BaseType)
+            {
+                if (currentType.GetMembers(asyncMethodName).Any(alt => IsXAtLeastAsPublicAsY(alt, methodSymbol)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         return false;

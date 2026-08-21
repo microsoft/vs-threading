@@ -127,6 +127,7 @@ public class VSTHRD104OfferAsyncOptionAnalyzer : DiagnosticAnalyzer
             {
                 if (ifStatement.Statement.Span.Contains(resultAccess.Span)
                     && ConditionProvesSuccessfulCompletion(ifStatement.Condition, taskSymbol)
+                    && !MayWriteSymbolBefore(ifStatement.Condition, resultAccess, taskSymbol)
                     && !MayWriteSymbolBefore(ifStatement.Statement, resultAccess, taskSymbol))
                 {
                     return true;
@@ -160,13 +161,13 @@ public class VSTHRD104OfferAsyncOptionAnalyzer : DiagnosticAnalyzer
                     && SymbolEqualityComparer.Default.Equals(expectedTaskSymbol, completedTaskSymbol);
             }
 
-            bool MayWriteSymbolBefore(StatementSyntax statement, ExpressionSyntax expression, ISymbol expectedTaskSymbol)
+            bool MayWriteSymbolBefore(SyntaxNode region, ExpressionSyntax expression, ISymbol expectedTaskSymbol)
             {
                 SyntaxNode executableScope = expression.Ancestors().FirstOrDefault(ancestor =>
                     ancestor is AnonymousFunctionExpressionSyntax
                     or LocalFunctionStatementSyntax
                     or BaseMethodDeclarationSyntax
-                    or AccessorDeclarationSyntax) ?? statement;
+                    or AccessorDeclarationSyntax) ?? region;
                 if (executableScope.DescendantNodes()
                     .OfType<RefExpressionSyntax>()
                     .Where(refExpression => refExpression.SpanStart < expression.SpanStart)
@@ -177,7 +178,7 @@ public class VSTHRD104OfferAsyncOptionAnalyzer : DiagnosticAnalyzer
                     return true;
                 }
 
-                foreach (SyntaxNode node in statement.DescendantNodes().Where(node => node.SpanStart < expression.SpanStart))
+                foreach (SyntaxNode node in region.DescendantNodes().Where(node => node.SpanStart < expression.SpanStart))
                 {
                     ExpressionSyntax? writtenExpression = node switch
                     {
