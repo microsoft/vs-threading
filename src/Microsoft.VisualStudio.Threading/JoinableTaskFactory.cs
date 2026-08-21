@@ -26,7 +26,7 @@ public partial class JoinableTaskFactory
     private static readonly SendOrPostCallback ExecuteOnePendingUnderlyingSynchronizationContextCallbackDelegate = state => ((UnderlyingSynchronizationContextCallback)state!).Execute();
 
     [ThreadStatic]
-    private static JoinableTaskFactory? synchronouslyPostingFactory;
+    private static List<JoinableTaskFactory>? synchronouslyPostingFactories;
 
     /// <summary>
     /// The <see cref="JoinableTaskContext"/> that owns this instance.
@@ -694,10 +694,15 @@ public partial class JoinableTaskFactory
         {
             this.PostPendingUnderlyingSynchronizationContextCallback(postCompletion);
         }
-        else if (synchronouslyPostingFactory != this)
+        else if (!IsSynchronouslyPosting(this))
         {
             waitForPost?.GetAwaiter().GetResult();
         }
+    }
+
+    private static bool IsSynchronouslyPosting(JoinableTaskFactory factory)
+    {
+        return synchronouslyPostingFactories?.Contains(factory) is true;
     }
 
     /// <summary>
@@ -755,7 +760,7 @@ public partial class JoinableTaskFactory
                     }
 
                     this.RemoveCompletedPendingUnderlyingSynchronizationContextCallbacks();
-                    if (synchronouslyPostingFactory == this)
+                    if (IsSynchronouslyPosting(this))
                     {
                         completeSynchronousDrainAfterCallback = true;
                         continueSynchronously = this.pendingUnderlyingSynchronizationContextCallbacks?.Count > 0;
@@ -808,15 +813,15 @@ public partial class JoinableTaskFactory
     {
         try
         {
-            JoinableTaskFactory? priorSynchronouslyPostingFactory = synchronouslyPostingFactory;
-            synchronouslyPostingFactory = this;
+            List<JoinableTaskFactory> synchronousPostingChain = synchronouslyPostingFactories ??= new();
+            synchronousPostingChain.Add(this);
             try
             {
                 this.PostToUnderlyingSynchronizationContextCore(ExecuteOnePendingUnderlyingSynchronizationContextCallbackDelegate, new UnderlyingSynchronizationContextCallback(this));
             }
             finally
             {
-                synchronouslyPostingFactory = priorSynchronouslyPostingFactory;
+                synchronousPostingChain.RemoveAt(synchronousPostingChain.Count - 1);
             }
 
             lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)

@@ -232,6 +232,21 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
     }
 
     [Fact]
+    public void CoalescingSupportsSynchronousUnderlyingPostAcrossFactories()
+    {
+        var firstFactory = new SynchronouslyPostingJoinableTaskFactory(this.context);
+        var secondFactory = new SynchronouslyPostingJoinableTaskFactory(this.context);
+        using var completed = new ManualResetEventSlim();
+
+        Task postTask = Task.Run(() => firstFactory.Post(() => secondFactory.Post(() => firstFactory.Post(completed.Set))));
+
+        Assert.True(postTask.Wait(UnexpectedTimeout));
+        Assert.True(completed.IsSet);
+        Assert.Equal(1, firstFactory.MaximumPostDepth);
+        Assert.Equal(1, secondFactory.MaximumPostDepth);
+    }
+
+    [Fact]
     public void DisableProcessing_ThrowsOutsideJoinableTask()
     {
         Assert.Throws<InvalidOperationException>(() => this.asyncPump.DisableProcessing());
