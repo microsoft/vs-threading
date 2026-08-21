@@ -641,6 +641,12 @@ class Test {
             t = Task.Run(() => 6);
             useResultLater();
         });
+        task.ContinueWith(t => {
+            Task<int> other = Task.Run(() => 7);
+            ref Task<int> alias = ref t;
+            alias = ref other;
+            return alias.[|Result|];
+        });
     }
 }
 ";
@@ -890,6 +896,39 @@ class Test {
         _ = task.[|Result|];
     }
 
+    void ReboundRefAliasDoesNotConnectTargets(Task<int> task, Task<int> other) {
+        ref Task<int> alias = ref task;
+        alias = ref other;
+        if (other.IsCompleted) {
+            _ = task.[|Result|];
+        }
+    }
+
+    void ConditionallyReboundRefAliasStillInvalidatesOriginal(Task<int> task, Task<int> other, bool condition) {
+        ref Task<int> alias = ref task;
+        if (condition) {
+            alias = ref other;
+        }
+
+        if (task.IsCompleted) {
+            alias = Task.Run(() => 3);
+            _ = task.[|Result|];
+        }
+    }
+
+    int ReassignedByClosureInGetter {
+        get {
+            var task = Task.Run(() => 1);
+            Action replace = () => task = Task.Run(() => 2);
+            if (task.IsCompleted) {
+                replace();
+                return task.[|Result|];
+            }
+
+            return 0;
+        }
+    }
+
     async void AwaitInDoWhileConditionIsNotDefinite() {
         var task = Task.Run(() => true);
         do {
@@ -983,6 +1022,31 @@ class Test {
         {
             TestCode = test,
             ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task CapturedTaskReassignmentInTopLevelStatementsReportsWarning()
+    {
+        var test = @"
+using System;
+using System.Threading.Tasks;
+
+var task = Task.Run(() => 1);
+Action replace = () => task = Task.Run(() => 2);
+if (task.IsCompleted) {
+    replace();
+    _ = task.[|Result|];
+}
+";
+
+        await new CSVerify.Test
+        {
+            TestCode = test,
+            TestState =
+            {
+                OutputKind = OutputKind.ConsoleApplication,
+            },
         }.RunAsync();
     }
 

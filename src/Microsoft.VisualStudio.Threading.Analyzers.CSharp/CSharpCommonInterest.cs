@@ -30,63 +30,108 @@ internal static class CSharpCommonInterest
         SyntaxKind.RemoveAccessorDeclaration);
 
     /// <summary>
-    /// Gets a symbol and any ref locals that alias it within the containing function.
+    /// Gets a symbol and ref locals that definitely or potentially alias it at the specified syntax node.
     /// </summary>
-    internal static ImmutableHashSet<ISymbol> GetSymbolAndRefAliases(SyntaxNodeAnalysisContext context, SyntaxNode node, ISymbol symbol)
+    internal static (ImmutableHashSet<ISymbol> Definite, ImmutableHashSet<ISymbol> Potential) GetSymbolAndRefAliases(
+        SyntaxNodeAnalysisContext context,
+        SyntaxNode node,
+        ISymbol symbol)
     {
-        ImmutableHashSet<ISymbol>.Builder symbols = ImmutableHashSet.CreateBuilder<ISymbol>(SymbolEqualityComparer.Default);
-        symbols.Add(symbol);
-
         SyntaxNode searchRoot = node.AncestorsAndSelf().FirstOrDefault(
             ancestor => ancestor is AnonymousFunctionExpressionSyntax
                 or LocalFunctionStatementSyntax
                 or BaseMethodDeclarationSyntax
-                or AccessorDeclarationSyntax) ?? node;
+                or AccessorDeclarationSyntax)
+            ?? node.FirstAncestorOrSelf<GlobalStatementSyntax>()?.Parent
+            ?? node;
 
-        bool addedAlias;
-        do
+        var refTargets = new Dictionary<ISymbol, HashSet<ISymbol>>(SymbolEqualityComparer.Default);
+        bool DescendIntoChildren(SyntaxNode child) =>
+            child == searchRoot || child is not AnonymousFunctionExpressionSyntax and not LocalFunctionStatementSyntax;
+
+        HashSet<ISymbol> GetRefTargets(ISymbol candidate)
         {
-            addedAlias = false;
-            foreach (VariableDeclaratorSyntax variable in searchRoot.DescendantNodes().OfType<VariableDeclaratorSyntax>())
+            if (refTargets.TryGetValue(candidate, out HashSet<ISymbol>? targets))
             {
-                if (variable.Initializer is null
-                    || context.SemanticModel.GetDeclaredSymbol(variable, context.CancellationToken) is not ILocalSymbol { RefKind: not RefKind.None } local)
-                {
-                    continue;
-                }
-
-                ExpressionSyntax initializer = variable.Initializer.Value is RefExpressionSyntax refExpression
-                    ? refExpression.Expression
-                    : variable.Initializer.Value;
-                ISymbol? initializedFrom = context.SemanticModel.GetSymbolInfo(UnwrapParentheses(initializer), context.CancellationToken).Symbol;
-                if (initializedFrom is object
-                    && (symbols.Contains(initializedFrom) || symbols.Contains(local))
-                    && (symbols.Add(initializedFrom) | symbols.Add(local)))
-                {
-                    addedAlias = true;
-                }
+                return new HashSet<ISymbol>(targets, SymbolEqualityComparer.Default);
             }
 
-            foreach (AssignmentExpressionSyntax assignment in searchRoot.DescendantNodes().OfType<AssignmentExpressionSyntax>())
-            {
-                if (assignment.Right is not RefExpressionSyntax refExpression
-                    || context.SemanticModel.GetSymbolInfo(assignment.Left, context.CancellationToken).Symbol is not ILocalSymbol { RefKind: not RefKind.None } local)
-                {
-                    continue;
-                }
+            return new HashSet<ISymbol>(SymbolEqualityComparer.Default) { candidate };
+        }
 
-                ISymbol? assignedFrom = context.SemanticModel.GetSymbolInfo(UnwrapParentheses(refExpression.Expression), context.CancellationToken).Symbol;
-                if (assignedFrom is object
-                    && (symbols.Contains(assignedFrom) || symbols.Contains(local))
-                    && (symbols.Add(assignedFrom) | symbols.Add(local)))
+        bool DefinitelyPrecedesNode(SyntaxNode candidate)
+        {
+            StatementSyntax? candidateStatement = candidate.FirstAncestorOrSelf<StatementSyntax>();
+            if (candidateStatement?.Parent is BlockSyntax block)
+            {
+                StatementSyntax? nodeStatement = node.AncestorsAndSelf().OfType<StatementSyntax>().FirstOrDefault(statement => statement.Parent == block);
+                return nodeStatement is object && block.Statements.IndexOf(candidateStatement) < block.Statements.IndexOf(nodeStatement);
+            }
+
+            GlobalStatementSyntax? candidateGlobalStatement = candidate.FirstAncestorOrSelf<GlobalStatementSyntax>();
+            GlobalStatementSyntax? nodeGlobalStatement = node.FirstAncestorOrSelf<GlobalStatementSyntax>();
+            return candidateGlobalStatement?.Parent is CompilationUnitSyntax compilationUnit
+                && nodeGlobalStatement?.Parent == compilationUnit
+                && compilationUnit.Members.IndexOf(candidateGlobalStatement) < compilationUnit.Members.IndexOf(nodeGlobalStatement);
+        }
+
+        foreach (SyntaxNode candidate in searchRoot.DescendantNodes(DescendIntoChildren)
+            .Where(candidate => candidate.SpanStart < node.SpanStart && candidate is VariableDeclaratorSyntax or AssignmentExpressionSyntax)
+            .OrderBy(candidate => candidate.SpanStart))
+        {
+            if (candidate is VariableDeclaratorSyntax variable
+                && variable.Initializer is not null
+                && context.SemanticModel.GetDeclaredSymbol(variable, context.CancellationToken) is ILocalSymbol { RefKind: not RefKind.None } local)
+            {
+                ExpressionSyntax initializer = variable.Initializer.Value is RefExpressionSyntax refInitializer
+                    ? refInitializer.Expression
+                    : variable.Initializer.Value;
+                if (context.SemanticModel.GetSymbolInfo(UnwrapParentheses(initializer), context.CancellationToken).Symbol is ISymbol initializedFrom)
                 {
-                    addedAlias = true;
+                    refTargets[local] = GetRefTargets(initializedFrom);
+                }
+            }
+            else if (candidate is AssignmentExpressionSyntax { Right: RefExpressionSyntax refAssignment } assignment
+                && context.SemanticModel.GetSymbolInfo(assignment.Left, context.CancellationToken).Symbol is ILocalSymbol { RefKind: not RefKind.None } reboundLocal
+                && context.SemanticModel.GetSymbolInfo(UnwrapParentheses(refAssignment.Expression), context.CancellationToken).Symbol is ISymbol assignedFrom)
+            {
+                HashSet<ISymbol> assignedTargets = GetRefTargets(assignedFrom);
+                if (DefinitelyPrecedesNode(candidate) || !refTargets.TryGetValue(reboundLocal, out HashSet<ISymbol>? existingTargets))
+                {
+                    refTargets[reboundLocal] = assignedTargets;
+                }
+                else
+                {
+                    existingTargets.UnionWith(assignedTargets);
                 }
             }
         }
-        while (addedAlias);
 
-        return symbols.ToImmutable();
+        HashSet<ISymbol> symbolTargets = GetRefTargets(symbol);
+        ImmutableHashSet<ISymbol>.Builder definiteSymbols = ImmutableHashSet.CreateBuilder<ISymbol>(SymbolEqualityComparer.Default);
+        ImmutableHashSet<ISymbol>.Builder potentialSymbols = ImmutableHashSet.CreateBuilder<ISymbol>(SymbolEqualityComparer.Default);
+        definiteSymbols.Add(symbol);
+        potentialSymbols.Add(symbol);
+        potentialSymbols.UnionWith(symbolTargets);
+        if (symbolTargets.Count == 1)
+        {
+            definiteSymbols.UnionWith(symbolTargets);
+        }
+
+        foreach (KeyValuePair<ISymbol, HashSet<ISymbol>> refTarget in refTargets)
+        {
+            if (symbolTargets.Count == 1 && refTarget.Value.SetEquals(symbolTargets))
+            {
+                definiteSymbols.Add(refTarget.Key);
+            }
+
+            if (refTarget.Value.Overlaps(symbolTargets))
+            {
+                potentialSymbols.Add(refTarget.Key);
+            }
+        }
+
+        return (definiteSymbols.ToImmutable(), potentialSymbols.ToImmutable());
     }
 
     /// <summary>
@@ -225,13 +270,14 @@ internal static class CSharpCommonInterest
             return false;
         }
 
-        ImmutableHashSet<ISymbol> taskSymbols = GetSymbolAndRefAliases(context, memberAccessSyntax, taskSymbol);
-        if (NestedFunctionMayReassignTask(context, memberAccessSyntax, taskSymbols))
+        (ImmutableHashSet<ISymbol> taskSymbols, ImmutableHashSet<ISymbol> potentialTaskSymbols) =
+            GetSymbolAndRefAliases(context, memberAccessSyntax, taskSymbol);
+        if (NestedFunctionMayReassignTask(context, memberAccessSyntax, potentialTaskSymbols))
         {
             return false;
         }
 
-        if (IsWithinCompletedTaskBranch(context, memberAccessSyntax, taskSymbols))
+        if (IsWithinCompletedTaskBranch(context, memberAccessSyntax, taskSymbols, potentialTaskSymbols))
         {
             return true;
         }
@@ -243,14 +289,14 @@ internal static class CSharpCommonInterest
         }
 
         if (TryGetAwaitExpression(context, containingStatement, taskSymbols, memberAccessSyntax.SpanStart, out AwaitExpressionSyntax? precedingAwait)
-            && !MayReassignTask(context, containingStatement, taskSymbols, precedingAwait.Span.End, memberAccessSyntax.SpanStart))
+            && !MayReassignTask(context, containingStatement, potentialTaskSymbols, precedingAwait.Span.End, memberAccessSyntax.SpanStart))
         {
             return true;
         }
 
         while (containingStatement.Parent is BlockSyntax block)
         {
-            if (MayReassignTask(context, containingStatement, taskSymbols, containingStatement.SpanStart - 1, memberAccessSyntax.SpanStart))
+            if (MayReassignTask(context, containingStatement, potentialTaskSymbols, containingStatement.SpanStart - 1, memberAccessSyntax.SpanStart))
             {
                 return false;
             }
@@ -259,12 +305,12 @@ internal static class CSharpCommonInterest
             for (int i = statementIndex - 1; i >= 0; i--)
             {
                 StatementSyntax statement = block.Statements[i];
-                if (StatementCompletesTask(context, statement, taskSymbols))
+                if (StatementCompletesTask(context, statement, taskSymbols, potentialTaskSymbols))
                 {
                     return true;
                 }
 
-                if (MayReassignTask(context, statement, taskSymbols))
+                if (MayReassignTask(context, statement, potentialTaskSymbols))
                 {
                     return false;
                 }
@@ -276,7 +322,7 @@ internal static class CSharpCommonInterest
                 return false;
             }
 
-            if (MayReassignTask(context, outerStatement, taskSymbols, outerStatement.SpanStart - 1, containingStatement.SpanStart))
+            if (MayReassignTask(context, outerStatement, potentialTaskSymbols, outerStatement.SpanStart - 1, containingStatement.SpanStart))
             {
                 return false;
             }
@@ -290,7 +336,8 @@ internal static class CSharpCommonInterest
     private static bool IsWithinCompletedTaskBranch(
         SyntaxNodeAnalysisContext context,
         MemberAccessExpressionSyntax memberAccessSyntax,
-        IImmutableSet<ISymbol> taskSymbols)
+        IImmutableSet<ISymbol> taskSymbols,
+        IImmutableSet<ISymbol> potentialTaskSymbols)
     {
         foreach (IfStatementSyntax ifStatement in memberAccessSyntax.Ancestors().OfType<IfStatementSyntax>())
         {
@@ -302,14 +349,14 @@ internal static class CSharpCommonInterest
 
             if (ifStatement.Statement.FullSpan.Contains(memberAccessSyntax.Span)
                 && ConditionProvesCompletion(context, ifStatement.Condition, taskSymbols, conditionValue: true)
-                && !MayReassignTask(context, ifStatement, taskSymbols, ifStatement.Condition.SpanStart - 1, memberAccessSyntax.SpanStart))
+                && !MayReassignTask(context, ifStatement, potentialTaskSymbols, ifStatement.Condition.SpanStart - 1, memberAccessSyntax.SpanStart))
             {
                 return true;
             }
 
             if (ifStatement.Else?.Statement.FullSpan.Contains(memberAccessSyntax.Span) is true
                 && ConditionProvesCompletion(context, ifStatement.Condition, taskSymbols, conditionValue: false)
-                && !MayReassignTask(context, ifStatement, taskSymbols, ifStatement.Condition.SpanStart - 1, memberAccessSyntax.SpanStart))
+                && !MayReassignTask(context, ifStatement, potentialTaskSymbols, ifStatement.Condition.SpanStart - 1, memberAccessSyntax.SpanStart))
             {
                 return true;
             }
@@ -402,17 +449,18 @@ internal static class CSharpCommonInterest
     private static bool StatementCompletesTask(
         SyntaxNodeAnalysisContext context,
         StatementSyntax statement,
-        IImmutableSet<ISymbol> taskSymbols)
+        IImmutableSet<ISymbol> taskSymbols,
+        IImmutableSet<ISymbol> potentialTaskSymbols)
     {
         if (TryGetAwaitExpression(context, statement, taskSymbols, out AwaitExpressionSyntax? awaitExpression)
-            && !MayReassignTask(context, statement, taskSymbols, awaitExpression.Span.End, statement.Span.End + 1))
+            && !MayReassignTask(context, statement, potentialTaskSymbols, awaitExpression.Span.End, statement.Span.End + 1))
         {
             return true;
         }
 
         if (statement is BlockSyntax block)
         {
-            return StatementDefinitelyAwaitsTask(context, block, taskSymbols);
+            return StatementDefinitelyAwaitsTask(context, block, taskSymbols, potentialTaskSymbols);
         }
 
         if (statement is not IfStatementSyntax ifStatement)
@@ -420,7 +468,7 @@ internal static class CSharpCommonInterest
             return false;
         }
 
-        if (MayReassignTask(context, ifStatement.Condition, taskSymbols))
+        if (MayReassignTask(context, ifStatement.Condition, potentialTaskSymbols))
         {
             return false;
         }
@@ -428,43 +476,44 @@ internal static class CSharpCommonInterest
         if (ifStatement.Else is null)
         {
             return ConditionProvesCompletion(context, ifStatement.Condition, taskSymbols, conditionValue: false)
-                && StatementDefinitelyAwaitsTask(context, ifStatement.Statement, taskSymbols);
+                && StatementDefinitelyAwaitsTask(context, ifStatement.Statement, taskSymbols, potentialTaskSymbols);
         }
 
         return (ConditionProvesCompletion(context, ifStatement.Condition, taskSymbols, conditionValue: true)
-                && !MayReassignTask(context, ifStatement.Statement, taskSymbols)
-                && StatementDefinitelyAwaitsTask(context, ifStatement.Else.Statement, taskSymbols))
+                && !MayReassignTask(context, ifStatement.Statement, potentialTaskSymbols)
+                && StatementDefinitelyAwaitsTask(context, ifStatement.Else.Statement, taskSymbols, potentialTaskSymbols))
             || (ConditionProvesCompletion(context, ifStatement.Condition, taskSymbols, conditionValue: false)
-                && StatementDefinitelyAwaitsTask(context, ifStatement.Statement, taskSymbols)
-                && !MayReassignTask(context, ifStatement.Else.Statement, taskSymbols));
+                && StatementDefinitelyAwaitsTask(context, ifStatement.Statement, taskSymbols, potentialTaskSymbols)
+                && !MayReassignTask(context, ifStatement.Else.Statement, potentialTaskSymbols));
     }
 
     private static bool StatementDefinitelyAwaitsTask(
         SyntaxNodeAnalysisContext context,
         StatementSyntax statement,
-        IImmutableSet<ISymbol> taskSymbols)
+        IImmutableSet<ISymbol> taskSymbols,
+        IImmutableSet<ISymbol> potentialTaskSymbols)
     {
         if (TryGetAwaitExpression(context, statement, taskSymbols, out AwaitExpressionSyntax? awaitExpression))
         {
-            return !MayReassignTask(context, statement, taskSymbols, awaitExpression.Span.End, statement.Span.End + 1);
+            return !MayReassignTask(context, statement, potentialTaskSymbols, awaitExpression.Span.End, statement.Span.End + 1);
         }
 
         if (statement is IfStatementSyntax { Else: { } elseClause } ifStatement)
         {
-            return StatementDefinitelyAwaitsTask(context, ifStatement.Statement, taskSymbols)
-                && StatementDefinitelyAwaitsTask(context, elseClause.Statement, taskSymbols);
+            return StatementDefinitelyAwaitsTask(context, ifStatement.Statement, taskSymbols, potentialTaskSymbols)
+                && StatementDefinitelyAwaitsTask(context, elseClause.Statement, taskSymbols, potentialTaskSymbols);
         }
 
         if (statement is BlockSyntax block)
         {
             for (int i = block.Statements.Count - 1; i >= 0; i--)
             {
-                if (StatementDefinitelyAwaitsTask(context, block.Statements[i], taskSymbols))
+                if (StatementDefinitelyAwaitsTask(context, block.Statements[i], taskSymbols, potentialTaskSymbols))
                 {
                     return true;
                 }
 
-                if (MayReassignTask(context, block.Statements[i], taskSymbols))
+                if (MayReassignTask(context, block.Statements[i], potentialTaskSymbols))
                 {
                     return false;
                 }
@@ -603,7 +652,11 @@ internal static class CSharpCommonInterest
         IImmutableSet<ISymbol> taskSymbols)
     {
         SyntaxNode? containingFunction = node.Ancestors().FirstOrDefault(
-            ancestor => ancestor is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax or BaseMethodDeclarationSyntax);
+            ancestor => ancestor is AnonymousFunctionExpressionSyntax
+                or LocalFunctionStatementSyntax
+                or BaseMethodDeclarationSyntax
+                or AccessorDeclarationSyntax)
+            ?? node.FirstAncestorOrSelf<GlobalStatementSyntax>()?.Parent;
         return containingFunction?.DescendantNodes()
             .Where(descendant => descendant is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax)
             .Any(nestedFunction => MayReassignTask(context, nestedFunction, taskSymbols)) is true;

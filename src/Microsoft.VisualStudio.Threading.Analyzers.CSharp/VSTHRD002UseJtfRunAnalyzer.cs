@@ -150,11 +150,12 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
             if (firstParameter is object
                 && context.SemanticModel.GetDeclaredSymbol(firstParameter, context.CancellationToken) is IParameterSymbol completedTask)
             {
-                ImmutableHashSet<ISymbol> taskSymbols = CSharpCommonInterest.GetSymbolAndRefAliases(context, anonymousFunctionSyntax, completedTask);
+                (ImmutableHashSet<ISymbol> taskSymbols, ImmutableHashSet<ISymbol> potentialTaskSymbols) =
+                    CSharpCommonInterest.GetSymbolAndRefAliases(context, memberAccessSyntax, completedTask);
                 ISymbol? receiverSymbol = GetTaskReceiverSymbol(context, memberAccessSyntax);
                 if (receiverSymbol is object
                     && taskSymbols.Contains(receiverSymbol)
-                    && !IsTaskReassignedInContinuation(context, anonymousFunctionSyntax, memberAccessSyntax, taskSymbols))
+                    && !IsTaskReassignedInContinuation(context, anonymousFunctionSyntax, memberAccessSyntax, potentialTaskSymbols))
                 {
                     return;
                 }
