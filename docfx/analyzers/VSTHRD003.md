@@ -37,7 +37,7 @@ private static readonly Task TrueTask = Task.FromResult(true);
 private static Task<bool> FalseTask { get; } = Task.FromResult(false);
 ```
 
-The analyzer reports VSTHRD003 on `[CompletedTask]` when it is applied to a mutable field,
+The analyzer reports [VSTHRD116](VSTHRD116.md) on `[CompletedTask]` when it is applied to a mutable field,
 settable property, or ref-returning property, because its value can later be replaced with an
 incomplete task. Consumers still take the attribute at face value, so the diagnostic is reported
 at the invalid attribute application rather than at each use of the member.

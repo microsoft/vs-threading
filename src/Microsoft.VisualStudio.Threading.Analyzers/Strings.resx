@@ -172,11 +172,11 @@ Start the work within this context, or use JoinableTaskFactory.RunAsync to start
   <data name="VSTHRD003_Title" xml:space="preserve">
     <value>Avoid awaiting foreign Tasks</value>
   </data>
-  <data name="VSTHRD003_InvalidCompletedTaskAttribute_MessageFormat" xml:space="preserve">
+  <data name="VSTHRD116_MessageFormat" xml:space="preserve">
     <value>CompletedTaskAttribute cannot be applied to mutable member "{0}". Apply it only to methods, readonly fields, or non-ref get-only properties.</value>
     <comment>CompletedTaskAttribute is a type name and should not be translated. {0} is the name of a field, property, or indexer.</comment>
   </data>
-  <data name="VSTHRD003_InvalidCompletedTaskAttribute_Title" xml:space="preserve">
+  <data name="VSTHRD116_Title" xml:space="preserve">
     <value>Apply CompletedTaskAttribute only to immutable members</value>
     <comment>CompletedTaskAttribute is a type name and should not be translated.</comment>
   </data>

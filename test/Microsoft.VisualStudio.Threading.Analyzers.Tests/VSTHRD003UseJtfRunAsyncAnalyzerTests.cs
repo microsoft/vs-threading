@@ -1190,9 +1190,9 @@ class Tests
 
         DiagnosticResult[] expected =
         {
-            Diagnostic().WithLocation(0).WithArguments("CompletedField"),
-            Diagnostic().WithLocation(1).WithArguments("CompletedProperty"),
-            Diagnostic().WithLocation(2).WithArguments("CompletedRefProperty"),
+            InvalidCompletedTaskAttributeDiagnostic().WithLocation(0).WithArguments("CompletedField"),
+            InvalidCompletedTaskAttributeDiagnostic().WithLocation(1).WithArguments("CompletedProperty"),
+            InvalidCompletedTaskAttributeDiagnostic().WithLocation(2).WithArguments("CompletedRefProperty"),
         };
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
@@ -1673,6 +1673,8 @@ class Tests
     }
 
     private static DiagnosticResult Diagnostic() => new("VSTHRD003", DiagnosticSeverity.Warning);
+
+    private static DiagnosticResult InvalidCompletedTaskAttributeDiagnostic() => new("VSTHRD116", DiagnosticSeverity.Warning);
 
     private DiagnosticResult CreateDiagnostic(int line, int column, int length) =>
         Diagnostic().WithSpan(line, column, line, column + length);

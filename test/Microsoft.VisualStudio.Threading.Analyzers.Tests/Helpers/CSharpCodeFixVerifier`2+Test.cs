@@ -10,7 +10,6 @@ using System.Windows.Threading;
 #endif
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Testing;
-using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Text;
 using IOleServiceProvider = Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
 
@@ -23,7 +22,6 @@ public static partial class CSharpCodeFixVerifier<TAnalyzer, TCodeFix>
         public Test()
         {
             this.ReferenceAssemblies = ReferencesHelper.DefaultReferences;
-            this.MarkupOptions = MarkupOptions.UseFirstDescriptor;
 
             this.SolutionTransforms.Add((solution, projectId) =>
             {

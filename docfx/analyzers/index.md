@@ -29,6 +29,7 @@ ID | Title | Severity | Supports | Default diagnostic severity
 [VSTHRD113](VSTHRD113.md) | Check for `System.IAsyncDisposable` | Advisory | | Info
 [VSTHRD114](VSTHRD114.md) | Avoid returning null from a `Task`-returning method. | Advisory | | Warning
 [VSTHRD115](VSTHRD115.md) | Avoid creating a JoinableTaskContext with an explicit `null` `SynchronizationContext` | Advisory | | Warning
+[VSTHRD116](VSTHRD116.md) | Apply `CompletedTaskAttribute` only to immutable members | Advisory | [VSTHRD003](VSTHRD003.md) | Warning
 [VSTHRD200](VSTHRD200.md) | Use `Async` naming convention | Guideline | [VSTHRD103](VSTHRD103.md) | Warning
 
 ## Severity descriptions
