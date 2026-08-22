@@ -241,6 +241,29 @@ class Test {
     }
 
     [Fact]
+    public async Task TaskWhenAll_LocalArrayReassignedByClosureDoesNotCompleteContainedTask()
+    {
+        string test = """
+            using System;
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async void GetResultAsync(Task<int> task, Task<int> replacement)
+                {
+                    Task[] tasks = { task };
+                    Action replace = () => tasks = new Task[] { replacement };
+                    replace();
+                    await Task.WhenAll(tasks);
+                    _ = task.[|Result|];
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
     public async Task TaskWhenAll_LocalArrayDoesNotCompleteReassignedTask()
     {
         string test = """
@@ -633,6 +656,41 @@ class Test {
     }
 
     [Fact]
+    public async Task SynchronouslyConsumedValueTaskInvalidatesCompletionGuard()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                int GetResult(ValueTask<int> task)
+                {
+                    _ = task.[|Result|];
+                    if (task.IsCompletedSuccessfully)
+                    {
+                        return task.[|Result|];
+                    }
+
+                    return 0;
+                }
+
+                int GetAwaiterResult(ValueTask<int> task)
+                {
+                    _ = task.GetAwaiter().[|GetResult|]();
+                    if (task.IsCompletedSuccessfully)
+                    {
+                        return task.[|Result|];
+                    }
+
+                    return 0;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
     public async Task TaskResultShouldReportWarning_WithinAnonymousDelegate()
     {
         var test = @"
@@ -692,6 +750,28 @@ class Test {
         };
 
         await CSVerify.VerifyCodeFixAsync(test, expected, test);
+    }
+
+    [Fact]
+    public async Task TaskResultShouldNotReportWarning_WithinParenthesizedContinuationDelegate()
+    {
+        string test = """
+            using System;
+            using System.Threading;
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                void F(Task<int> task)
+                {
+                    task.ContinueWith((Func<Task<int>, int>)(t => t.Result));
+                    task.ContinueWith(((t) => t.Result));
+                    task.ContinueWith(cancellationToken: CancellationToken.None, continuationFunction: t => t.Result);
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 
     [Fact]
@@ -1782,6 +1862,88 @@ class Test {
                 {
                     return GetTask(task);
                 }
+            }
+            """;
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task CodeFixParenthesizesAwaitUsedAsReceiver()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                int GetLength(Task<string> task)
+                {
+                    return task.[|Result|].Length;
+                }
+            }
+            """;
+        string withFix = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task<int> GetLengthAsync(Task<string> task)
+                {
+                    return (await task).Length;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyCodeFixAsync(test, withFix);
+    }
+
+    [Fact]
+    public async Task CodeFixIsNotOfferedWhenGenericTaskLikeCallerWouldLoseReturnedInvocation()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class DerivedTask<T> : Task<T>
+            {
+                internal DerivedTask()
+                    : base(() => default)
+                {
+                }
+            }
+
+            class Test
+            {
+                static DerivedTask<int> GetValue(Task<int> task)
+                {
+                    _ = task.[|Result|];
+                    return new DerivedTask<int>();
+                }
+
+                static Task<int> Caller(Task<int> task) => GetValue(task);
+            }
+            """;
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task CodeFixIsNotOfferedWhenCallerUsesConditionalAccess()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Receiver
+            {
+                internal int GetValue(Task task)
+                {
+                    task.[|Wait|]();
+                    return 1;
+                }
+            }
+
+            class Test
+            {
+                static int? Caller(Receiver receiver, Task task) => receiver?.GetValue(task);
             }
             """;
 

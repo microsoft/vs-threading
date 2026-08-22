@@ -66,7 +66,7 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
                             (document, node, _) = await FixUtils.UpdateDocumentAsync(
                                 document,
                                 node,
-                                n => SyntaxFactory.AwaitExpression(transform(n, ct)),
+                                n => ParenthesizeAwaitIfRequired(SyntaxFactory.AwaitExpression(transform(n, ct)), n),
                                 ct).ConfigureAwait(false);
                             MethodDeclarationSyntax? method = node.FirstAncestorOrSelf<MethodDeclarationSyntax>();
                             if (method is object)
@@ -84,6 +84,15 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
 
     /// <inheritdoc />
     public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
+
+    private static ExpressionSyntax ParenthesizeAwaitIfRequired(AwaitExpressionSyntax awaitExpression, ExpressionSyntax replacedExpression)
+        => replacedExpression.Parent is MemberAccessExpressionSyntax
+            or ElementAccessExpressionSyntax
+            or InvocationExpressionSyntax
+            or ConditionalAccessExpressionSyntax
+            or PostfixUnaryExpressionSyntax
+            ? SyntaxFactory.ParenthesizedExpression(awaitExpression)
+            : awaitExpression;
 
     private static async Task<bool> CanConvertToAsyncAsync(
         Document document,
@@ -248,7 +257,9 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
                     || callingMethod is null
                     || IsAwaitForbiddenAt(invocation, callingMethod)
                     || invocation.Ancestors().TakeWhile(node => node != callingMethod)
-                        .Any(node => node is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax))
+                        .Any(node => node is AnonymousFunctionExpressionSyntax
+                            or LocalFunctionStatementSyntax
+                            or ConditionalAccessExpressionSyntax))
                 {
                     return false;
                 }
@@ -260,10 +271,14 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
                     return false;
                 }
 
-                if (callingMethodSymbol.ReturnType is INamedTypeSymbol { Arity: 0 } nonGenericReturnType
-                    && nonGenericReturnType.IsAsyncCompatibleReturnType()
-                    && invocation.FirstAncestorOrSelf<ReturnStatementSyntax>() is { Expression: { } returnExpression }
-                    && returnExpression.FullSpan.Contains(invocation.Span))
+                if (callingMethodSymbol.ReturnType is INamedTypeSymbol callerReturnType
+                    && callerReturnType.IsAsyncCompatibleReturnType()
+                    && ((invocation.FirstAncestorOrSelf<ReturnStatementSyntax>() is { Expression: { } returnExpression }
+                            && returnExpression.FullSpan.Contains(invocation.Span))
+                        || (callingMethod.ExpressionBody?.Expression.FullSpan.Contains(invocation.Span) is true))
+                    && (callerReturnType.Arity == 0
+                        || !Utils.IsTask(callerReturnType)
+                        || !semanticModel.Compilation.ClassifyConversion(method.ReturnType, callerReturnType.TypeArguments[0]).IsImplicit))
                 {
                     return false;
                 }

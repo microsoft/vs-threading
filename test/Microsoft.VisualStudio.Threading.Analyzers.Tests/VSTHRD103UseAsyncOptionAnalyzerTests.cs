@@ -1424,6 +1424,30 @@ class Test {
     }
 
     [Fact]
+    public async Task SeparateRefParameterDoesNotInvalidateOrdinaryTaskCompletionGuard()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                Task<int> GetResultAsync(Task<int> task, ref Task<int> other)
+                {
+                    if (task.IsCompleted)
+                    {
+                        other = Task.FromResult(1);
+                        return Task.FromResult(task.Result);
+                    }
+
+                    return task;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
     public async Task GotoCanBypassAwait_GeneratesWarning()
     {
         string test = """
@@ -1662,6 +1686,135 @@ class Test {
         };
         verifyTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
         await verifyTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task CustomAwaitableAliasInvalidatesValueTaskCompletionGuard()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            static class Extensions
+            {
+                internal static ValueTask<int> Preserve(this ValueTask<int> task) => task;
+            }
+
+            class Test
+            {
+                async Task<int> GetResultAsync(ValueTask<int> task)
+                {
+                    await Extensions.Preserve(task);
+                    if (task.IsCompletedSuccessfully)
+                    {
+                        return task.{|#0:Result|};
+                    }
+
+                    return 0;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(
+            test,
+            CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
+    }
+
+    [Fact]
+    public async Task UnevaluatedValueTaskMembersDoNotInvalidateCompletionGuard()
+    {
+        string test = """
+            using System;
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                int GetResult(ValueTask<int> task)
+                {
+                    _ = nameof(task.Result);
+                    Func<int> getResult = task.GetAwaiter().GetResult;
+                    if (task.IsCompletedSuccessfully)
+                    {
+                        return task.Result;
+                    }
+
+                    return 0;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task InvokedNestedFunctionInvalidatesValueTaskCompletionGuard()
+    {
+        string test = """
+            using System;
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task<int> GetResultAsync(ValueTask<int> task)
+                {
+                    ValueTask<int> copy = task;
+                    async Task ConsumeAsync()
+                    {
+                        await copy;
+                    }
+
+                    Func<Task> consume = async () =>
+                    {
+                        _ = task.{|#0:Result|};
+                        await Task.Yield();
+                    };
+                    await ConsumeAsync();
+                    await consume();
+                    if (task.IsCompletedSuccessfully)
+                    {
+                        return task.{|#1:Result|};
+                    }
+
+                    return 0;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(
+            test,
+            CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"),
+            CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(1).WithArguments("Result"));
+    }
+
+    [Fact]
+    public async Task RefReturningExtensionReceiverInvalidatesCompletionGuard()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            static class Extensions
+            {
+                internal static ref Task<int> AsRef(this int ignored, ref Task<int> task) => ref task;
+            }
+
+            class Test
+            {
+                Task<int> GetResultAsync(Task<int> task)
+                {
+                    if (task.IsCompleted)
+                    {
+                        ref Task<int> alias = ref 0.AsRef(ref task);
+                        alias = Task.FromResult(1);
+                        return Task.FromResult(task.{|#0:Result|});
+                    }
+
+                    return task;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(
+            test,
+            CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
     }
 
     [Fact]
