@@ -510,6 +510,11 @@ internal static class CSharpCommonInterest
 
         (ImmutableHashSet<ISymbol> taskSymbols, ImmutableHashSet<ISymbol> potentialTaskSymbols) =
             GetSymbolAndRefAliases(context, accessSyntax, taskSymbol);
+        if (taskSymbols.Any(symbol => symbol is IParameterSymbol { RefKind: not RefKind.None }))
+        {
+            return false;
+        }
+
         if (NestedFunctionMayReassignTask(context, accessSyntax, potentialTaskSymbols))
         {
             return false;

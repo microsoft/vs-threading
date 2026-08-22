@@ -1398,6 +1398,32 @@ class Test {
     }
 
     [Fact]
+    public async Task AliasedRefParameterResultGuardedByCompletionGeneratesWarning()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                Task<int> GetResultAsync(ref Task<int> task, ref Task<int> possibleAlias)
+                {
+                    if (task.IsCompleted)
+                    {
+                        possibleAlias = Task.FromResult(1);
+                        return Task.FromResult(task.{|#0:Result|});
+                    }
+
+                    return task;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(
+            test,
+            CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
+    }
+
+    [Fact]
     public async Task TaskGetAwaiterGetResultInTaskReturningMethodGeneratesWarning()
     {
         var test = @"
