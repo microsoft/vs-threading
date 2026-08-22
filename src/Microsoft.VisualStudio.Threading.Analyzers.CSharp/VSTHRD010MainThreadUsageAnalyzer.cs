@@ -301,7 +301,8 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
 
     private class MethodAnalyzer
     {
-        private ImmutableDictionary<SyntaxNode, ThreadingContext> methodDeclarationNodes = ImmutableDictionary<SyntaxNode, ThreadingContext>.Empty;
+        private readonly object methodDeclarationNodesSyncObject = new object();
+        private ImmutableDictionary<SyntaxNode, ImmutableArray<ThreadingContextTransition>> methodDeclarationNodes = ImmutableDictionary<SyntaxNode, ImmutableArray<ThreadingContextTransition>>.Empty;
 
         public MethodAnalyzer(
             ImmutableArray<CommonInterest.QualifiedMember> mainThreadAssertingMethods,
@@ -360,7 +361,6 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
                             }
                         }
 
-                        this.methodDeclarationNodes = this.methodDeclarationNodes.SetItem(methodDeclaration, ThreadingContext.MainThread);
                         return;
                     }
                 }
@@ -476,7 +476,7 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
                 SyntaxNode? methodDeclaration = context.Node.FirstAncestorOrSelf<SyntaxNode>(n => CSharpCommonInterest.MethodSyntaxKinds.Contains(n.Kind()));
                 if (methodDeclaration is object)
                 {
-                    threadingContext = this.methodDeclarationNodes.GetValueOrDefault(methodDeclaration);
+                    threadingContext = this.GetThreadingContext(methodDeclaration, context.Node.SpanStart, context.SemanticModel, context.CancellationToken);
                 }
 
                 if (threadingContext != ThreadingContext.MainThread)
@@ -491,6 +491,87 @@ public class VSTHRD010MainThreadUsageAnalyzer : DiagnosticAnalyzer
             }
 
             return false;
+        }
+
+        private ThreadingContext GetThreadingContext(SyntaxNode methodDeclaration, int position, SemanticModel semanticModel, CancellationToken cancellationToken)
+        {
+            ImmutableArray<ThreadingContextTransition> transitions;
+            lock (this.methodDeclarationNodesSyncObject)
+            {
+                transitions = this.methodDeclarationNodes.GetValueOrDefault(methodDeclaration);
+                if (transitions.IsDefault)
+                {
+                    transitions = this.GetThreadingContextTransitions(methodDeclaration, semanticModel, cancellationToken);
+                    this.methodDeclarationNodes = this.methodDeclarationNodes.SetItem(methodDeclaration, transitions);
+                }
+            }
+
+            for (int i = transitions.Length - 1; i >= 0; i--)
+            {
+                if (transitions[i].Position <= position)
+                {
+                    return transitions[i].Context;
+                }
+            }
+
+            return ThreadingContext.Unknown;
+        }
+
+        private ImmutableArray<ThreadingContextTransition> GetThreadingContextTransitions(SyntaxNode methodDeclaration, SemanticModel semanticModel, CancellationToken cancellationToken)
+        {
+            ImmutableArray<ThreadingContextTransition>.Builder transitions = ImmutableArray.CreateBuilder<ThreadingContextTransition>();
+            foreach (SyntaxNode node in methodDeclaration.DescendantNodes().Where(node => node.FirstAncestorOrSelf<SyntaxNode>(ancestor => CSharpCommonInterest.MethodSyntaxKinds.Contains(ancestor.Kind())) == methodDeclaration))
+            {
+                if (node is InvocationExpressionSyntax invocation
+                    && semanticModel.GetSymbolInfo(invocation, cancellationToken).Symbol is IMethodSymbol invokedMethod
+                    && (this.MainThreadAssertingMethods.Contains(invokedMethod) || this.MainThreadSwitchingMethods.Contains(invokedMethod)))
+                {
+                    transitions.Add(new ThreadingContextTransition(invocation.Span.End, ThreadingContext.MainThread));
+                }
+                else if (node is AwaitExpressionSyntax awaitExpression && InvalidatesMainThreadContext(awaitExpression.Expression))
+                {
+                    transitions.Add(new ThreadingContextTransition(awaitExpression.Span.End, ThreadingContext.Unknown));
+                }
+            }
+
+            return transitions.OrderBy(transition => transition.Position).ToImmutableArray();
+
+            bool InvalidatesMainThreadContext(ExpressionSyntax awaitedExpression)
+            {
+                while (awaitedExpression is ParenthesizedExpressionSyntax parenthesizedExpression)
+                {
+                    awaitedExpression = parenthesizedExpression.Expression;
+                }
+
+                ISymbol? awaitedSymbol = semanticModel.GetSymbolInfo(awaitedExpression, cancellationToken).Symbol;
+                if (awaitedSymbol is IPropertySymbol { Name: "Default", ContainingType.Name: "TaskScheduler", ContainingType: { } containingType }
+                    && containingType.BelongsToNamespace(Namespaces.SystemThreadingTasks))
+                {
+                    return true;
+                }
+
+                if (awaitedExpression is InvocationExpressionSyntax { ArgumentList.Arguments: [{ Expression: { } continueOnCapturedContext }] } invocation
+                    && semanticModel.GetSymbolInfo(invocation, cancellationToken).Symbol is IMethodSymbol { Name: "ConfigureAwait", Parameters: [{ Type.SpecialType: SpecialType.System_Boolean }] })
+                {
+                    Optional<object?> constantValue = semanticModel.GetConstantValue(continueOnCapturedContext, cancellationToken);
+                    return constantValue.HasValue && constantValue.Value is false;
+                }
+
+                return false;
+            }
+        }
+
+        private readonly struct ThreadingContextTransition
+        {
+            internal ThreadingContextTransition(int position, ThreadingContext context)
+            {
+                this.Position = position;
+                this.Context = context;
+            }
+
+            internal int Position { get; }
+
+            internal ThreadingContext Context { get; }
         }
     }
 }

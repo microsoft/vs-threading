@@ -24,6 +24,7 @@ internal static class CSharpCommonInterest
         SyntaxKind.AnonymousMethodExpression,
         SyntaxKind.SimpleLambdaExpression,
         SyntaxKind.ParenthesizedLambdaExpression,
+        SyntaxKind.LocalFunctionStatement,
         SyntaxKind.GetAccessorDeclaration,
         SyntaxKind.SetAccessorDeclaration,
         SyntaxKind.AddAccessorDeclaration,
@@ -495,7 +496,8 @@ internal static class CSharpCommonInterest
         }
 
         ISymbol? taskSymbol = context.SemanticModel.GetSymbolInfo(taskReceiver, context.CancellationToken).Symbol;
-        if (taskSymbol is not ILocalSymbol and not IParameterSymbol)
+        if (taskSymbol is IParameterSymbol { RefKind: not RefKind.None }
+            || taskSymbol is not ILocalSymbol and not IParameterSymbol)
         {
             return false;
         }
@@ -621,6 +623,17 @@ internal static class CSharpCommonInterest
         {
             IEnumerable<SyntaxNode> nodesBetweenAccessAndCondition = accessSyntax.Ancestors().TakeWhile(node => node != ifStatement);
             if (nodesBetweenAccessAndCondition.Any(node => node is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax))
+            {
+                continue;
+            }
+
+            if (nodesBetweenAccessAndCondition
+                .Where(node => node is WhileStatementSyntax
+                    or DoStatementSyntax
+                    or ForStatementSyntax
+                    or ForEachStatementSyntax
+                    or ForEachVariableStatementSyntax)
+                .Any(loop => MayReassignTask(context, loop, potentialTaskSymbols)))
             {
                 continue;
             }

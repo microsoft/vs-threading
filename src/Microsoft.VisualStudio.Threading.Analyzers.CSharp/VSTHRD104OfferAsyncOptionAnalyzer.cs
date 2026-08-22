@@ -4,8 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -100,7 +98,7 @@ public class VSTHRD104OfferAsyncOptionAnalyzer : DiagnosticAnalyzer
                     {
                         if (invokedMember is IPropertySymbol { Name: nameof(Task<int>.Result), ContainingType: { } containingType }
                             && Utils.IsTask(containingType)
-                            && this.IsGuardedBySuccessfulCompletion(context, memberAccessSyntax))
+                            && TaskCompletionAnalysis.IsTaskKnownToBeCompleted(context, memberAccessSyntax))
                         {
                             return;
                         }
@@ -110,96 +108,6 @@ public class VSTHRD104OfferAsyncOptionAnalyzer : DiagnosticAnalyzer
                         this.diagnosticReported = true;
                     }
                 }
-            }
-        }
-
-        private bool IsGuardedBySuccessfulCompletion(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax resultAccess)
-        {
-            ISymbol? taskSymbol = context.SemanticModel.GetSymbolInfo(resultAccess.Expression, context.CancellationToken).Symbol;
-            if (taskSymbol is not ILocalSymbol and not IParameterSymbol)
-            {
-                return false;
-            }
-
-            foreach (IfStatementSyntax ifStatement in resultAccess.Ancestors()
-                .TakeWhile(ancestor => ancestor is not LocalFunctionStatementSyntax)
-                .OfType<IfStatementSyntax>())
-            {
-                if (ifStatement.Statement.Span.Contains(resultAccess.Span)
-                    && ConditionProvesSuccessfulCompletion(ifStatement.Condition, taskSymbol)
-                    && !MayWriteSymbolBefore(ifStatement.Condition, resultAccess, taskSymbol)
-                    && !MayWriteSymbolBefore(ifStatement.Statement, resultAccess, taskSymbol))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-
-            bool ConditionProvesSuccessfulCompletion(ExpressionSyntax condition, ISymbol expectedTaskSymbol)
-            {
-                while (condition is ParenthesizedExpressionSyntax parenthesized)
-                {
-                    condition = parenthesized.Expression;
-                }
-
-                if (condition is BinaryExpressionSyntax { RawKind: (int)SyntaxKind.LogicalAndExpression } logicalAnd)
-                {
-                    return ConditionProvesSuccessfulCompletion(logicalAnd.Left, expectedTaskSymbol)
-                        || ConditionProvesSuccessfulCompletion(logicalAnd.Right, expectedTaskSymbol);
-                }
-
-                if (condition is not MemberAccessExpressionSyntax { Name.Identifier.ValueText: "IsCompletedSuccessfully" } completionAccess)
-                {
-                    return false;
-                }
-
-                ISymbol? completionProperty = context.SemanticModel.GetSymbolInfo(completionAccess, context.CancellationToken).Symbol;
-                ISymbol? completedTaskSymbol = context.SemanticModel.GetSymbolInfo(completionAccess.Expression, context.CancellationToken).Symbol;
-                return completionProperty is IPropertySymbol { ContainingType: { } containingType }
-                    && Utils.IsTask(containingType)
-                    && SymbolEqualityComparer.Default.Equals(expectedTaskSymbol, completedTaskSymbol);
-            }
-
-            bool MayWriteSymbolBefore(SyntaxNode region, ExpressionSyntax expression, ISymbol expectedTaskSymbol)
-            {
-                SyntaxNode executableScope = expression.Ancestors().FirstOrDefault(ancestor =>
-                    ancestor is AnonymousFunctionExpressionSyntax
-                    or LocalFunctionStatementSyntax
-                    or BaseMethodDeclarationSyntax
-                    or AccessorDeclarationSyntax) ?? region;
-                if (executableScope.DescendantNodes()
-                    .OfType<RefExpressionSyntax>()
-                    .Where(refExpression => refExpression.SpanStart < expression.SpanStart)
-                    .Any(refExpression => SymbolEqualityComparer.Default.Equals(
-                        context.SemanticModel.GetSymbolInfo(refExpression.Expression, context.CancellationToken).Symbol,
-                        expectedTaskSymbol)))
-                {
-                    return true;
-                }
-
-                foreach (SyntaxNode node in region.DescendantNodes().Where(node => node.SpanStart < expression.SpanStart))
-                {
-                    ExpressionSyntax? writtenExpression = node switch
-                    {
-                        AssignmentExpressionSyntax assignment => assignment.Left,
-                        PrefixUnaryExpressionSyntax prefix when prefix.IsKind(SyntaxKind.PreIncrementExpression) || prefix.IsKind(SyntaxKind.PreDecrementExpression) => prefix.Operand,
-                        PostfixUnaryExpressionSyntax postfix when postfix.IsKind(SyntaxKind.PostIncrementExpression) || postfix.IsKind(SyntaxKind.PostDecrementExpression) => postfix.Operand,
-                        ArgumentSyntax argument when argument.RefOrOutKeyword.IsKind(SyntaxKind.RefKeyword) || argument.RefOrOutKeyword.IsKind(SyntaxKind.OutKeyword) => argument.Expression,
-                        _ => null,
-                    };
-
-                    if (writtenExpression is not null && writtenExpression.DescendantNodesAndSelf()
-                        .OfType<ExpressionSyntax>()
-                        .Any(candidate => SymbolEqualityComparer.Default.Equals(
-                            context.SemanticModel.GetSymbolInfo(candidate, context.CancellationToken).Symbol,
-                            expectedTaskSymbol)))
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
             }
         }
     }
