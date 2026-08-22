@@ -1419,6 +1419,29 @@ class Test {
     }
 
     [Fact]
+    public async Task CodeFixIsNotOfferedInAwaitForbiddenContexts()
+    {
+        var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void F(object gate) {
+        lock (gate) {
+            _ = Task.FromResult(1).[|Result|];
+        }
+
+        try {
+        } catch (Exception) when (Task.FromResult(false).[|Result|]) {
+        }
+    }
+}
+";
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
     public async Task CodeFixIsNotOfferedWhenChangingMethodContract()
     {
         var test = @"

@@ -142,6 +142,29 @@ class Test {
     }
 
     [Fact]
+    public async Task AwaitedTaskWaitDoesNotFallBackToAsyncAlternativeWarning()
+    {
+        var test = @"
+using System.Threading;
+using System.Threading.Tasks;
+
+class Test {
+    async Task T(Task task) {
+        await task;
+        task.Wait();
+    }
+}
+
+static class TaskExtensions {
+    internal static Task WaitAsync(this Task task, CancellationToken cancellationToken = default)
+        => task;
+}
+";
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
     public async Task JTFRunOfTInTaskReturningMethodGeneratesWarning()
     {
         var test = @"

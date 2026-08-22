@@ -243,7 +243,7 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
                         if (memberName.Parent is MemberAccessExpressionSyntax memberAccess
                             && CSharpCommonInterest.HasTaskCompleted(context, memberAccess))
                         {
-                            return false;
+                            return true;
                         }
 
                         // Check if this method is excluded from VSTHRD103 diagnostics

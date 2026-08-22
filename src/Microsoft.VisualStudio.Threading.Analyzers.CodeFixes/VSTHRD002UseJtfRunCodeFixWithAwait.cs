@@ -46,6 +46,8 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
             MethodDeclarationSyntax? containingMethod = target.FirstAncestorOrSelf<MethodDeclarationSyntax>();
             if (semanticModel is null
                 || containingMethod is null
+                || target.Ancestors().TakeWhile(node => node != containingMethod)
+                    .Any(node => node is LockStatementSyntax or CatchFilterClauseSyntax)
                 || !CanConvertToAsync(semanticModel, containingMethod, context.CancellationToken)
                 || semanticModel.GetDiagnostics(target.FullSpan, context.CancellationToken).Any(d => d.Severity == DiagnosticSeverity.Error)
                 || !CanUseAwaitCodeFix(semanticModel, target, context.CancellationToken))
