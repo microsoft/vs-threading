@@ -164,6 +164,7 @@ public class ThreadStaticAnalyzerTests
                     {|VSTHRD117:(otherField, (field, count)) = (new object(), (new object(), 1))|};
                     {|VSTHRD117:Changed += OnChanged|};
                     {|VSTHRD117:Changed -= OnChanged|};
+                    Initialize({|VSTHRD117:out field|});
                     OtherChanged += OnChanged;
                     otherField = new object();
 
@@ -179,9 +180,82 @@ public class ThreadStaticAnalyzerTests
                 {
                 }
 
+                private static void Initialize(out object value)
+                {
+                    value = new object();
+                }
+
                 private Test()
                 {
                     field = new object();
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task FieldLikeEventAssignmentAcrossPartialType_CSharp()
+    {
+        const string eventDeclaration = """
+            using System;
+
+            partial class Test
+            {
+                [field: ThreadStatic]
+                private static event EventHandler Changed;
+            }
+            """;
+        const string typeInitializer = """
+            using System;
+
+            partial class Test
+            {
+                static Test()
+                {
+                    {|VSTHRD117:Changed += OnChanged|};
+                }
+
+                private static void OnChanged(object sender, EventArgs args)
+                {
+                }
+            }
+            """;
+        var test = new CSVerify.Test();
+        test.TestState.Sources.Add(eventDeclaration);
+        test.TestState.Sources.Add(typeInitializer);
+
+        await test.RunAsync();
+    }
+
+    [Fact]
+    public async Task UnattributedExplicitEventWithThreadStaticConstruction_CSharp()
+    {
+        const string test = """
+            using System;
+
+            class Test
+            {
+                private static event EventHandler Changed
+                {
+                    add
+                    {
+                        _ = new ThreadStaticAttribute();
+                    }
+
+                    remove
+                    {
+                    }
+                }
+
+                static Test()
+                {
+                    Changed += OnChanged;
+                }
+
+                private static void OnChanged(object sender, EventArgs args)
+                {
                 }
             }
             """;

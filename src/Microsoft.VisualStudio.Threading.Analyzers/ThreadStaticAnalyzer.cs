@@ -90,8 +90,8 @@ public abstract class ThreadStaticAnalyzer : DiagnosticAnalyzer
                 Utils.DebuggableWrapper(operationContext => AnalyzeDeconstructionAssignment(operationContext, threadStaticAttribute)),
                 OperationKind.DeconstructionAssignment);
             startContext.RegisterOperationAction(
-                Utils.DebuggableWrapper(operationContext => AnalyzeEventAssignment(operationContext, threadStaticAttribute)),
-                OperationKind.EventAssignment);
+                Utils.DebuggableWrapper(operationContext => AnalyzeArgument(operationContext, threadStaticAttribute)),
+                OperationKind.Argument);
         });
 
         this.InitializeLanguageSpecific(context);
@@ -102,6 +102,38 @@ public abstract class ThreadStaticAnalyzer : DiagnosticAnalyzer
     /// </summary>
     /// <returns>The diagnostic descriptor.</returns>
     protected static DiagnosticDescriptor GetNonStaticFieldDescriptor() => NonStaticFieldDescriptor;
+
+    /// <summary>
+    /// Gets the descriptor for a <see cref="System.ThreadStaticAttribute"/> field initialized by the type initializer.
+    /// </summary>
+    /// <returns>The diagnostic descriptor.</returns>
+    protected static DiagnosticDescriptor GetTypeInitializerAssignmentDescriptor() => TypeInitializerAssignmentDescriptor;
+
+    /// <summary>
+    /// Determines whether an operation is executed directly by a type initializer.
+    /// </summary>
+    /// <param name="context">The operation analysis context.</param>
+    /// <returns><see langword="true"/> if the operation is executed by a type initializer; otherwise, <see langword="false"/>.</returns>
+    protected static bool IsExecutedByTypeInitializer(OperationAnalysisContext context)
+    {
+        if (Utils.GetContainingFunction(context.Operation, context.ContainingSymbol) is IMethodSymbol containingMethod)
+        {
+            return containingMethod.MethodKind == MethodKind.StaticConstructor;
+        }
+
+        for (IOperation? operation = context.Operation.Parent; operation is not null; operation = operation.Parent)
+        {
+            switch (operation)
+            {
+                case IFieldInitializerOperation fieldInitializer:
+                    return fieldInitializer.InitializedFields.Any(static field => field.IsStatic);
+                case IPropertyInitializerOperation propertyInitializer:
+                    return propertyInitializer.InitializedProperties.Any(static property => property.IsStatic);
+            }
+        }
+
+        return false;
+    }
 
     /// <summary>
     /// Registers language-specific analysis callbacks.
@@ -180,15 +212,15 @@ public abstract class ThreadStaticAnalyzer : DiagnosticAnalyzer
         ReportIfThreadStaticTarget(context, assignment.Target, threadStaticAttribute);
     }
 
-    private static void AnalyzeEventAssignment(OperationAnalysisContext context, INamedTypeSymbol threadStaticAttribute)
+    private static void AnalyzeArgument(OperationAnalysisContext context, INamedTypeSymbol threadStaticAttribute)
     {
-        if (!IsExecutedByTypeInitializer(context))
+        var argument = (IArgumentOperation)context.Operation;
+        if (argument.Parameter?.RefKind != RefKind.Out || !IsExecutedByTypeInitializer(context))
         {
             return;
         }
 
-        var assignment = (IEventAssignmentOperation)context.Operation;
-        ReportIfThreadStaticTarget(context, assignment.EventReference, threadStaticAttribute);
+        ReportIfThreadStaticTarget(context, argument.Value, threadStaticAttribute);
     }
 
     private static void ReportIfThreadStaticTarget(OperationAnalysisContext context, IOperation target, INamedTypeSymbol threadStaticAttribute)
@@ -213,34 +245,7 @@ public abstract class ThreadStaticAnalyzer : DiagnosticAnalyzer
             return true;
         }
 
-        if (target is IEventReferenceOperation { Event: { IsStatic: true } @event }
-            && HasThreadStaticAttribute(context, @event, threadStaticAttribute))
-        {
-            return true;
-        }
-
         return target is ITupleOperation tuple && tuple.Elements.Any(element => IsThreadStaticTarget(context, element, threadStaticAttribute));
-    }
-
-    private static bool IsExecutedByTypeInitializer(OperationAnalysisContext context)
-    {
-        if (Utils.GetContainingFunction(context.Operation, context.ContainingSymbol) is IMethodSymbol containingMethod)
-        {
-            return containingMethod.MethodKind == MethodKind.StaticConstructor;
-        }
-
-        for (IOperation? operation = context.Operation.Parent; operation is not null; operation = operation.Parent)
-        {
-            switch (operation)
-            {
-                case IFieldInitializerOperation fieldInitializer:
-                    return fieldInitializer.InitializedFields.Any(static field => field.IsStatic);
-                case IPropertyInitializerOperation propertyInitializer:
-                    return propertyInitializer.InitializedProperties.Any(static property => property.IsStatic);
-            }
-        }
-
-        return false;
     }
 
     private static IFieldSymbol? GetField(ISymbol symbol)
@@ -257,45 +262,4 @@ public abstract class ThreadStaticAnalyzer : DiagnosticAnalyzer
 
     private static bool HasThreadStaticAttribute(ISymbol symbol, INamedTypeSymbol threadStaticAttribute)
         => symbol.GetAttributes().Any(attribute => SymbolEqualityComparer.Default.Equals(attribute.AttributeClass, threadStaticAttribute));
-
-    private static bool HasThreadStaticAttribute(OperationAnalysisContext context, IEventSymbol eventSymbol, INamedTypeSymbol threadStaticAttribute)
-    {
-        if (HasThreadStaticAttribute(eventSymbol, threadStaticAttribute))
-        {
-            return true;
-        }
-
-        // Roslyn does not expose the implicit backing field or its attributes for field-like events.
-        // Resolve field-targeted attributes from the event declaration instead.
-        foreach (SyntaxReference syntaxReference in eventSymbol.DeclaringSyntaxReferences)
-        {
-            SyntaxNode declaringSyntax = syntaxReference.GetSyntax(context.CancellationToken);
-            if (context.Operation.SemanticModel is not { } semanticModel
-                || semanticModel.SyntaxTree != declaringSyntax.SyntaxTree)
-            {
-                continue;
-            }
-
-            SyntaxNode eventDeclaration = declaringSyntax;
-            while (eventDeclaration.Parent is SyntaxNode parent
-                && !SymbolEqualityComparer.Default.Equals(
-                    semanticModel.GetDeclaredSymbol(parent, context.CancellationToken),
-                    eventSymbol.ContainingType))
-            {
-                eventDeclaration = parent;
-            }
-
-            foreach (SyntaxNode node in eventDeclaration.DescendantNodesAndSelf())
-            {
-                if (semanticModel.GetSymbolInfo(node, context.CancellationToken).Symbol is IMethodSymbol constructor
-                    && constructor.MethodKind == MethodKind.Constructor
-                    && SymbolEqualityComparer.Default.Equals(constructor.ContainingType, threadStaticAttribute))
-                {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
 }
