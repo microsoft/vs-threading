@@ -59,16 +59,26 @@ JoinableTask longRunningAsyncWork = joinableTaskFactoryInstance.RunAsync(
     });
 ```
 
-then later that async work becomes blocking:
+Then later asynchronous code can join that work while waiting for it:
 
 ```csharp
-longRunningAsyncWork.Join();
+async Task WaitForLongRunningWorkAsync(CancellationToken cancellationToken)
+{
+    await longRunningAsyncWork.JoinAsync(cancellationToken);
+}
 ```
 
-or perhaps
+When cancellation is not required, directly awaiting the `JoinableTask` is equivalent to
+calling `JoinAsync(CancellationToken.None)`:
 
 ```csharp
 await longRunningAsyncWork;
+```
+
+Synchronous code can join and block on the work:
+
+```csharp
+longRunningAsyncWork.Join();
 ```
 
 Note however that this extra step is not necessary when awaiting is

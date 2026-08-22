@@ -40,6 +40,8 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
 {
     public const string Id = "VSTHRD003";
 
+    public const string InvalidCompletedTaskAttributeId = "VSTHRD013";
+
     internal static readonly DiagnosticDescriptor Descriptor = new DiagnosticDescriptor(
         id: Id,
         title: new LocalizableResourceString(nameof(Strings.VSTHRD003_Title), Strings.ResourceManager, typeof(Strings)),
@@ -49,12 +51,21 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
+    internal static readonly DiagnosticDescriptor InvalidCompletedTaskAttributeDescriptor = new DiagnosticDescriptor(
+        id: InvalidCompletedTaskAttributeId,
+        title: new LocalizableResourceString(nameof(Strings.VSTHRD013_Title), Strings.ResourceManager, typeof(Strings)),
+        messageFormat: new LocalizableResourceString(nameof(Strings.VSTHRD013_MessageFormat), Strings.ResourceManager, typeof(Strings)),
+        helpLinkUri: Utils.GetHelpLink(InvalidCompletedTaskAttributeId),
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
+
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
     {
         get
         {
-            return ImmutableArray.Create(Descriptor);
+            return ImmutableArray.Create(Descriptor, InvalidCompletedTaskAttributeDescriptor);
         }
     }
 
@@ -69,10 +80,18 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
         context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeArrowExpressionClause), SyntaxKind.ArrowExpressionClause);
         context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeLambdaExpression), SyntaxKind.SimpleLambdaExpression);
         context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeLambdaExpression), SyntaxKind.ParenthesizedLambdaExpression);
+        context.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(this.AnalyzeCompletedTaskAttribute), SyntaxKind.Attribute);
     }
 
     private static bool IsSymbolAlwaysOkToAwait(ISymbol? symbol)
     {
+        if (symbol is IMethodSymbol or IFieldSymbol or IPropertySymbol &&
+            symbol.GetAttributes().Any(attribute => IsCompletedTaskAttribute(attribute.AttributeClass)))
+        {
+            // Consumers take this assertion at face value. Invalid applications are diagnosed at the declaration.
+            return true;
+        }
+
         if (symbol is IFieldSymbol field)
         {
             // Allow the TplExtensions.CompletedTask and related fields.
@@ -95,16 +114,68 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
         return false;
     }
 
+    private static bool IsCompletedTaskAttribute(INamedTypeSymbol? attributeType) =>
+        attributeType?.Name == Types.CompletedTaskAttribute.TypeName &&
+        attributeType.ContainingType is null &&
+        attributeType.BelongsToNamespace(Types.CompletedTaskAttribute.Namespace);
+
+    private void AnalyzeCompletedTaskAttribute(SyntaxNodeAnalysisContext context)
+    {
+        var attribute = (AttributeSyntax)context.Node;
+        if (context.SemanticModel.GetSymbolInfo(attribute, context.CancellationToken).Symbol is not IMethodSymbol attributeConstructor ||
+            !IsCompletedTaskAttribute(attributeConstructor.ContainingType))
+        {
+            return;
+        }
+
+        string? mutableMemberName;
+        switch (attribute.Parent?.Parent)
+        {
+            case FieldDeclarationSyntax field when !field.Modifiers.Any(SyntaxKind.ReadOnlyKeyword):
+                mutableMemberName = string.Join(", ", field.Declaration.Variables.Select(variable => variable.Identifier.ValueText));
+                break;
+            case PropertyDeclarationSyntax property:
+                IPropertySymbol? propertySymbol = context.SemanticModel.GetDeclaredSymbol(property, context.CancellationToken);
+                mutableMemberName = propertySymbol is { SetMethod: not null } || propertySymbol is { ReturnsByRef: true } ? propertySymbol.Name : null;
+                break;
+            case IndexerDeclarationSyntax indexer:
+                IPropertySymbol? indexerSymbol = context.SemanticModel.GetDeclaredSymbol(indexer, context.CancellationToken);
+                mutableMemberName = indexerSymbol is { SetMethod: not null } || indexerSymbol is { ReturnsByRef: true } ? indexerSymbol.Name : null;
+                break;
+            default:
+                mutableMemberName = null;
+                break;
+        }
+
+        if (mutableMemberName is not null)
+        {
+            context.ReportDiagnostic(Diagnostic.Create(InvalidCompletedTaskAttributeDescriptor, attribute.GetLocation(), mutableMemberName));
+        }
+    }
+
     private void AnalyzeArrowExpressionClause(SyntaxNodeAnalysisContext context)
     {
         var arrowExpressionClause = (ArrowExpressionClauseSyntax)context.Node;
-        if (arrowExpressionClause.Parent is MethodDeclarationSyntax)
+        ISymbol? containingSymbol = arrowExpressionClause.Parent switch
         {
-            Diagnostic? diagnostic = this.AnalyzeAwaitedOrReturnedExpression(arrowExpressionClause.Expression, context, context.CancellationToken);
-            if (diagnostic is object)
-            {
-                context.ReportDiagnostic(diagnostic);
-            }
+            MethodDeclarationSyntax method => context.SemanticModel.GetDeclaredSymbol(method, context.CancellationToken),
+            LocalFunctionStatementSyntax localFunction => context.SemanticModel.GetDeclaredSymbol(localFunction, context.CancellationToken),
+            PropertyDeclarationSyntax property => context.SemanticModel.GetDeclaredSymbol(property, context.CancellationToken),
+            IndexerDeclarationSyntax indexer => context.SemanticModel.GetDeclaredSymbol(indexer, context.CancellationToken),
+            AccessorDeclarationSyntax { Parent.Parent: PropertyDeclarationSyntax property } => context.SemanticModel.GetDeclaredSymbol(property, context.CancellationToken),
+            AccessorDeclarationSyntax { Parent.Parent: IndexerDeclarationSyntax indexer } => context.SemanticModel.GetDeclaredSymbol(indexer, context.CancellationToken),
+            _ => null,
+        };
+
+        if (containingSymbol is null || IsSymbolAlwaysOkToAwait(containingSymbol))
+        {
+            return;
+        }
+
+        Diagnostic? diagnostic = this.AnalyzeAwaitedOrReturnedExpression(arrowExpressionClause.Expression, context, context.CancellationToken);
+        if (diagnostic is object)
+        {
+            context.ReportDiagnostic(diagnostic);
         }
     }
 
@@ -124,6 +195,20 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
     private void AnalyzeReturnStatement(SyntaxNodeAnalysisContext context)
     {
         var returnStatement = (ReturnStatementSyntax)context.Node;
+        CSharpUtils.ContainingFunctionData containingFunction = CSharpUtils.GetContainingFunction(returnStatement);
+        ISymbol? containingSymbol = containingFunction.Function switch
+        {
+            MethodDeclarationSyntax methodDeclaration => context.SemanticModel.GetDeclaredSymbol(methodDeclaration, context.CancellationToken),
+            LocalFunctionStatementSyntax localFunction => context.SemanticModel.GetDeclaredSymbol(localFunction, context.CancellationToken),
+            AccessorDeclarationSyntax { Parent.Parent: PropertyDeclarationSyntax propertyDeclaration } => context.SemanticModel.GetDeclaredSymbol(propertyDeclaration, context.CancellationToken),
+            AccessorDeclarationSyntax { Parent.Parent: IndexerDeclarationSyntax indexerDeclaration } => context.SemanticModel.GetDeclaredSymbol(indexerDeclaration, context.CancellationToken),
+            _ => null,
+        };
+        if (IsSymbolAlwaysOkToAwait(containingSymbol))
+        {
+            return;
+        }
+
         Diagnostic? diagnostic = this.AnalyzeAwaitedOrReturnedExpression(returnStatement.Expression, context, context.CancellationToken);
         if (diagnostic is object)
         {
@@ -228,7 +313,7 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
                 symbolType = parameterSymbol.Type;
                 dataflowAnalysisCompatibleVariable = true;
                 break;
-            case IFieldSymbol fieldSymbol:
+            case IFieldSymbol fieldSymbol when !IsSymbolAlwaysOkToAwait(fieldSymbol):
                 symbolType = fieldSymbol.Type;
 
                 // If the field is readonly and initialized with Task.FromResult, it's OK.
@@ -287,7 +372,7 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
                 }
 
                 break;
-            case IMethodSymbol methodSymbol:
+            case IMethodSymbol methodSymbol when !IsSymbolAlwaysOkToAwait(methodSymbol):
                 if (Utils.IsTask(methodSymbol.ReturnType) && focusedExpression is InvocationExpressionSyntax invocationExpressionSyntax)
                 {
                     // Consider all arguments
@@ -306,6 +391,8 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
                 }
 
                 return null;
+            case IFieldSymbol or IMethodSymbol:
+                return null;
             default:
                 return null;
         }
@@ -317,6 +404,15 @@ public class VSTHRD003UseJtfRunAsyncAnalyzer : DiagnosticAnalyzer
 
         // Report warning if the task was not initialized within the current delegate or lambda expression
         containingFunc ??= CSharpUtils.GetContainingFunction(focusedExpression);
+        if (containingFunc.Value.BlockOrExpression is null &&
+            symbolToConsider.Symbol is ILocalSymbol &&
+            focusedExpression.Ancestors().Any(ancestor => ancestor is GlobalStatementSyntax))
+        {
+            // Top-level locals belong to the compiler-generated Main method, even though there is no
+            // method declaration in syntax for GetContainingFunction to discover.
+            return null;
+        }
+
         if (containingFunc.Value.BlockOrExpression is BlockSyntax delegateBlock)
         {
             if (dataflowAnalysisCompatibleVariable)

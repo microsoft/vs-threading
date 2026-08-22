@@ -10,6 +10,38 @@ When required to await a task that was started earlier, start it within a delega
 `JoinableTaskFactory.RunAsync`, storing the resulting `JoinableTask` in a field or variable.
 You can safely await the `JoinableTask` later.
 
+## Marking known-completed tasks
+
+Awaiting a task that is known to have already completed cannot deadlock. To identify cached
+completed tasks that the analyzer cannot recognize automatically, define an attribute with the
+fully qualified name `Microsoft.VisualStudio.Threading.CompletedTaskAttribute` in your project:
+
+```csharp
+namespace Microsoft.VisualStudio.Threading
+{
+    [System.AttributeUsage(System.AttributeTargets.Field | System.AttributeTargets.Property | System.AttributeTargets.Method)]
+    internal sealed class CompletedTaskAttribute : System.Attribute
+    {
+    }
+}
+```
+
+Apply `[CompletedTask]` to methods that always return completed tasks, `readonly` fields, or
+get-only properties:
+
+```csharp
+[CompletedTask]
+private static readonly Task TrueTask = Task.FromResult(true);
+
+[CompletedTask]
+private static Task<bool> FalseTask { get; } = Task.FromResult(false);
+```
+
+The analyzer reports [VSTHRD013](VSTHRD013.md) on `[CompletedTask]` when it is applied to a mutable field,
+settable property, or ref-returning property, because its value can later be replaced with an
+incomplete task. Consumers still take the attribute at face value, so the diagnostic is reported
+at the invalid attribute application rather than at each use of the member.
+
 ## Simple examples of patterns that are flagged by this analyzer
 
 The following example would likely deadlock if `MyMethod` were called on the main thread,

@@ -1,7 +1,6 @@
 # vs-threading
 
 [![Build Status](https://dev.azure.com/azure-public/vside/_apis/build/status/vs-threading)](https://dev.azure.com/azure-public/vside/_build/latest?definitionId=12)
-[![Join the chat at https://gitter.im/vs-threading/Lobby](https://badges.gitter.im/vs-threading/Lobby.svg)](https://gitter.im/vs-threading/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ## Microsoft.VisualStudio.Threading
 

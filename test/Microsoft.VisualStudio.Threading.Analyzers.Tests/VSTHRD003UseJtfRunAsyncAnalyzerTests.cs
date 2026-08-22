@@ -37,8 +37,8 @@ class Tests
 ";
         DiagnosticResult[] expected =
         {
-            CSVerify.Diagnostic().WithLocation(15, 19),
-            CSVerify.Diagnostic().WithLocation(16, 19),
+            Diagnostic().WithLocation(15, 19),
+            Diagnostic().WithLocation(16, 19),
         };
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
@@ -71,7 +71,7 @@ class Tests
     }
 }
 ";
-        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(14, 19);
+        DiagnosticResult expected = Diagnostic().WithLocation(14, 19);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -91,7 +91,7 @@ class Tests
     }
 }
 ";
-        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(10, 59);
+        DiagnosticResult expected = Diagnostic().WithLocation(10, 59);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -111,8 +111,31 @@ class Tests
     }
 }
 ";
-        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(10, 68);
+        DiagnosticResult expected = Diagnostic().WithLocation(10, 68);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task ReportWarningWhenTaskFieldAssignedOutsideExpressionLambdaIsReturnedFromJtfRun()
+    {
+        string test = """
+            using System.Threading.Tasks;
+            using Microsoft.VisualStudio.Threading;
+
+            class Tests
+            {
+                private Task task;
+                private JoinableTaskFactory jtf;
+
+                public void Test()
+                {
+                    this.task = this.jtf.RunAsync(async () => await Task.Yield()).Task;
+                    this.jtf.Run(() => {|VSTHRD003:this.task|});
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 
     [Fact]
@@ -201,7 +224,7 @@ class Tests
 
     public async Task AwaitAndGetResult()
     {{
-        await [|task|].ConfigureAwait({(continueOnCapturedContext ? "true" : "false")});
+        await {{|VSTHRD003:task|}}.ConfigureAwait({(continueOnCapturedContext ? "true" : "false")});
     }}
 }}
 ";
@@ -222,7 +245,7 @@ class Tests
 
     public async Task<int> AwaitAndGetResult()
     {{
-        return await [|task|].ConfigureAwait({(continueOnCapturedContext ? "true" : "false")});
+        return await {{|VSTHRD003:task|}}.ConfigureAwait({(continueOnCapturedContext ? "true" : "false")});
     }}
 }}
 ";
@@ -242,7 +265,7 @@ class Tests
 
     public async Task AwaitAndGetResult()
     {
-        await [|task|].ConfigureAwaitRunInline();
+        await {|VSTHRD003:task|}.ConfigureAwaitRunInline();
     }
 }
 ";
@@ -262,7 +285,7 @@ class Tests
 
     public async Task<int> AwaitAndGetResult()
     {
-        return await [|task|].ConfigureAwaitRunInline();
+        return await {|VSTHRD003:task|}.ConfigureAwaitRunInline();
     }
 }
 ";
@@ -311,7 +334,7 @@ class Tests
     }
 }
 ";
-        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(11, 59);
+        DiagnosticResult expected = Diagnostic().WithLocation(11, 59);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -390,7 +413,7 @@ class Tests
     }
 }
 ";
-        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(14, 19);
+        DiagnosticResult expected = Diagnostic().WithLocation(14, 19);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -423,7 +446,7 @@ class Tests
     }
 }
 ";
-        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(14, 19);
+        DiagnosticResult expected = Diagnostic().WithLocation(14, 19);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -663,7 +686,7 @@ class Tests
     }
 }
 ";
-        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(14, 19);
+        DiagnosticResult expected = Diagnostic().WithLocation(14, 19);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -697,7 +720,7 @@ class Tests
     }
 }
 ";
-        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(16, 19);
+        DiagnosticResult expected = Diagnostic().WithLocation(16, 19);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -732,7 +755,7 @@ class Tests
     }
 }
 ";
-        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(16, 23);
+        DiagnosticResult expected = Diagnostic().WithLocation(16, 23);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -768,9 +791,9 @@ class Tests
 ";
         DiagnosticResult[] expected =
         {
-            CSVerify.Diagnostic().WithLocation(14, 19),
-            CSVerify.Diagnostic().WithLocation(15, 19),
-            CSVerify.Diagnostic().WithLocation(16, 19),
+            Diagnostic().WithLocation(14, 19),
+            Diagnostic().WithLocation(15, 19),
+            Diagnostic().WithLocation(16, 19),
         };
 
         await CSVerify.VerifyAnalyzerAsync(test, expected);
@@ -896,7 +919,7 @@ class Tests
     }
 }
 ";
-        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(17, 23);
+        DiagnosticResult expected = Diagnostic().WithLocation(17, 23);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -938,7 +961,7 @@ class Tests
     }
 }
 ";
-        DiagnosticResult expected = CSVerify.Diagnostic().WithLocation(24, 19);
+        DiagnosticResult expected = Diagnostic().WithLocation(24, 19);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
     }
 
@@ -1055,6 +1078,195 @@ class Tests
     }
 }
 ";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportWarningForMembersMarkedAsCompletedTasks()
+    {
+        string test = """
+            using System;
+            using System.Threading.Tasks;
+            using Microsoft.VisualStudio.Threading;
+
+            namespace Microsoft.VisualStudio.Threading
+            {
+                [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Method)]
+                internal sealed class CompletedTaskAttribute : Attribute
+                {
+                }
+            }
+
+            class Tests
+            {
+                private static Task task = Task.WhenAll(Task.CompletedTask);
+
+                [CompletedTask]
+                private static readonly Task CompletedField = Task.WhenAll(Task.CompletedTask);
+
+                [CompletedTask]
+                private static Task CompletedProperty { get; } = Task.WhenAll(Task.CompletedTask);
+
+                [CompletedTask]
+                private static Task CompletedExpressionProperty => task;
+
+                [CompletedTask]
+                private static Task CompletedExpressionGetter
+                {
+                    get => task;
+                }
+
+                [CompletedTask]
+                private static Task CompletedBlockProperty
+                {
+                    get
+                    {
+                        return task;
+                    }
+                }
+
+                [CompletedTask]
+                private static Task ReturnCompletedTask(Task task)
+                {
+                    return Task.WhenAll(Task.CompletedTask);
+                }
+
+                [CompletedTask]
+                private static Task ReturnCompletedTaskExpression(Task task) => Task.WhenAll(Task.CompletedTask);
+
+                public Task GetField() => CompletedField;
+
+                public Task GetProperty() => CompletedProperty;
+
+                public Task GetExpressionProperty() => CompletedExpressionProperty;
+
+                public Task GetExpressionGetter() => CompletedExpressionGetter;
+
+                public Task GetBlockProperty() => CompletedBlockProperty;
+
+                public Task GetMethodResult(Task task) => ReturnCompletedTask(task);
+
+                public Task GetExpressionMethodResult(Task task) => ReturnCompletedTaskExpression(task);
+
+                public Task GetLocalFunctionResult(Task task)
+                {
+                    [CompletedTask]
+                    static Task ReturnCompletedTaskLocal(Task task)
+                    {
+                        return Task.WhenAll(Task.CompletedTask);
+                    }
+
+                    return ReturnCompletedTaskLocal(task);
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task ReportWarningForMutableMembersMarkedAsCompletedTasks()
+    {
+        string test = """
+            using System;
+            using System.Threading.Tasks;
+            using Microsoft.VisualStudio.Threading;
+
+            namespace Microsoft.VisualStudio.Threading
+            {
+                [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Method)]
+                internal sealed class CompletedTaskAttribute : Attribute
+                {
+                }
+            }
+
+            class Tests
+            {
+                [{|#0:CompletedTask|}]
+                private static Task CompletedField1 = Task.WhenAll(Task.CompletedTask), CompletedField2 = Task.WhenAll(Task.CompletedTask);
+
+                [{|#1:CompletedTask|}]
+                private static Task CompletedProperty { get; set; } = Task.WhenAll(Task.CompletedTask);
+
+                private static Task task = Task.WhenAll(Task.CompletedTask);
+
+                [{|#2:CompletedTask|}]
+                private static ref Task CompletedRefProperty => ref task;
+
+                public Task GetField1() => CompletedField1;
+
+                public Task GetField2() => CompletedField2;
+
+                public Task GetProperty() => CompletedProperty;
+
+                public Task GetRefProperty() => CompletedRefProperty;
+            }
+            """;
+
+        DiagnosticResult[] expected =
+        {
+            InvalidCompletedTaskAttributeDiagnostic().WithLocation(0).WithArguments("CompletedField1, CompletedField2"),
+            InvalidCompletedTaskAttributeDiagnostic().WithLocation(1).WithArguments("CompletedProperty"),
+            InvalidCompletedTaskAttributeDiagnostic().WithLocation(2).WithArguments("CompletedRefProperty"),
+        };
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task ReportWarningForForeignTasksReturnedFromExpressionBodiedMembers()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Tests
+            {
+                private static Task task = Task.WhenAll(Task.CompletedTask);
+
+                private static Task ExpressionProperty => {|VSTHRD003:task|};
+
+                private static Task ExpressionGetter
+                {
+                    get => {|VSTHRD003:task|};
+                }
+
+                private static Task GetTask()
+                {
+                    Task LocalFunction() => {|VSTHRD003:task|};
+                    return LocalFunction();
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task ReportWarningForNestedCompletedTaskAttributeLookalike()
+    {
+        string test = """
+            using System;
+            using System.Threading.Tasks;
+
+            namespace Microsoft.VisualStudio.Threading
+            {
+                internal static class Container
+                {
+                    [AttributeUsage(AttributeTargets.Field)]
+                    internal sealed class CompletedTaskAttribute : Attribute
+                    {
+                    }
+                }
+            }
+
+            class Tests
+            {
+                [Microsoft.VisualStudio.Threading.Container.CompletedTask]
+                private static readonly Task CompletedField = Task.Delay(1);
+
+                public Task GetField() => {|VSTHRD003:CompletedField|};
+            }
+            """;
+
         await CSVerify.VerifyAnalyzerAsync(test);
     }
 
@@ -1249,7 +1461,7 @@ class Tests
 {
     async Task GetTask(TaskCompletionSource<int> tcs)
     {
-        await [|tcs.Task|];
+        await {|VSTHRD003:tcs.Task|};
     }
 }
 ";
@@ -1303,7 +1515,7 @@ class Tests
 
         // Assigned, but not to a newly created object.
         TaskCompletionSource<int> tcs3 = tcs2;
-        await [|tcs3.Task|];
+        await {|VSTHRD003:tcs3.Task|};
     }
 }
 ";
@@ -1419,8 +1631,8 @@ class Tests
 
     async Task GetTask()
     {
-        await [|this.MyTaskProperty|];
-        await [|MyTaskProperty|];
+        await {|VSTHRD003:this.MyTaskProperty|};
+        await {|VSTHRD003:MyTaskProperty|};
     }
 }
 ";
@@ -1453,6 +1665,60 @@ class Tests
         await CSVerify.VerifyAnalyzerAsync(test);
     }
 
+    [Fact]
+    public async Task DoNotReportWarningForTopLevelLocals()
+    {
+        string test = """
+            using System;
+            using System.Threading;
+            using System.Threading.Tasks;
+
+            using var cts = new CancellationTokenSource();
+            Task loopTask = Task.Run(() => Console.WriteLine("loop"), cts.Token);
+            Task serverTask = Task.Run(() => Console.WriteLine("server"), cts.Token);
+            Task exitTask = Task.Run(() => cts.Cancel(), cts.Token);
+
+            await Task.WhenAny(loopTask, serverTask, exitTask);
+            """;
+
+        await new CSVerify.Test
+        {
+            TestState =
+            {
+                Sources = { test },
+                OutputKind = OutputKind.ConsoleApplication,
+            },
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task ReportWarningForForeignFieldInTopLevelStatements()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            await {|VSTHRD003:State.Task|};
+
+            static class State
+            {
+                internal static Task Task = System.Threading.Tasks.Task.Delay(1);
+            }
+            """;
+
+        await new CSVerify.Test
+        {
+            TestState =
+            {
+                Sources = { test },
+                OutputKind = OutputKind.ConsoleApplication,
+            },
+        }.RunAsync();
+    }
+
+    private static DiagnosticResult Diagnostic() => new("VSTHRD003", DiagnosticSeverity.Warning);
+
+    private static DiagnosticResult InvalidCompletedTaskAttributeDiagnostic() => new("VSTHRD013", DiagnosticSeverity.Warning);
+
     private DiagnosticResult CreateDiagnostic(int line, int column, int length) =>
-        CSVerify.Diagnostic().WithSpan(line, column, line, column + length);
+        Diagnostic().WithSpan(line, column, line, column + length);
 }
