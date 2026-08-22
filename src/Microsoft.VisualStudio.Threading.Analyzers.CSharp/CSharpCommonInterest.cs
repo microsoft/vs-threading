@@ -237,6 +237,12 @@ internal static class CSharpCommonInterest
         return context.SemanticModel.GetSymbolInfo(receiver, context.CancellationToken).Symbol;
     }
 
+    /// <summary>
+    /// Determines whether a blocking member access has a receiver that is provably complete.
+    /// </summary>
+    internal static bool HasTaskCompleted(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax)
+        => HasTaskCompletedCore(context, memberAccessSyntax);
+
     private static ExpressionSyntax UnwrapParentheses(ExpressionSyntax expression)
     {
         while (expression is ParenthesizedExpressionSyntax parenthesized)
@@ -324,7 +330,7 @@ internal static class CSharpCommonInterest
         => Utils.IsTask(type)
             || (type?.Name == nameof(ValueTask) && type.BelongsToNamespace(Namespaces.SystemThreadingTasks));
 
-    private static bool HasTaskCompleted(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax)
+    private static bool HasTaskCompletedCore(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax)
     {
         ExpressionSyntax taskReceiver = GetTaskReceiver(context, memberAccessSyntax);
         ITypeSymbol? taskType = context.SemanticModel.GetTypeInfo(taskReceiver, context.CancellationToken).Type;
@@ -355,6 +361,12 @@ internal static class CSharpCommonInterest
         if (IsWithinCompletedTaskBranch(context, memberAccessSyntax, taskSymbols, potentialTaskSymbols))
         {
             return true;
+        }
+
+        // Awaiting an IValueTaskSource-backed ValueTask consumes it, so a later Result access is not safe.
+        if (!Utils.IsTask(taskType))
+        {
+            return false;
         }
 
         StatementSyntax? containingStatement = memberAccessSyntax.FirstAncestorOrSelf<StatementSyntax>();

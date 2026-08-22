@@ -548,6 +548,29 @@ class Test {
     }
 
     [Fact]
+    public async Task AwaitedValueTaskResultReportsWarningButGuardedResultDoesNot()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    async void Awaited(ValueTask<int> task) {
+        await task;
+        _ = task.[|Result|];
+    }
+
+    void Guarded(ValueTask<int> task) {
+        if (task.IsCompleted) {
+            _ = task.Result;
+        }
+    }
+}
+";
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
     public async Task TaskResultShouldReportWarning_WithinAnonymousDelegate()
     {
         var test = @"
@@ -1177,6 +1200,34 @@ static class Extensions {
             FixedCode = test,
         };
         verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncBlockingMethods.txt", "[Extensions]::WaitSynchronously"));
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task ConfiguredAsyncSuffixedMethodIsNotTreatedAsCoveredByVSTHRD103()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class CustomWaiter {
+    internal void JoinAsync() { }
+    internal Task JoinAsyncAsync() => Task.CompletedTask;
+}
+
+class Test {
+    async Task FAsync(CustomWaiter waiter) {
+        waiter.[|JoinAsync|]();
+        await Task.Yield();
+    }
+}
+";
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            FixedCode = test,
+        };
+        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncBlockingMethods.txt", "[CustomWaiter]::JoinAsync"));
         await verifyTest.RunAsync();
     }
 

@@ -206,15 +206,23 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
         }
 
         IMethodSymbol methodDefinition = invokedMethod.ReducedFrom ?? invokedMethod;
+        bool isConfiguredSyncBlockingMethod = configuredSyncBlockingMethods.Any(
+            method => method.IsMatch(invokedMethod) || method.IsMatch(methodDefinition));
+        if (!isConfiguredSyncBlockingMethod)
+        {
+            return;
+        }
+
         bool isBuiltInSyncBlockingMethod = CommonInterest.ProblematicSyncBlockingMethods.Any(
             method => method.Method.IsMatch(invokedMethod) || method.Method.IsMatch(methodDefinition));
         bool coveredByVSTHRD103 = !methodsExcludedFromVSTHRD103.Contains(invokedMethod)
             && !methodsExcludedFromVSTHRD103.Contains(methodDefinition)
+            && !invokedMethod.Name.EndsWith(VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix, StringComparison.CurrentCulture)
+            && !invokedMethod.HasAsyncCompatibleReturnType()
             && IsInTaskReturningMethodOrDelegate(context)
             && HasAsyncAlternative(context, invocationExpressionSyntax, invokedMethod);
         if (!isBuiltInSyncBlockingMethod
-            && !coveredByVSTHRD103
-            && configuredSyncBlockingMethods.Any(method => method.IsMatch(invokedMethod) || method.IsMatch(methodDefinition)))
+            && !coveredByVSTHRD103)
         {
             SimpleNameSyntax? methodName = invocationExpressionSyntax.Expression switch
             {

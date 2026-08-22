@@ -125,6 +125,23 @@ class Test {
     }
 
     [Fact]
+    public async Task AwaitedTaskResultDoesNotGenerateWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T(Task<int> task) {
+        await task;
+        _ = task.Result;
+    }
+}
+";
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
     public async Task JTFRunOfTInTaskReturningMethodGeneratesWarning()
     {
         var test = @"

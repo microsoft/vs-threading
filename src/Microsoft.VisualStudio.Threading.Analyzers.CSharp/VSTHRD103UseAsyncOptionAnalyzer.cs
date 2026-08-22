@@ -240,6 +240,12 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
                 {
                     if (item.Method.IsMatch(memberSymbol))
                     {
+                        if (memberName.Parent is MemberAccessExpressionSyntax memberAccess
+                            && CSharpCommonInterest.HasTaskCompleted(context, memberAccess))
+                        {
+                            return false;
+                        }
+
                         // Check if this method is excluded from VSTHRD103 diagnostics
                         if (this.excludedMethods.Contains(memberSymbol))
                         {
