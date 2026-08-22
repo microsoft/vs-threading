@@ -221,6 +221,68 @@ class Test {
     }
 
     [Fact]
+    public async Task TaskWhenAll_LocalArrayCompletesContainedTask()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async void GetResultAsync(Task<int> task)
+                {
+                    Task[] tasks = { task };
+                    await Task.WhenAll(tasks);
+                    _ = task.Result;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task TaskWhenAll_LocalArrayDoesNotCompleteReassignedTask()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async void GetResultAsync(Task<int> task, Task<int> replacement)
+                {
+                    Task[] tasks = { task };
+                    task = replacement;
+                    await Task.WhenAll(tasks);
+                    _ = task.[|Result|];
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task TaskWhenAll_LocalArrayElementWriteInvalidatesProof()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async void GetResultAsync(Task<int> task, Task<int> replacement)
+                {
+                    Task[] tasks = { task };
+                    tasks[0] = replacement;
+                    await Task.WhenAll(tasks);
+                    _ = task.[|Result|];
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
     public async Task TaskWhenAll_TaskPassedByValue_NoWarning()
     {
         var test = @"
@@ -1200,6 +1262,24 @@ class Test {
 [Contoso.Threading.CustomWaiter]::Join
 "));
         await verifyTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task ConditionalTaskWaitInSynchronousMethodReports()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                void F(Task task)
+                {
+                    task?.[|Wait|]();
+                }
+            }
+            """;
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
     }
 
     [Fact]

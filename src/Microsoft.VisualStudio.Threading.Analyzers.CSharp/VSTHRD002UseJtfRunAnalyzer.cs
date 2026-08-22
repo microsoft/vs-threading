@@ -135,10 +135,21 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
         var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
         if (analyzeBuiltInBlockingMethods && ShouldAnalyze(context, analyzeWholeCodeBlock))
         {
-            InspectMemberAccess(
-                context,
-                invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax,
-                CommonInterest.ProblematicSyncBlockingMethods);
+            if (invocationExpressionSyntax.Expression is MemberAccessExpressionSyntax memberAccess)
+            {
+                InspectMemberAccess(context, memberAccess, CommonInterest.ProblematicSyncBlockingMethods);
+            }
+            else if (invocationExpressionSyntax.Expression is MemberBindingExpressionSyntax memberBinding
+                && invocationExpressionSyntax.FirstAncestorOrSelf<ConditionalAccessExpressionSyntax>() is { } conditionalAccess)
+            {
+                CSharpCommonInterest.InspectMemberBinding(
+                    context,
+                    memberBinding,
+                    conditionalAccess.Expression,
+                    conditionalAccess,
+                    Descriptor,
+                    CommonInterest.ProblematicSyncBlockingMethods);
+            }
         }
 
         if (configuredSyncBlockingMethods.IsEmpty

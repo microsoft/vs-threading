@@ -1603,6 +1603,89 @@ class Test {
     }
 
     [Fact]
+    public async Task AwaitedConfiguredValueTaskCopyInvalidatesCompletionGuard()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task<int> GetResultAsync(ValueTask<int> task)
+                {
+                    var configured = task.ConfigureAwait(false);
+                    await configured;
+                    if (task.IsCompletedSuccessfully)
+                    {
+                        return task.{|#0:Result|};
+                    }
+
+                    return 0;
+                }
+            }
+            """;
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        };
+        verifyTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task AwaitedValueTaskParameterCopyInvalidatesCompletionGuard()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task<int> GetResultAsync(ValueTask<int> task, ValueTask<int> copy)
+                {
+                    copy = task;
+                    await copy;
+                    if (task.IsCompletedSuccessfully)
+                    {
+                        return task.{|#0:Result|};
+                    }
+
+                    return 0;
+                }
+            }
+            """;
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        };
+        verifyTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task CoalesceAssignmentAwaitDoesNotProveCompletion()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task<int> GetResultAsync(Task<int> task, int? other)
+                {
+                    other ??= await task;
+                    return task.{|#0:Result|};
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(
+            test,
+            CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
+    }
+
+    [Fact]
     public async Task RefConditionalAliasMutationAfterAwait_GeneratesWarning()
     {
         string test = """

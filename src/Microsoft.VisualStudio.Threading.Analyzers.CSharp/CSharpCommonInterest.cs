@@ -278,6 +278,50 @@ internal static class CSharpCommonInterest
         }
     }
 
+    internal static void InspectMemberBinding(
+        SyntaxNodeAnalysisContext context,
+        MemberBindingExpressionSyntax memberBinding,
+        ExpressionSyntax receiver,
+        SyntaxNode accessSyntax,
+        DiagnosticDescriptor descriptor,
+        IEnumerable<CommonInterest.SyncBlockingMethod> problematicMethods)
+    {
+        if (descriptor is null)
+        {
+            throw new ArgumentNullException(nameof(descriptor));
+        }
+
+        if (ShouldIgnoreContext(context) || CSharpUtils.IsWithinNameOf(context.Node as ExpressionSyntax))
+        {
+            return;
+        }
+
+        ITypeSymbol? receiverType = context.SemanticModel.GetTypeInfo(receiver, context.CancellationToken).Type;
+        ISymbol? accessedSymbol = memberBinding.Parent is InvocationExpressionSyntax invocation
+            ? context.SemanticModel.GetSymbolInfo(invocation, context.CancellationToken).Symbol
+            : context.SemanticModel.GetSymbolInfo(memberBinding, context.CancellationToken).Symbol;
+        if (receiverType is null || accessedSymbol is null)
+        {
+            return;
+        }
+
+        foreach (CommonInterest.SyncBlockingMethod item in problematicMethods)
+        {
+            if (memberBinding.Name.Identifier.ValueText == item.Method.Name
+                && receiverType.Name == item.Method.ContainingType.Name
+                && receiverType.BelongsToNamespace(item.Method.ContainingType.Namespace)
+                && IsBuiltInBlockingMember(context, accessedSymbol, item.Method))
+            {
+                if (HasTaskCompleted(context, receiver, accessSyntax))
+                {
+                    return;
+                }
+
+                context.ReportDiagnostic(Diagnostic.Create(descriptor, memberBinding.Name.GetLocation()));
+            }
+        }
+    }
+
     /// <summary>
     /// Gets the symbol represented by the normalized task-like receiver of a blocking member access.
     /// </summary>
@@ -713,8 +757,17 @@ internal static class CSharpCommonInterest
             var taskAndCopySymbols = new HashSet<ISymbol>(taskSymbols, SymbolEqualityComparer.Default);
             bool IsTaskOrCopy(ExpressionSyntax expression)
             {
-                ISymbol? expressionSymbol = context.SemanticModel.GetSymbolInfo(UnwrapParentheses(expression), context.CancellationToken).Symbol;
-                return expressionSymbol is object && taskAndCopySymbols.Contains(expressionSymbol);
+                expression = UnwrapParentheses(expression);
+                ISymbol? expressionSymbol = context.SemanticModel.GetSymbolInfo(expression, context.CancellationToken).Symbol;
+                if (expressionSymbol is object && taskAndCopySymbols.Contains(expressionSymbol))
+                {
+                    return true;
+                }
+
+                return expression is InvocationExpressionSyntax configureAwaitInvocation
+                    && configureAwaitInvocation.Expression is MemberAccessExpressionSyntax { Name.Identifier.ValueText: nameof(Task.ConfigureAwait) } configureAwaitAccess
+                    && IsSupportedConfigureAwaitInvocation(context, configureAwaitInvocation)
+                    && IsTaskOrCopy(configureAwaitAccess.Expression);
             }
 
             IEnumerable<SyntaxNode> copyOperations = searchRoot.DescendantNodes(DescendIntoChildren)
@@ -730,15 +783,16 @@ internal static class CSharpCommonInterest
                     taskAndCopySymbols.Add(declaredLocal);
                 }
                 else if (copyOperation is AssignmentExpressionSyntax assignment
-                    && context.SemanticModel.GetSymbolInfo(assignment.Left, context.CancellationToken).Symbol is ILocalSymbol assignedLocal)
+                    && context.SemanticModel.GetSymbolInfo(assignment.Left, context.CancellationToken).Symbol is ISymbol assignedSymbol
+                    && assignedSymbol is ILocalSymbol or IParameterSymbol)
                 {
                     if (IsTaskOrCopy(assignment.Right))
                     {
-                        taskAndCopySymbols.Add(assignedLocal);
+                        taskAndCopySymbols.Add(assignedSymbol);
                     }
                     else if (IsDefinitelyExecutedBefore(assignment, awaitExpression))
                     {
-                        taskAndCopySymbols.Remove(assignedLocal);
+                        taskAndCopySymbols.Remove(assignedSymbol);
                     }
                 }
             }
@@ -1039,7 +1093,10 @@ internal static class CSharpCommonInterest
                         && (binary.IsKind(SyntaxKind.LogicalAndExpression)
                             || binary.IsKind(SyntaxKind.LogicalOrExpression)
                             || binary.IsKind(SyntaxKind.CoalesceExpression))
-                        && binary.Right.FullSpan.Contains(candidate.Span)));
+                        && binary.Right.FullSpan.Contains(candidate.Span))
+                    || (ancestor is AssignmentExpressionSyntax assignment
+                        && assignment.IsKind(SyntaxKind.CoalesceAssignmentExpression)
+                        && assignment.Right.FullSpan.Contains(candidate.Span)));
             if (!isConditionallyExecuted && AwaitCompletesTask(context, candidate, taskSymbols))
             {
                 awaitExpression = candidate;
@@ -1085,10 +1142,65 @@ internal static class CSharpCommonInterest
                     || (argument.Expression is ImplicitArrayCreationExpressionSyntax { Initializer: { } implicitArrayInitializer }
                         && implicitArrayInitializer.Expressions.Any(expression => IsOneOfSymbols(context, expression, taskSymbols)))
                     || (argument.Expression is ArrayCreationExpressionSyntax { Initializer: { } arrayInitializer }
-                        && arrayInitializer.Expressions.Any(expression => IsOneOfSymbols(context, expression, taskSymbols))));
+                        && arrayInitializer.Expressions.Any(expression => IsOneOfSymbols(context, expression, taskSymbols)))
+                    || LocalTaskCollectionContainsTrackedTask(context, argument.Expression, awaitExpression, taskSymbols));
         }
 
         return false;
+    }
+
+    private static bool LocalTaskCollectionContainsTrackedTask(
+        SyntaxNodeAnalysisContext context,
+        ExpressionSyntax collectionExpression,
+        AwaitExpressionSyntax awaitExpression,
+        IImmutableSet<ISymbol> taskSymbols)
+    {
+        if (context.SemanticModel.GetSymbolInfo(UnwrapParentheses(collectionExpression), context.CancellationToken).Symbol is not ILocalSymbol collection
+            || collection.DeclaringSyntaxReferences.SingleOrDefault()?.GetSyntax(context.CancellationToken) is not VariableDeclaratorSyntax { Initializer: { } initializer }
+            || initializer.SpanStart >= awaitExpression.SpanStart)
+        {
+            return false;
+        }
+
+        bool InitializerContainsTrackedTask(ExpressionSyntax expression)
+        {
+            InitializerExpressionSyntax? arrayInitializer = expression switch
+            {
+                InitializerExpressionSyntax directInitializer => directInitializer,
+                ArrayCreationExpressionSyntax arrayCreation => arrayCreation.Initializer,
+                ImplicitArrayCreationExpressionSyntax implicitArrayCreation => implicitArrayCreation.Initializer,
+                _ => null,
+            };
+            return arrayInitializer?.Expressions.Any(item => IsOneOfSymbols(context, item, taskSymbols)) is true;
+        }
+
+        if (!InitializerContainsTrackedTask(initializer.Value))
+        {
+            return false;
+        }
+
+        SyntaxNode searchRoot = awaitExpression.AncestorsAndSelf().FirstOrDefault(
+            ancestor => ancestor is AnonymousFunctionExpressionSyntax
+                or LocalFunctionStatementSyntax
+                or BaseMethodDeclarationSyntax
+                or AccessorDeclarationSyntax)
+            ?? awaitExpression;
+        IImmutableSet<ISymbol> collectionSymbol = ImmutableHashSet.Create<ISymbol>(SymbolEqualityComparer.Default, collection);
+        if (MayReassignTask(context, searchRoot, taskSymbols, initializer.Span.End, awaitExpression.SpanStart)
+            || MayReassignTask(context, searchRoot, collectionSymbol, initializer.Span.End, awaitExpression.SpanStart))
+        {
+            return false;
+        }
+
+        bool IsCollectionElement(ExpressionSyntax expression)
+            => UnwrapParentheses(expression) is ElementAccessExpressionSyntax elementAccess
+                && IsOneOfSymbols(context, elementAccess.Expression, collectionSymbol);
+        return !searchRoot.DescendantNodes()
+            .Where(node => node.SpanStart > initializer.Span.End && node.SpanStart < awaitExpression.SpanStart)
+            .Any(node => (node is AssignmentExpressionSyntax assignment && IsCollectionElement(assignment.Left))
+                || (node is ArgumentSyntax argument
+                    && (argument.RefKindKeyword.IsKind(SyntaxKind.RefKeyword) || argument.RefKindKeyword.IsKind(SyntaxKind.OutKeyword))
+                    && IsCollectionElement(argument.Expression)));
     }
 
     private static bool MayReassignTask(SyntaxNodeAnalysisContext context, SyntaxNode node, IImmutableSet<ISymbol> taskSymbols)
