@@ -192,8 +192,9 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
         return method.ContainingType.GetMembers(asyncName)
             .OfType<IMethodSymbol>()
             .Any(candidate => candidate.Arity == method.Arity
-                && candidate.Parameters.Length == method.Parameters.Length
-                && candidate.Parameters.Zip(method.Parameters, ParametersHaveEquivalentSignatures).All(match => match));
+                && candidate.Parameters.Length >= method.Parameters.Length
+                && candidate.Parameters.Take(method.Parameters.Length).Zip(method.Parameters, ParametersHaveEquivalentSignatures).All(match => match)
+                && candidate.Parameters.Skip(method.Parameters.Length).All(parameter => parameter.IsOptional));
     }
 
     private static bool ParametersHaveEquivalentSignatures(IParameterSymbol left, IParameterSymbol right)
@@ -275,10 +276,7 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
                     && callerReturnType.IsAsyncCompatibleReturnType()
                     && ((invocation.FirstAncestorOrSelf<ReturnStatementSyntax>() is { Expression: { } returnExpression }
                             && returnExpression.FullSpan.Contains(invocation.Span))
-                        || (callingMethod.ExpressionBody?.Expression.FullSpan.Contains(invocation.Span) is true))
-                    && (callerReturnType.Arity == 0
-                        || !Utils.IsTask(callerReturnType)
-                        || !semanticModel.Compilation.ClassifyConversion(method.ReturnType, callerReturnType.TypeArguments[0]).IsImplicit))
+                        || (callingMethod.ExpressionBody?.Expression.FullSpan.Contains(invocation.Span) is true)))
                 {
                     return false;
                 }
