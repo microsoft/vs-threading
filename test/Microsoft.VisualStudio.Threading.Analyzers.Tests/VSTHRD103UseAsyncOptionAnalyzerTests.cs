@@ -142,6 +142,103 @@ class Test {
     }
 
     [Fact]
+    public async Task AwaitedTaskRemainsCompletedAcrossStatementWrappers()
+    {
+        var test = @"
+using System.IO;
+using System.Threading.Tasks;
+
+class Test {
+    async Task T(Task<int> task, int value) {
+        await task;
+        try {
+            _ = task.Result;
+        } catch {
+        }
+
+        using (new MemoryStream()) {
+            _ = task.Result;
+        }
+
+        switch (value) {
+            case 0:
+                _ = task.Result;
+                break;
+        }
+    }
+}
+";
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task AwaitedTaskReassignedAfterAccessInLoopGeneratesWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T(Task<int> task, bool condition) {
+        await task;
+        while (condition) {
+            _ = task.{|#0:Result|};
+            task = Task.FromResult(1);
+        }
+    }
+}
+";
+
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task CompletedConditionalTaskResultDoesNotGenerateWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task Awaited(Task<int> task) {
+        await task;
+        _ = task?.Result;
+    }
+
+    Task Guarded(Task<int> task) {
+        if (task.IsCompleted) {
+            _ = task?.Result;
+        }
+
+        return Task.CompletedTask;
+    }
+}
+";
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task AwaitedValueTaskCompletionGuardStillGeneratesWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T(ValueTask<int> task) {
+        await task;
+        if (task.IsCompleted) {
+            _ = task.{|#0:Result|};
+        }
+    }
+}
+";
+
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
     public async Task AwaitedTaskWaitDoesNotFallBackToAsyncAlternativeWarning()
     {
         var test = @"
@@ -823,6 +920,26 @@ class Test {
         Task<int> task = null;
         task.ContinueWith(t => { Console.WriteLine(t.Result); });
         return Task.FromResult(1);
+    }
+}
+";
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task TaskOfTResultInAsyncContinuationGeneratesNoWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task T(Task<int> task) {
+        task.ContinueWith(async t => {
+            _ = t.Result;
+            await Task.Yield();
+        });
+        return Task.CompletedTask;
     }
 }
 ";

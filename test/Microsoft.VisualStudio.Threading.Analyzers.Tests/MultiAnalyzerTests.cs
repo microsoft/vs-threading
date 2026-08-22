@@ -127,6 +127,40 @@ class Test {
     }
 
     [Fact]
+    public async Task VSTHRD103ExclusionMatchesReducedExtensionDefinition()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class CustomWaiter { }
+
+static class Extensions {
+    public static void Join(this CustomWaiter waiter) { }
+    public static Task JoinAsync(this CustomWaiter waiter) => Task.CompletedTask;
+}
+
+class Test {
+    Task FAsync(CustomWaiter waiter) {
+        waiter.Join();
+        return Task.CompletedTask;
+    }
+}
+";
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            TestState = { MarkupHandling = MarkupMode.None },
+        };
+        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncBlockingMethods.txt", "[Extensions]::Join"));
+        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncMethodsToExcludeFromVSTHRD103.txt", "[Extensions]::Join"));
+        verifyTest.ExpectedDiagnostics.Add(
+            CSVerify.Diagnostic(VSTHRD002UseJtfRunAnalyzer.Descriptor)
+                .WithSpan(13, 16, 13, 20));
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
     public async Task ConfiguredBlockerInAsyncLambdaProducesOneDiagnostic()
     {
         var test = @"

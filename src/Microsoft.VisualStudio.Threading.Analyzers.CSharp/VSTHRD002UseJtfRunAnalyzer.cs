@@ -80,9 +80,9 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
                     {
                         bool analyzeWholeCodeBlock = propertySymbol is object || !methodSymbol!.HasAsyncCompatibleReturnType();
                         codeBlockContext.RegisterSyntaxNodeAction(
-                            Utils.DebuggableWrapper(c => AnalyzeInvocation(c, taskSymbol, configuredSyncBlockingMethods, methodsExcludedFromVSTHRD103, analyzeWholeCodeBlock)),
+                            Utils.DebuggableWrapper(c => AnalyzeInvocation(c, configuredSyncBlockingMethods, methodsExcludedFromVSTHRD103, analyzeWholeCodeBlock)),
                             SyntaxKind.InvocationExpression);
-                        codeBlockContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => AnalyzeMemberAccess(c, taskSymbol, analyzeWholeCodeBlock)), SyntaxKind.SimpleMemberAccessExpression);
+                        codeBlockContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => AnalyzeMemberAccess(c, analyzeWholeCodeBlock)), SyntaxKind.SimpleMemberAccessExpression);
                     }
                 });
             }
@@ -109,74 +109,14 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
             && !containingMethod.HasAsyncCompatibleReturnType();
     }
 
-    private static ParameterSyntax? GetFirstParameter(AnonymousFunctionExpressionSyntax? anonymousFunctionSyntax)
-    {
-        switch (anonymousFunctionSyntax)
-        {
-            case SimpleLambdaExpressionSyntax lambda:
-                return lambda.Parameter;
-            case ParenthesizedLambdaExpressionSyntax lambda:
-                return lambda.ParameterList.Parameters.FirstOrDefault();
-            case AnonymousMethodExpressionSyntax anonymousMethod:
-                return anonymousMethod.ParameterList?.Parameters.FirstOrDefault();
-        }
-
-        return null;
-    }
-
     private static void InspectMemberAccess(
         SyntaxNodeAnalysisContext context,
         MemberAccessExpressionSyntax? memberAccessSyntax,
-        IEnumerable<CommonInterest.SyncBlockingMethod> problematicMethods,
-        INamedTypeSymbol taskSymbol)
+        IEnumerable<CommonInterest.SyncBlockingMethod> problematicMethods)
     {
         if (memberAccessSyntax is null)
         {
             return;
-        }
-
-        // A continuation's antecedent is complete throughout its delegate, including nested delegates that capture it.
-        foreach (AnonymousFunctionExpressionSyntax anonymousFunctionSyntax in context.Node.Ancestors().OfType<AnonymousFunctionExpressionSyntax>())
-        {
-            var anonymousFunctionArgument = anonymousFunctionSyntax.Parent as ArgumentSyntax;
-            var continuationInvocation = anonymousFunctionArgument?.Parent?.Parent as InvocationExpressionSyntax;
-            if (continuationInvocation is null || continuationInvocation.ArgumentList.Arguments.FirstOrDefault() != anonymousFunctionArgument)
-            {
-                continue;
-            }
-
-            var invokedMemberSymbol = context.SemanticModel.GetSymbolInfo(continuationInvocation, context.CancellationToken).Symbol as IMethodSymbol;
-            if (invokedMemberSymbol?.Name != nameof(Task.ContinueWith)
-                || !Utils.IsEqualToOrDerivedFrom(invokedMemberSymbol.ContainingType, taskSymbol))
-            {
-                continue;
-            }
-
-            ParameterSyntax? firstParameter = GetFirstParameter(anonymousFunctionSyntax);
-            if (firstParameter is object
-                && context.SemanticModel.GetDeclaredSymbol(firstParameter, context.CancellationToken) is IParameterSymbol completedTask)
-            {
-                (ImmutableHashSet<ISymbol> taskSymbols, ImmutableHashSet<ISymbol> potentialTaskSymbols) =
-                    CSharpCommonInterest.GetSymbolAndRefAliases(context, memberAccessSyntax, completedTask);
-                if (memberAccessSyntax.Ancestors().TakeWhile(node => node != anonymousFunctionSyntax)
-                    .Any(node => node is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax))
-                {
-                    potentialTaskSymbols = potentialTaskSymbols.Union(CSharpCommonInterest.GetSymbolAndRefAliases(
-                        context,
-                        memberAccessSyntax,
-                        completedTask,
-                        anonymousFunctionSyntax,
-                        includeAllCandidates: true).Potential);
-                }
-
-                ISymbol? receiverSymbol = GetTaskReceiverSymbol(context, memberAccessSyntax);
-                if (receiverSymbol is object
-                    && taskSymbols.Contains(receiverSymbol)
-                    && !IsTaskReassignedInContinuation(context, anonymousFunctionSyntax, memberAccessSyntax, potentialTaskSymbols))
-                {
-                    return;
-                }
-            }
         }
 
         CSharpCommonInterest.InspectMemberAccess(context, memberAccessSyntax, Descriptor, problematicMethods);
@@ -184,7 +124,6 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
 
     private static void AnalyzeInvocation(
         SyntaxNodeAnalysisContext context,
-        INamedTypeSymbol taskSymbol,
         ImmutableArray<CommonInterest.QualifiedMember> configuredSyncBlockingMethods,
         ImmutableArray<CommonInterest.QualifiedMember> methodsExcludedFromVSTHRD103,
         bool analyzeWholeCodeBlock)
@@ -195,8 +134,7 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
             InspectMemberAccess(
                 context,
                 invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax,
-                CommonInterest.ProblematicSyncBlockingMethods,
-                taskSymbol);
+                CommonInterest.ProblematicSyncBlockingMethods);
         }
 
         if (configuredSyncBlockingMethods.IsEmpty
@@ -296,7 +234,7 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
         return containingMethod?.HasAsyncCompatibleReturnType() is true;
     }
 
-    private static void AnalyzeMemberAccess(SyntaxNodeAnalysisContext context, INamedTypeSymbol taskSymbol, bool analyzeWholeCodeBlock)
+    private static void AnalyzeMemberAccess(SyntaxNodeAnalysisContext context, bool analyzeWholeCodeBlock)
     {
         if (!ShouldAnalyze(context, analyzeWholeCodeBlock))
         {
@@ -307,69 +245,6 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
         InspectMemberAccess(
             context,
             memberAccessSyntax,
-            CommonInterest.SyncBlockingProperties,
-            taskSymbol);
-    }
-
-    private static ISymbol? GetTaskReceiverSymbol(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax)
-        => CSharpCommonInterest.GetTaskReceiverSymbol(context, memberAccessSyntax);
-
-    private static ExpressionSyntax UnwrapParentheses(ExpressionSyntax expression)
-    {
-        while (expression is ParenthesizedExpressionSyntax parenthesized)
-        {
-            expression = parenthesized.Expression;
-        }
-
-        return expression;
-    }
-
-    private static bool IsTaskReassignedInContinuation(
-        SyntaxNodeAnalysisContext context,
-        AnonymousFunctionExpressionSyntax continuation,
-        MemberAccessExpressionSyntax memberAccess,
-        ImmutableHashSet<ISymbol> taskSymbols)
-    {
-        bool accessIsNested = memberAccess.Ancestors().TakeWhile(node => node != continuation).Any(node => node is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax);
-        int beforePosition = accessIsNested ? continuation.Span.End + 1 : memberAccess.SpanStart;
-
-        foreach (AssignmentExpressionSyntax assignment in continuation.DescendantNodes().OfType<AssignmentExpressionSyntax>())
-        {
-            bool isDeferredWrite = assignment.Ancestors().TakeWhile(node => node != continuation)
-                .Any(node => node is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax);
-            if ((assignment.SpanStart < beforePosition || isDeferredWrite)
-                && IsAssignmentToParameter(context, assignment.Left, taskSymbols))
-            {
-                return true;
-            }
-        }
-
-        foreach (ArgumentSyntax argument in continuation.DescendantNodes().OfType<ArgumentSyntax>())
-        {
-            ISymbol? argumentSymbol = context.SemanticModel.GetSymbolInfo(UnwrapParentheses(argument.Expression), context.CancellationToken).Symbol;
-            bool isDeferredWrite = argument.Ancestors().TakeWhile(node => node != continuation)
-                .Any(node => node is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax);
-            if ((argument.SpanStart < beforePosition || isDeferredWrite)
-                && (argument.RefKindKeyword.IsKind(SyntaxKind.RefKeyword) || argument.RefKindKeyword.IsKind(SyntaxKind.OutKeyword))
-                && argumentSymbol is object
-                && taskSymbols.Contains(argumentSymbol))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static bool IsAssignmentToParameter(SyntaxNodeAnalysisContext context, ExpressionSyntax expression, IImmutableSet<ISymbol> taskSymbols)
-    {
-        expression = UnwrapParentheses(expression);
-        if (expression is TupleExpressionSyntax tuple)
-        {
-            return tuple.Arguments.Any(argument => IsAssignmentToParameter(context, argument.Expression, taskSymbols));
-        }
-
-        ISymbol? symbol = context.SemanticModel.GetSymbolInfo(expression, context.CancellationToken).Symbol;
-        return symbol is object && taskSymbols.Contains(symbol);
+            CommonInterest.SyncBlockingProperties);
     }
 }

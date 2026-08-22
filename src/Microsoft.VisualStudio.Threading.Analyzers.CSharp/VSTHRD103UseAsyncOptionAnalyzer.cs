@@ -110,7 +110,12 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
                     MemberBindingExpressionSyntax bindingExpr => bindingExpr.Name,
                     _ => conditionalAccessSyntax.WhenNotNull,
                 };
-                this.InspectMemberAccess(context, rightSide, CommonInterest.SyncBlockingProperties);
+                this.InspectMemberAccess(
+                    context,
+                    rightSide,
+                    CommonInterest.SyncBlockingProperties,
+                    conditionalAccessSyntax.Expression,
+                    conditionalAccessSyntax);
             }
         }
 
@@ -158,7 +163,7 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
                             && m.HasAsyncCompatibleReturnType())
                         {
                             // Check if this method is excluded from VSTHRD103 diagnostics
-                            if (this.excludedMethods.Contains(methodSymbol))
+                            if (this.IsExcluded(methodSymbol))
                             {
                                 return;
                             }
@@ -231,7 +236,12 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
             return methodSymbol?.HasAsyncCompatibleReturnType() is true;
         }
 
-        private bool InspectMemberAccess(SyntaxNodeAnalysisContext context, ExpressionSyntax memberName, IEnumerable<CommonInterest.SyncBlockingMethod> problematicMethods)
+        private bool InspectMemberAccess(
+            SyntaxNodeAnalysisContext context,
+            ExpressionSyntax memberName,
+            IEnumerable<CommonInterest.SyncBlockingMethod> problematicMethods,
+            ExpressionSyntax? taskReceiver = null,
+            SyntaxNode? accessSyntax = null)
         {
             ISymbol? memberSymbol = context.SemanticModel.GetSymbolInfo(memberName, context.CancellationToken).Symbol;
             if (memberSymbol is object)
@@ -240,14 +250,16 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
                 {
                     if (item.Method.IsMatch(memberSymbol))
                     {
-                        if (memberName.Parent is MemberAccessExpressionSyntax memberAccess
-                            && CSharpCommonInterest.HasTaskCompleted(context, memberAccess))
+                        if ((memberName.Parent is MemberAccessExpressionSyntax memberAccess
+                                && CSharpCommonInterest.HasTaskCompleted(context, memberAccess))
+                            || (taskReceiver is object
+                                && CSharpCommonInterest.HasTaskCompleted(context, taskReceiver, accessSyntax ?? memberName)))
                         {
                             return true;
                         }
 
                         // Check if this method is excluded from VSTHRD103 diagnostics
-                        if (this.excludedMethods.Contains(memberSymbol))
+                        if (this.IsExcluded(memberSymbol))
                         {
                             return false;
                         }
@@ -279,5 +291,10 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
 
             return false;
         }
+
+        private bool IsExcluded(ISymbol symbol)
+            => this.excludedMethods.Contains(symbol)
+                || (symbol is IMethodSymbol { ReducedFrom: { } reducedFrom }
+                    && this.excludedMethods.Contains(reducedFrom));
     }
 }

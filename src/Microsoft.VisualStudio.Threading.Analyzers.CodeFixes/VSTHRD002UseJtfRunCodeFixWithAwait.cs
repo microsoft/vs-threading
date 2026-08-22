@@ -101,14 +101,19 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
             || method.DescendantNodes(
                     node => node is not AnonymousFunctionExpressionSyntax and not LocalFunctionStatementSyntax)
                 .OfType<YieldStatementSyntax>()
-                .Any())
+                .Any()
+            || method.DescendantNodes(
+                    node => node is not AnonymousFunctionExpressionSyntax and not LocalFunctionStatementSyntax)
+                .OfType<VariableDeclaratorSyntax>()
+                .Any(variable => semanticModel.GetDeclaredSymbol(variable, cancellationToken) is ILocalSymbol { RefKind: not RefKind.None }))
         {
             return false;
         }
 
         bool changesContract = !methodSymbol.HasAsyncCompatibleReturnType();
         return !changesContract
-            || (!methodSymbol.IsVirtual
+            || (!method.Modifiers.Any(SyntaxKind.PartialKeyword)
+                && !methodSymbol.IsVirtual
                 && !methodSymbol.IsOverride
                 && !methodSymbol.FindInterfacesImplemented().Any());
     }

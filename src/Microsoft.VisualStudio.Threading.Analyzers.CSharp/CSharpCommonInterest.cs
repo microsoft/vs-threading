@@ -46,8 +46,16 @@ internal static class CSharpCommonInterest
                 or AccessorDeclarationSyntax)
             ?? node.FirstAncestorOrSelf<GlobalStatementSyntax>()?.Parent
             ?? node;
+        ITypeSymbol? trackedType = symbol switch
+        {
+            ILocalSymbol local => local.Type,
+            IParameterSymbol parameter => parameter.Type,
+            IFieldSymbol field => field.Type,
+            _ => null,
+        };
 
         var refTargets = new Dictionary<ISymbol, HashSet<ISymbol>>(SymbolEqualityComparer.Default);
+        var potentialOnlyRefLocals = new HashSet<ISymbol>(SymbolEqualityComparer.Default);
         bool DescendIntoChildren(SyntaxNode child) =>
             child == searchRoot || child is not AnonymousFunctionExpressionSyntax and not LocalFunctionStatementSyntax;
 
@@ -91,7 +99,21 @@ internal static class CSharpCommonInterest
                     : variable.Initializer.Value;
                 if (context.SemanticModel.GetSymbolInfo(UnwrapParentheses(initializer), context.CancellationToken).Symbol is ISymbol initializedFrom)
                 {
-                    refTargets[local] = GetRefTargets(initializedFrom);
+                    if (initializedFrom is IMethodSymbol refReturningMethod
+                        && (refReturningMethod.ReturnsByRef || refReturningMethod.ReturnsByRefReadonly)
+                        && SymbolEqualityComparer.Default.Equals(refReturningMethod.ReturnType, trackedType))
+                    {
+                        refTargets[local] = new HashSet<ISymbol>(SymbolEqualityComparer.Default) { symbol };
+                        potentialOnlyRefLocals.Add(local);
+                    }
+                    else
+                    {
+                        refTargets[local] = GetRefTargets(initializedFrom);
+                        if (potentialOnlyRefLocals.Contains(initializedFrom))
+                        {
+                            potentialOnlyRefLocals.Add(local);
+                        }
+                    }
                 }
             }
             else if (candidate is AssignmentExpressionSyntax { Right: RefExpressionSyntax refAssignment } assignment
@@ -103,10 +125,22 @@ internal static class CSharpCommonInterest
                     || !refTargets.TryGetValue(reboundLocal, out HashSet<ISymbol>? existingTargets))
                 {
                     refTargets[reboundLocal] = assignedTargets;
+                    if (potentialOnlyRefLocals.Contains(assignedFrom))
+                    {
+                        potentialOnlyRefLocals.Add(reboundLocal);
+                    }
+                    else
+                    {
+                        potentialOnlyRefLocals.Remove(reboundLocal);
+                    }
                 }
                 else
                 {
                     existingTargets.UnionWith(assignedTargets);
+                    if (potentialOnlyRefLocals.Contains(assignedFrom))
+                    {
+                        potentialOnlyRefLocals.Add(reboundLocal);
+                    }
                 }
             }
         }
@@ -124,7 +158,9 @@ internal static class CSharpCommonInterest
 
         foreach (KeyValuePair<ISymbol, HashSet<ISymbol>> refTarget in refTargets)
         {
-            if (symbolTargets.Count == 1 && refTarget.Value.SetEquals(symbolTargets))
+            if (symbolTargets.Count == 1
+                && refTarget.Value.SetEquals(symbolTargets)
+                && !potentialOnlyRefLocals.Contains(refTarget.Key))
             {
                 definiteSymbols.Add(refTarget.Key);
             }
@@ -241,7 +277,118 @@ internal static class CSharpCommonInterest
     /// Determines whether a blocking member access has a receiver that is provably complete.
     /// </summary>
     internal static bool HasTaskCompleted(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax)
-        => HasTaskCompletedCore(context, memberAccessSyntax);
+    {
+        ExpressionSyntax taskReceiver = GetTaskReceiver(context, memberAccessSyntax);
+        return HasTaskCompleted(context, taskReceiver, memberAccessSyntax);
+    }
+
+    /// <summary>
+    /// Determines whether a task-like expression is provably complete at a syntax node.
+    /// </summary>
+    internal static bool HasTaskCompleted(SyntaxNodeAnalysisContext context, ExpressionSyntax taskReceiver, SyntaxNode accessSyntax)
+        => HasTaskCompletedInContinuation(context, taskReceiver, accessSyntax)
+            || HasTaskCompletedCore(context, taskReceiver, accessSyntax);
+
+    private static bool HasTaskCompletedInContinuation(
+        SyntaxNodeAnalysisContext context,
+        ExpressionSyntax taskReceiver,
+        SyntaxNode accessSyntax)
+    {
+        foreach (AnonymousFunctionExpressionSyntax anonymousFunction in accessSyntax.Ancestors().OfType<AnonymousFunctionExpressionSyntax>())
+        {
+            if (anonymousFunction.Parent is not ArgumentSyntax anonymousFunctionArgument
+                || anonymousFunctionArgument.Parent?.Parent is not InvocationExpressionSyntax continuationInvocation
+                || continuationInvocation.ArgumentList.Arguments.FirstOrDefault() != anonymousFunctionArgument)
+            {
+                continue;
+            }
+
+            if (context.SemanticModel.GetSymbolInfo(continuationInvocation, context.CancellationToken).Symbol is not IMethodSymbol invokedMethod
+                || invokedMethod.Name != nameof(Task.ContinueWith)
+                || !Utils.IsTask(invokedMethod.ContainingType))
+            {
+                continue;
+            }
+
+            ParameterSyntax? firstParameter = anonymousFunction switch
+            {
+                SimpleLambdaExpressionSyntax lambda => lambda.Parameter,
+                ParenthesizedLambdaExpressionSyntax lambda => lambda.ParameterList.Parameters.FirstOrDefault(),
+                AnonymousMethodExpressionSyntax anonymousMethod => anonymousMethod.ParameterList?.Parameters.FirstOrDefault(),
+                _ => null,
+            };
+            if (firstParameter is null
+                || context.SemanticModel.GetDeclaredSymbol(firstParameter, context.CancellationToken) is not IParameterSymbol completedTask)
+            {
+                continue;
+            }
+
+            (ImmutableHashSet<ISymbol> taskSymbols, ImmutableHashSet<ISymbol> potentialTaskSymbols) =
+                GetSymbolAndRefAliases(context, accessSyntax, completedTask);
+            if (accessSyntax.Ancestors().TakeWhile(node => node != anonymousFunction)
+                .Any(node => node is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax))
+            {
+                potentialTaskSymbols = potentialTaskSymbols.Union(GetSymbolAndRefAliases(
+                    context,
+                    accessSyntax,
+                    completedTask,
+                    anonymousFunction,
+                    includeAllCandidates: true).Potential);
+            }
+
+            ISymbol? receiverSymbol = context.SemanticModel.GetSymbolInfo(UnwrapParentheses(taskReceiver), context.CancellationToken).Symbol;
+            if (receiverSymbol is object
+                && taskSymbols.Contains(receiverSymbol)
+                && !IsTaskReassignedInContinuation(context, anonymousFunction, accessSyntax, potentialTaskSymbols))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsTaskReassignedInContinuation(
+        SyntaxNodeAnalysisContext context,
+        AnonymousFunctionExpressionSyntax continuation,
+        SyntaxNode accessSyntax,
+        IImmutableSet<ISymbol> taskSymbols)
+    {
+        bool accessIsNested = accessSyntax.Ancestors().TakeWhile(node => node != continuation)
+            .Any(node => node is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax);
+        int beforePosition = accessIsNested ? continuation.Span.End + 1 : accessSyntax.SpanStart;
+
+        foreach (AssignmentExpressionSyntax assignment in continuation.DescendantNodes().OfType<AssignmentExpressionSyntax>())
+        {
+            SyntaxNode? nestedFunction = assignment.Ancestors().TakeWhile(node => node != continuation)
+                .FirstOrDefault(node => node is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax);
+            bool isDeferredWrite = accessIsNested
+                || nestedFunction is LocalFunctionStatementSyntax
+                || nestedFunction?.SpanStart < accessSyntax.SpanStart;
+            if ((assignment.SpanStart < beforePosition || isDeferredWrite)
+                && IsAssignmentToTask(context, assignment.Left, taskSymbols))
+            {
+                return true;
+            }
+        }
+
+        foreach (ArgumentSyntax argument in continuation.DescendantNodes().OfType<ArgumentSyntax>())
+        {
+            SyntaxNode? nestedFunction = argument.Ancestors().TakeWhile(node => node != continuation)
+                .FirstOrDefault(node => node is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax);
+            bool isDeferredWrite = accessIsNested
+                || nestedFunction is LocalFunctionStatementSyntax
+                || nestedFunction?.SpanStart < accessSyntax.SpanStart;
+            if ((argument.SpanStart < beforePosition || isDeferredWrite)
+                && (argument.RefKindKeyword.IsKind(SyntaxKind.RefKeyword) || argument.RefKindKeyword.IsKind(SyntaxKind.OutKeyword))
+                && IsOneOfSymbols(context, argument.Expression, taskSymbols))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     private static ExpressionSyntax UnwrapParentheses(ExpressionSyntax expression)
     {
@@ -330,9 +477,12 @@ internal static class CSharpCommonInterest
         => Utils.IsTask(type)
             || (type?.Name == nameof(ValueTask) && type.BelongsToNamespace(Namespaces.SystemThreadingTasks));
 
-    private static bool HasTaskCompletedCore(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax)
+    private static bool HasTaskCompletedCore(
+        SyntaxNodeAnalysisContext context,
+        ExpressionSyntax taskReceiver,
+        SyntaxNode accessSyntax)
     {
-        ExpressionSyntax taskReceiver = GetTaskReceiver(context, memberAccessSyntax);
+        taskReceiver = UnwrapParentheses(taskReceiver);
         ITypeSymbol? taskType = context.SemanticModel.GetTypeInfo(taskReceiver, context.CancellationToken).Type;
         if (!IsTaskLike(taskType))
         {
@@ -345,22 +495,22 @@ internal static class CSharpCommonInterest
             return false;
         }
 
-        if (context.SemanticModel.GetEnclosingSymbol(memberAccessSyntax.SpanStart, context.CancellationToken) is not IMethodSymbol enclosingMethod
+        if (context.SemanticModel.GetEnclosingSymbol(accessSyntax.SpanStart, context.CancellationToken) is not IMethodSymbol enclosingMethod
             || !SymbolEqualityComparer.Default.Equals(taskSymbol.ContainingSymbol, enclosingMethod))
         {
             return false;
         }
 
         (ImmutableHashSet<ISymbol> taskSymbols, ImmutableHashSet<ISymbol> potentialTaskSymbols) =
-            GetSymbolAndRefAliases(context, memberAccessSyntax, taskSymbol);
-        if (NestedFunctionMayReassignTask(context, memberAccessSyntax, potentialTaskSymbols))
+            GetSymbolAndRefAliases(context, accessSyntax, taskSymbol);
+        if (NestedFunctionMayReassignTask(context, accessSyntax, potentialTaskSymbols))
         {
             return false;
         }
 
-        if (IsWithinCompletedTaskBranch(context, memberAccessSyntax, taskSymbols, potentialTaskSymbols))
+        if (IsWithinCompletedTaskBranch(context, accessSyntax, taskSymbols, potentialTaskSymbols))
         {
-            return true;
+            return Utils.IsTask(taskType) || !MayHaveAwaitedTaskBefore(context, accessSyntax, taskSymbols);
         }
 
         // Awaiting an IValueTaskSource-backed ValueTask consumes it, so a later Result access is not safe.
@@ -369,29 +519,35 @@ internal static class CSharpCommonInterest
             return false;
         }
 
-        StatementSyntax? containingStatement = memberAccessSyntax.FirstAncestorOrSelf<StatementSyntax>();
+        StatementSyntax? containingStatement = accessSyntax.FirstAncestorOrSelf<StatementSyntax>();
         if (containingStatement is null)
         {
             return false;
         }
 
-        if (TryGetAwaitExpression(context, containingStatement, taskSymbols, memberAccessSyntax.SpanStart, out AwaitExpressionSyntax? precedingAwait)
-            && !MayReassignTask(context, containingStatement, potentialTaskSymbols, precedingAwait.Span.End, memberAccessSyntax.SpanStart))
+        if (TryGetAwaitExpression(context, containingStatement, taskSymbols, accessSyntax.SpanStart, out AwaitExpressionSyntax? precedingAwait)
+            && !MayReassignTask(context, containingStatement, potentialTaskSymbols, precedingAwait.Span.End, accessSyntax.SpanStart))
         {
             return true;
         }
 
-        while (containingStatement.Parent is BlockSyntax block)
+        while (true)
         {
-            if (MayReassignTask(context, containingStatement, potentialTaskSymbols, containingStatement.SpanStart - 1, memberAccessSyntax.SpanStart))
+            if (MayReassignTask(context, containingStatement, potentialTaskSymbols, containingStatement.SpanStart - 1, accessSyntax.SpanStart))
             {
                 return false;
             }
 
-            int statementIndex = block.Statements.IndexOf(containingStatement);
+            SyntaxList<StatementSyntax> statements = containingStatement.Parent switch
+            {
+                BlockSyntax block => block.Statements,
+                SwitchSectionSyntax switchSection => switchSection.Statements,
+                _ => default,
+            };
+            int statementIndex = statements.IndexOf(containingStatement);
             for (int i = statementIndex - 1; i >= 0; i--)
             {
-                StatementSyntax statement = block.Statements[i];
+                StatementSyntax statement = statements[i];
                 if (StatementCompletesTask(context, statement, taskSymbols, potentialTaskSymbols))
                 {
                     return true;
@@ -403,8 +559,19 @@ internal static class CSharpCommonInterest
                 }
             }
 
-            StatementSyntax? outerStatement = containingStatement.Ancestors().OfType<StatementSyntax>().FirstOrDefault(statement => statement.Parent is BlockSyntax);
-            if (outerStatement is not IfStatementSyntax and not BlockSyntax)
+            StatementSyntax? outerStatement = containingStatement.Ancestors().OfType<StatementSyntax>()
+                .FirstOrDefault(statement => statement.Parent is BlockSyntax or SwitchSectionSyntax);
+            if (outerStatement is null)
+            {
+                return false;
+            }
+
+            if (outerStatement is WhileStatementSyntax
+                    or DoStatementSyntax
+                    or ForStatementSyntax
+                    or ForEachStatementSyntax
+                    or ForEachVariableStatementSyntax
+                && MayReassignTask(context, outerStatement, potentialTaskSymbols))
             {
                 return false;
             }
@@ -416,50 +583,69 @@ internal static class CSharpCommonInterest
 
             containingStatement = outerStatement;
         }
+    }
 
-        return false;
+    private static bool MayHaveAwaitedTaskBefore(
+        SyntaxNodeAnalysisContext context,
+        SyntaxNode accessSyntax,
+        IImmutableSet<ISymbol> taskSymbols)
+    {
+        SyntaxNode searchRoot = accessSyntax.AncestorsAndSelf().FirstOrDefault(
+            ancestor => ancestor is AnonymousFunctionExpressionSyntax
+                or LocalFunctionStatementSyntax
+                or BaseMethodDeclarationSyntax
+                or AccessorDeclarationSyntax)
+            ?? accessSyntax.FirstAncestorOrSelf<GlobalStatementSyntax>()?.Parent
+            ?? accessSyntax;
+        bool DescendIntoChildren(SyntaxNode child) =>
+            child == searchRoot || child is not AnonymousFunctionExpressionSyntax and not LocalFunctionStatementSyntax;
+
+        return searchRoot.DescendantNodes(DescendIntoChildren)
+            .OfType<AwaitExpressionSyntax>()
+            .Any(awaitExpression => awaitExpression.SpanStart < accessSyntax.SpanStart
+                && AwaitCompletesTask(context, awaitExpression, taskSymbols));
     }
 
     private static bool IsWithinCompletedTaskBranch(
         SyntaxNodeAnalysisContext context,
-        MemberAccessExpressionSyntax memberAccessSyntax,
+        SyntaxNode accessSyntax,
         IImmutableSet<ISymbol> taskSymbols,
         IImmutableSet<ISymbol> potentialTaskSymbols)
     {
-        foreach (IfStatementSyntax ifStatement in memberAccessSyntax.Ancestors().OfType<IfStatementSyntax>())
+        foreach (IfStatementSyntax ifStatement in accessSyntax.Ancestors().OfType<IfStatementSyntax>())
         {
-            IEnumerable<SyntaxNode> nodesBetweenAccessAndCondition = memberAccessSyntax.Ancestors().TakeWhile(node => node != ifStatement);
+            IEnumerable<SyntaxNode> nodesBetweenAccessAndCondition = accessSyntax.Ancestors().TakeWhile(node => node != ifStatement);
             if (nodesBetweenAccessAndCondition.Any(node => node is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax))
             {
                 continue;
             }
 
-            foreach (BinaryExpressionSyntax binary in memberAccessSyntax.Ancestors()
+            foreach (BinaryExpressionSyntax binary in accessSyntax.Ancestors()
                 .TakeWhile(node => node != ifStatement)
                 .OfType<BinaryExpressionSyntax>())
             {
-                bool leftProvesCompletion = binary.Right.FullSpan.Contains(memberAccessSyntax.Span)
+                bool leftProvesCompletion = binary.Right.FullSpan.Contains(accessSyntax.Span)
                     && ((binary.IsKind(SyntaxKind.LogicalAndExpression)
                             && ConditionProvesCompletion(context, binary.Left, taskSymbols, conditionValue: true))
                         || (binary.IsKind(SyntaxKind.LogicalOrExpression)
                             && ConditionProvesCompletion(context, binary.Left, taskSymbols, conditionValue: false)));
                 if (leftProvesCompletion
-                    && !MayReassignTask(context, binary, potentialTaskSymbols, binary.Left.Span.End, memberAccessSyntax.SpanStart))
+                    && !MayReassignTask(context, binary, potentialTaskSymbols, binary.Left.Span.End, accessSyntax.SpanStart))
                 {
                     return true;
                 }
             }
 
-            if (ifStatement.Statement.FullSpan.Contains(memberAccessSyntax.Span)
+            if (ifStatement.Statement.FullSpan.Contains(accessSyntax.Span)
                 && ConditionProvesCompletion(context, ifStatement.Condition, taskSymbols, conditionValue: true)
-                && !MayReassignTask(context, ifStatement, potentialTaskSymbols, ifStatement.Condition.SpanStart - 1, memberAccessSyntax.SpanStart))
+                && !MayReassignTask(context, ifStatement, potentialTaskSymbols, ifStatement.Condition.SpanStart - 1, accessSyntax.SpanStart))
             {
                 return true;
             }
 
-            if (ifStatement.Else?.Statement.FullSpan.Contains(memberAccessSyntax.Span) is true
+            if (ifStatement.Else?.Statement.FullSpan.Contains(accessSyntax.Span) is true
                 && ConditionProvesCompletion(context, ifStatement.Condition, taskSymbols, conditionValue: false)
-                && !MayReassignTask(context, ifStatement, potentialTaskSymbols, ifStatement.Condition.SpanStart - 1, memberAccessSyntax.SpanStart))
+                && !MayReassignTask(context, ifStatement, potentialTaskSymbols, ifStatement.Condition.SpanStart - 1, accessSyntax.SpanStart))
             {
                 return true;
             }

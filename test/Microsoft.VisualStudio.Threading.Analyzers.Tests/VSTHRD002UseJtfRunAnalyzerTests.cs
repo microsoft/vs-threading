@@ -613,6 +613,10 @@ class Test {
             ref Task<int> alias = ref t;
             return alias.Result;
         });
+        task.ContinueWith(t => {
+            Console.WriteLine(t.Result);
+            Action replaceLater = () => t = Task.Run(() => 6);
+        });
     }
 
     void ContinueWith(Func<Task<int>, int> del) { }
@@ -685,6 +689,28 @@ class Test {
             return useResultLater();
         });
     }
+}
+";
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task RefReturningInvocationCreatesPotentialAlias()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    void F(Task<int> task) {
+        ref Task<int> alias = ref GetTaskRef(ref task);
+        if (task.IsCompleted) {
+            alias = Task.Run(() => 1);
+            _ = task.[|Result|];
+        }
+    }
+
+    static ref Task<int> GetTaskRef(ref Task<int> task) => ref task;
 }
 ";
 
@@ -1403,7 +1429,7 @@ ref struct RefLike {
     internal int Value;
 }
 
-class Test {
+partial class Test {
     int RefParameter(Task<int> task, ref int value) {
         return task.[|Result|];
     }
@@ -1423,6 +1449,18 @@ class Test {
 
     RefLike RefLikeReturn(Task<int> task) {
         return new RefLike { Value = task.[|Result|] };
+    }
+
+    int RefLocal(Task<int> task) {
+        int value = 0;
+        ref int alias = ref value;
+        return task.[|Result|];
+    }
+
+    private partial int PartialMethod(Task<int> task);
+
+    private partial int PartialMethod(Task<int> task) {
+        return task.[|Result|];
     }
 }
 ";
