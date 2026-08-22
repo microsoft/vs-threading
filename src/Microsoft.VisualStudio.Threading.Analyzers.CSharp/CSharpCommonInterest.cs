@@ -682,48 +682,77 @@ internal static class CSharpCommonInterest
         bool DescendIntoChildren(SyntaxNode child) =>
             child == searchRoot || child is not AnonymousFunctionExpressionSyntax and not LocalFunctionStatementSyntax;
 
-        var taskAndCopySymbols = new HashSet<ISymbol>(taskSymbols, SymbolEqualityComparer.Default);
-        bool IsTaskOrCopy(ExpressionSyntax expression)
+        bool IsDefinitelyExecutedBefore(SyntaxNode candidate, AwaitExpressionSyntax awaitExpression)
         {
-            ISymbol? expressionSymbol = context.SemanticModel.GetSymbolInfo(UnwrapParentheses(expression), context.CancellationToken).Symbol;
-            return expressionSymbol is object && taskAndCopySymbols.Contains(expressionSymbol);
-        }
-
-        bool addedCopy;
-        do
-        {
-            addedCopy = false;
-            foreach (VariableDeclaratorSyntax variable in searchRoot.DescendantNodes(DescendIntoChildren)
-                .OfType<VariableDeclaratorSyntax>()
-                .Where(variable => variable.SpanStart < accessSyntax.SpanStart && variable.Initializer is object))
+            StatementSyntax? awaitStatement = awaitExpression.FirstAncestorOrSelf<StatementSyntax>();
+            if (awaitStatement?.Parent is not BlockSyntax block)
             {
-                if (context.SemanticModel.GetDeclaredSymbol(variable, context.CancellationToken) is ILocalSymbol local
-                    && IsTaskOrCopy(variable.Initializer!.Value)
-                    && taskAndCopySymbols.Add(local))
-                {
-                    addedCopy = true;
-                }
+                return false;
             }
 
-            foreach (AssignmentExpressionSyntax assignment in searchRoot.DescendantNodes(DescendIntoChildren)
-                .OfType<AssignmentExpressionSyntax>()
-                .Where(assignment => assignment.SpanStart < accessSyntax.SpanStart))
+            StatementSyntax? candidateStatement = candidate.FirstAncestorOrSelf<StatementSyntax>();
+            while (candidateStatement is object && candidateStatement.Parent != block)
             {
-                if (context.SemanticModel.GetSymbolInfo(assignment.Left, context.CancellationToken).Symbol is ILocalSymbol local
-                    && IsTaskOrCopy(assignment.Right)
-                    && taskAndCopySymbols.Add(local))
+                if (candidateStatement.Parent is not BlockSyntax containingBlock)
                 {
-                    addedCopy = true;
+                    return false;
                 }
-            }
-        }
-        while (addedCopy);
 
-        IImmutableSet<ISymbol> taskAndCopySymbolSet = taskAndCopySymbols.ToImmutableHashSet(SymbolEqualityComparer.Default);
-        return searchRoot.DescendantNodes(DescendIntoChildren)
+                candidateStatement = containingBlock;
+            }
+
+            return candidateStatement is object
+                && block.Statements.IndexOf(candidateStatement) < block.Statements.IndexOf(awaitStatement);
+        }
+
+        foreach (AwaitExpressionSyntax awaitExpression in searchRoot.DescendantNodes(DescendIntoChildren)
             .OfType<AwaitExpressionSyntax>()
-            .Any(awaitExpression => awaitExpression.SpanStart < accessSyntax.SpanStart
-                && AwaitCompletesTask(context, awaitExpression, taskAndCopySymbolSet));
+            .Where(awaitExpression => awaitExpression.SpanStart < accessSyntax.SpanStart)
+            .OrderBy(awaitExpression => awaitExpression.SpanStart))
+        {
+            var taskAndCopySymbols = new HashSet<ISymbol>(taskSymbols, SymbolEqualityComparer.Default);
+            bool IsTaskOrCopy(ExpressionSyntax expression)
+            {
+                ISymbol? expressionSymbol = context.SemanticModel.GetSymbolInfo(UnwrapParentheses(expression), context.CancellationToken).Symbol;
+                return expressionSymbol is object && taskAndCopySymbols.Contains(expressionSymbol);
+            }
+
+            IEnumerable<SyntaxNode> copyOperations = searchRoot.DescendantNodes(DescendIntoChildren)
+                .Where(node => node.SpanStart < awaitExpression.SpanStart
+                    && node is VariableDeclaratorSyntax or AssignmentExpressionSyntax)
+                .OrderBy(node => node.SpanStart);
+            foreach (SyntaxNode copyOperation in copyOperations)
+            {
+                if (copyOperation is VariableDeclaratorSyntax { Initializer: { } initializer } variable
+                    && context.SemanticModel.GetDeclaredSymbol(variable, context.CancellationToken) is ILocalSymbol declaredLocal
+                    && IsTaskOrCopy(initializer.Value))
+                {
+                    taskAndCopySymbols.Add(declaredLocal);
+                }
+                else if (copyOperation is AssignmentExpressionSyntax assignment
+                    && context.SemanticModel.GetSymbolInfo(assignment.Left, context.CancellationToken).Symbol is ILocalSymbol assignedLocal)
+                {
+                    if (IsTaskOrCopy(assignment.Right))
+                    {
+                        taskAndCopySymbols.Add(assignedLocal);
+                    }
+                    else if (IsDefinitelyExecutedBefore(assignment, awaitExpression))
+                    {
+                        taskAndCopySymbols.Remove(assignedLocal);
+                    }
+                }
+            }
+
+            if (AwaitCompletesTask(
+                context,
+                awaitExpression,
+                taskAndCopySymbols.ToImmutableHashSet(SymbolEqualityComparer.Default)))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static bool ContainsPotentialControlFlowBypass(SyntaxNode accessSyntax)

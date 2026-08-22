@@ -166,9 +166,60 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
 
     private static bool CanChangeMethodContract(MethodDeclarationSyntax method, IMethodSymbol methodSymbol)
         => !method.Modifiers.Any(SyntaxKind.PartialKeyword)
+            && methodSymbol.ContainingType.TypeKind != TypeKind.Interface
             && !methodSymbol.IsVirtual
             && !methodSymbol.IsOverride
-            && !methodSymbol.FindInterfacesImplemented().Any();
+            && !methodSymbol.FindInterfacesImplemented().Any()
+            && !HasAsyncNameCollision(methodSymbol);
+
+    private static bool HasAsyncNameCollision(IMethodSymbol method)
+    {
+        if (method.Name.EndsWith(VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        string asyncName = method.Name + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix;
+        return method.ContainingType.GetMembers(asyncName)
+            .OfType<IMethodSymbol>()
+            .Any(candidate => candidate.Arity == method.Arity
+                && candidate.Parameters.Length == method.Parameters.Length
+                && candidate.Parameters.Zip(method.Parameters, ParametersHaveEquivalentSignatures).All(match => match));
+    }
+
+    private static bool ParametersHaveEquivalentSignatures(IParameterSymbol left, IParameterSymbol right)
+        => left.RefKind == right.RefKind && SignatureTypesMatch(left.Type, right.Type);
+
+    private static bool SignatureTypesMatch(ITypeSymbol left, ITypeSymbol right)
+    {
+        if (left is ITypeParameterSymbol { TypeParameterKind: TypeParameterKind.Method } leftTypeParameter
+            && right is ITypeParameterSymbol { TypeParameterKind: TypeParameterKind.Method } rightTypeParameter)
+        {
+            return leftTypeParameter.Ordinal == rightTypeParameter.Ordinal;
+        }
+
+        if (left is IArrayTypeSymbol leftArray && right is IArrayTypeSymbol rightArray)
+        {
+            return leftArray.Rank == rightArray.Rank
+                && SignatureTypesMatch(leftArray.ElementType, rightArray.ElementType);
+        }
+
+        if (left is IPointerTypeSymbol leftPointer && right is IPointerTypeSymbol rightPointer)
+        {
+            return SignatureTypesMatch(leftPointer.PointedAtType, rightPointer.PointedAtType);
+        }
+
+        if (left is INamedTypeSymbol leftNamed && right is INamedTypeSymbol rightNamed)
+        {
+            return SymbolEqualityComparer.Default.Equals(leftNamed.OriginalDefinition, rightNamed.OriginalDefinition)
+                && leftNamed.TypeArguments.Length == rightNamed.TypeArguments.Length
+                && leftNamed.TypeArguments.Zip(rightNamed.TypeArguments, SignatureTypesMatch).All(match => match);
+        }
+
+        return SymbolEqualityComparer.Default.Equals(left, right)
+            || (left.TypeKind == TypeKind.Dynamic && right.SpecialType == SpecialType.System_Object)
+            || (right.TypeKind == TypeKind.Dynamic && left.SpecialType == SpecialType.System_Object);
+    }
 
     private static async Task<bool> CanConvertCallerChainAsync(
         Solution solution,
@@ -205,6 +256,14 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
                 SemanticModel? semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
                 if (semanticModel is null
                     || !IsMethodLocallyConvertible(semanticModel, callingMethod, cancellationToken, out IMethodSymbol? callingMethodSymbol))
+                {
+                    return false;
+                }
+
+                if (callingMethodSymbol.ReturnType is INamedTypeSymbol { Arity: 0 } nonGenericReturnType
+                    && nonGenericReturnType.IsAsyncCompatibleReturnType()
+                    && invocation.FirstAncestorOrSelf<ReturnStatementSyntax>() is { Expression: { } returnExpression }
+                    && returnExpression.FullSpan.Contains(invocation.Span))
                 {
                     return false;
                 }

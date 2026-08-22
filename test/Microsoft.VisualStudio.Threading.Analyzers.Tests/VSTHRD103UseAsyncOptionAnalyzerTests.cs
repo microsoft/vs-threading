@@ -1570,6 +1570,39 @@ class Test {
     }
 
     [Fact]
+    public async Task OverwrittenValueTaskCopyDoesNotInvalidateCompletionGuard()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task<int> GetResultAsync(ValueTask<int> task, ValueTask<int> other)
+                {
+                    ValueTask<int> copy = task;
+                    {
+                        copy = other;
+                    }
+
+                    await copy;
+                    if (task.IsCompletedSuccessfully)
+                    {
+                        return task.Result;
+                    }
+
+                    return 0;
+                }
+            }
+            """;
+
+        await new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        }.RunAsync();
+    }
+
+    [Fact]
     public async Task RefConditionalAliasMutationAfterAwait_GeneratesWarning()
     {
         string test = """

@@ -1676,6 +1676,62 @@ class Test {
     }
 
     [Fact]
+    public async Task CodeFixIsNotOfferedWhenTaskCallerWouldLoseReturnedInvocation()
+    {
+        string test = """
+            using System;
+            using System.Threading.Tasks;
+
+            class DerivedTask : Task
+            {
+                internal DerivedTask()
+                    : base(() => { })
+                {
+                }
+            }
+
+            class Test
+            {
+                static DerivedTask GetTask(Task task)
+                {
+                    task.[|Wait|]();
+                    return new DerivedTask();
+                }
+
+                static Task Caller(Task task)
+                {
+                    return GetTask(task);
+                }
+            }
+            """;
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task CodeFixIsNotOfferedWhenAsyncNameHasSameSignature()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                int GetValue(Task<int> task)
+                {
+                    return task.[|Result|];
+                }
+
+                Task<int> GetValueAsync(Task<int> task)
+                {
+                    return task;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
     public async Task CodeFixIsNotOfferedWhenChangingMethodContract()
     {
         var test = @"
@@ -1705,6 +1761,29 @@ class Test : Base, ITest {
 ";
 
         await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task CodeFixIsNotOfferedForDefaultInterfaceMethod()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            interface ITest
+            {
+                int DefaultInterfaceMethod(Task<int> task)
+                {
+                    return task.[|Result|];
+                }
+            }
+            """;
+
+        await new CSVerify.Test
+        {
+            TestCode = test,
+            FixedCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        }.RunAsync();
     }
 
     [Fact]
