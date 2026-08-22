@@ -52,28 +52,37 @@ public class VSTHRD200UseAsyncNamingConventionAnalyzer : DiagnosticAnalyzer
         context.RegisterCompilationStartAction(context =>
         {
             CommonInterest.AwaitableTypeTester awaitableTypes = CommonInterest.CollectAwaitableTypes(context.Compilation, context.CancellationToken);
-            context.RegisterSymbolAction(Utils.DebuggableWrapper(context => this.AnalyzeNode(context, awaitableTypes)), SymbolKind.Method);
-            context.RegisterOperationAction(Utils.DebuggableWrapper(context => this.AnalyzeLocalFunction(context, awaitableTypes)), OperationKind.LocalFunction);
+            ImmutableArray<CommonInterest.TypeMatchSpec> asyncSuffixRequiredTypes = CommonInterest.ReadTypesAndMembers(
+                context.Options,
+                CommonInterest.FileNamePatternForAsyncSuffixRequiredTypes,
+                context.CancellationToken).ToImmutableArray();
+            context.RegisterSymbolAction(Utils.DebuggableWrapper(context => this.AnalyzeNode(context, awaitableTypes, asyncSuffixRequiredTypes)), SymbolKind.Method);
+            context.RegisterOperationAction(Utils.DebuggableWrapper(context => this.AnalyzeLocalFunction(context, awaitableTypes, asyncSuffixRequiredTypes)), OperationKind.LocalFunction);
         });
     }
 
-    private void AnalyzeLocalFunction(OperationAnalysisContext context, CommonInterest.AwaitableTypeTester awaitableTypes)
+    private void AnalyzeLocalFunction(OperationAnalysisContext context, CommonInterest.AwaitableTypeTester awaitableTypes, ImmutableArray<CommonInterest.TypeMatchSpec> asyncSuffixRequiredTypes)
     {
-        if (this.AnalyzeMethodSymbol(context.Compilation, ((ILocalFunctionOperation)context.Operation).Symbol, awaitableTypes, context.CancellationToken) is Diagnostic diagnostic)
+        if (this.AnalyzeMethodSymbol(context.Compilation, ((ILocalFunctionOperation)context.Operation).Symbol, awaitableTypes, asyncSuffixRequiredTypes, context.CancellationToken) is Diagnostic diagnostic)
         {
             context.ReportDiagnostic(diagnostic);
         }
     }
 
-    private void AnalyzeNode(SymbolAnalysisContext context, CommonInterest.AwaitableTypeTester awaitableTypes)
+    private void AnalyzeNode(SymbolAnalysisContext context, CommonInterest.AwaitableTypeTester awaitableTypes, ImmutableArray<CommonInterest.TypeMatchSpec> asyncSuffixRequiredTypes)
     {
-        if (this.AnalyzeMethodSymbol(context.Compilation, (IMethodSymbol)context.Symbol, awaitableTypes, context.CancellationToken) is Diagnostic diagnostic)
+        if (this.AnalyzeMethodSymbol(context.Compilation, (IMethodSymbol)context.Symbol, awaitableTypes, asyncSuffixRequiredTypes, context.CancellationToken) is Diagnostic diagnostic)
         {
             context.ReportDiagnostic(diagnostic);
         }
     }
 
-    private Diagnostic? AnalyzeMethodSymbol(Compilation compilation, IMethodSymbol methodSymbol, CommonInterest.AwaitableTypeTester awaitableTypes, CancellationToken cancellationToken)
+    private Diagnostic? AnalyzeMethodSymbol(
+        Compilation compilation,
+        IMethodSymbol methodSymbol,
+        CommonInterest.AwaitableTypeTester awaitableTypes,
+        ImmutableArray<CommonInterest.TypeMatchSpec> asyncSuffixRequiredTypes,
+        CancellationToken cancellationToken)
     {
         if (methodSymbol.AssociatedSymbol is IPropertySymbol)
         {
@@ -93,7 +102,8 @@ public class VSTHRD200UseAsyncNamingConventionAnalyzer : DiagnosticAnalyzer
             return null;
         }
 
-        bool hasAsyncFocusedReturnType = Utils.HasAsyncCompatibleReturnType(methodSymbol);
+        bool hasAsyncFocusedReturnType = Utils.HasAsyncCompatibleReturnType(methodSymbol)
+            || asyncSuffixRequiredTypes.Contains(methodSymbol.ReturnType, memberSymbol: null);
 
         bool actuallyEndsWithAsync = methodSymbol.Name.EndsWith(MandatoryAsyncSuffix, StringComparison.CurrentCulture);
 

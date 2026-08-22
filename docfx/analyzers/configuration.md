@@ -104,3 +104,15 @@ excluded from VSTHRD103 analysis by specifying them in a configuration file.
 **Sample:** `[System.Data.SqlClient.SqlDataReader]::Read`
 
 **Generic sample:** ``[Microsoft.EntityFrameworkCore.DbSet`1]::Add``
+
+## Types that require the Async suffix
+
+VSTHRD200 requires methods returning `Task`, `ValueTask`, and other async-focused types
+to end with the `Async` suffix. Libraries can identify additional async-focused return
+types with this configuration file.
+
+**Filename:** `vs-threading.AsyncSuffixRequiredTypes.txt`
+
+**Line format:** `[Namespace.TypeName]`
+
+**Sample:** `[Microsoft.VisualStudio.Shell.Interop.IVsTask]`
