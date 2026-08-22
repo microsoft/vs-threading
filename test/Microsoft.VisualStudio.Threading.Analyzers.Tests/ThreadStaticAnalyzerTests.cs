@@ -144,6 +144,12 @@ public class ThreadStaticAnalyzerTests
                 [ThreadStatic]
                 private static int count;
 
+                [ThreadStatic]
+                private static State state;
+
+                [ThreadStatic]
+                private static ReferenceState referenceState;
+
                 [field: ThreadStatic]
                 private static object Property { get; set; }
 
@@ -165,6 +171,8 @@ public class ThreadStaticAnalyzerTests
                     {|VSTHRD117:Changed += OnChanged|};
                     {|VSTHRD117:Changed -= OnChanged|};
                     Initialize({|VSTHRD117:out field|});
+                    {|VSTHRD117:state.Value = 1|};
+                    referenceState.Value = 1;
                     OtherChanged += OnChanged;
                     otherField = new object();
 
@@ -183,6 +191,16 @@ public class ThreadStaticAnalyzerTests
                 private static void Initialize(out object value)
                 {
                     value = new object();
+                }
+
+                private struct State
+                {
+                    internal int Value;
+                }
+
+                private class ReferenceState
+                {
+                    internal int Value;
                 }
 
                 private Test()
@@ -391,10 +409,23 @@ public class ThreadStaticAnalyzerTests
                 <ThreadStatic>
                 Private Shared field As Object
 
+                <ThreadStatic>
+                Private Shared stateData As State
+
+                <ThreadStatic>
+                Private Shared item As Integer
+
+                <ThreadStatic>
+                Private Shared array() As Integer
+
                 Private Shared otherField As Object
 
                 Shared Sub New()
                     {|VSTHRD117:field = New Object()|}
+                    {|VSTHRD117:stateData.Value = 1|}
+                    For Each {|VSTHRD117:item|} In {1, 2, 3}
+                    Next
+                    ReDim {|VSTHRD117:array|}(10)
                     otherField = New Object()
 
                     Dim initialize = Sub() field = New Object()
@@ -403,6 +434,10 @@ public class ThreadStaticAnalyzerTests
                 Private Sub New()
                     field = New Object()
                 End Sub
+
+                Private Structure State
+                    Friend Value As Integer
+                End Structure
             End Class
             """;
 

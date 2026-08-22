@@ -92,6 +92,12 @@ public abstract class ThreadStaticAnalyzer : DiagnosticAnalyzer
             startContext.RegisterOperationAction(
                 Utils.DebuggableWrapper(operationContext => AnalyzeArgument(operationContext, threadStaticAttribute)),
                 OperationKind.Argument);
+            startContext.RegisterOperationAction(
+                Utils.DebuggableWrapper(operationContext => AnalyzeLoop(operationContext, threadStaticAttribute)),
+                OperationKind.Loop);
+            startContext.RegisterOperationAction(
+                Utils.DebuggableWrapper(operationContext => AnalyzeReDim(operationContext, threadStaticAttribute)),
+                OperationKind.ReDim);
         });
 
         this.InitializeLanguageSpecific(context);
@@ -223,15 +229,41 @@ public abstract class ThreadStaticAnalyzer : DiagnosticAnalyzer
         ReportIfThreadStaticTarget(context, argument.Value, threadStaticAttribute);
     }
 
+    private static void AnalyzeLoop(OperationAnalysisContext context, INamedTypeSymbol threadStaticAttribute)
+    {
+        if (context.Operation is IForEachLoopOperation { LoopControlVariable: { } loopControlVariable }
+            && IsExecutedByTypeInitializer(context)
+            && IsThreadStaticTarget(loopControlVariable, threadStaticAttribute))
+        {
+            context.ReportDiagnostic(Diagnostic.Create(TypeInitializerAssignmentDescriptor, loopControlVariable.Syntax.GetLocation()));
+        }
+    }
+
+    private static void AnalyzeReDim(OperationAnalysisContext context, INamedTypeSymbol threadStaticAttribute)
+    {
+        if (context.Operation is not IReDimOperation reDim || !IsExecutedByTypeInitializer(context))
+        {
+            return;
+        }
+
+        foreach (IReDimClauseOperation clause in reDim.Clauses)
+        {
+            if (IsThreadStaticTarget(clause.Operand, threadStaticAttribute))
+            {
+                context.ReportDiagnostic(Diagnostic.Create(TypeInitializerAssignmentDescriptor, clause.Operand.Syntax.GetLocation()));
+            }
+        }
+    }
+
     private static void ReportIfThreadStaticTarget(OperationAnalysisContext context, IOperation target, INamedTypeSymbol threadStaticAttribute)
     {
-        if (IsThreadStaticTarget(context, target, threadStaticAttribute))
+        if (IsThreadStaticTarget(target, threadStaticAttribute))
         {
             context.ReportDiagnostic(Diagnostic.Create(TypeInitializerAssignmentDescriptor, context.Operation.Syntax.GetLocation()));
         }
     }
 
-    private static bool IsThreadStaticTarget(OperationAnalysisContext context, IOperation target, INamedTypeSymbol threadStaticAttribute)
+    private static bool IsThreadStaticTarget(IOperation target, INamedTypeSymbol threadStaticAttribute)
     {
         IFieldSymbol? field = target switch
         {
@@ -245,7 +277,19 @@ public abstract class ThreadStaticAnalyzer : DiagnosticAnalyzer
             return true;
         }
 
-        return target is ITupleOperation tuple && tuple.Elements.Any(element => IsThreadStaticTarget(context, element, threadStaticAttribute));
+        IOperation? valueTypeInstance = target switch
+        {
+            IFieldReferenceOperation { Field.ContainingType.IsValueType: true } fieldReference => fieldReference.Instance,
+            IPropertyReferenceOperation { Property.ContainingType.IsValueType: true } propertyReference => propertyReference.Instance,
+            _ => null,
+        };
+
+        if (valueTypeInstance is not null && IsThreadStaticTarget(valueTypeInstance, threadStaticAttribute))
+        {
+            return true;
+        }
+
+        return target is ITupleOperation tuple && tuple.Elements.Any(element => IsThreadStaticTarget(element, threadStaticAttribute));
     }
 
     private static IFieldSymbol? GetField(ISymbol symbol)
