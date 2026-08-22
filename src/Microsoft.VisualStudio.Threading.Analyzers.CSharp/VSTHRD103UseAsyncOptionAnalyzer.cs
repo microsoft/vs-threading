@@ -110,7 +110,12 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
                     MemberBindingExpressionSyntax bindingExpr => bindingExpr.Name,
                     _ => conditionalAccessSyntax.WhenNotNull,
                 };
-                this.InspectMemberAccess(context, rightSide, CommonInterest.SyncBlockingProperties);
+                this.InspectMemberAccess(
+                    context,
+                    rightSide,
+                    CommonInterest.SyncBlockingProperties,
+                    conditionalAccessSyntax.Expression,
+                    conditionalAccessSyntax);
             }
         }
 
@@ -119,8 +124,19 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
             if (IsInTaskReturningMethodOrDelegate(context))
             {
                 var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
-                var memberAccessSyntax = invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax;
-                if (memberAccessSyntax is not null && this.InspectMemberAccess(context, memberAccessSyntax.Name, CommonInterest.SyncBlockingMethods))
+                bool handledBlockingMember = invocationExpressionSyntax.Expression switch
+                {
+                    MemberAccessExpressionSyntax memberAccess => this.InspectMemberAccess(context, memberAccess.Name, CommonInterest.SyncBlockingMethods),
+                    MemberBindingExpressionSyntax memberBinding when invocationExpressionSyntax.FirstAncestorOrSelf<ConditionalAccessExpressionSyntax>() is { } conditionalAccess =>
+                        this.InspectMemberAccess(
+                            context,
+                            memberBinding.Name,
+                            CommonInterest.SyncBlockingMethods,
+                            conditionalAccess.Expression,
+                            conditionalAccess),
+                    _ => false,
+                };
+                if (handledBlockingMember)
                 {
                     // Don't return double-diagnostics.
                     return;
@@ -153,12 +169,12 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
                     foreach (IMethodSymbol m in symbols.OfType<IMethodSymbol>())
                     {
                         if (!m.IsObsolete()
-                            && HasSupersetOfParameterTypes(m, methodSymbol)
+                            && CSharpCommonInterest.IsApplicableAsyncAlternative(context, invocationExpressionSyntax, m)
                             && m.Name != invocationDeclaringMethod?.Identifier.Text
                             && m.HasAsyncCompatibleReturnType())
                         {
                             // Check if this method is excluded from VSTHRD103 diagnostics
-                            if (this.excludedMethods.Contains(methodSymbol))
+                            if (this.IsExcluded(methodSymbol))
                             {
                                 return;
                             }
@@ -180,24 +196,6 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// Determines whether the given method has parameters to cover all the parameter types in another method.
-        /// </summary>
-        /// <param name="candidateMethod">The candidate method.</param>
-        /// <param name="baselineMethod">The baseline method.</param>
-        /// <returns>
-        ///   <see langword="true" /> if <paramref name="candidateMethod"/> has a superset of parameter types found in <paramref name="baselineMethod"/>; otherwise <see langword="false" />.
-        /// </returns>
-        private static bool HasSupersetOfParameterTypes(IMethodSymbol candidateMethod, IMethodSymbol baselineMethod)
-        {
-            if (baselineMethod.Parameters.Length > candidateMethod.Parameters.Length)
-            {
-                return false;
-            }
-
-            return baselineMethod.Parameters.All(baselineParameter => candidateMethod.Parameters.Any(candidateParameter => baselineParameter.Type?.Equals(candidateParameter.Type, SymbolEqualityComparer.Default) ?? false));
         }
 
         private static bool IsInTaskReturningMethodOrDelegate(SyntaxNodeAnalysisContext context)
@@ -231,7 +229,12 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
             return methodSymbol?.HasAsyncCompatibleReturnType() is true;
         }
 
-        private bool InspectMemberAccess(SyntaxNodeAnalysisContext context, ExpressionSyntax memberName, IEnumerable<CommonInterest.SyncBlockingMethod> problematicMethods)
+        private bool InspectMemberAccess(
+            SyntaxNodeAnalysisContext context,
+            ExpressionSyntax memberName,
+            IEnumerable<CommonInterest.SyncBlockingMethod> problematicMethods,
+            ExpressionSyntax? taskReceiver = null,
+            SyntaxNode? accessSyntax = null)
         {
             ISymbol? memberSymbol = context.SemanticModel.GetSymbolInfo(memberName, context.CancellationToken).Symbol;
             if (memberSymbol is object)
@@ -240,16 +243,16 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
                 {
                     if (item.Method.IsMatch(memberSymbol))
                     {
-                        if (memberSymbol is IPropertySymbol { Name: nameof(Task<int>.Result), ContainingType: { } containingType }
-                            && Utils.IsTask(containingType)
-                            && memberName.Parent is MemberAccessExpressionSyntax resultAccess
-                            && TaskCompletionAnalysis.IsTaskKnownToBeCompleted(context, resultAccess))
+                        if ((memberName.Parent is MemberAccessExpressionSyntax memberAccess
+                                && CSharpCommonInterest.HasTaskCompleted(context, memberAccess))
+                            || (taskReceiver is object
+                                && CSharpCommonInterest.HasTaskCompleted(context, taskReceiver, accessSyntax ?? memberName)))
                         {
-                            return false;
+                            return true;
                         }
 
                         // Check if this method is excluded from VSTHRD103 diagnostics
-                        if (this.excludedMethods.Contains(memberSymbol))
+                        if (this.IsExcluded(memberSymbol))
                         {
                             return false;
                         }
@@ -281,5 +284,10 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
 
             return false;
         }
+
+        private bool IsExcluded(ISymbol symbol)
+            => this.excludedMethods.Contains(symbol)
+                || (symbol is IMethodSymbol { ReducedFrom: { } reducedFrom }
+                    && this.excludedMethods.Contains(reducedFrom));
     }
 }

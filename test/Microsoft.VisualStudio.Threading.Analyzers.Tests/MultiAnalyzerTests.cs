@@ -32,7 +32,7 @@ class Test {
 
     static void SetTaskSourceIfCompleted<T>(Task<T> task, TaskCompletionSource<T> tcs) {
         if (task.IsCompleted) {
-            tcs.SetResult(task.Result);
+            tcs.SetResult(task.Result); // No VSTHRD002 because task is known to be completed.
         }
     }
 }";
@@ -41,7 +41,6 @@ class Test {
         {
             CSVerify.Diagnostic(VSTHRD103UseAsyncOptionAnalyzer.DescriptorNoAlternativeMethod).WithSpan(10, 24, 10, 33).WithArguments("GetResult"),
             CSVerify.Diagnostic(VSTHRD103UseAsyncOptionAnalyzer.Descriptor).WithSpan(11, 13, 11, 16).WithArguments("Run", "RunAsync"),
-            CSVerify.Diagnostic(VSTHRD002UseJtfRunAnalyzer.Descriptor).WithSpan(19, 32, 19, 38),
         };
 
         // All expected diagnostics should include a location
@@ -60,6 +59,139 @@ class Test {
         };
 
         verifyTest.ExpectedDiagnostics.AddRange(expected);
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task ConfiguredBlockingMethodWithAsyncAlternativeProducesOneDiagnostic()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class CustomWaiter {
+    public void Join() { }
+    public Task JoinAsync() => Task.CompletedTask;
+}
+
+class Test {
+    Task FAsync(CustomWaiter waiter) {
+        waiter.Join();
+        return Task.CompletedTask;
+    }
+}
+";
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            TestState = { MarkupHandling = MarkupMode.None },
+        };
+        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncBlockingMethods.txt", "[CustomWaiter]::Join"));
+        verifyTest.ExpectedDiagnostics.Add(
+            CSVerify.Diagnostic(VSTHRD103UseAsyncOptionAnalyzer.Descriptor)
+                .WithSpan(11, 16, 11, 20)
+                .WithArguments("Join", "JoinAsync"));
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task VSTHRD103ExclusionLeavesConfiguredVSTHRD002Diagnostic()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class CustomWaiter {
+    public void Join() { }
+    public Task JoinAsync() => Task.CompletedTask;
+}
+
+class Test {
+    Task FAsync(CustomWaiter waiter) {
+        waiter.Join();
+        return Task.CompletedTask;
+    }
+}
+";
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            TestState = { MarkupHandling = MarkupMode.None },
+        };
+        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncBlockingMethods.txt", "[CustomWaiter]::Join"));
+        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncMethodsToExcludeFromVSTHRD103.txt", "[CustomWaiter]::Join"));
+        verifyTest.ExpectedDiagnostics.Add(
+            CSVerify.Diagnostic(VSTHRD002UseJtfRunAnalyzer.Descriptor)
+                .WithSpan(11, 16, 11, 20));
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task VSTHRD103ExclusionMatchesReducedExtensionDefinition()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class CustomWaiter { }
+
+static class Extensions {
+    public static void Join(this CustomWaiter waiter) { }
+    public static Task JoinAsync(this CustomWaiter waiter) => Task.CompletedTask;
+}
+
+class Test {
+    Task FAsync(CustomWaiter waiter) {
+        waiter.Join();
+        return Task.CompletedTask;
+    }
+}
+";
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            TestState = { MarkupHandling = MarkupMode.None },
+        };
+        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncBlockingMethods.txt", "[Extensions]::Join"));
+        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncMethodsToExcludeFromVSTHRD103.txt", "[Extensions]::Join"));
+        verifyTest.ExpectedDiagnostics.Add(
+            CSVerify.Diagnostic(VSTHRD002UseJtfRunAnalyzer.Descriptor)
+                .WithSpan(13, 16, 13, 20));
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task ConfiguredBlockerInAsyncLambdaProducesOneDiagnostic()
+    {
+        var test = @"
+using System;
+using System.Threading.Tasks;
+
+class CustomWaiter {
+    public void Join() { }
+    public Task JoinAsync() => Task.CompletedTask;
+}
+
+class Test {
+    void F(CustomWaiter waiter) {
+        Func<Task> action = async () => {
+            waiter.Join();
+            await Task.Yield();
+        };
+    }
+}
+";
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            TestState = { MarkupHandling = MarkupMode.None },
+        };
+        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncBlockingMethods.txt", "[CustomWaiter]::Join"));
+        verifyTest.ExpectedDiagnostics.Add(
+            CSVerify.Diagnostic(VSTHRD103UseAsyncOptionAnalyzer.Descriptor)
+                .WithSpan(13, 20, 13, 24)
+                .WithArguments("Join", "JoinAsync"));
         await verifyTest.RunAsync();
     }
 

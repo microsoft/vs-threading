@@ -125,6 +125,143 @@ class Test {
     }
 
     [Fact]
+    public async Task AwaitedTaskResultDoesNotGenerateWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T(Task<int> task) {
+        await task;
+        _ = task.Result;
+    }
+}
+";
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task AwaitedTaskRemainsCompletedAcrossStatementWrappers()
+    {
+        var test = @"
+using System.IO;
+using System.Threading.Tasks;
+
+class Test {
+    async Task T(Task<int> task, int value) {
+        await task;
+        try {
+            _ = task.Result;
+        } catch {
+        }
+
+        using (new MemoryStream()) {
+            _ = task.Result;
+        }
+
+        switch (value) {
+            case 0:
+                _ = task.Result;
+                break;
+        }
+    }
+}
+";
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task AwaitedTaskReassignedAfterAccessInLoopGeneratesWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T(Task<int> task, bool condition) {
+        await task;
+        while (condition) {
+            _ = task.{|#0:Result|};
+            task = Task.FromResult(1);
+        }
+    }
+}
+";
+
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task CompletedConditionalTaskResultDoesNotGenerateWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task Awaited(Task<int> task) {
+        await task;
+        _ = task?.Result;
+    }
+
+    Task Guarded(Task<int> task) {
+        if (task.IsCompleted) {
+            _ = task?.Result;
+        }
+
+        return Task.CompletedTask;
+    }
+}
+";
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task AwaitedValueTaskCompletionGuardStillGeneratesWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task T(ValueTask<int> task) {
+        await task;
+        if (task.IsCompleted) {
+            _ = task.{|#0:Result|};
+        }
+    }
+}
+";
+
+        DiagnosticResult expected = CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result");
+        await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task AwaitedTaskWaitDoesNotFallBackToAsyncAlternativeWarning()
+    {
+        var test = @"
+using System.Threading;
+using System.Threading.Tasks;
+
+class Test {
+    async Task T(Task task) {
+        await task;
+        task.Wait();
+    }
+}
+
+static class TaskExtensions {
+    internal static Task WaitAsync(this Task task, CancellationToken cancellationToken = default)
+        => task;
+}
+";
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
     public async Task JTFRunOfTInTaskReturningMethodGeneratesWarning()
     {
         var test = @"
@@ -791,6 +928,26 @@ class Test {
     }
 
     [Fact]
+    public async Task TaskOfTResultInAsyncContinuationGeneratesNoWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task T(Task<int> task) {
+        task.ContinueWith(async t => {
+            _ = t.Result;
+            await Task.Yield();
+        });
+        return Task.CompletedTask;
+    }
+}
+";
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
     public async Task TaskResultGuardedByIsCompletedSuccessfully_GeneratesNoWarning()
     {
         string test = """
@@ -971,7 +1128,7 @@ class Test {
     }
 
     [Fact]
-    public async Task ValueTaskResultGuardedByIsCompletedSuccessfully_GeneratesWarning()
+    public async Task ValueTaskResultGuardedByIsCompletedSuccessfully_GeneratesNoWarning()
     {
         string test = """
             using System.Threading.Tasks;
@@ -982,7 +1139,7 @@ class Test {
                 {
                     if (task.IsCompletedSuccessfully)
                     {
-                        return Task.FromResult(task.{|#0:Result|});
+                        return Task.FromResult(task.Result);
                     }
 
                     return Task.FromResult(0);
@@ -995,7 +1152,6 @@ class Test {
             TestCode = test,
             ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
         };
-        analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
         await analyzerTest.RunAsync();
     }
 
@@ -1239,6 +1395,591 @@ class Test {
                 CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"),
             },
         }.RunAsync();
+    }
+
+    [Fact]
+    public async Task AliasedRefParameterResultGuardedByCompletionGeneratesWarning()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                Task<int> GetResultAsync(ref Task<int> task, ref Task<int> possibleAlias)
+                {
+                    if (task.IsCompleted)
+                    {
+                        possibleAlias = Task.FromResult(1);
+                        return Task.FromResult(task.{|#0:Result|});
+                    }
+
+                    return task;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(
+            test,
+            CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
+    }
+
+    [Fact]
+    public async Task SeparateRefParameterDoesNotInvalidateOrdinaryTaskCompletionGuard()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                Task<int> GetResultAsync(Task<int> task, ref Task<int> other)
+                {
+                    if (task.IsCompleted)
+                    {
+                        other = Task.FromResult(1);
+                        return Task.FromResult(task.Result);
+                    }
+
+                    return task;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task GotoCanBypassAwait_GeneratesWarning()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task<int> GetResultAsync(Task<int> task, bool skip)
+                {
+                    if (skip)
+                    {
+                        goto AccessResult;
+                    }
+
+                    await task;
+
+                AccessResult:
+                    return task.{|#0:Result|};
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(
+            test,
+            CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
+    }
+
+    [Fact]
+    public async Task RefReturningAssignmentAfterAwait_GeneratesWarning()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task<int> GetResultAsync(Task<int> task, Task<int> replacement)
+                {
+                    await task;
+                    GetReference(ref task) = replacement;
+                    return task.{|#0:Result|};
+                }
+
+                static ref Task<int> GetReference(ref Task<int> task) => ref task;
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(
+            test,
+            CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
+    }
+
+    [Fact]
+    public async Task AwaitInConditionalAccessReceiverCompletesTask()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task<string> GetResultAsync(Task<string> task)
+                {
+                    _ = (await task)?.Length;
+                    return task.Result;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task AwaitInSwitchGoverningExpressionCompletesTask()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task<int> GetResultAsync(Task<int> task)
+                {
+                    _ = (await task) switch { _ => 0 };
+                    return task.Result;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task MutationAfterNestedCompletionProof_GeneratesWarning()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                Task<int> GetResultAsync(Task<int> task, Task<int> replacement)
+                {
+                    if ((task.IsCompleted && (task = replacement) != null) && task.{|#0:Result|} > 0)
+                    {
+                        return task;
+                    }
+
+                    return replacement;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(
+            test,
+            CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
+    }
+
+    [Fact]
+    public async Task AwaitedValueTaskCopyInvalidatesCompletionGuard()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task<int> GetResultAsync(ValueTask<int> task)
+                {
+                    ValueTask<int> copy = task;
+                    await copy;
+                    if (task.IsCompletedSuccessfully)
+                    {
+                        return task.{|#0:Result|};
+                    }
+
+                    return 0;
+                }
+            }
+            """;
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        };
+        verifyTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task OverwrittenValueTaskCopyDoesNotInvalidateCompletionGuard()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task<int> GetResultAsync(ValueTask<int> task, ValueTask<int> other)
+                {
+                    ValueTask<int> copy = task;
+                    {
+                        copy = other;
+                    }
+
+                    await copy;
+                    if (task.IsCompletedSuccessfully)
+                    {
+                        return task.Result;
+                    }
+
+                    return 0;
+                }
+            }
+            """;
+
+        await new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task AwaitedConfiguredValueTaskCopyInvalidatesCompletionGuard()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task<int> GetResultAsync(ValueTask<int> task)
+                {
+                    var configured = task.ConfigureAwait(false);
+                    await configured;
+                    if (task.IsCompletedSuccessfully)
+                    {
+                        return task.{|#0:Result|};
+                    }
+
+                    return 0;
+                }
+            }
+            """;
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        };
+        verifyTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task AwaitedValueTaskParameterCopyInvalidatesCompletionGuard()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task<int> GetResultAsync(ValueTask<int> task, ValueTask<int> copy)
+                {
+                    copy = task;
+                    await copy;
+                    if (task.IsCompletedSuccessfully)
+                    {
+                        return task.{|#0:Result|};
+                    }
+
+                    return 0;
+                }
+            }
+            """;
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        };
+        verifyTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task CustomAwaitableAliasInvalidatesValueTaskCompletionGuard()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            static class Extensions
+            {
+                internal static ValueTask<int> Preserve(this ValueTask<int> task) => task;
+            }
+
+            class Test
+            {
+                async Task<int> GetResultAsync(ValueTask<int> task)
+                {
+                    await Extensions.Preserve(task);
+                    if (task.IsCompletedSuccessfully)
+                    {
+                        return task.{|#0:Result|};
+                    }
+
+                    return 0;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(
+            test,
+            CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
+    }
+
+    [Fact]
+    public async Task UnevaluatedValueTaskMembersDoNotInvalidateCompletionGuard()
+    {
+        string test = """
+            using System;
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                int GetResult(ValueTask<int> task)
+                {
+                    _ = nameof(task.Result);
+                    Func<int> getResult = task.GetAwaiter().GetResult;
+                    if (task.IsCompletedSuccessfully)
+                    {
+                        return task.Result;
+                    }
+
+                    return 0;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task InvokedNestedFunctionInvalidatesValueTaskCompletionGuard()
+    {
+        string test = """
+            using System;
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task<int> GetResultAsync(ValueTask<int> task)
+                {
+                    ValueTask<int> copy = task;
+                    async Task ConsumeAsync()
+                    {
+                        await copy;
+                    }
+
+                    Func<Task> consume = async () =>
+                    {
+                        _ = task.{|#0:Result|};
+                        await Task.Yield();
+                    };
+                    await ConsumeAsync();
+                    await consume();
+                    if (task.IsCompletedSuccessfully)
+                    {
+                        return task.{|#1:Result|};
+                    }
+
+                    return 0;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(
+            test,
+            CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"),
+            CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(1).WithArguments("Result"));
+    }
+
+    [Fact]
+    public async Task RefReturningExtensionReceiverInvalidatesCompletionGuard()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            static class Extensions
+            {
+                internal static ref Task<int> AsRef(this int ignored, ref Task<int> task) => ref task;
+            }
+
+            class Test
+            {
+                Task<int> GetResultAsync(Task<int> task)
+                {
+                    if (task.IsCompleted)
+                    {
+                        ref Task<int> alias = ref 0.AsRef(ref task);
+                        alias = Task.FromResult(1);
+                        return Task.FromResult(task.{|#0:Result|});
+                    }
+
+                    return task;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(
+            test,
+            CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
+    }
+
+    [Fact]
+    public async Task CoalesceAssignmentAwaitDoesNotProveCompletion()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task<int> GetResultAsync(Task<int> task, int? other)
+                {
+                    other ??= await task;
+                    return task.{|#0:Result|};
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(
+            test,
+            CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
+    }
+
+    [Fact]
+    public async Task RefConditionalAliasMutationAfterAwait_GeneratesWarning()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                Task<int> GetResultAsync(Task<int> task, Task<int> other, Task<int> replacement, bool chooseTask)
+                {
+                    ref Task<int> alias = ref (chooseTask ? ref task : ref other);
+                    if (task.IsCompleted)
+                    {
+                        alias = replacement;
+                        return Task.FromResult(task.{|#0:Result|});
+                    }
+
+                    return task;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(
+            test,
+            CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
+    }
+
+    [Fact]
+    public async Task AwaitBeforeResultInExpressionBodyCompletesTask()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task<int> GetResultAsync(Task<int> task) => (await task) + task.Result;
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task CompletedConditionalWaitDoesNotFallBackToAsyncAlternativeAnalysis()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task WaitAsync(Task task)
+                {
+                    await task;
+                    task?.Wait();
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task ConditionalWaitOnIncompleteTaskGeneratesWarning()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                Task WaitAsync(Task task)
+                {
+                    task?.{|#0:Wait|}();
+                    return Task.CompletedTask;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(
+            test,
+            CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Wait"));
+    }
+
+    [Fact]
+    public async Task AsyncAlternativeMustBeApplicableToInvocation()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class CustomWaiter
+            {
+                internal void Join(int value) { }
+
+                internal Task JoinAsync(string required, int value) => Task.CompletedTask;
+            }
+
+            class ReorderedWaiter
+            {
+                internal void Join(int first, string second) { }
+
+                internal Task JoinAsync(string second, int first) => Task.CompletedTask;
+            }
+
+            class Test
+            {
+                Task FAsync(CustomWaiter waiter, ReorderedWaiter reordered)
+                {
+                    waiter.Join(1);
+                    reordered.Join(1, "");
+                    return Task.CompletedTask;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task AsyncAlternativeMayHaveOptionalAdditionalParameter()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class CustomWaiter
+            {
+                internal void Join(int value) { }
+
+                internal Task JoinAsync(int value, string optional = null) => Task.CompletedTask;
+            }
+
+            class Test
+            {
+                Task FAsync(CustomWaiter waiter)
+                {
+                    waiter.{|#0:Join|}(1);
+                    return Task.CompletedTask;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(
+            test,
+            CSVerify.Diagnostic(Descriptor).WithLocation(0).WithArguments("Join", "JoinAsync"));
     }
 
     [Fact]

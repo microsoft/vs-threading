@@ -72,6 +72,22 @@ class Test {
     }
 
     [Fact]
+    public async Task TaskWaitAnyDoesNotOfferCodeFixWhenResultIsConsumed()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    void F(Task task1, Task task2) {
+        int index = Task.[|WaitAny|](task1, task2);
+    }
+}
+";
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
     public async Task TaskWhenAll_CompareWithAndWithout()
     {
         var test = @"
@@ -202,6 +218,91 @@ class Test {
 ";
         DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(18, 26, 18, 32);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task TaskWhenAll_LocalArrayCompletesContainedTask()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async void GetResultAsync(Task<int> task)
+                {
+                    Task[] tasks = { task };
+                    await Task.WhenAll(tasks);
+                    _ = task.Result;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task TaskWhenAll_LocalArrayReassignedByClosureDoesNotCompleteContainedTask()
+    {
+        string test = """
+            using System;
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async void GetResultAsync(Task<int> task, Task<int> replacement)
+                {
+                    Task[] tasks = { task };
+                    Action replace = () => tasks = new Task[] { replacement };
+                    replace();
+                    await Task.WhenAll(tasks);
+                    _ = task.[|Result|];
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task TaskWhenAll_LocalArrayDoesNotCompleteReassignedTask()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async void GetResultAsync(Task<int> task, Task<int> replacement)
+                {
+                    Task[] tasks = { task };
+                    task = replacement;
+                    await Task.WhenAll(tasks);
+                    _ = task.[|Result|];
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task TaskWhenAll_LocalArrayElementWriteInvalidatesProof()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async void GetResultAsync(Task<int> task, Task<int> replacement)
+                {
+                    Task[] tasks = { task };
+                    tasks[0] = replacement;
+                    await Task.WhenAll(tasks);
+                    _ = task.[|Result|];
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 
     [Fact]
@@ -532,6 +633,64 @@ class Test {
     }
 
     [Fact]
+    public async Task AwaitedValueTaskResultReportsWarningButGuardedResultDoesNot()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    async void Awaited(ValueTask<int> task) {
+        await task;
+        _ = task.[|Result|];
+    }
+
+    void Guarded(ValueTask<int> task) {
+        if (task.IsCompleted) {
+            _ = task.Result;
+        }
+    }
+}
+";
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task SynchronouslyConsumedValueTaskInvalidatesCompletionGuard()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                int GetResult(ValueTask<int> task)
+                {
+                    _ = task.[|Result|];
+                    if (task.IsCompletedSuccessfully)
+                    {
+                        return task.[|Result|];
+                    }
+
+                    return 0;
+                }
+
+                int GetAwaiterResult(ValueTask<int> task)
+                {
+                    _ = task.GetAwaiter().[|GetResult|]();
+                    if (task.IsCompletedSuccessfully)
+                    {
+                        return task.[|Result|];
+                    }
+
+                    return 0;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
     public async Task TaskResultShouldReportWarning_WithinAnonymousDelegate()
     {
         var test = @"
@@ -568,6 +727,16 @@ class Test {
         task.ContinueWith(t => t.Wait());
         ((Task)task).ContinueWith(t => t.Wait());
         task.ContinueWith((t, s) => t.Result, new object());
+        task.ContinueWith(t => (t.GetAwaiter()).GetResult());
+        task.ContinueWith(t => ((t.ConfigureAwait(false)).GetAwaiter()).GetResult());
+        task.ContinueWith(t => {
+            ref Task<int> alias = ref t;
+            return alias.Result;
+        });
+        task.ContinueWith(t => {
+            Console.WriteLine(t.Result);
+            Action replaceLater = () => t = Task.Run(() => 6);
+        });
     }
 
     void ContinueWith(Func<Task<int>, int> del) { }
@@ -581,6 +750,1409 @@ class Test {
         };
 
         await CSVerify.VerifyCodeFixAsync(test, expected, test);
+    }
+
+    [Fact]
+    public async Task TaskResultShouldNotReportWarning_WithinParenthesizedContinuationDelegate()
+    {
+        string test = """
+            using System;
+            using System.Threading;
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                void F(Task<int> task)
+                {
+                    task.ContinueWith((Func<Task<int>, int>)(t => t.Result));
+                    task.ContinueWith(((t) => t.Result));
+                    task.ContinueWith(cancellationToken: CancellationToken.None, continuationFunction: t => t.Result);
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task TaskResultShouldNotReportWarning_WithinNestedDelegateInItsOwnContinuation()
+    {
+        var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void F() {
+        var task = Task.Run(() => 5);
+        task.ContinueWith(t => {
+            Action useResultLater = () => Console.WriteLine(t.Result);
+            useResultLater();
+        });
+    }
+}
+";
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task TaskResultReportsWarning_WhenContinuationParameterIsReassigned()
+    {
+        var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void F() {
+        var task = Task.Run(() => 5);
+        task.ContinueWith(t => {
+            Action useResultLater = () => Console.WriteLine(t.[|Result|]);
+            t = Task.Run(() => 6);
+            useResultLater();
+        });
+        task.ContinueWith(t => {
+            Task<int> other = Task.Run(() => 7);
+            ref Task<int> alias = ref t;
+            alias = ref other;
+            return alias.[|Result|];
+        });
+        task.ContinueWith(t => {
+            ref Task<int> alias = ref t;
+            alias = Task.Run(() => 8);
+            Func<int> useResultLater = () => t.[|Result|];
+            return useResultLater();
+        });
+        task.ContinueWith(t => {
+            Func<int> useResultLater = () => {
+                ref Task<int> alias = ref t;
+                alias = Task.Run(() => 9);
+                return t.[|Result|];
+            };
+            return useResultLater();
+        });
+    }
+}
+";
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task RefReturningInvocationCreatesPotentialAlias()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    void F(Task<int> task) {
+        ref Task<int> alias = ref GetTaskRef(ref task);
+        if (task.IsCompleted) {
+            alias = Task.Run(() => 1);
+            _ = task.[|Result|];
+        }
+    }
+
+    static ref Task<int> GetTaskRef(ref Task<int> task) => ref task;
+}
+";
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task ContinuationParameterDeconstructionReportsWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    void F() {
+        var task = Task.Run(() => 5);
+        task.ContinueWith(t => {
+            (t, _) = (Task.Run(() => 6), 0);
+            return t.[|Result|];
+        });
+        task.ContinueWith(t => {
+            Task<int> other = Task.Run(() => 7);
+            ref Task<int> alias = ref other;
+            alias = ref t;
+            alias = Task.Run(() => 7);
+            return t.[|Result|];
+        });
+        task.ContinueWith(t => {
+            Replace();
+            return t.[|Result|];
+
+            void Replace() => t = Task.Run(() => 8);
+        });
+    }
+}
+";
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task TaskWhenAllResultReportsWarningWithoutAnalyzerFailure()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    void F() {
+        var task = Task.Run(() => 1);
+        _ = Task.WhenAll(task).[|Result|];
+    }
+}
+";
+
+        var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task FAsync() {
+        var task = Task.Run(() => 1);
+        _ = await Task.WhenAll(task);
+    }
+}
+";
+
+        await CSVerify.VerifyCodeFixAsync(test, withFix);
+    }
+
+    [Fact]
+    public async Task CompletedTaskResultDoesNotReportWarning()
+    {
+        var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    async void Awaited() {
+        var task = Task.Run(() => 1);
+        await task;
+        _ = task.Result;
+    }
+
+    async void AwaitedAsArgument() {
+        var task = Task.Run(() => 1);
+        Consume(await task);
+        _ = task.Result;
+    }
+
+    async void AwaitedEarlierInSameStatement() {
+        var task = Task.Run(() => 1);
+        Consume(await task, task.Result);
+    }
+
+    async void AwaitedBeforeOtherTaskInSameStatement() {
+        var task = Task.Run(() => 1);
+        var otherTask = Task.Run(() => 2);
+        Consume(await task, await otherTask);
+        _ = task.Result;
+    }
+
+    async void AwaitedInWhenAllArray() {
+        var task = Task.Run(() => 1);
+        await Task.WhenAll(new[] { task });
+        _ = task.Result;
+    }
+
+    async void AwaitedInConditionalCondition() {
+        var task = Task.Run(() => true);
+        _ = (await task) ? 1 : 0;
+        _ = task.Result;
+    }
+
+    async void AwaitedInLeftShortCircuitOperand(bool condition) {
+        var task = Task.Run(() => true);
+        if (await task && condition) {
+        }
+
+        _ = task.Result;
+    }
+
+    async void AwaitedInNestedBlock() {
+        var task = Task.Run(() => 1);
+        {
+            await task;
+        }
+
+        _ = task.Result;
+    }
+
+    async void Guarded() {
+        var task = Task.Run(() => 1);
+        if (!task.IsCompleted) {
+            await task.ConfigureAwait(false);
+        }
+
+        _ = task.Result;
+    }
+
+    async void GuardedWithElse() {
+        var task = Task.Run(() => 1);
+        if (task.IsCompleted) {
+        } else {
+            await task.ConfigureAwait(false);
+        }
+
+        _ = task.Result;
+    }
+
+    async void GuardedWithNestedConditional(bool condition) {
+        var task = Task.Run(() => 1);
+        if (!task.IsCompleted) {
+            if (condition) {
+                await task;
+            } else {
+                await task;
+            }
+        }
+
+        _ = task.Result;
+    }
+
+    async void GuardedInsideNestedBlock() {
+        var task = Task.Run(() => 1);
+        {
+            if (!task.IsCompleted) {
+                await task;
+            }
+        }
+
+        _ = task.Result;
+    }
+
+    async void AwaitedBeforeNestedBlock(bool condition) {
+        var task = Task.Run(() => 1);
+        await task;
+        if (condition) {
+            _ = task.Result;
+        }
+    }
+
+    void CompletionProperties(Task<int> task) {
+        if (task.IsCompleted) {
+            _ = task.Result;
+        }
+
+        if (task.IsCanceled) {
+            _ = task.Result;
+        }
+
+        if (task.IsFaulted) {
+            _ = task.Result;
+        }
+
+        if (task.IsCompletedSuccessfully) {
+            _ = task.Result;
+        }
+
+        if (task.IsCompleted || task.IsCanceled) {
+            _ = task.Result;
+        }
+
+        if (task.Status == TaskStatus.RanToCompletion) {
+            _ = task.Result;
+        }
+
+        if (task.IsCompleted && task.Result == 1) {
+        }
+    }
+
+    async void ConditionalAwait(bool condition) {
+        var task = Task.Run(() => 1);
+        if (condition) {
+            await task;
+        }
+
+        _ = task.[|Result|];
+    }
+
+    async void ReassignedAfterAwait() {
+        var task = Task.Run(() => 1);
+        await task;
+        task = Task.Run(() => 2);
+        _ = task.[|Result|];
+    }
+
+    async void ReassignedLaterInAwaitStatement() {
+        var task = Task.Run(() => 1);
+        Consume(await task, task = Task.Run(() => 2));
+        _ = task.[|Result|];
+    }
+
+    async void ReassignedInWhenAllArgument() {
+        var task = Task.Run(() => 1);
+        await Task.WhenAll(task, Replace(ref task));
+        _ = task.[|Result|];
+    }
+
+    async void ReassignedInConfigureAwaitArgument() {
+        var task = Task.Run(() => 1);
+        await task.ConfigureAwait(ReplaceFlag(ref task));
+        _ = task.[|Result|];
+    }
+
+    async void ReassignedInGuardCondition() {
+        var task = Task.Run(() => 1);
+        if (!task.IsCompleted || (task = Replace(ref task)) == null) {
+            await task;
+        }
+
+        _ = task.[|Result|];
+    }
+
+    async void ReassignedByDeconstruction() {
+        var task = Task.Run(() => 1);
+        await task;
+        (task, _) = (Task.Run(() => 2), 0);
+        _ = task.[|Result|];
+    }
+
+    async void ReassignedByInvokedClosure() {
+        var task = Task.Run(() => 1);
+        await task;
+        Action replace = () => task = Task.Run(() => 2);
+        replace();
+        _ = task.[|Result|];
+    }
+
+    async void ReassignedByClosureDeclaredBeforeAwait() {
+        var task = Task.Run(() => 1);
+        Action replace = () => task = Task.Run(() => 2);
+        await task;
+        replace();
+        _ = task.[|Result|];
+    }
+
+    void ReboundRefAliasDoesNotConnectTargets(Task<int> task, Task<int> other) {
+        ref Task<int> alias = ref task;
+        alias = ref other;
+        if (other.IsCompleted) {
+            _ = task.[|Result|];
+        }
+    }
+
+    void ConditionallyReboundRefAliasStillInvalidatesOriginal(Task<int> task, Task<int> other, bool condition) {
+        ref Task<int> alias = ref task;
+        if (condition) {
+            alias = ref other;
+        }
+
+        if (task.IsCompleted) {
+            alias = Task.Run(() => 3);
+            _ = task.[|Result|];
+        }
+    }
+
+    int ReassignedByClosureInGetter {
+        get {
+            var task = Task.Run(() => 1);
+            Action replace = () => task = Task.Run(() => 2);
+            if (task.IsCompleted) {
+                replace();
+                return task.[|Result|];
+            }
+
+            return 0;
+        }
+    }
+
+    void LaterLambdaDoesNotInvalidateEarlierGuard(Task<int> task) {
+        if (task.IsCompleted) {
+            _ = task.Result;
+        }
+
+        Action replace = () => task = Task.Run(() => 4);
+    }
+
+    void LaterLocalFunctionStillInvalidatesEarlierGuard(Task<int> task) {
+        if (task.IsCompleted) {
+            Replace();
+            _ = task.[|Result|];
+        }
+
+        void Replace() {
+            Action nestedReplace = () => task = Task.Run(() => 5);
+            nestedReplace();
+        }
+    }
+
+    async void AwaitInDoWhileConditionIsNotDefinite() {
+        var task = Task.Run(() => true);
+        do {
+            break;
+        } while (await task);
+
+        _ = task.[|Result|];
+    }
+
+    async void AwaitInSwitchGuardIsNotDefinite(int value) {
+        var task = Task.Run(() => true);
+        switch (value) {
+            case 0 when await task:
+                break;
+            default:
+                break;
+        }
+
+        _ = task.[|Result|];
+    }
+
+    async void ReassignedEarlierInResultStatement() {
+        var task = Task.Run(() => 1);
+        await task;
+        Consume(task = Task.Run(() => 2), task.[|Result|]);
+    }
+
+    void ReassignedInsideGuard(Task<int> task) {
+        if (task.IsCompleted) {
+            task = Task.Run(() => 2);
+            _ = task.[|Result|];
+        }
+    }
+
+    void ReassignedThroughRefAliasInsideGuard(Task<int> task) {
+        ref Task<int> alias = ref task;
+        if (task.IsCompleted) {
+            alias = Task.Run(() => 2);
+            _ = task.[|Result|];
+        }
+    }
+
+    void ReassignedThroughReboundRefAliasInsideGuard(ref Task<int> task, ref Task<int> other) {
+        ref Task<int> alias = ref other;
+        alias = ref task;
+        if (task.IsCompleted) {
+            alias = Task.Run(() => 2);
+            _ = task.[|Result|];
+        }
+    }
+
+    void RefAliasCompletionGuard(Task<int> task) {
+        ref Task<int> alias = ref task;
+        if (alias.IsCompleted) {
+            _ = task.Result;
+        }
+    }
+
+    void RefAliasReceiverReassignedThroughOriginal(Task<int> task) {
+        ref Task<int> alias = ref task;
+        if (alias.IsCompleted) {
+            task = Task.Run(() => 2);
+            _ = alias.[|Result|];
+        }
+    }
+
+    void CapturedTaskIsNotProvenComplete() {
+        var task = Task.Run(() => 1);
+        Local();
+        task = Task.Run(() => 2);
+
+        async void Local() {
+            await task;
+            _ = task.[|Result|];
+        }
+    }
+
+    void Consume(int value) { }
+    void Consume(int first, int second) { }
+    void Consume(int value, Task<int> task) { }
+    void Consume(Task<int> task, int value) { }
+    Task<int> Replace(ref Task<int> task) => task = Task.Run(() => 2);
+    bool ReplaceFlag(ref Task<int> task) {
+        task = Task.Run(() => 2);
+        return false;
+    }
+}
+";
+
+        await new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task CapturedTaskReassignmentInTopLevelStatementsReportsWarning()
+    {
+        var test = @"
+using System;
+using System.Threading.Tasks;
+
+var task = Task.Run(() => 1);
+Action replace = () => task = Task.Run(() => 2);
+if (task.IsCompleted) {
+    replace();
+    _ = task.[|Result|];
+}
+";
+
+        await new CSVerify.Test
+        {
+            TestCode = test,
+            TestState =
+            {
+                OutputKind = OutputKind.ConsoleApplication,
+            },
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task ConfiguredSyncBlockingMethodsReportWithoutCodeFix()
+    {
+        var test = @"
+using System.Threading.Tasks;
+using Contoso.Threading;
+
+namespace Contoso.Threading {
+    static class TaskExtensions {
+        internal static T WaitSynchronously<T>(this Task<T> task) => default;
+    }
+
+    class CustomWaiter {
+        internal void Join() { }
+    }
+}
+
+class Test {
+    void F(Task<int> task, Contoso.Threading.CustomWaiter waiter) {
+        _ = task.[|WaitSynchronously|]();
+        waiter.[|Join|]();
+        waiter?.[|Join|]();
+    }
+
+    Task<int> FAsync(Task<int> task) {
+        _ = task.[|WaitSynchronously|]();
+        return task;
+    }
+}
+";
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            FixedCode = test,
+        };
+        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncBlockingMethods.txt", @"
+[Contoso.Threading.TaskExtensions]::WaitSynchronously
+[Contoso.Threading.CustomWaiter]::Join
+"));
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task ConditionalTaskWaitInSynchronousMethodReports()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                void F(Task task)
+                {
+                    task?.[|Wait|]();
+                }
+            }
+            """;
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task ConfiguredSyncBlockingMethodReportsWithoutTaskType()
+    {
+        string test = """
+            class CustomWaiter
+            {
+                internal void Join() { }
+            }
+
+            class Test
+            {
+                void F(CustomWaiter waiter)
+                {
+                    waiter.[|Join|]();
+                }
+            }
+            """;
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            FixedCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.NetFramework.Net20.Default,
+        };
+        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncBlockingMethods.txt", "[CustomWaiter]::Join"));
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task ConfiguredSyncBlockingMethodRequiresApplicableAsyncAlternative()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class CustomWaiter
+            {
+                internal void Join(int value) { }
+
+                internal Task JoinAsync(string required, int value) => Task.CompletedTask;
+            }
+
+            class ReorderedWaiter
+            {
+                internal void Join(int first, string second) { }
+
+                internal Task JoinAsync(string second, int first) => Task.CompletedTask;
+            }
+
+            class OptionalWaiter
+            {
+                internal void Join(int value) { }
+
+                internal Task JoinAsync(int value, string optional = null) => Task.CompletedTask;
+            }
+
+            class Test
+            {
+                Task FAsync(CustomWaiter waiter, ReorderedWaiter reordered, OptionalWaiter optional)
+                {
+                    waiter.[|Join|](1);
+                    reordered.[|Join|](1, "");
+                    optional.Join(1);
+                    return Task.CompletedTask;
+                }
+            }
+            """;
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            FixedCode = test,
+        };
+        verifyTest.TestState.AdditionalFiles.Add(
+            ("vs-threading.SyncBlockingMethods.txt", """
+                [CustomWaiter]::Join
+                [ReorderedWaiter]::Join
+                [OptionalWaiter]::Join
+                """));
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task ConfiguredGenericExtensionReceiverDoesNotThrow()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Task FAsync(object value) {
+        value.[|WaitSynchronously|]();
+        return Task.CompletedTask;
+    }
+}
+
+static class Extensions {
+    public static void WaitSynchronously<T>(this T value) { }
+}
+";
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            FixedCode = test,
+        };
+        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncBlockingMethods.txt", "[Extensions]::WaitSynchronously"));
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task ConfiguredAsyncSuffixedMethodIsNotTreatedAsCoveredByVSTHRD103()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class CustomWaiter {
+    internal void JoinAsync() { }
+    internal Task JoinAsyncAsync() => Task.CompletedTask;
+}
+
+class Test {
+    async Task FAsync(CustomWaiter waiter) {
+        waiter.[|JoinAsync|]();
+        await Task.Yield();
+    }
+}
+";
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            FixedCode = test,
+        };
+        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncBlockingMethods.txt", "[CustomWaiter]::JoinAsync"));
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task ConfiguredSyncBlockingMethodInsideNameOfDoesNotReport()
+    {
+        var test = @"
+namespace Contoso.Threading {
+    class CustomWaiter {
+        internal void Join() { }
+    }
+}
+
+class Test {
+    void F(Contoso.Threading.CustomWaiter waiter) {
+        _ = nameof({|CS8081:waiter.Join()|});
+    }
+}
+";
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+        };
+        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncBlockingMethods.txt", "[Contoso.Threading.CustomWaiter]::Join"));
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task KnownAwaiterFromCustomMethodDoesNotOfferCodeFix()
+    {
+        var test = @"
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
+
+class Test {
+    void F(Task task) {
+        GetCustomAwaiter(task).[|GetResult|]();
+    }
+
+    TaskAwaiter GetCustomAwaiter(Task task) => task.GetAwaiter();
+}
+";
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task ParameterizedGetAwaiterDoesNotOfferCodeFix()
+    {
+        var test = @"
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
+
+class Test {
+    void F(CustomAwaitable value) {
+        value.GetAwaiter(1).[|GetResult|]();
+    }
+}
+
+class CustomAwaitable {
+    public TaskAwaiter GetAwaiter(int value) => Task.CompletedTask.GetAwaiter();
+}
+";
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task ParameterizedTaskGetAwaiterDoesNotUseCompletionProofOrOfferCodeFix()
+    {
+        var test = @"
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
+
+class Test {
+    void F(Task<int> task) {
+        if (task.IsCompleted) {
+            _ = task.GetAwaiter(1).[|GetResult|]();
+        }
+
+        task.ContinueWith(t => t.GetAwaiter(1).[|GetResult|]());
+    }
+}
+
+static class TaskExtensions {
+    public static TaskAwaiter<int> GetAwaiter(this Task<int> task, int mode)
+        => Task.Run(() => mode).GetAwaiter();
+}
+";
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task ConfiguredAwaitExtensionDoesNotProveOriginalTaskCompleted()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    async void F(Task<int> task) {
+        await task.ConfigureAwait(""custom"");
+        _ = task.[|Result|];
+    }
+}
+
+static class TaskExtensions {
+    public static Task<int> ConfigureAwait(this Task<int> task, string mode)
+        => Task.Run(() => mode.Length);
+}
+";
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task TaskWaitExtensionDoesNotOfferCodeFix()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    void F(Task task) {
+        task.[|Wait|](""custom"");
+    }
+}
+
+static class TaskExtensions {
+    public static void Wait(this Task task, string mode) { }
+}
+";
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            FixedCode = test,
+        };
+        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncBlockingMethods.txt", "[TaskExtensions]::Wait"));
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task CodeFixIsNotOfferedOutsideMethodDeclarations()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    Test() {
+        Task.Delay(1).[|Wait|]();
+    }
+
+    int Value {
+        get {
+            return Task.FromResult(1).[|Result|];
+        }
+    }
+}
+";
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task CodeFixIsNotOfferedForMethodsThatCannotBeAsync()
+    {
+        var test = @"
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+
+ref struct RefLike {
+    internal int Value;
+}
+
+partial class Test {
+    int RefParameter(Task<int> task, ref int value) {
+        return task.[|Result|];
+    }
+
+    int OutParameter(Task<int> task, out int value) {
+        value = 0;
+        return task.[|Result|];
+    }
+
+    IEnumerable<int> Iterator(Task<int> task) {
+        yield return task.[|Result|];
+    }
+
+    int RefLikeParameter(Task<int> task, RefLike value) {
+        return task.[|Result|];
+    }
+
+    RefLike RefLikeReturn(Task<int> task) {
+        return new RefLike { Value = task.[|Result|] };
+    }
+
+    int RefLocal(Task<int> task) {
+        int value = 0;
+        ref int alias = ref value;
+        return task.[|Result|];
+    }
+
+    int RefLikeLocal(Task<int> task) {
+        RefLike value = default;
+        return task.[|Result|] + value.Value;
+    }
+
+    int OutDeclaredRefLikeLocal(Task<int> task) {
+        Create(out RefLike value);
+        return task.[|Result|] + value.Value;
+    }
+
+    private partial int PartialMethod(Task<int> task);
+
+    private partial int PartialMethod(Task<int> task) {
+        return task.[|Result|];
+    }
+
+    void MethodGroup(Task task) {
+        task.[|Wait|]();
+    }
+
+    void UseMethodGroup() {
+        Action<Task> action = MethodGroup;
+    }
+
+    static void Create(out RefLike value) {
+        value = default;
+    }
+}
+";
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task CodeFixIsNotOfferedInAwaitForbiddenContexts()
+    {
+        var test = @"
+using System;
+using System.Threading.Tasks;
+
+class Test {
+    void F(object gate) {
+        lock (gate) {
+            _ = Task.FromResult(1).[|Result|];
+        }
+
+        try {
+        } catch (Exception) when (Task.FromResult(false).[|Result|]) {
+        }
+    }
+}
+";
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task CodeFixIsNotOfferedInUnsafeOrFixedContexts()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            unsafe class Test
+            {
+                private int[] values = new int[1];
+
+                int UnsafeType(Task<int> task)
+                {
+                    return task.[|Result|];
+                }
+
+                int UnsafeBlock(Task<int> task)
+                {
+                    unsafe
+                    {
+                        return task.[|Result|];
+                    }
+                }
+
+                int FixedBlock(Task<int> task)
+                {
+                    fixed (int* pointer = values)
+                    {
+                        return task.[|Result|];
+                    }
+                }
+            }
+            """;
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            FixedCode = test,
+        };
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task CodeFixIsNotOfferedWhenCallerCannotBecomeAsync()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            ref struct RefLike
+            {
+                internal int Value;
+            }
+
+            class Test
+            {
+                Test(Task<int> task)
+                {
+                    _ = CalledByConstructor(task);
+                }
+
+                static int CalledByConstructor(Task<int> task)
+                {
+                    return task.[|Result|];
+                }
+
+                static int CalledByRefLikeLocal(Task<int> task)
+                {
+                    return task.[|Result|];
+                }
+
+                static int CallerWithRefLikeLocal(Task<int> task)
+                {
+                    RefLike value = default;
+                    return CalledByRefLikeLocal(task) + value.Value;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task CodeFixIsNotOfferedWhenTaskCallerWouldLoseReturnedInvocation()
+    {
+        string test = """
+            using System;
+            using System.Threading.Tasks;
+
+            class DerivedTask : Task
+            {
+                internal DerivedTask()
+                    : base(() => { })
+                {
+                }
+            }
+
+            class Test
+            {
+                static DerivedTask GetTask(Task task)
+                {
+                    task.[|Wait|]();
+                    return new DerivedTask();
+                }
+
+                static Task Caller(Task task)
+                {
+                    return GetTask(task);
+                }
+            }
+            """;
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task CodeFixParenthesizesAwaitUsedAsReceiver()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                int GetLength(Task<string> task)
+                {
+                    return task.[|Result|].Length;
+                }
+            }
+            """;
+        string withFix = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task<int> GetLengthAsync(Task<string> task)
+                {
+                    return (await task).Length;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyCodeFixAsync(test, withFix);
+    }
+
+    [Fact]
+    public async Task CodeFixIsNotOfferedWhenGenericTaskLikeCallerWouldLoseReturnedInvocation()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class DerivedTask<T> : Task<T>
+            {
+                internal DerivedTask()
+                    : base(() => default)
+                {
+                }
+            }
+
+            class Test
+            {
+                static DerivedTask<int> GetValue(Task<int> task)
+                {
+                    _ = task.[|Result|];
+                    return new DerivedTask<int>();
+                }
+
+                static Task<int> Caller(Task<int> task) => GetValue(task);
+            }
+            """;
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task CodeFixIsNotOfferedForDirectReturnFromAsyncCompatibleCaller()
+    {
+        string test = """
+            using System;
+            using System.Runtime.CompilerServices;
+            using System.Threading.Tasks;
+
+            [AsyncMethodBuilder(typeof(CustomTaskMethodBuilder<>))]
+            class CustomTask<T>
+            {
+                public TaskAwaiter<T> GetAwaiter() => Task.FromResult(default(T)).GetAwaiter();
+                public static implicit operator CustomTask<T>(T value) => new();
+            }
+
+            struct CustomTaskMethodBuilder<T>
+            {
+                public static CustomTaskMethodBuilder<T> Create() => default;
+                public CustomTask<T> Task => new();
+                public void SetResult(T result) { }
+                public void SetException(Exception exception) { }
+                public void SetStateMachine(IAsyncStateMachine stateMachine) { }
+                public void Start<TStateMachine>(ref TStateMachine stateMachine)
+                    where TStateMachine : IAsyncStateMachine => stateMachine.MoveNext();
+                public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine)
+                    where TAwaiter : INotifyCompletion
+                    where TStateMachine : IAsyncStateMachine { }
+                public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine)
+                    where TAwaiter : ICriticalNotifyCompletion
+                    where TStateMachine : IAsyncStateMachine { }
+            }
+
+            class Test
+            {
+                static int GetValue(Task<int> task)
+                {
+                    return task.[|Result|];
+                }
+
+                static CustomTask<int> Caller(Task<int> task)
+                {
+                    return GetValue(task);
+                }
+            }
+            """;
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task CodeFixIsNotOfferedWhenCallerUsesConditionalAccess()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Receiver
+            {
+                internal int GetValue(Task task)
+                {
+                    task.[|Wait|]();
+                    return 1;
+                }
+            }
+
+            class Test
+            {
+                static int? Caller(Receiver receiver, Task task) => receiver?.GetValue(task);
+            }
+            """;
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task CodeFixIsNotOfferedWhenAsyncNameHasSameSignature()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                int GetValue(Task<int> task)
+                {
+                    return task.[|Result|];
+                }
+
+                Task<int> GetValueAsync(Task<int> task)
+                {
+                    return task;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task CodeFixIsNotOfferedWhenAsyncNameHasApplicableOptionalOverload()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                int GetValue(Task<int> task)
+                {
+                    return task.[|Result|];
+                }
+
+                Task<int> GetValueAsync(Task<int> task, bool optional = false)
+                {
+                    return task;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task CodeFixIsNotOfferedWhenChangingMethodContract()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+interface ITest {
+    int InterfaceMethod(Task<int> task);
+}
+
+abstract class Base {
+    public abstract int OverrideMethod(Task<int> task);
+}
+
+class Test : Base, ITest {
+    public virtual int VirtualMethod(Task<int> task) {
+        return task.[|Result|];
+    }
+
+    public override int OverrideMethod(Task<int> task) {
+        return task.[|Result|];
+    }
+
+    public int InterfaceMethod(Task<int> task) {
+        return task.[|Result|];
+    }
+}
+";
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task CodeFixIsNotOfferedForDefaultInterfaceMethod()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            interface ITest
+            {
+                int DefaultInterfaceMethod(Task<int> task)
+                {
+                    return task.[|Result|];
+                }
+            }
+            """;
+
+        await new CSVerify.Test
+        {
+            TestCode = test,
+            FixedCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task StaticGetAwaiterFactoryDoesNotOfferCodeFix()
+    {
+        var test = @"
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
+
+class Test {
+    void F() {
+        AwaiterFactory.GetAwaiter().[|GetResult|]();
+    }
+}
+
+static class AwaiterFactory {
+    public static TaskAwaiter GetAwaiter() => Task.CompletedTask.GetAwaiter();
+}
+";
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task CodeFixIsNotOfferedWhenBlockingExpressionHasCompileErrors()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    void F() {
+        Task.Delay(1, CancellationToken.None).GetAwaiter().[|GetResult|]();
+    }
+}
+";
+
+        DiagnosticResult compilerError = DiagnosticResult.CompilerError("CS0103").WithSpan(6, 23, 6, 40).WithArguments("CancellationToken");
+        await CSVerify.VerifyCodeFixAsync(test, new[] { compilerError }, test);
+    }
+
+    [Fact]
+    public async Task CodeFixIsNotOfferedForWaitWithCancellation()
+    {
+        var test = @"
+using System.Threading;
+using System.Threading.Tasks;
+
+class Test {
+    void F(CancellationToken cancellationToken) {
+        Task.Delay(2, cancellationToken).[|Wait|](cancellationToken);
+    }
+}
+";
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
     }
 
     [Fact]
@@ -610,6 +2182,33 @@ class Test {
 ";
         DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(8, 27, 8, 36);
         await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
+
+    [Fact]
+    public async Task ParenthesizedTask_GetAwaiter_GetResult_ShouldReportWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+class Test {
+    void F() {
+        var task = Task.Run(() => 1);
+        (task.GetAwaiter()).[|GetResult|]();
+    }
+}
+";
+        var withFix = @"
+using System.Threading.Tasks;
+
+class Test {
+    async Task FAsync() {
+        var task = Task.Run(() => 1);
+        await task;
+    }
+}
+";
+
+        await CSVerify.VerifyCodeFixAsync(test, withFix);
     }
 
     [Fact]
@@ -831,6 +2430,35 @@ namespace Microsoft.VisualStudio.JavaScript.Project {
 }
 ";
         await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task DoNotReportConfiguredWarningOnCodeGeneratedByXaml2CS()
+    {
+        var test = @"
+//------------------------------------------------------------------------------
+// <auto-generated>
+//------------------------------------------------------------------------------
+
+namespace Contoso.Threading {
+    class CustomWaiter {
+        internal void Join() { }
+    }
+
+    class Test {
+        void F(CustomWaiter waiter) {
+            waiter.Join();
+        }
+    }
+}
+";
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+        };
+        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncBlockingMethods.txt", "[Contoso.Threading.CustomWaiter]::Join"));
+        await verifyTest.RunAsync();
     }
 
     [Fact]

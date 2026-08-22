@@ -208,10 +208,9 @@ public sealed class CSharpUtils : LanguageUtils
     /// </summary>
     public static bool IsWithinNameOf([NotNullWhen(true)] SyntaxNode? syntaxNode)
     {
-        InvocationExpressionSyntax? invocation = syntaxNode?.FirstAncestorOrSelf<InvocationExpressionSyntax>();
-        return invocation is object
-            && (invocation.Expression as IdentifierNameSyntax)?.Identifier.Text == "nameof"
-            && invocation.ArgumentList.Arguments.Count == 1;
+        return syntaxNode?.AncestorsAndSelf().OfType<InvocationExpressionSyntax>().Any(
+            invocation => (invocation.Expression as IdentifierNameSyntax)?.Identifier.Text == "nameof"
+                && invocation.ArgumentList.Arguments.Count == 1) is true;
     }
 
     public override Location? GetLocationOfBaseTypeName(INamedTypeSymbol symbol, INamedTypeSymbol baseType, Compilation compilation, CancellationToken cancellationToken)

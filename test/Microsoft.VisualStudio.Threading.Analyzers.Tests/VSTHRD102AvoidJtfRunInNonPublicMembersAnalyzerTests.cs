@@ -6,6 +6,24 @@ using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixV
 public class VSTHRD102AvoidJtfRunInNonPublicMembersAnalyzerTests
 {
     [Fact]
+    public async Task JoinableTaskCompletionGuardDoesNotSuppressDiagnostic()
+    {
+        var test = @"
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    void F(JoinableTask joinableTask) {
+        if (joinableTask.IsCompleted) {
+            joinableTask.[|Join|]();
+        }
+    }
+}
+";
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
     public async Task JtfRunInPublicMethodsOfInternalType_ProducesDiagnostic()
     {
         var test = @"
