@@ -791,6 +791,457 @@ class Test {
     }
 
     [Fact]
+    public async Task TaskResultGuardedByIsCompletedSuccessfully_GeneratesNoWarning()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                Task<int> GetResultAsync(Task<int> task)
+                {
+                    if (task.IsCompletedSuccessfully)
+                    {
+                        return Task.FromResult(task.Result);
+                    }
+
+                    return task;
+                }
+            }
+            """;
+
+        await new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task TaskResultGuardedByOtherTaskCompletion_GeneratesWarning()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                Task<int> GetResultAsync(Task<int> task, Task<int> otherTask)
+                {
+                    if (otherTask.IsCompletedSuccessfully)
+                    {
+                        return Task.FromResult(task.{|#0:Result|});
+                    }
+
+                    return task;
+                }
+            }
+            """;
+
+        var analyzerTest = new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        };
+        analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
+        await analyzerTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task TaskResultAfterReassignmentWithinCompletionGuard_GeneratesWarning()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                Task<int> GetResultAsync(Task<int> task)
+                {
+                    if (task.IsCompletedSuccessfully)
+                    {
+                        task = new TaskCompletionSource<int>().Task;
+                        return Task.FromResult(task.{|#0:Result|});
+                    }
+
+                    return task;
+                }
+            }
+            """;
+
+        var analyzerTest = new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        };
+        analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
+        await analyzerTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task TaskResultInLocalFunctionWithOuterCompletionGuard_GeneratesWarning()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                Task<int> GetResultAsync(Task<int> task)
+                {
+                    if (task.IsCompletedSuccessfully)
+                    {
+                        Task<int> LocalAsync() => Task.FromResult(task.{|#0:Result|});
+                        return LocalAsync();
+                    }
+
+                    return task;
+                }
+            }
+            """;
+
+        var analyzerTest = new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        };
+        analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
+        await analyzerTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task TaskResultThroughRefAliasAfterOriginalReassignment_GeneratesWarning()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                Task<int> GetResultAsync(Task<int> task)
+                {
+                    ref Task<int> alias = ref task;
+                    if (alias.IsCompletedSuccessfully)
+                    {
+                        task = new TaskCompletionSource<int>().Task;
+                        return Task.FromResult(alias.{|#0:Result|});
+                    }
+
+                    return task;
+                }
+            }
+            """;
+
+        var analyzerTest = new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        };
+        analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
+        await analyzerTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task TaskResultBeforeReassignmentInLoop_GeneratesWarning()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                Task<int> GetResultAsync(Task<int> task, Task<int> replacement)
+                {
+                    if (task.IsCompletedSuccessfully)
+                    {
+                        while (true)
+                        {
+                            _ = task.{|#0:Result|};
+                            task = replacement;
+                        }
+                    }
+
+                    return task;
+                }
+            }
+            """;
+
+        var analyzerTest = new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        };
+        analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
+        await analyzerTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task ValueTaskResultGuardedByIsCompletedSuccessfully_GeneratesWarning()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                Task<int> GetResultAsync(ValueTask<int> task)
+                {
+                    if (task.IsCompletedSuccessfully)
+                    {
+                        return Task.FromResult(task.{|#0:Result|});
+                    }
+
+                    return Task.FromResult(0);
+                }
+            }
+            """;
+
+        var analyzerTest = new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        };
+        analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
+        await analyzerTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task TaskResultForContinueWithAntecedent_GeneratesNoWarning()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                Task<int> ContinueAsync(Task<int> task)
+                    => task.ContinueWith(
+                        antecedent => Task.FromResult(antecedent.Result),
+                        TaskScheduler.Default).Unwrap();
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task TaskResultForUnrelatedTaskWithinContinueWith_GeneratesWarning()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                Task<int> ContinueAsync(Task<int> task, Task<int> otherTask)
+                    => task.ContinueWith(
+                        antecedent => Task.FromResult(otherTask.{|#0:Result|}),
+                        TaskScheduler.Default).Unwrap();
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(
+            test,
+            CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
+    }
+
+    [Fact]
+    public async Task TaskResultForReassignedContinueWithAntecedent_GeneratesWarning()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                Task<int> ContinueAsync(Task<int> task)
+                    => task.ContinueWith(
+                        antecedent =>
+                        {
+                            antecedent = new TaskCompletionSource<int>().Task;
+                            return Task.FromResult(antecedent.{|#0:Result|});
+                        },
+                        TaskScheduler.Default).Unwrap();
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(
+            test,
+            CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
+    }
+
+    [Fact]
+    public async Task TaskResultForCustomContinueWithCallback_GeneratesWarning()
+    {
+        string test = """
+            using System;
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                Task<int> ContinueAsync(Task<int> task)
+                    => ContinueWith(antecedent => Task.FromResult(antecedent.{|#0:Result|}));
+
+                Task<int> ContinueWith(Func<Task<int>, Task<int>> continuation)
+                    => continuation(Task.FromResult(1));
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(
+            test,
+            CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
+    }
+
+    [Fact]
+    public async Task TaskResultForContinueWithStateLambda_GeneratesWarning()
+    {
+        string test = """
+            using System;
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                Task ContinueAsync(Task task)
+                    => task.ContinueWith(
+                        (antecedent, state) => ((Func<Task<int>, Task<int>>)state)(new TaskCompletionSource<int>().Task),
+                        (Task<int> stateTask) => Task.FromResult(stateTask.{|#0:Result|}));
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(
+            test,
+            CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
+    }
+
+    [Fact]
+    public async Task TaskResultInDeferredQueryWithOuterCompletionGuard_GeneratesWarning()
+    {
+        string test = """
+            using System.Collections.Generic;
+            using System.Linq;
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                Task<IEnumerable<int>> GetResultAsync(Task<int> task, IEnumerable<int> items)
+                {
+                    if (task.IsCompletedSuccessfully)
+                    {
+                        return Task.FromResult(from item in items select task.{|#0:Result|});
+                    }
+
+                    return Task.FromResult(Enumerable.Empty<int>());
+                }
+            }
+            """;
+
+        await new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+            ExpectedDiagnostics =
+            {
+                CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"),
+            },
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task TaskResultAfterLocalFunctionMutation_GeneratesWarning()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                Task<int> GetResultAsync(Task<int> task, Task<int> replacement)
+                {
+                    void Replace() => task = replacement;
+
+                    if (task.IsCompletedSuccessfully)
+                    {
+                        Replace();
+                        return Task.FromResult(task.{|#0:Result|});
+                    }
+
+                    return task;
+                }
+            }
+            """;
+
+        await new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+            ExpectedDiagnostics =
+            {
+                CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"),
+            },
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task CapturedTaskResultAfterEnclosingLocalFunctionMutation_GeneratesWarning()
+    {
+        string test = """
+            using System;
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                Task<int> GetResultAsync(Task<int> task, Task<int> replacement)
+                {
+                    void Replace() => task = replacement;
+                    Func<Task<int>> callback = () =>
+                    {
+                        if (task.IsCompletedSuccessfully)
+                        {
+                            Replace();
+                            return Task.FromResult(task.{|#0:Result|});
+                        }
+
+                        return task;
+                    };
+
+                    return callback();
+                }
+            }
+            """;
+
+        await new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+            ExpectedDiagnostics =
+            {
+                CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"),
+            },
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task RefParameterResultGuardedByIsCompletedSuccessfully_GeneratesWarning()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                Task<int> GetResultAsync(ref Task<int> task)
+                {
+                    if (task.IsCompletedSuccessfully)
+                    {
+                        return Task.FromResult(task.{|#0:Result|});
+                    }
+
+                    return task;
+                }
+            }
+            """;
+
+        await new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+            ExpectedDiagnostics =
+            {
+                CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"),
+            },
+        }.RunAsync();
+    }
+
+    [Fact]
     public async Task TaskGetAwaiterGetResultInTaskReturningMethodGeneratesWarning()
     {
         var test = @"

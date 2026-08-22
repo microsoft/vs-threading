@@ -447,4 +447,61 @@ public class Test {
         analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithSpan(7, 25, 7, 31));
         await analyzerTest.RunAsync();
     }
+
+    [Fact]
+    public async Task TaskResultThroughRefAliasAfterOriginalReassignment_GeneratesWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+public class Test {
+    public int GetResult(Task<int> task) {
+        ref Task<int> alias = ref task;
+        if (alias.IsCompletedSuccessfully) {
+            task = new TaskCompletionSource<int>().Task;
+            return alias.Result;
+        }
+
+        return 0;
+    }
+}
+";
+
+        var analyzerTest = new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        };
+        analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithSpan(9, 26, 9, 32));
+        await analyzerTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task TaskResultBeforeReassignmentInLoop_GeneratesWarning()
+    {
+        var test = @"
+using System.Threading.Tasks;
+
+public class Test {
+    public int GetResult(Task<int> task, Task<int> replacement) {
+        if (task.IsCompletedSuccessfully) {
+            while (true) {
+                _ = task.Result;
+                task = replacement;
+            }
+        }
+
+        return 0;
+    }
+}
+";
+
+        var analyzerTest = new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+        };
+        analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithSpan(8, 26, 8, 32));
+        await analyzerTest.RunAsync();
+    }
 }

@@ -240,6 +240,14 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
                 {
                     if (item.Method.IsMatch(memberSymbol))
                     {
+                        if (memberSymbol is IPropertySymbol { Name: nameof(Task<int>.Result), ContainingType: { } containingType }
+                            && Utils.IsTask(containingType)
+                            && memberName.Parent is MemberAccessExpressionSyntax resultAccess
+                            && TaskCompletionAnalysis.IsTaskKnownToBeCompleted(context, resultAccess))
+                        {
+                            return false;
+                        }
+
                         // Check if this method is excluded from VSTHRD103 diagnostics
                         if (this.excludedMethods.Contains(memberSymbol))
                         {
