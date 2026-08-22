@@ -11,6 +11,17 @@ public static class Types
 {
     private const string VSThreadingNamespace = "Microsoft.VisualStudio.Threading";
 
+    /// <summary>
+    /// Contains descriptors for <see cref="System.ThreadStaticAttribute"/>.
+    /// </summary>
+    public static class ThreadStaticAttribute
+    {
+        /// <summary>
+        /// The full name of <see cref="System.ThreadStaticAttribute"/>.
+        /// </summary>
+        public const string FullName = "System.ThreadStaticAttribute";
+    }
+
     public static class BclAsyncDisposable
     {
         public const string FullName = "System.IAsyncDisposable";
