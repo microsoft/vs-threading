@@ -1422,6 +1422,7 @@ class Test {
     public async Task CodeFixIsNotOfferedForMethodsThatCannotBeAsync()
     {
         var test = @"
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -1457,10 +1458,23 @@ partial class Test {
         return task.[|Result|];
     }
 
+    int RefLikeLocal(Task<int> task) {
+        RefLike value = default;
+        return task.[|Result|] + value.Value;
+    }
+
     private partial int PartialMethod(Task<int> task);
 
     private partial int PartialMethod(Task<int> task) {
         return task.[|Result|];
+    }
+
+    void MethodGroup(Task task) {
+        task.[|Wait|]();
+    }
+
+    void UseMethodGroup() {
+        Action<Task> action = MethodGroup;
     }
 }
 ";

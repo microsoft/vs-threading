@@ -410,6 +410,11 @@ internal static class CSharpCommonInterest
             return true;
         }
 
+        if (expectedMember.IsMatch(reducedMethod.ReducedFrom))
+        {
+            return true;
+        }
+
         if (expectedMember.Name != nameof(Task.Wait)
             || context.Compilation.GetTypeByMetadataName(Types.Task.FullName) is not INamedTypeSymbol taskType)
         {

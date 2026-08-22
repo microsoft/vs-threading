@@ -15,6 +15,7 @@ using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Simplification;
 using Microsoft.VisualStudio.Threading;
 
@@ -48,7 +49,7 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
                 || containingMethod is null
                 || target.Ancestors().TakeWhile(node => node != containingMethod)
                     .Any(node => node is LockStatementSyntax or CatchFilterClauseSyntax)
-                || !CanConvertToAsync(semanticModel, containingMethod, context.CancellationToken)
+                || !await CanConvertToAsyncAsync(context.Document, semanticModel, containingMethod, context.CancellationToken).ConfigureAwait(false)
                 || semanticModel.GetDiagnostics(target.FullSpan, context.CancellationToken).Any(d => d.Severity == DiagnosticSeverity.Error)
                 || !CanUseAwaitCodeFix(semanticModel, target, context.CancellationToken))
             {
@@ -85,7 +86,11 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
     /// <inheritdoc />
     public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
 
-    private static bool CanConvertToAsync(SemanticModel semanticModel, MethodDeclarationSyntax method, CancellationToken cancellationToken)
+    private static async Task<bool> CanConvertToAsyncAsync(
+        Document document,
+        SemanticModel semanticModel,
+        MethodDeclarationSyntax method,
+        CancellationToken cancellationToken)
     {
         if (method.Modifiers.Any(SyntaxKind.AsyncKeyword))
         {
@@ -105,7 +110,8 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
             || method.DescendantNodes(
                     node => node is not AnonymousFunctionExpressionSyntax and not LocalFunctionStatementSyntax)
                 .OfType<VariableDeclaratorSyntax>()
-                .Any(variable => semanticModel.GetDeclaredSymbol(variable, cancellationToken) is ILocalSymbol { RefKind: not RefKind.None }))
+                .Any(variable => semanticModel.GetDeclaredSymbol(variable, cancellationToken) is ILocalSymbol local
+                    && (local.RefKind != RefKind.None || local.Type.IsRefLikeType)))
         {
             return false;
         }
@@ -115,7 +121,50 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
             || (!method.Modifiers.Any(SyntaxKind.PartialKeyword)
                 && !methodSymbol.IsVirtual
                 && !methodSymbol.IsOverride
-                && !methodSymbol.FindInterfacesImplemented().Any());
+                && !methodSymbol.FindInterfacesImplemented().Any()
+                && !await HasMethodGroupReferenceAsync(document.Project.Solution, methodSymbol, cancellationToken).ConfigureAwait(false));
+    }
+
+    private static async Task<bool> HasMethodGroupReferenceAsync(
+        Solution solution,
+        IMethodSymbol method,
+        CancellationToken cancellationToken)
+    {
+        IEnumerable<ReferencedSymbol> references = await SymbolFinder.FindReferencesAsync(method, solution, cancellationToken).ConfigureAwait(false);
+        foreach (ReferenceLocation reference in references.SelectMany(result => result.Locations))
+        {
+            SyntaxNode? root = await reference.Document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+            if (root is null)
+            {
+                continue;
+            }
+
+            SyntaxNode referenceNode = root.FindNode(reference.Location.SourceSpan, getInnermostNodeForTie: true);
+            SimpleNameSyntax? methodName = referenceNode.FirstAncestorOrSelf<SimpleNameSyntax>();
+            if (methodName is null)
+            {
+                return true;
+            }
+
+            if (CSharpUtils.IsWithinNameOf(methodName))
+            {
+                continue;
+            }
+
+            ExpressionSyntax invokedExpression = methodName.Parent switch
+            {
+                MemberAccessExpressionSyntax memberAccess when memberAccess.Name == methodName => memberAccess,
+                MemberBindingExpressionSyntax memberBinding when memberBinding.Name == methodName => memberBinding,
+                _ => methodName,
+            };
+            if (invokedExpression.Parent is not InvocationExpressionSyntax invocation
+                || invocation.Expression != invokedExpression)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static bool TryFindNodeAtSource(Diagnostic diagnostic, SyntaxNode root, [NotNullWhen(true)] out ExpressionSyntax? target, [NotNullWhen(true)] out Func<ExpressionSyntax, CancellationToken, ExpressionSyntax>? transform)
