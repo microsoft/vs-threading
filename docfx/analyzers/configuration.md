@@ -117,3 +117,15 @@ the "use await instead" code fix for these diagnostics.
 **Line format:** `[Namespace.TypeName]::MethodName`
 
 **Sample:** `[Contoso.Threading.TaskExtensions]::WaitSynchronously`
+
+## Types that require the Async suffix
+
+VSTHRD200 requires methods returning `Task`, `ValueTask`, and other async-focused types
+to end with the `Async` suffix. Libraries can identify additional async-focused return
+types with this configuration file.
+
+**Filename:** `vs-threading.AsyncSuffixRequiredTypes.txt`
+
+**Line format:** `[Namespace.TypeName]`
+
+**Sample:** `[Microsoft.VisualStudio.Shell.Interop.IVsTask]`

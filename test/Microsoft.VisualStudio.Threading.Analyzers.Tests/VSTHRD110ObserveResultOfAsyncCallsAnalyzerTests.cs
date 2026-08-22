@@ -350,6 +350,35 @@ class CustomAwaitable : INotifyCompletion
     }
 
     [Fact]
+    public async Task DerivedCustomAwaitable_ProducesDiagnostic()
+    {
+        string test = """
+            using System.Runtime.CompilerServices;
+
+            class Test
+            {
+                void Foo()
+                {
+                    [|BarAsync()|];
+                }
+
+                DerivedCustomTask BarAsync() => new();
+            }
+
+            class CustomTask
+            {
+                public TaskAwaiter GetAwaiter() => default;
+            }
+
+            class DerivedCustomTask : CustomTask
+            {
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
     public async Task CustomAwaitableLikeType_ProducesNoDiagnostic()
     {
         var test = @"

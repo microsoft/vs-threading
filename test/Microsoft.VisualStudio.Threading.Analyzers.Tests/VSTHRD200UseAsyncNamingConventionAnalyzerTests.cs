@@ -655,4 +655,62 @@ class Test : IAsyncDisposable
         DiagnosticResult expected = CSVerify.Diagnostic(AddSuffixDescriptor).WithLocation(0);
         await CSVerify.VerifyCodeFixAsync(test, expected, fix);
     }
+
+    [Fact]
+    public async Task DerivedAwaitableReturningMethodWithSuffix_GeneratesNoWarning()
+    {
+        string test = """
+            using System.Runtime.CompilerServices;
+
+            class Awaitable
+            {
+                public TaskAwaiter GetAwaiter() => default;
+            }
+
+            class DerivedAwaitable : Awaitable
+            {
+            }
+
+            class Test
+            {
+                DerivedAwaitable GetValueAsync() => new();
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task ConfiguredAsyncFocusedTypeWithoutSuffix_GeneratesWarning()
+    {
+        string test = """
+            namespace TestNS
+            {
+                class AsyncFocusedAwaitable
+                {
+                }
+
+                class Test
+                {
+                    AsyncFocusedAwaitable {|#0:GetValue|}() => new();
+                }
+            }
+            """;
+        string fix = """
+            namespace TestNS
+            {
+                class AsyncFocusedAwaitable
+                {
+                }
+
+                class Test
+                {
+                    AsyncFocusedAwaitable GetValueAsync() => new();
+                }
+            }
+            """;
+
+        DiagnosticResult expected = CSVerify.Diagnostic(AddSuffixDescriptor).WithLocation(0);
+        await CSVerify.VerifyCodeFixAsync(test, expected, fix);
+    }
 }

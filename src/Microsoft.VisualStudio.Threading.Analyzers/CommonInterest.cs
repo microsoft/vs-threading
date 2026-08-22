@@ -26,6 +26,7 @@ public static class CommonInterest
     public static readonly Regex FileNamePatternForMethodsThatAssertMainThread = new Regex(@"^vs-threading\.MainThreadAssertingMethods(\..*)?.txt$", FileNamePatternRegexOptions);
     public static readonly Regex FileNamePatternForMethodsThatSwitchToMainThread = new Regex(@"^vs-threading\.MainThreadSwitchingMethods(\..*)?.txt$", FileNamePatternRegexOptions);
     public static readonly Regex FileNamePatternForSyncMethodsToExcludeFromVSTHRD103 = new Regex(@"^vs-threading\.SyncMethodsToExcludeFromVSTHRD103(\..*)?.txt$", FileNamePatternRegexOptions);
+    public static readonly Regex FileNamePatternForAsyncSuffixRequiredTypes = new Regex(@"^vs-threading\.AsyncSuffixRequiredTypes(\..*)?.txt$", FileNamePatternRegexOptions);
 
     public static readonly IEnumerable<SyncBlockingMethod> JTFSyncBlockers =
     [
@@ -577,20 +578,38 @@ public static class CommonInterest
 
         public bool IsAwaitableType(ITypeSymbol typeSymbol)
         {
-            if (this.awaitableTypes.Contains(typeSymbol))
+            if (this.IsKnownAwaitableType(typeSymbol))
             {
                 return true;
             }
 
-            if (typeSymbol is INamedTypeSymbol { IsGenericType: true } genericTypeSymbol)
+            if (typeSymbol is INamedTypeSymbol namedTypeSymbol)
             {
-                if (this.awaitableTypes.Contains(genericTypeSymbol.ConstructUnboundGenericType()))
+                for (INamedTypeSymbol? baseType = namedTypeSymbol.BaseType; baseType is not null; baseType = baseType.BaseType)
                 {
-                    return true;
+                    if (this.IsKnownAwaitableType(baseType))
+                    {
+                        return true;
+                    }
+                }
+
+                foreach (INamedTypeSymbol interfaceType in namedTypeSymbol.AllInterfaces)
+                {
+                    if (this.IsKnownAwaitableType(interfaceType))
+                    {
+                        return true;
+                    }
                 }
             }
 
             return false;
+        }
+
+        private bool IsKnownAwaitableType(ITypeSymbol typeSymbol)
+        {
+            return this.awaitableTypes.Contains(typeSymbol)
+                || (typeSymbol is INamedTypeSymbol { IsGenericType: true } genericTypeSymbol
+                    && this.awaitableTypes.Contains(genericTypeSymbol.ConstructUnboundGenericType()));
         }
     }
 }

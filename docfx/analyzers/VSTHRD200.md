@@ -7,6 +7,9 @@ Methods that return awaitable types such as `Task` or `ValueTask`
 should have an Async suffix.
 Methods that do not return awaitable types should not use the Async suffix.
 
+Custom async-focused return types can be configured to require the suffix.
+See the [configuration](configuration.md#types-that-require-the-async-suffix) topic.
+
 ## Examples of patterns that are flagged by this analyzer
 
 This `Task`-returning method should have a name that ends with Async:
