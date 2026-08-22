@@ -124,8 +124,19 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
             if (IsInTaskReturningMethodOrDelegate(context))
             {
                 var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
-                var memberAccessSyntax = invocationExpressionSyntax.Expression as MemberAccessExpressionSyntax;
-                if (memberAccessSyntax is not null && this.InspectMemberAccess(context, memberAccessSyntax.Name, CommonInterest.SyncBlockingMethods))
+                bool handledBlockingMember = invocationExpressionSyntax.Expression switch
+                {
+                    MemberAccessExpressionSyntax memberAccess => this.InspectMemberAccess(context, memberAccess.Name, CommonInterest.SyncBlockingMethods),
+                    MemberBindingExpressionSyntax memberBinding when invocationExpressionSyntax.FirstAncestorOrSelf<ConditionalAccessExpressionSyntax>() is { } conditionalAccess =>
+                        this.InspectMemberAccess(
+                            context,
+                            memberBinding.Name,
+                            CommonInterest.SyncBlockingMethods,
+                            conditionalAccess.Expression,
+                            conditionalAccess),
+                    _ => false,
+                };
+                if (handledBlockingMember)
                 {
                     // Don't return double-diagnostics.
                     return;
@@ -202,7 +213,20 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
                 return false;
             }
 
-            return baselineMethod.Parameters.All(baselineParameter => candidateMethod.Parameters.Any(candidateParameter => baselineParameter.Type?.Equals(candidateParameter.Type, SymbolEqualityComparer.Default) ?? false));
+            var remainingCandidateTypes = candidateMethod.Parameters.Select(parameter => parameter.Type).ToList();
+            foreach (IParameterSymbol baselineParameter in baselineMethod.Parameters)
+            {
+                int match = remainingCandidateTypes.FindIndex(
+                    candidateType => SymbolEqualityComparer.Default.Equals(baselineParameter.Type, candidateType));
+                if (match < 0)
+                {
+                    return false;
+                }
+
+                remainingCandidateTypes.RemoveAt(match);
+            }
+
+            return true;
         }
 
         private static bool IsInTaskReturningMethodOrDelegate(SyntaxNodeAnalysisContext context)

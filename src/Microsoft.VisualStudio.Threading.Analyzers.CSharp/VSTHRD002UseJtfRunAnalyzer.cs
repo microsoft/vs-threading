@@ -70,7 +70,7 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
                 compilationContext.Options,
                 CommonInterest.FileNamePatternForSyncMethodsToExcludeFromVSTHRD103,
                 compilationContext.CancellationToken).ToImmutableArray();
-            if (taskSymbol is object)
+            if (taskSymbol is object || !configuredSyncBlockingMethods.IsEmpty)
             {
                 compilationContext.RegisterCodeBlockStartAction<SyntaxKind>(codeBlockContext =>
                 {
@@ -80,9 +80,12 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
                     {
                         bool analyzeWholeCodeBlock = propertySymbol is object || !methodSymbol!.HasAsyncCompatibleReturnType();
                         codeBlockContext.RegisterSyntaxNodeAction(
-                            Utils.DebuggableWrapper(c => AnalyzeInvocation(c, configuredSyncBlockingMethods, methodsExcludedFromVSTHRD103, analyzeWholeCodeBlock)),
+                            Utils.DebuggableWrapper(c => AnalyzeInvocation(c, configuredSyncBlockingMethods, methodsExcludedFromVSTHRD103, analyzeWholeCodeBlock, taskSymbol is object)),
                             SyntaxKind.InvocationExpression);
-                        codeBlockContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => AnalyzeMemberAccess(c, analyzeWholeCodeBlock)), SyntaxKind.SimpleMemberAccessExpression);
+                        if (taskSymbol is object)
+                        {
+                            codeBlockContext.RegisterSyntaxNodeAction(Utils.DebuggableWrapper(c => AnalyzeMemberAccess(c, analyzeWholeCodeBlock)), SyntaxKind.SimpleMemberAccessExpression);
+                        }
                     }
                 });
             }
@@ -126,10 +129,11 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
         SyntaxNodeAnalysisContext context,
         ImmutableArray<CommonInterest.QualifiedMember> configuredSyncBlockingMethods,
         ImmutableArray<CommonInterest.QualifiedMember> methodsExcludedFromVSTHRD103,
-        bool analyzeWholeCodeBlock)
+        bool analyzeWholeCodeBlock,
+        bool analyzeBuiltInBlockingMethods)
     {
         var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
-        if (ShouldAnalyze(context, analyzeWholeCodeBlock))
+        if (analyzeBuiltInBlockingMethods && ShouldAnalyze(context, analyzeWholeCodeBlock))
         {
             InspectMemberAccess(
                 context,
@@ -215,10 +219,27 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
     }
 
     private static bool HasSupersetOfParameterTypes(IMethodSymbol candidateMethod, IMethodSymbol baselineMethod)
-        => baselineMethod.Parameters.Length <= candidateMethod.Parameters.Length
-            && baselineMethod.Parameters.All(
-                baselineParameter => candidateMethod.Parameters.Any(
-                    candidateParameter => SymbolEqualityComparer.Default.Equals(baselineParameter.Type, candidateParameter.Type)));
+    {
+        if (baselineMethod.Parameters.Length > candidateMethod.Parameters.Length)
+        {
+            return false;
+        }
+
+        var remainingCandidateTypes = candidateMethod.Parameters.Select(parameter => parameter.Type).ToList();
+        foreach (IParameterSymbol baselineParameter in baselineMethod.Parameters)
+        {
+            int match = remainingCandidateTypes.FindIndex(
+                candidateType => SymbolEqualityComparer.Default.Equals(baselineParameter.Type, candidateType));
+            if (match < 0)
+            {
+                return false;
+            }
+
+            remainingCandidateTypes.RemoveAt(match);
+        }
+
+        return true;
+    }
 
     private static bool IsInTaskReturningMethodOrDelegate(SyntaxNodeAnalysisContext context)
     {

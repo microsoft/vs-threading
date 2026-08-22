@@ -1203,6 +1203,66 @@ class Test {
     }
 
     [Fact]
+    public async Task ConfiguredSyncBlockingMethodReportsWithoutTaskType()
+    {
+        string test = """
+            class CustomWaiter
+            {
+                internal void Join() { }
+            }
+
+            class Test
+            {
+                void F(CustomWaiter waiter)
+                {
+                    waiter.[|Join|]();
+                }
+            }
+            """;
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            FixedCode = test,
+            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.NetFramework.Net20.Default,
+        };
+        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncBlockingMethods.txt", "[CustomWaiter]::Join"));
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task ConfiguredSyncBlockingMethodRequiresOneToOneAsyncParameterMatches()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class CustomWaiter
+            {
+                internal void Join(int first, int second) { }
+
+                internal Task JoinAsync(int first, string second) => Task.CompletedTask;
+            }
+
+            class Test
+            {
+                Task FAsync(CustomWaiter waiter)
+                {
+                    waiter.[|Join|](1, 2);
+                    return Task.CompletedTask;
+                }
+            }
+            """;
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            FixedCode = test,
+        };
+        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncBlockingMethods.txt", "[CustomWaiter]::Join"));
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
     public async Task ConfiguredGenericExtensionReceiverDoesNotThrow()
     {
         var test = @"
@@ -1463,6 +1523,11 @@ partial class Test {
         return task.[|Result|] + value.Value;
     }
 
+    int OutDeclaredRefLikeLocal(Task<int> task) {
+        Create(out RefLike value);
+        return task.[|Result|] + value.Value;
+    }
+
     private partial int PartialMethod(Task<int> task);
 
     private partial int PartialMethod(Task<int> task) {
@@ -1475,6 +1540,10 @@ partial class Test {
 
     void UseMethodGroup() {
         Action<Task> action = MethodGroup;
+    }
+
+    static void Create(out RefLike value) {
+        value = default;
     }
 }
 ";
@@ -1501,6 +1570,86 @@ class Test {
     }
 }
 ";
+
+        await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task CodeFixIsNotOfferedInUnsafeOrFixedContexts()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            unsafe class Test
+            {
+                private int[] values = new int[1];
+
+                int UnsafeType(Task<int> task)
+                {
+                    return task.[|Result|];
+                }
+
+                int UnsafeBlock(Task<int> task)
+                {
+                    unsafe
+                    {
+                        return task.[|Result|];
+                    }
+                }
+
+                int FixedBlock(Task<int> task)
+                {
+                    fixed (int* pointer = values)
+                    {
+                        return task.[|Result|];
+                    }
+                }
+            }
+            """;
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            FixedCode = test,
+        };
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
+    public async Task CodeFixIsNotOfferedWhenCallerCannotBecomeAsync()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            ref struct RefLike
+            {
+                internal int Value;
+            }
+
+            class Test
+            {
+                Test(Task<int> task)
+                {
+                    _ = CalledByConstructor(task);
+                }
+
+                static int CalledByConstructor(Task<int> task)
+                {
+                    return task.[|Result|];
+                }
+
+                static int CalledByRefLikeLocal(Task<int> task)
+                {
+                    return task.[|Result|];
+                }
+
+                static int CallerWithRefLikeLocal(Task<int> task)
+                {
+                    RefLike value = default;
+                    return CalledByRefLikeLocal(task) + value.Value;
+                }
+            }
+            """;
 
         await CSVerify.VerifyCodeFixAsync(test, test);
     }

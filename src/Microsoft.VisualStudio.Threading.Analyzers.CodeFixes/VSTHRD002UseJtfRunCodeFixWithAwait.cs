@@ -47,8 +47,7 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
             MethodDeclarationSyntax? containingMethod = target.FirstAncestorOrSelf<MethodDeclarationSyntax>();
             if (semanticModel is null
                 || containingMethod is null
-                || target.Ancestors().TakeWhile(node => node != containingMethod)
-                    .Any(node => node is LockStatementSyntax or CatchFilterClauseSyntax)
+                || IsAwaitForbiddenAt(target, containingMethod)
                 || !await CanConvertToAsyncAsync(context.Document, semanticModel, containingMethod, context.CancellationToken).ConfigureAwait(false)
                 || semanticModel.GetDiagnostics(target.FullSpan, context.CancellationToken).Any(d => d.Severity == DiagnosticSeverity.Error)
                 || !CanUseAwaitCodeFix(semanticModel, target, context.CancellationToken))
@@ -92,37 +91,135 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
         MethodDeclarationSyntax method,
         CancellationToken cancellationToken)
     {
+        if (!IsMethodLocallyConvertible(semanticModel, method, cancellationToken, out IMethodSymbol? methodSymbol))
+        {
+            return false;
+        }
+
         if (method.Modifiers.Any(SyntaxKind.AsyncKeyword))
         {
             return true;
         }
 
-        IMethodSymbol? methodSymbol = semanticModel.GetDeclaredSymbol(method, cancellationToken);
-        if (methodSymbol is null
-            || methodSymbol.Parameters.Any(parameter => parameter.RefKind != RefKind.None || parameter.Type.IsRefLikeType)
-            || methodSymbol.ReturnsByRef
-            || methodSymbol.ReturnsByRefReadonly
-            || methodSymbol.ReturnType.IsRefLikeType
-            || method.DescendantNodes(
-                    node => node is not AnonymousFunctionExpressionSyntax and not LocalFunctionStatementSyntax)
-                .OfType<YieldStatementSyntax>()
-                .Any()
-            || method.DescendantNodes(
-                    node => node is not AnonymousFunctionExpressionSyntax and not LocalFunctionStatementSyntax)
-                .OfType<VariableDeclaratorSyntax>()
-                .Any(variable => semanticModel.GetDeclaredSymbol(variable, cancellationToken) is ILocalSymbol local
-                    && (local.RefKind != RefKind.None || local.Type.IsRefLikeType)))
+        bool changesContract = !methodSymbol.HasAsyncCompatibleReturnType();
+        if (!changesContract)
+        {
+            return true;
+        }
+
+        if (!CanChangeMethodContract(method, methodSymbol)
+            || await HasMethodGroupReferenceAsync(document.Project.Solution, methodSymbol, cancellationToken).ConfigureAwait(false))
         {
             return false;
         }
 
-        bool changesContract = !methodSymbol.HasAsyncCompatibleReturnType();
-        return !changesContract
-            || (!method.Modifiers.Any(SyntaxKind.PartialKeyword)
-                && !methodSymbol.IsVirtual
-                && !methodSymbol.IsOverride
-                && !methodSymbol.FindInterfacesImplemented().Any()
-                && !await HasMethodGroupReferenceAsync(document.Project.Solution, methodSymbol, cancellationToken).ConfigureAwait(false));
+        var visitedMethods = new HashSet<ISymbol>(SymbolEqualityComparer.Default);
+        return await CanConvertCallerChainAsync(
+            document.Project.Solution,
+            methodSymbol,
+            visitedMethods,
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    private static bool IsAwaitForbiddenAt(SyntaxNode target, MethodDeclarationSyntax containingMethod)
+        => target.AncestorsAndSelf().TakeWhile(node => node != containingMethod)
+                .Any(node => node is LockStatementSyntax
+                    or CatchFilterClauseSyntax
+                    or UnsafeStatementSyntax
+                    or FixedStatementSyntax)
+            || containingMethod.AncestorsAndSelf()
+                .OfType<MemberDeclarationSyntax>()
+                .Any(member => member.Modifiers.Any(SyntaxKind.UnsafeKeyword));
+
+    private static bool IsMethodLocallyConvertible(
+        SemanticModel semanticModel,
+        MethodDeclarationSyntax method,
+        CancellationToken cancellationToken,
+        [NotNullWhen(true)] out IMethodSymbol? methodSymbol)
+    {
+        methodSymbol = semanticModel.GetDeclaredSymbol(method, cancellationToken);
+        return methodSymbol is object
+            && !methodSymbol.Parameters.Any(parameter => parameter.RefKind != RefKind.None || parameter.Type.IsRefLikeType)
+            && !methodSymbol.ReturnsByRef
+            && !methodSymbol.ReturnsByRefReadonly
+            && !methodSymbol.ReturnType.IsRefLikeType
+            && !method.AncestorsAndSelf()
+                .OfType<MemberDeclarationSyntax>()
+                .Any(member => member.Modifiers.Any(SyntaxKind.UnsafeKeyword))
+            && !method.DescendantNodes(
+                    node => node is not AnonymousFunctionExpressionSyntax and not LocalFunctionStatementSyntax)
+                .OfType<YieldStatementSyntax>()
+                .Any()
+            && !method.DescendantNodes(
+                    node => node is not AnonymousFunctionExpressionSyntax and not LocalFunctionStatementSyntax)
+                .Any(node => node switch
+                {
+                    VariableDeclaratorSyntax variable => IsUnsupportedLocal(semanticModel.GetDeclaredSymbol(variable, cancellationToken)),
+                    SingleVariableDesignationSyntax designation => IsUnsupportedLocal(semanticModel.GetDeclaredSymbol(designation, cancellationToken)),
+                    _ => false,
+                });
+    }
+
+    private static bool IsUnsupportedLocal(ISymbol? symbol)
+        => symbol is ILocalSymbol local
+            && (local.RefKind != RefKind.None || local.Type.IsRefLikeType);
+
+    private static bool CanChangeMethodContract(MethodDeclarationSyntax method, IMethodSymbol methodSymbol)
+        => !method.Modifiers.Any(SyntaxKind.PartialKeyword)
+            && !methodSymbol.IsVirtual
+            && !methodSymbol.IsOverride
+            && !methodSymbol.FindInterfacesImplemented().Any();
+
+    private static async Task<bool> CanConvertCallerChainAsync(
+        Solution solution,
+        IMethodSymbol method,
+        HashSet<ISymbol> visitedMethods,
+        CancellationToken cancellationToken)
+    {
+        if (!visitedMethods.Add(method.OriginalDefinition))
+        {
+            return true;
+        }
+
+        IEnumerable<SymbolCallerInfo> callers = await SymbolFinder.FindCallersAsync(method, solution, cancellationToken).ConfigureAwait(false);
+        foreach (SymbolCallerInfo caller in callers)
+        {
+            foreach (Location location in caller.Locations)
+            {
+                Document? document = location.SourceTree is object ? solution.GetDocument(location.SourceTree) : null;
+                SyntaxNode? root = document is object ? await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false) : null;
+                InvocationExpressionSyntax? invocation = root?
+                    .FindNode(location.SourceSpan, getInnermostNodeForTie: true)
+                    .FirstAncestorOrSelf<InvocationExpressionSyntax>();
+                MethodDeclarationSyntax? callingMethod = invocation?.FirstAncestorOrSelf<MethodDeclarationSyntax>();
+                if (document is null
+                    || invocation is null
+                    || callingMethod is null
+                    || IsAwaitForbiddenAt(invocation, callingMethod)
+                    || invocation.Ancestors().TakeWhile(node => node != callingMethod)
+                        .Any(node => node is AnonymousFunctionExpressionSyntax or LocalFunctionStatementSyntax))
+                {
+                    return false;
+                }
+
+                SemanticModel? semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
+                if (semanticModel is null
+                    || !IsMethodLocallyConvertible(semanticModel, callingMethod, cancellationToken, out IMethodSymbol? callingMethodSymbol))
+                {
+                    return false;
+                }
+
+                if (!callingMethodSymbol.HasAsyncCompatibleReturnType()
+                    && (!CanChangeMethodContract(callingMethod, callingMethodSymbol)
+                        || await HasMethodGroupReferenceAsync(solution, callingMethodSymbol, cancellationToken).ConfigureAwait(false)
+                        || !await CanConvertCallerChainAsync(solution, callingMethodSymbol, visitedMethods, cancellationToken).ConfigureAwait(false)))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     private static async Task<bool> HasMethodGroupReferenceAsync(
