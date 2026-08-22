@@ -1652,29 +1652,65 @@ class Test {
     }
 
     [Fact]
-    public async Task AsyncAlternativeRequiresOneToOneParameterMatches()
+    public async Task AsyncAlternativeMustBeApplicableToInvocation()
     {
         string test = """
             using System.Threading.Tasks;
 
             class CustomWaiter
             {
-                internal void Join(int first, int second) { }
+                internal void Join(int value) { }
 
-                internal Task JoinAsync(int first, string second) => Task.CompletedTask;
+                internal Task JoinAsync(string required, int value) => Task.CompletedTask;
+            }
+
+            class ReorderedWaiter
+            {
+                internal void Join(int first, string second) { }
+
+                internal Task JoinAsync(string second, int first) => Task.CompletedTask;
             }
 
             class Test
             {
-                Task FAsync(CustomWaiter waiter)
+                Task FAsync(CustomWaiter waiter, ReorderedWaiter reordered)
                 {
-                    waiter.Join(1, 2);
+                    waiter.Join(1);
+                    reordered.Join(1, "");
                     return Task.CompletedTask;
                 }
             }
             """;
 
         await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task AsyncAlternativeMayHaveOptionalAdditionalParameter()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class CustomWaiter
+            {
+                internal void Join(int value) { }
+
+                internal Task JoinAsync(int value, string optional = null) => Task.CompletedTask;
+            }
+
+            class Test
+            {
+                Task FAsync(CustomWaiter waiter)
+                {
+                    waiter.{|#0:Join|}(1);
+                    return Task.CompletedTask;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(
+            test,
+            CSVerify.Diagnostic(Descriptor).WithLocation(0).WithArguments("Join", "JoinAsync"));
     }
 
     [Fact]

@@ -1231,23 +1231,39 @@ class Test {
     }
 
     [Fact]
-    public async Task ConfiguredSyncBlockingMethodRequiresOneToOneAsyncParameterMatches()
+    public async Task ConfiguredSyncBlockingMethodRequiresApplicableAsyncAlternative()
     {
         string test = """
             using System.Threading.Tasks;
 
             class CustomWaiter
             {
-                internal void Join(int first, int second) { }
+                internal void Join(int value) { }
 
-                internal Task JoinAsync(int first, string second) => Task.CompletedTask;
+                internal Task JoinAsync(string required, int value) => Task.CompletedTask;
+            }
+
+            class ReorderedWaiter
+            {
+                internal void Join(int first, string second) { }
+
+                internal Task JoinAsync(string second, int first) => Task.CompletedTask;
+            }
+
+            class OptionalWaiter
+            {
+                internal void Join(int value) { }
+
+                internal Task JoinAsync(int value, string optional = null) => Task.CompletedTask;
             }
 
             class Test
             {
-                Task FAsync(CustomWaiter waiter)
+                Task FAsync(CustomWaiter waiter, ReorderedWaiter reordered, OptionalWaiter optional)
                 {
-                    waiter.[|Join|](1, 2);
+                    waiter.[|Join|](1);
+                    reordered.[|Join|](1, "");
+                    optional.Join(1);
                     return Task.CompletedTask;
                 }
             }
@@ -1258,7 +1274,12 @@ class Test {
             TestCode = test,
             FixedCode = test,
         };
-        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncBlockingMethods.txt", "[CustomWaiter]::Join"));
+        verifyTest.TestState.AdditionalFiles.Add(
+            ("vs-threading.SyncBlockingMethods.txt", """
+                [CustomWaiter]::Join
+                [ReorderedWaiter]::Join
+                [OptionalWaiter]::Join
+                """));
         await verifyTest.RunAsync();
     }
 

@@ -288,6 +288,55 @@ internal static class CSharpCommonInterest
     }
 
     /// <summary>
+    /// Determines whether an async alternative is applicable to the arguments of a synchronous invocation.
+    /// </summary>
+    internal static bool IsApplicableAsyncAlternative(
+        SyntaxNodeAnalysisContext context,
+        InvocationExpressionSyntax invocation,
+        IMethodSymbol candidateMethod)
+    {
+        SimpleNameSyntax? invokedName = invocation.Expression switch
+        {
+            MemberAccessExpressionSyntax memberAccess => memberAccess.Name,
+            MemberBindingExpressionSyntax memberBinding => memberBinding.Name,
+            SimpleNameSyntax simpleName => simpleName,
+            _ => null,
+        };
+        if (invokedName is null)
+        {
+            return false;
+        }
+
+        SyntaxToken newIdentifier = SyntaxFactory.Identifier(
+            invokedName.Identifier.LeadingTrivia,
+            candidateMethod.Name,
+            invokedName.Identifier.TrailingTrivia);
+        SimpleNameSyntax asyncName = (SimpleNameSyntax)invokedName.ReplaceToken(invokedName.Identifier, newIdentifier);
+        InvocationExpressionSyntax asyncInvocation = invocation.ReplaceNode(invokedName, asyncName);
+
+        ExpressionSyntax speculativeExpression = asyncInvocation;
+        if (invocation.Expression is MemberBindingExpressionSyntax
+            && invocation.FirstAncestorOrSelf<ConditionalAccessExpressionSyntax>() is { } conditionalAccess)
+        {
+            speculativeExpression = conditionalAccess.ReplaceNode(invocation, asyncInvocation);
+        }
+
+        ExpressionSyntax detachedSpeculativeExpression = SyntaxFactory.ParseExpression(speculativeExpression.ToString());
+        SymbolInfo speculativeSymbolInfo = context.SemanticModel.GetSpeculativeSymbolInfo(
+            invocation.SpanStart,
+            detachedSpeculativeExpression,
+            SpeculativeBindingOption.BindAsExpression);
+        if (speculativeSymbolInfo.Symbol is not IMethodSymbol applicableMethod)
+        {
+            return false;
+        }
+
+        IMethodSymbol applicableDefinition = (applicableMethod.ReducedFrom ?? applicableMethod).OriginalDefinition;
+        IMethodSymbol candidateDefinition = (candidateMethod.ReducedFrom ?? candidateMethod).OriginalDefinition;
+        return SymbolEqualityComparer.Default.Equals(applicableDefinition, candidateDefinition);
+    }
+
+    /// <summary>
     /// Determines whether a blocking member access has a receiver that is provably complete.
     /// </summary>
     internal static bool HasTaskCompleted(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax)

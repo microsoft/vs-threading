@@ -169,7 +169,7 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
                     foreach (IMethodSymbol m in symbols.OfType<IMethodSymbol>())
                     {
                         if (!m.IsObsolete()
-                            && HasSupersetOfParameterTypes(m, methodSymbol)
+                            && CSharpCommonInterest.IsApplicableAsyncAlternative(context, invocationExpressionSyntax, m)
                             && m.Name != invocationDeclaringMethod?.Identifier.Text
                             && m.HasAsyncCompatibleReturnType())
                         {
@@ -196,37 +196,6 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
                     }
                 }
             }
-        }
-
-        /// <summary>
-        /// Determines whether the given method has parameters to cover all the parameter types in another method.
-        /// </summary>
-        /// <param name="candidateMethod">The candidate method.</param>
-        /// <param name="baselineMethod">The baseline method.</param>
-        /// <returns>
-        ///   <see langword="true" /> if <paramref name="candidateMethod"/> has a superset of parameter types found in <paramref name="baselineMethod"/>; otherwise <see langword="false" />.
-        /// </returns>
-        private static bool HasSupersetOfParameterTypes(IMethodSymbol candidateMethod, IMethodSymbol baselineMethod)
-        {
-            if (baselineMethod.Parameters.Length > candidateMethod.Parameters.Length)
-            {
-                return false;
-            }
-
-            var remainingCandidateTypes = candidateMethod.Parameters.Select(parameter => parameter.Type).ToList();
-            foreach (IParameterSymbol baselineParameter in baselineMethod.Parameters)
-            {
-                int match = remainingCandidateTypes.FindIndex(
-                    candidateType => SymbolEqualityComparer.Default.Equals(baselineParameter.Type, candidateType));
-                if (match < 0)
-                {
-                    return false;
-                }
-
-                remainingCandidateTypes.RemoveAt(match);
-            }
-
-            return true;
         }
 
         private static bool IsInTaskReturningMethodOrDelegate(SyntaxNodeAnalysisContext context)

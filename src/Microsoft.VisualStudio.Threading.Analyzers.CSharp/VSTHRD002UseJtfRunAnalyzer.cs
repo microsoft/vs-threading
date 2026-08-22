@@ -215,30 +215,7 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
             .Any(candidate => !candidate.IsObsolete()
                 && candidate.Name != declaringMethodName
                 && candidate.HasAsyncCompatibleReturnType()
-                && HasSupersetOfParameterTypes(candidate, invokedMethod));
-    }
-
-    private static bool HasSupersetOfParameterTypes(IMethodSymbol candidateMethod, IMethodSymbol baselineMethod)
-    {
-        if (baselineMethod.Parameters.Length > candidateMethod.Parameters.Length)
-        {
-            return false;
-        }
-
-        var remainingCandidateTypes = candidateMethod.Parameters.Select(parameter => parameter.Type).ToList();
-        foreach (IParameterSymbol baselineParameter in baselineMethod.Parameters)
-        {
-            int match = remainingCandidateTypes.FindIndex(
-                candidateType => SymbolEqualityComparer.Default.Equals(baselineParameter.Type, candidateType));
-            if (match < 0)
-            {
-                return false;
-            }
-
-            remainingCandidateTypes.RemoveAt(match);
-        }
-
-        return true;
+                && CSharpCommonInterest.IsApplicableAsyncAlternative(context, invocation, candidate));
     }
 
     private static bool IsInTaskReturningMethodOrDelegate(SyntaxNodeAnalysisContext context)
