@@ -94,9 +94,10 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
 
         IMethodSymbol? methodSymbol = semanticModel.GetDeclaredSymbol(method, cancellationToken);
         if (methodSymbol is null
-            || methodSymbol.Parameters.Any(parameter => parameter.RefKind != RefKind.None)
+            || methodSymbol.Parameters.Any(parameter => parameter.RefKind != RefKind.None || parameter.Type.IsRefLikeType)
             || methodSymbol.ReturnsByRef
             || methodSymbol.ReturnsByRefReadonly
+            || methodSymbol.ReturnType.IsRefLikeType
             || method.DescendantNodes(
                     node => node is not AnonymousFunctionExpressionSyntax and not LocalFunctionStatementSyntax)
                 .OfType<YieldStatementSyntax>()

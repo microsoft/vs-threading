@@ -1399,6 +1399,10 @@ class Test {
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
+ref struct RefLike {
+    internal int Value;
+}
+
 class Test {
     int RefParameter(Task<int> task, ref int value) {
         return task.[|Result|];
@@ -1411,6 +1415,14 @@ class Test {
 
     IEnumerable<int> Iterator(Task<int> task) {
         yield return task.[|Result|];
+    }
+
+    int RefLikeParameter(Task<int> task, RefLike value) {
+        return task.[|Result|];
+    }
+
+    RefLike RefLikeReturn(Task<int> task) {
+        return new RefLike { Value = task.[|Result|] };
     }
 }
 ";
