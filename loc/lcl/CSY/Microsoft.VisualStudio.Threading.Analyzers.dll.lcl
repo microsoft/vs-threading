@@ -617,6 +617,42 @@
         </Str>
         <Disp Icon="Str" />
       </Item>
+      <Item ItemId=";VSTHRD116_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[ThreadStaticAttribute has no effect on a non-static field]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[ThreadStaticAttribute nemá vliv na nestatické pole.]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";VSTHRD116_Title" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Use ThreadStaticAttribute only with static fields]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Použít ThreadStaticAttribute pouze se statickými poli]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";VSTHRD117_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[ThreadStatic fields should not be initialized by a field initializer or static constructor because the value is only assigned on the type-initializing thread]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Pole ThreadStatic by se neměla inicializovat inicializátorem pole ani statickým konstruktorem, protože hodnota se přiřadí pouze vláknu, které inicializuje typ]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";VSTHRD117_Title" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Avoid initialization of ThreadStatic fields in a type initializer]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Vyhnout se inicializaci polí ThreadStatic v inicializátoru typu]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
       <Item ItemId=";VSTHRD200_AddAsync_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Use "Async" suffix in names of methods that return an awaitable type]]></Val>

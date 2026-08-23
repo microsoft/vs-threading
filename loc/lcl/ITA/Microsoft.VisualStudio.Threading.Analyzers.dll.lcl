@@ -617,6 +617,42 @@
         </Str>
         <Disp Icon="Str" />
       </Item>
+      <Item ItemId=";VSTHRD116_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[ThreadStaticAttribute has no effect on a non-static field]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[ThreadStaticAttribute non ha alcun effetto su un campo non statico]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";VSTHRD116_Title" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Use ThreadStaticAttribute only with static fields]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Usare ThreadStaticAttribute solo con campi statici]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";VSTHRD117_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[ThreadStatic fields should not be initialized by a field initializer or static constructor because the value is only assigned on the type-initializing thread]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[I campi ThreadStatic non devono essere inizializzati da un inizializzatore di campo o da un costruttore statico perché il valore viene assegnato solo nel thread di inizializzazione del tipo]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";VSTHRD117_Title" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Avoid initialization of ThreadStatic fields in a type initializer]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Evitare l'inizializzazione dei campi ThreadStatic in un inizializzatore del tipo]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
       <Item ItemId=";VSTHRD200_AddAsync_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Use "Async" suffix in names of methods that return an awaitable type]]></Val>
