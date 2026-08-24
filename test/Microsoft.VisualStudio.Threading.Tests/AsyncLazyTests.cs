@@ -1117,6 +1117,9 @@ public class AsyncLazyTests : TestBase
 
     private sealed class ValueFactory
     {
+        /// <summary>
+        /// Creates the value returned by the test factory.
+        /// </summary>
         internal Task<object> CreateValueAsync() => Task.FromResult(new object());
     }
 
