@@ -255,6 +255,25 @@ public class JoinableTaskFactoryTests : JoinableTaskTestBase
         Assert.Equal(1, secondFactory.MaximumPostDepth);
     }
 
+    [Fact]
+    public void CoalescingSupportsSynchronousCallbackExceptions()
+    {
+        var factory = new SynchronouslyPostingJoinableTaskFactory(this.context);
+        bool nestedCallbackExecuted = false;
+        bool subsequentCallbackExecuted = false;
+
+        Assert.Throws<InvalidOperationException>(() => factory.Post(delegate
+        {
+            factory.Post(() => nestedCallbackExecuted = true);
+            throw new InvalidOperationException();
+        }));
+
+        Assert.True(nestedCallbackExecuted);
+        factory.Post(() => subsequentCallbackExecuted = true);
+        Assert.True(subsequentCallbackExecuted);
+        Assert.Equal(1, factory.MaximumPostDepth);
+    }
+
     [Theory]
     [InlineData(true, true)]
     [InlineData(true, false)]

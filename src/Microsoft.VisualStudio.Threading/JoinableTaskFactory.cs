@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using JoinableTaskSynchronizationContext = Microsoft.VisualStudio.Threading.JoinableTask.JoinableTaskSynchronizationContext;
@@ -477,6 +478,27 @@ public partial class JoinableTaskFactory
     }
 
     /// <summary>
+    /// Executes a pending callback under its captured execution context.
+    /// </summary>
+    /// <param name="callback">The callback to invoke.</param>
+    /// <param name="state">State to pass to the callback.</param>
+    /// <param name="executionContext">The execution context captured for the callback, or <see langword="null"/> when flow was suppressed.</param>
+    internal virtual void ExecutePendingUnderlyingSynchronizationContextCallback(
+        SendOrPostCallback callback,
+        object state,
+        ExecutionContext? executionContext)
+    {
+        if (executionContext is object)
+        {
+            ExecutionContext.Run(executionContext, ExecutePendingUnderlyingSynchronizationContextCallbackDelegate, (callback, state));
+        }
+        else
+        {
+            callback(state);
+        }
+    }
+
+    /// <summary>
     /// Posts a message to the specified underlying SynchronizationContext for processing when the main thread
     /// is freely available.
     /// </summary>
@@ -724,6 +746,13 @@ public partial class JoinableTaskFactory
         return synchronouslyPostingFactories?.Contains(factory) is true;
     }
 
+    private static void DisposeExecutionContext(ExecutionContext? executionContext)
+    {
+#if NETFRAMEWORK
+        executionContext?.Dispose();
+#endif
+    }
+
     /// <summary>
     /// Throws an exception if an active AsyncReaderWriterLock
     /// upgradeable read or write lock is held by the caller.
@@ -762,6 +791,7 @@ public partial class JoinableTaskFactory
     private void ExecuteOnePendingUnderlyingSynchronizationContextCallback()
     {
         bool continueSynchronously;
+        ExceptionDispatchInfo? synchronousCallbackException = null;
         do
         {
             continueSynchronously = false;
@@ -802,13 +832,17 @@ public partial class JoinableTaskFactory
 
                 if (callback is { } work)
                 {
-                    if (work.ExecutionContext is object)
+                    try
                     {
-                        ExecutionContext.Run(work.ExecutionContext, ExecutePendingUnderlyingSynchronizationContextCallbackDelegate, (work.Callback, work.State));
+                        this.ExecutePendingUnderlyingSynchronizationContextCallback(work.Callback, work.State, work.ExecutionContext);
                     }
-                    else
+                    catch (Exception ex) when (completeSynchronousDrainAfterCallback)
                     {
-                        work.Callback(work.State);
+                        synchronousCallbackException ??= ExceptionDispatchInfo.Capture(ex);
+                    }
+                    finally
+                    {
+                        DisposeExecutionContext(work.ExecutionContext);
                     }
                 }
             }
@@ -833,10 +867,13 @@ public partial class JoinableTaskFactory
             }
         }
         while (continueSynchronously);
+
+        synchronousCallbackException?.Throw();
     }
 
     private void PostPendingUnderlyingSynchronizationContextCallback(bool propagateException)
     {
+        var driver = new UnderlyingSynchronizationContextCallback(this);
         try
         {
             List<JoinableTaskFactory> synchronousPostingChain = synchronouslyPostingFactories ??= new();
@@ -849,7 +886,7 @@ public partial class JoinableTaskFactory
 
             try
             {
-                this.PostToUnderlyingSynchronizationContextCore(ExecuteOnePendingUnderlyingSynchronizationContextCallbackDelegate, new UnderlyingSynchronizationContextCallback(this));
+                this.PostToUnderlyingSynchronizationContextCore(ExecuteOnePendingUnderlyingSynchronizationContextCallbackDelegate, driver);
             }
             finally
             {
@@ -863,10 +900,20 @@ public partial class JoinableTaskFactory
         }
         catch
         {
+            if (driver.HasExecuted)
+            {
+                throw;
+            }
+
             lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
             {
                 // Every callback remains in its owning JoinableTask's execution queue, so abandon this
                 // secondary route when no underlying message was established.
+                while (this.pendingUnderlyingSynchronizationContextCallbacks?.Count > 0)
+                {
+                    DisposeExecutionContext(this.pendingUnderlyingSynchronizationContextCallbacks.Dequeue().ExecutionContext);
+                }
+
                 this.pendingUnderlyingSynchronizationContextCallbacks = null;
                 this.underlyingSynchronizationContextCallbackPending = false;
             }
@@ -889,7 +936,7 @@ public partial class JoinableTaskFactory
             && this.pendingUnderlyingSynchronizationContextCallbacks.Peek().State is IPendingExecutionRequestState { IsCompleted: true })
 #pragma warning restore VSOnly
         {
-            this.pendingUnderlyingSynchronizationContextCallbacks.Dequeue();
+            DisposeExecutionContext(this.pendingUnderlyingSynchronizationContextCallbacks.Dequeue().ExecutionContext);
         }
     }
 
@@ -1654,6 +1701,8 @@ public partial class JoinableTaskFactory
         {
             this.factory = factory;
         }
+
+        internal bool HasExecuted => Volatile.Read(ref this.factory) is null;
 
         internal void Execute()
         {

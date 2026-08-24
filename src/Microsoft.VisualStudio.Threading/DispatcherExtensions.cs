@@ -4,6 +4,7 @@
 #if NETFRAMEWORK || WINDOWS
 
 using System;
+using System.Globalization;
 using System.Threading;
 using System.Windows.Threading;
 
@@ -72,6 +73,49 @@ public static class DispatcherExtensions
             this.DefaultWaitPolicy = new DispatcherSynchronizationContext(dispatcher);
 #endif
             this.priority = priority;
+        }
+
+        /// <inheritdoc />
+        internal override void ExecutePendingUnderlyingSynchronizationContextCallback(
+            SendOrPostCallback callback,
+            object state,
+            ExecutionContext? executionContext)
+        {
+            if (executionContext is null)
+            {
+                callback(state);
+                return;
+            }
+
+            CultureInfo dispatcherCulture = CultureInfo.CurrentCulture;
+            CultureInfo dispatcherUICulture = CultureInfo.CurrentUICulture;
+            CultureInfo resultingCulture = dispatcherCulture;
+            CultureInfo resultingUICulture = dispatcherUICulture;
+            try
+            {
+                ExecutionContext.Run(
+                    executionContext,
+                    _ =>
+                    {
+                        CultureInfo.CurrentCulture = dispatcherCulture;
+                        CultureInfo.CurrentUICulture = dispatcherUICulture;
+                        try
+                        {
+                            callback(state);
+                        }
+                        finally
+                        {
+                            resultingCulture = CultureInfo.CurrentCulture;
+                            resultingUICulture = CultureInfo.CurrentUICulture;
+                        }
+                    },
+                    null);
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = resultingCulture;
+                CultureInfo.CurrentUICulture = resultingUICulture;
+            }
         }
 
         /// <inheritdoc />
