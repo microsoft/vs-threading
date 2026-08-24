@@ -14,10 +14,20 @@ internal static class ReferencesHelper
 {
     private static readonly string NuGetConfigPath = FindNuGetConfigPath();
 
+    /// <summary>
+    /// Gets the .NET 8 reference assemblies using this repository's NuGet sources.
+    /// </summary>
+    internal static readonly ReferenceAssemblies Net80References = ReferenceAssemblies.Net.Net80.WithNuGetConfigFilePath(NuGetConfigPath);
+
+    /// <summary>
+    /// Gets the .NET Framework 2.0 reference assemblies using this repository's NuGet sources.
+    /// </summary>
+    internal static readonly ReferenceAssemblies NetFramework20References = ReferenceAssemblies.NetFramework.Net20.Default.WithNuGetConfigFilePath(NuGetConfigPath);
+
 #if NETFRAMEWORK
     public static ReferenceAssemblies DefaultReferences = ReferenceAssemblies.NetFramework.Net471.Default
 #elif NET8_0
-    public static ReferenceAssemblies DefaultReferences = ReferenceAssemblies.Net.Net80
+    public static ReferenceAssemblies DefaultReferences = Net80References
 #else
 #error Fix TFM conditions
 #endif

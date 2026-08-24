@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.VSTHRD002UseJtfRunAnalyzer, Microsoft.VisualStudio.Threading.Analyzers.VSTHRD002UseJtfRunCodeFixWithAwait>;
+using ReferencesHelper = Microsoft.VisualStudio.Threading.Analyzers.Tests.ReferencesHelper;
 
 public class VSTHRD002UseJtfRunAnalyzerTests
 {
@@ -1272,7 +1273,7 @@ class Test {
         await new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+            ReferenceAssemblies = ReferencesHelper.Net80References,
         }.RunAsync();
     }
 
@@ -1384,7 +1385,7 @@ class Test {
         {
             TestCode = test,
             FixedCode = test,
-            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.NetFramework.Net20.Default,
+            ReferenceAssemblies = ReferencesHelper.NetFramework20References,
         };
         verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncBlockingMethods.txt", "[CustomWaiter]::Join"));
         await verifyTest.RunAsync();
@@ -2096,7 +2097,7 @@ class Test : Base, ITest {
         {
             TestCode = test,
             FixedCode = test,
-            ReferenceAssemblies = Microsoft.CodeAnalysis.Testing.ReferenceAssemblies.Net.Net80,
+            ReferenceAssemblies = ReferencesHelper.Net80References,
         }.RunAsync();
     }
 
