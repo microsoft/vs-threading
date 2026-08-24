@@ -3,7 +3,7 @@
   "isRoot": true,
   "tools": {
     "powershell": {
-      "version": "7.6.4",
+      "version": "7.6.5",
       "commands": [
         "pwsh"
       ],
@@ -31,7 +31,7 @@
       "rollForward": false
     },
     "nerdbank.dotnetrepotools": {
-      "version": "1.5.15",
+      "version": "1.5.42",
       "commands": [
         "repo"
       ],
