@@ -461,6 +461,6 @@ So how do we get the best of both worlds? How can we have a responsive app, keep
 
 [NuPkg]: https://www.nuget.org/packages/Microsoft.VisualStudio.Threading
 [AnalyzerNuPkg]: https://www.nuget.org/packages/Microsoft.VisualStudio.Threading.Analyzers
-[MSDNIVsTaskGetAwaiter]: https://msdn.microsoft.com/en-us/library/vstudio/hh598836.aspx
-[AsyncPackage101]: https://microsoft.sharepoint.com/teams/DD_VSIDE/_layouts/15/WopiFrame.aspx?sourcedoc=%7b84C6ABED-E111-4B5D-B2D6-8B6FAF37F0D4%7d&file=Async%20Package%20101.docx&action=default
+[MSDNIVsTaskGetAwaiter]: https://learn.microsoft.com/dotnet/api/microsoft.visualstudio.shell.vstasklibraryhelper.getawaiter
+[AsyncPackage101]: https://learn.microsoft.com/visualstudio/extensibility/how-to-use-asyncpackage-to-load-vspackages-in-the-background
 [ThreadpoolStarvation]: threadpool_starvation.md
