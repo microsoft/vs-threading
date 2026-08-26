@@ -159,6 +159,24 @@ class Tests
     }
 
     [Fact]
+    public async Task ReturnStatementInConversionOperatorProducesNoDiagnostic()
+    {
+        string test = """
+            readonly struct Wrapper
+            {
+                private readonly byte value;
+
+                public static implicit operator byte(Wrapper value)
+                {
+                    return value.value;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
     public async Task ReportWarningWhenTaskIsReturnedDirectlyFromMethodViaExpressionBody()
     {
         var test = @"
