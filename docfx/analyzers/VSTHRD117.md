@@ -2,6 +2,12 @@
 
 A static field marked with `ThreadStaticAttribute` has a separate value on each thread. A field initializer or static constructor runs only on the thread that initializes the containing type, so the field has its default value on every other thread. In C#, this also applies to auto-property backing fields marked with `[field: ThreadStatic]`.
 
+## Severity
+
+An inline field or auto-property initializer that explicitly assigns the default value for its type, such as `null`, `0`, or `default`, produces an informational diagnostic. The initializer is redundant but does not create different initial values across threads.
+
+All other initializers and assignments reported by this rule produce a warning because they can initialize the field differently on the type-initializing thread.
+
 ## Examples of patterns that are flagged by this analyzer
 
 ```csharp
@@ -45,7 +51,7 @@ End Class
 
 ## Solution
 
-Remove the initializer or static-constructor assignment and initialize the value independently on each thread, typically by using lazy initialization at the point of use.
+Remove an initializer that assigns the default value. For other initializers or static-constructor assignments, initialize the value independently on each thread, typically by using lazy initialization at the point of use.
 
 ```csharp
 class Example
