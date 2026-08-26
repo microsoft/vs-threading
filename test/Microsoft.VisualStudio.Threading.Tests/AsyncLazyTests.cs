@@ -149,11 +149,10 @@ public class AsyncLazyTests : TestBase
     }
 
     [Fact]
-    public async Task ValueFactoryReleasedAfterExecution()
+    public void ValueFactoryReleasedAfterExecution()
     {
-        WeakReference collectible = await this.ValueFactoryReleasedAfterExecution_Helper();
+        (WeakReference collectible, AsyncLazy<object> lazy) = this.ValueFactoryReleasedAfterExecution_Helper();
 
-        await Task.Yield();
         for (int i = 0; i < 3; i++)
         {
             GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, blocking: true);
@@ -161,6 +160,7 @@ public class AsyncLazyTests : TestBase
         }
 
         Assert.False(collectible.IsAlive);
+        GC.KeepAlive(lazy);
     }
 
     [Theory, CombinatorialData]
@@ -1070,18 +1070,14 @@ public class AsyncLazyTests : TestBase
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private async Task<WeakReference> ValueFactoryReleasedAfterExecution_Helper()
+    private (WeakReference Collectible, AsyncLazy<object> Lazy) ValueFactoryReleasedAfterExecution_Helper()
     {
-        var closure = new { value = new object() };
-        var collectible = new WeakReference(closure);
-        var lazy = new AsyncLazy<object>(async delegate
-        {
-            await Task.Yield();
-            return closure.value;
-        });
+        var valueFactory = new ValueFactory();
+        var collectible = new WeakReference(valueFactory);
+        var lazy = new AsyncLazy<object>(valueFactory.CreateValueAsync);
 
-        await lazy.GetValueAsync();
-        return collectible;
+        _ = lazy.GetValue();
+        return (collectible, lazy);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -1117,6 +1113,14 @@ public class AsyncLazyTests : TestBase
         public Task Disposed => this.disposalEvent.WaitAsync();
 
         public bool IsDisposed => this.disposalEvent.IsSet;
+    }
+
+    private sealed class ValueFactory
+    {
+        /// <summary>
+        /// Creates the value returned by the test factory.
+        /// </summary>
+        internal Task<object> CreateValueAsync() => Task.FromResult(new object());
     }
 
     private class Disposable : DisposableBase, IDisposableObservable
