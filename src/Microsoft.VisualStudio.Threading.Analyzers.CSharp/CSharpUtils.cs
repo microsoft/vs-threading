@@ -70,7 +70,7 @@ public sealed class CSharpUtils : LanguageUtils
                 {
                     BlockSyntax block => accessor.WithBody(block),
                     ArrowExpressionClauseSyntax expression => accessor.WithExpressionBody(expression),
-                    _ => throw new NotSupportedException(),
+                    _ => throw new NotSupportedException($"Body syntax type '{newBody.GetType().FullName}' is not supported."),
                 };
                 return new ContainingFunctionData(accessor, false, SyntaxFactory.ParameterList(), accessor.Body, bodyReplacement);
             }
@@ -83,27 +83,33 @@ public sealed class CSharpUtils : LanguageUtils
                     {
                         ArrowExpressionClauseSyntax expr => m.WithExpressionBody(expr),
                         BlockSyntax block => m.WithBody(block),
-                        _ => throw new NotSupportedException(),
+                        _ => throw new NotSupportedException($"Body syntax type '{newBody.GetType().FullName}' is not supported."),
                     },
                     ConstructorDeclarationSyntax c => (CSharpSyntaxNode newBody) => newBody switch
                     {
                         ArrowExpressionClauseSyntax expr => c.WithExpressionBody(expr),
                         BlockSyntax block => c.WithBody(block),
-                        _ => throw new NotSupportedException(),
+                        _ => throw new NotSupportedException($"Body syntax type '{newBody.GetType().FullName}' is not supported."),
                     },
                     OperatorDeclarationSyntax o => (CSharpSyntaxNode newBody) => newBody switch
                     {
                         ArrowExpressionClauseSyntax expr => o.WithExpressionBody(expr),
                         BlockSyntax block => o.WithBody(block),
-                        _ => throw new NotSupportedException(),
+                        _ => throw new NotSupportedException($"Body syntax type '{newBody.GetType().FullName}' is not supported."),
+                    },
+                    ConversionOperatorDeclarationSyntax c => (CSharpSyntaxNode newBody) => newBody switch
+                    {
+                        ArrowExpressionClauseSyntax expr => c.WithExpressionBody(expr),
+                        BlockSyntax block => c.WithBody(block),
+                        _ => throw new NotSupportedException($"Body syntax type '{newBody.GetType().FullName}' is not supported."),
                     },
                     DestructorDeclarationSyntax d => (CSharpSyntaxNode newBody) => newBody switch
                     {
                         ArrowExpressionClauseSyntax expr => d.WithExpressionBody(expr),
                         BlockSyntax block => d.WithBody(block),
-                        _ => throw new NotSupportedException(),
+                        _ => throw new NotSupportedException($"Body syntax type '{newBody.GetType().FullName}' is not supported."),
                     },
-                    _ => throw new NotSupportedException(),
+                    _ => throw new NotSupportedException($"Method syntax type '{method.GetType().FullName}' is not supported."),
                 };
                 return new ContainingFunctionData(method, method.Modifiers.Any(SyntaxKind.AsyncKeyword), method.ParameterList, method.Body, bodyReplacement);
             }
