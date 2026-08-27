@@ -2028,12 +2028,13 @@ class Test {
 
             class Test
             {
-                async Task ProcessAllAsync(IEnumerable<int> items, Task existingTask)
+                Task ProcessAllAsync(IEnumerable<int> items, Task existingTask)
                 {
-                    IReadOnlyList<ValueTask<int>> valueTasks = Map(items, ProcessAsync);
-                    (Task, int) wrappedTask = Wrap(existingTask);
-                    Task[] wrappedTasks = WrapInArray(existingTask);
-                    Task[] extensionWrappedTasks = existingTask.WrapInArray();
+                    _ = Map(items, ProcessAsync);
+                    _ = Wrap(existingTask);
+                    _ = WrapInArray(existingTask);
+                    _ = existingTask.WrapInArray();
+                    return Task.CompletedTask;
                 }
 
                 ValueTask<int> ProcessAsync(int item) => new ValueTask<int>(item);
@@ -2076,12 +2077,13 @@ class Test {
 
             class Test
             {
-                async Task ProcessAllAsync()
+                Task ProcessAllAsync()
                 {
-                    IEnumerable<Task> tasks = {|#0:GetTasks|}();
+                    _ = {|#0:GetTasks|}();
                     {|#1:Run|}(() => Task.CompletedTask);
-                    (Task, int) wrappedTask = {|#2:Wrap|}(Task.CompletedTask);
-                    IEnumerable<Task> loadedTasks = {|#3:Load<Task>|}(task => { });
+                    _ = {|#2:Wrap|}(Task.CompletedTask);
+                    _ = {|#3:Load<Task>|}(task => { });
+                    return Task.CompletedTask;
                 }
 
                 static IEnumerable<Task> GetTasks() => throw null;
