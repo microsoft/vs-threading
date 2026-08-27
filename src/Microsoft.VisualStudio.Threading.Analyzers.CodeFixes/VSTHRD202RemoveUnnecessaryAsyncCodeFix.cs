@@ -106,9 +106,7 @@ public class VSTHRD202RemoveUnnecessaryAsyncCodeFix : CodeFixProvider
     {
         if (awaitExpression.Expression is InvocationExpressionSyntax invocationExpression
             && invocationExpression.Expression is MemberAccessExpressionSyntax memberAccess
-            && memberAccess.Name.Identifier.ValueText == nameof(Task.ConfigureAwait)
             && semanticModel.GetOperation(awaitExpression.Expression, cancellationToken) is IInvocationOperation invocation
-            && invocation.Instance is object
             && IsTaskConfigureAwait(invocation))
         {
             return memberAccess.Expression.WithTriviaFrom(awaitExpression);
@@ -118,10 +116,7 @@ public class VSTHRD202RemoveUnnecessaryAsyncCodeFix : CodeFixProvider
     }
 
     private static bool IsTaskConfigureAwait(IInvocationOperation invocation)
-        => invocation.TargetMethod.Name == nameof(Task.ConfigureAwait)
-            && invocation.TargetMethod.Parameters.Length == 1
-            && invocation.TargetMethod.Parameters[0].Type.SpecialType == SpecialType.System_Boolean
-            && Utils.IsTask(invocation.TargetMethod.ContainingType);
+        => CommonInterest.TaskConfigureAwait.Any(configureAwait => configureAwait.IsMatch(invocation.TargetMethod));
 
     private static bool HasTaskExceptionFactories(Compilation compilation, ITypeSymbol returnType)
     {

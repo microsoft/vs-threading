@@ -199,6 +199,46 @@ public class VSTHRD202RemoveUnnecessaryAsyncAnalyzerTests
     }
 
     [Fact]
+    public async Task ConfigureAwaitRunInline_OffersMinimalFix()
+    {
+        const string source = /* lang=c#-test */ """
+            using System.Threading.Tasks;
+            using Microsoft.VisualStudio.Threading;
+
+            class Test
+            {
+                Task SomethingElseAsync() => Task.CompletedTask;
+
+                [|async|] Task DoSomethingAsync()
+                {
+                    await SomethingElseAsync().ConfigureAwaitRunInline();
+                }
+            }
+            """;
+        const string fixedSource = /* lang=c#-test */ """
+            using System.Threading.Tasks;
+            using Microsoft.VisualStudio.Threading;
+
+            class Test
+            {
+                Task SomethingElseAsync() => Task.CompletedTask;
+
+                Task DoSomethingAsync()
+                {
+                    return SomethingElseAsync();
+                }
+            }
+            """;
+
+        await new CSVerify.Test
+        {
+            TestCode = source,
+            FixedCode = fixedSource,
+            CodeActionEquivalenceKey = VSTHRD202RemoveUnnecessaryAsyncCodeFix.MinimalEquivalenceKey,
+        }.RunAsync();
+    }
+
+    [Fact]
     public async Task UnsupportedPatterns_DoNotProduceDiagnostics()
     {
         const string source = /* lang=c#-test */ """

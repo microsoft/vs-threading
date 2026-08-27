@@ -3,6 +3,7 @@
 
 using System.Collections.Immutable;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -53,15 +54,16 @@ public class VSTHRD202RemoveUnnecessaryAsyncAnalyzer : DiagnosticAnalyzer
     {
         var method = (MethodDeclarationSyntax)context.Node;
         SyntaxToken asyncKeyword = method.Modifiers.FirstOrDefault(modifier => modifier.IsKind(SyntaxKind.AsyncKeyword));
-        ImmutableArray<AwaitExpressionSyntax> awaitExpressions = method.DescendantNodes(ShouldDescendInto).OfType<AwaitExpressionSyntax>().ToImmutableArray();
+        ImmutableArray<SyntaxNode> descendants = method.DescendantNodes(ShouldDescendInto).ToImmutableArray();
+        ImmutableArray<AwaitExpressionSyntax> awaitExpressions = descendants.OfType<AwaitExpressionSyntax>().ToImmutableArray();
         if (asyncKeyword.RawKind == 0
             || awaitExpressions is not [AwaitExpressionSyntax awaitExpression]
             || context.SemanticModel.GetDeclaredSymbol(method, context.CancellationToken) is not IMethodSymbol { IsAsync: true } methodSymbol
             || !Utils.IsTask(methodSymbol.ReturnType)
             || !IsTerminalAwait(method, awaitExpression)
-            || method.DescendantNodes(ShouldDescendInto).OfType<LocalDeclarationStatementSyntax>().Any(local => local.UsingKeyword.RawKind != 0)
-            || method.DescendantNodes(ShouldDescendInto).OfType<UsingStatementSyntax>().Any(usingStatement => usingStatement.AwaitKeyword.RawKind != 0)
-            || method.DescendantNodes(ShouldDescendInto).OfType<CommonForEachStatementSyntax>().Any(forEachStatement => forEachStatement.AwaitKeyword.RawKind != 0))
+            || descendants.OfType<LocalDeclarationStatementSyntax>().Any(local => local.UsingKeyword.RawKind != 0)
+            || descendants.OfType<UsingStatementSyntax>().Any(usingStatement => usingStatement.AwaitKeyword.RawKind != 0)
+            || descendants.OfType<CommonForEachStatementSyntax>().Any(forEachStatement => forEachStatement.AwaitKeyword.RawKind != 0))
         {
             return;
         }
@@ -71,7 +73,7 @@ public class VSTHRD202RemoveUnnecessaryAsyncAnalyzer : DiagnosticAnalyzer
             return;
         }
 
-        IOperation returnedTask = UnwrapConfigureAwait(awaitOperation.Operation);
+        IOperation returnedTask = UnwrapConfigureAwait(awaitOperation, context.SemanticModel, context.CancellationToken);
         if (SymbolEqualityComparer.Default.Equals(returnedTask.Type, methodSymbol.ReturnType))
         {
             context.ReportDiagnostic(Diagnostic.Create(Descriptor, asyncKeyword.GetLocation()));
@@ -104,21 +106,26 @@ public class VSTHRD202RemoveUnnecessaryAsyncAnalyzer : DiagnosticAnalyzer
             && body.Statements.LastOrDefault() == statement;
     }
 
-    private static IOperation UnwrapConfigureAwait(IOperation operation)
+    private static IOperation UnwrapConfigureAwait(IAwaitOperation awaitOperation, SemanticModel semanticModel, CancellationToken cancellationToken)
     {
-        if (operation is IInvocationOperation invocation
-            && invocation.Instance is IOperation instance
-            && IsTaskConfigureAwait(invocation))
+        if (awaitOperation.Operation is IInvocationOperation invocation && IsTaskConfigureAwait(invocation))
         {
-            return instance;
+            if (invocation.Instance is IOperation instance)
+            {
+                return instance;
+            }
+
+            if (awaitOperation.Syntax is AwaitExpressionSyntax { Expression: InvocationExpressionSyntax invocationSyntax }
+                && invocationSyntax.Expression is MemberAccessExpressionSyntax memberAccess
+                && semanticModel.GetOperation(memberAccess.Expression, cancellationToken) is IOperation receiver)
+            {
+                return receiver;
+            }
         }
 
-        return operation;
+        return awaitOperation.Operation;
     }
 
     private static bool IsTaskConfigureAwait(IInvocationOperation invocation)
-        => invocation.TargetMethod.Name == nameof(Task.ConfigureAwait)
-            && invocation.TargetMethod.Parameters.Length == 1
-            && invocation.TargetMethod.Parameters[0].Type.SpecialType == SpecialType.System_Boolean
-            && Utils.IsTask(invocation.TargetMethod.ContainingType);
+        => CommonInterest.TaskConfigureAwait.Any(configureAwait => configureAwait.IsMatch(invocation.TargetMethod));
 }
