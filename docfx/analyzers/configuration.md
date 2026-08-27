@@ -105,6 +105,19 @@ excluded from VSTHRD103 analysis by specifying them in a configuration file.
 
 **Generic sample:** ``[Microsoft.EntityFrameworkCore.DbSet`1]::Add``
 
+The analyzer package supplies default exclusions for APIs whose Async-suffixed alternatives
+are intended for different operations or exceptional use cases:
+
+| API | Excluded methods |
+| --- | --- |
+| Entity Framework Core `DbContext` | `Add`, `AddRange` |
+| Entity Framework Core `DbSet<TEntity>` | `Add`, `AddRange` |
+| NUnit `Assert` | `That` |
+| xUnit `Assert` | `Throws`, `ThrowsAny` |
+
+Projects and NuGet packages can extend this list by adding their own files that match the
+filename pattern above.
+
 ## Additional synchronous blocking methods for VSTHRD002
 
 Projects that wrap synchronous waits in their own APIs can configure those methods to be
