@@ -97,7 +97,8 @@ when in an async context. Sometimes certain APIs have async versions but those a
 are significantly slower, less efficient, or simply not preferred. These methods can be 
 excluded from VSTHRD103 analysis by specifying them in a configuration file.
 
-**Filename:** `vs-threading.SyncMethodsToExcludeFromVSTHRD103.txt`
+**Filename:** `vs-threading.SyncMethodsToExcludeFromVSTHRD103.txt`, or
+`vs-threading.SyncMethodsToExcludeFromVSTHRD103.<suffix>.txt`
 
 **Line format:** `[Namespace.TypeName]::MethodName`
 
