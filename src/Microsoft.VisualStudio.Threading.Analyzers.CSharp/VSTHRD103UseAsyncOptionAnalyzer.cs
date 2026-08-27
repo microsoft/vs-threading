@@ -145,7 +145,8 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
                 // Also consider all method calls to check for Async-suffixed alternatives.
                 SymbolInfo symbolInfo = context.SemanticModel.GetSymbolInfo(invocationExpressionSyntax, context.CancellationToken);
                 if (symbolInfo.Symbol is IMethodSymbol methodSymbol && !methodSymbol.Name.EndsWith(VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix, StringComparison.CurrentCulture) &&
-                    !methodSymbol.HasAsyncCompatibleReturnType())
+                    !methodSymbol.HasAsyncCompatibleReturnType() &&
+                    !CSharpCommonInterest.ReturnsAsyncCompatibleValuesFromParameters(methodSymbol))
                 {
                     string asyncMethodName = methodSymbol.Name + VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix;
 

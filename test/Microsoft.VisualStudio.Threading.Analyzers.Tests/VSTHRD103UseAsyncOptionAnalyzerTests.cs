@@ -1984,6 +1984,133 @@ class Test {
     }
 
     [Fact]
+    public async Task TaskProducingProjectionDoesNotGenerateWarning()
+    {
+        string test = """
+            using System;
+            using System.Collections.Generic;
+            using System.Linq;
+            using System.Threading.Tasks;
+
+            class Item { }
+
+            class Test
+            {
+                async Task ProcessAllAsync(IEnumerable<Item> items)
+                {
+                    await Task.WhenAll(items.Select(ProcessAsync));
+
+                    IEnumerable<Task> tasks = items.Select(ProcessAsync);
+                    await Task.WhenAll(tasks);
+                }
+
+                Task ProcessAsync(Item item) => Task.CompletedTask;
+            }
+
+            static class AsyncEnumerableExtensions
+            {
+                public static Task<IEnumerable<TResult>> SelectAsync<TSource, TResult>(
+                    this IEnumerable<TSource> source,
+                    Func<TSource, TResult> selector) => Task.FromResult(source.Select(selector));
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task TaskLikeValuesFlowingThroughContainersDoNotGenerateWarning()
+    {
+        string test = """
+            using System;
+            using System.Collections.Generic;
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task ProcessAllAsync(IEnumerable<int> items, Task existingTask)
+                {
+                    IReadOnlyList<ValueTask<int>> valueTasks = Map(items, ProcessAsync);
+                    (Task, int) wrappedTask = Wrap(existingTask);
+                    Task[] wrappedTasks = WrapInArray(existingTask);
+                    Task[] extensionWrappedTasks = existingTask.WrapInArray();
+                }
+
+                ValueTask<int> ProcessAsync(int item) => new ValueTask<int>(item);
+
+                static IReadOnlyList<TResult> Map<TSource, TResult>(
+                    IEnumerable<TSource> source,
+                    Func<TSource, TResult> selector) => throw null;
+
+                static Task<IReadOnlyList<TResult>> MapAsync<TSource, TResult>(
+                    IEnumerable<TSource> source,
+                    Func<TSource, TResult> selector) => throw null;
+
+                static (T, int) Wrap<T>(T value) => (value, 0);
+
+                static Task<(T, int)> WrapAsync<T>(T value) => Task.FromResult((value, 0));
+
+                static T[] WrapInArray<T>(T value) => new[] { value };
+
+                static Task<T[]> WrapInArrayAsync<T>(T value) => Task.FromResult(new[] { value });
+            }
+
+            static class TaskCarryingExtensions
+            {
+                internal static T[] WrapInArray<T>(this T value) => new[] { value };
+
+                internal static Task<T[]> WrapInArrayAsync<T>(this T value) => Task.FromResult(new[] { value });
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task AsyncAlternativeStillWarnsWhenTaskLikeValuesDoNotFlowToReturnValue()
+    {
+        string test = """
+            using System;
+            using System.Collections.Generic;
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task ProcessAllAsync()
+                {
+                    IEnumerable<Task> tasks = {|#0:GetTasks|}();
+                    {|#1:Run|}(() => Task.CompletedTask);
+                    (Task, int) wrappedTask = {|#2:Wrap|}(Task.CompletedTask);
+                    IEnumerable<Task> loadedTasks = {|#3:Load<Task>|}(task => { });
+                }
+
+                static IEnumerable<Task> GetTasks() => throw null;
+
+                static Task<IEnumerable<Task>> GetTasksAsync() => throw null;
+
+                static void Run(Func<Task> action) { }
+
+                static Task RunAsync(Func<Task> action) => action();
+
+                static (Task, int) Wrap(Task task) => (task, 0);
+
+                static Task<(Task, int)> WrapAsync(Task task) => Task.FromResult((task, 0));
+
+                static IEnumerable<T> Load<T>(Action<T> consumer) => throw null;
+
+                static Task<IEnumerable<T>> LoadAsync<T>(Action<T> consumer) => throw null;
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(
+            test,
+            CSVerify.Diagnostic(Descriptor).WithLocation(0).WithArguments("GetTasks", "GetTasksAsync"),
+            CSVerify.Diagnostic(Descriptor).WithLocation(1).WithArguments("Run", "RunAsync"),
+            CSVerify.Diagnostic(Descriptor).WithLocation(2).WithArguments("Wrap", "WrapAsync"),
+            CSVerify.Diagnostic(Descriptor).WithLocation(3).WithArguments("Load<Task>", "LoadAsync"));
+    }
+
+    [Fact]
     public async Task TaskGetAwaiterGetResultInTaskReturningMethodGeneratesWarning()
     {
         var test = @"
