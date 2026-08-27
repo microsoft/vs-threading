@@ -50,6 +50,10 @@ public class VSTHRD202RemoveUnnecessaryAsyncAnalyzerTests
                     {
                         return SomethingElseAsync();
                     }
+                    catch (OperationCanceledException ex)
+                    {
+                        return Task.FromCanceled<string>(ex.CancellationToken.IsCancellationRequested ? ex.CancellationToken : new System.Threading.CancellationToken(true));
+                    }
                     catch (Exception ex)
                     {
                         return Task.FromException<string>(ex);
@@ -109,6 +113,10 @@ public class VSTHRD202RemoveUnnecessaryAsyncAnalyzerTests
                         Prepare();
                         return SomethingElseAsync();
                     }
+                    catch (OperationCanceledException ex)
+                    {
+                        return Task.FromCanceled(ex.CancellationToken.IsCancellationRequested ? ex.CancellationToken : new System.Threading.CancellationToken(true));
+                    }
                     catch (Exception ex)
                     {
                         return Task.FromException(ex);
@@ -163,6 +171,10 @@ public class VSTHRD202RemoveUnnecessaryAsyncAnalyzerTests
                     try
                     {
                         return GetValueAsync();
+                    }
+                    catch (OperationCanceledException ex)
+                    {
+                        return Task.FromCanceled<int>(ex.CancellationToken.IsCancellationRequested ? ex.CancellationToken : new System.Threading.CancellationToken(true));
                     }
                     catch (Exception ex)
                     {

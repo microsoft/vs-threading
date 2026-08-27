@@ -42,6 +42,13 @@ Task<string> DoSomethingAsync()
     {
         return SomethingElseAsync();
     }
+    catch (OperationCanceledException ex)
+    {
+        CancellationToken cancellationToken = ex.CancellationToken.IsCancellationRequested
+            ? ex.CancellationToken
+            : new CancellationToken(canceled: true);
+        return Task.FromCanceled<string>(cancellationToken);
+    }
     catch (Exception ex)
     {
         return Task.FromException<string>(ex);
@@ -54,10 +61,10 @@ Task<string> DoSomethingAsync()
 Removing the state machine is a performance optimization, but the two forms are not identical:
 
 * While debugging a continuation in `SomethingElseAsync`, `DoSomethingAsync` no longer appears as an async frame in the call stack.
-* Exception stack traces can change. The minimal fix also changes synchronous exceptions from a faulted returned task into exceptions thrown directly to the caller. The try/catch fix keeps ordinary exceptions in the returned task, but a synchronously thrown `OperationCanceledException` produces a faulted task instead of the canceled task produced by an async state machine.
+* Exception stack traces can change. The minimal fix also changes synchronous exceptions from a faulted or canceled returned task into exceptions thrown directly to the caller. The try/catch fix keeps ordinary exceptions in a faulted task and `OperationCanceledException` in a canceled task.
 * The returned task is the original task instead of a task created by the wrapper method, which can make task identity observable.
 * Compiler warning CS4014 for unawaited calls is only produced within an `async` method. Removing `async` may therefore stop the compiler from warning about other unawaited calls in the method. Consider enabling [VSTHRD110](VSTHRD110.md) before applying this optimization broadly.
 
-The try/catch fix is only offered when the target framework provides `Task.FromException`.
+The try/catch fix is only offered when the target framework provides `Task.FromException` and `Task.FromCanceled`.
 
 These tradeoffs are why this diagnostic has an **Informational** default severity. Suppress or disable it when preserving the debugging experience or the original method boundary is more important than avoiding the state machine.

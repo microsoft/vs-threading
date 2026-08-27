@@ -62,7 +62,7 @@ public class VSTHRD202RemoveUnnecessaryAsyncCodeFix : CodeFixProvider
                 .FirstAncestorOrSelf<MethodDeclarationSyntax>();
             if (method is object
                 && semanticModel.GetDeclaredSymbol(method, context.CancellationToken) is IMethodSymbol methodSymbol
-                && HasTaskFromExceptionFactory(semanticModel.Compilation, methodSymbol.ReturnType))
+                && HasTaskExceptionFactories(semanticModel.Compilation, methodSymbol.ReturnType))
             {
                 context.RegisterCodeFix(
                     CodeAction.Create(
@@ -123,22 +123,27 @@ public class VSTHRD202RemoveUnnecessaryAsyncCodeFix : CodeFixProvider
             && invocation.TargetMethod.Parameters[0].Type.SpecialType == SpecialType.System_Boolean
             && Utils.IsTask(invocation.TargetMethod.ContainingType);
 
-    private static bool HasTaskFromExceptionFactory(Compilation compilation, ITypeSymbol returnType)
+    private static bool HasTaskExceptionFactories(Compilation compilation, ITypeSymbol returnType)
     {
         INamedTypeSymbol? taskType = compilation.GetTypeByMetadataName(typeof(Task).FullName);
         INamedTypeSymbol? exceptionType = compilation.GetTypeByMetadataName(typeof(Exception).FullName);
-        if (taskType is null || exceptionType is null || returnType is not INamedTypeSymbol namedReturnType)
+        INamedTypeSymbol? cancellationTokenType = compilation.GetTypeByMetadataName(typeof(CancellationToken).FullName);
+        if (taskType is null || exceptionType is null || cancellationTokenType is null || returnType is not INamedTypeSymbol namedReturnType)
         {
             return false;
         }
 
         int requiredArity = namedReturnType.IsGenericType ? 1 : 0;
-        return taskType.GetMembers(nameof(Task.FromException))
+        return HasFactory(nameof(Task.FromException), exceptionType)
+            && HasFactory(nameof(Task.FromCanceled), cancellationTokenType);
+
+        bool HasFactory(string methodName, ITypeSymbol parameterType)
+            => taskType.GetMembers(methodName)
             .OfType<IMethodSymbol>()
             .Any(method => method.IsStatic
                 && method.Arity == requiredArity
                 && method.Parameters.Length == 1
-                && SymbolEqualityComparer.Default.Equals(method.Parameters[0].Type, exceptionType));
+                && SymbolEqualityComparer.Default.Equals(method.Parameters[0].Type, parameterType));
     }
 
     private static MethodDeclarationSyntax RemoveAsyncModifier(MethodDeclarationSyntax method)
@@ -208,13 +213,35 @@ public class VSTHRD202RemoveUnnecessaryAsyncCodeFix : CodeFixProvider
             ?? throw new InvalidOperationException("Unable to find System.Threading.Tasks.Task.");
         INamedTypeSymbol exceptionType = compilation.GetTypeByMetadataName(typeof(Exception).FullName)
             ?? throw new InvalidOperationException("Unable to find System.Exception.");
+        INamedTypeSymbol operationCanceledExceptionType = compilation.GetTypeByMetadataName(typeof(OperationCanceledException).FullName)
+            ?? throw new InvalidOperationException("Unable to find System.OperationCanceledException.");
+        INamedTypeSymbol cancellationTokenType = compilation.GetTypeByMetadataName(typeof(CancellationToken).FullName)
+            ?? throw new InvalidOperationException("Unable to find System.Threading.CancellationToken.");
         var returnType = (INamedTypeSymbol)methodSymbol.ReturnType;
         SyntaxGenerator generator = SyntaxGenerator.GetGenerator(document);
         string exceptionVariableName = GetUniqueExceptionVariableName(method);
 
+        SyntaxNode fromCanceledName = returnType.IsGenericType
+            ? generator.GenericName(nameof(Task.FromCanceled), returnType.TypeArguments[0])
+            : generator.IdentifierName(nameof(Task.FromCanceled));
         SyntaxNode fromExceptionName = returnType.IsGenericType
             ? generator.GenericName(nameof(Task.FromException), returnType.TypeArguments[0])
             : generator.IdentifierName(nameof(Task.FromException));
+        var cancellationTokenExpression = (ExpressionSyntax)generator.MemberAccessExpression(
+            generator.IdentifierName(exceptionVariableName),
+            nameof(OperationCanceledException.CancellationToken));
+        var cancellationTokenIsCanceledExpression = (ExpressionSyntax)generator.MemberAccessExpression(
+            cancellationTokenExpression,
+            nameof(CancellationToken.IsCancellationRequested));
+        var canceledTokenExpression = (ExpressionSyntax)generator.ObjectCreationExpression(
+            cancellationTokenType,
+            generator.TrueLiteralExpression());
+        var fromCanceledInvocation = (ExpressionSyntax)generator.InvocationExpression(
+            generator.MemberAccessExpression(generator.TypeExpressionForStaticMemberAccess(taskType), fromCanceledName),
+            SyntaxFactory.ConditionalExpression(
+                cancellationTokenIsCanceledExpression,
+                cancellationTokenExpression,
+                canceledTokenExpression));
         var fromExceptionInvocation = (ExpressionSyntax)generator.InvocationExpression(
             generator.MemberAccessExpression(generator.TypeExpressionForStaticMemberAccess(taskType), fromExceptionName),
             generator.IdentifierName(exceptionVariableName));
@@ -230,7 +257,13 @@ public class VSTHRD202RemoveUnnecessaryAsyncCodeFix : CodeFixProvider
                 .WithCloseBraceToken(SyntaxFactory.Token(SyntaxKind.CloseBraceToken).WithTrailingTrivia(method.SemicolonToken.TrailingTrivia));
         }
 
-        CatchClauseSyntax catchClause = SyntaxFactory.CatchClause()
+        CatchClauseSyntax cancellationCatchClause = SyntaxFactory.CatchClause()
+            .WithDeclaration(
+                SyntaxFactory.CatchDeclaration(
+                    (TypeSyntax)generator.TypeExpression(operationCanceledExceptionType),
+                    SyntaxFactory.Identifier(exceptionVariableName)))
+            .WithBlock(SyntaxFactory.Block(SyntaxFactory.ReturnStatement(fromCanceledInvocation)));
+        CatchClauseSyntax exceptionCatchClause = SyntaxFactory.CatchClause()
             .WithDeclaration(
                 SyntaxFactory.CatchDeclaration(
                     (TypeSyntax)generator.TypeExpression(exceptionType),
@@ -238,7 +271,7 @@ public class VSTHRD202RemoveUnnecessaryAsyncCodeFix : CodeFixProvider
             .WithBlock(SyntaxFactory.Block(SyntaxFactory.ReturnStatement(fromExceptionInvocation)));
         TryStatementSyntax tryStatement = SyntaxFactory.TryStatement(
             SyntaxFactory.Block(originalBody.Statements),
-            SyntaxFactory.SingletonList(catchClause),
+            SyntaxFactory.List(new[] { cancellationCatchClause, exceptionCatchClause }),
             null);
         BlockSyntax updatedBody = originalBody.WithStatements(SyntaxFactory.SingletonList<StatementSyntax>(tryStatement));
 
