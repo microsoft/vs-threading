@@ -145,20 +145,25 @@ public class VSTHRD202RemoveUnnecessaryAsyncCodeFix : CodeFixProvider
     {
         SyntaxToken asyncKeyword = method.Modifiers.First(modifier => modifier.IsKind(SyntaxKind.AsyncKeyword));
         int asyncKeywordIndex = method.Modifiers.IndexOf(asyncKeyword);
-        SyntaxTokenList modifiers = method.Modifiers.Replace(asyncKeyword, asyncKeyword.WithoutTrivia());
-        modifiers = modifiers.RemoveAt(asyncKeywordIndex);
+        SyntaxTriviaList preservedTrivia = asyncKeyword.LeadingTrivia.AddRange(asyncKeyword.TrailingTrivia);
+        SyntaxTokenList modifiers = method.Modifiers.RemoveAt(asyncKeywordIndex);
+        if (asyncKeywordIndex > 0
+            && method.Modifiers[asyncKeywordIndex - 1].TrailingTrivia.LastOrDefault().IsKind(SyntaxKind.WhitespaceTrivia)
+            && preservedTrivia.FirstOrDefault().IsKind(SyntaxKind.WhitespaceTrivia))
+        {
+            preservedTrivia = preservedTrivia.RemoveAt(0);
+        }
+
         method = method.WithModifiers(modifiers);
 
-        if (asyncKeywordIndex == 0)
+        if (asyncKeywordIndex < modifiers.Count)
         {
-            if (modifiers.Count > 0)
-            {
-                method = method.WithModifiers(modifiers.Replace(modifiers[0], modifiers[0].WithLeadingTrivia(asyncKeyword.LeadingTrivia)));
-            }
-            else
-            {
-                method = method.WithReturnType(method.ReturnType.WithLeadingTrivia(asyncKeyword.LeadingTrivia));
-            }
+            SyntaxToken nextModifier = modifiers[asyncKeywordIndex];
+            method = method.WithModifiers(modifiers.Replace(nextModifier, nextModifier.WithLeadingTrivia(preservedTrivia.AddRange(nextModifier.LeadingTrivia))));
+        }
+        else
+        {
+            method = method.WithReturnType(method.ReturnType.WithLeadingTrivia(preservedTrivia.AddRange(method.ReturnType.GetLeadingTrivia())));
         }
 
         return method;
@@ -228,9 +233,12 @@ public class VSTHRD202RemoveUnnecessaryAsyncCodeFix : CodeFixProvider
         var cancellationTokenIsCanceledExpression = (ExpressionSyntax)generator.MemberAccessExpression(
             cancellationTokenExpression,
             nameof(CancellationToken.IsCancellationRequested));
-        var canceledTokenExpression = (ExpressionSyntax)generator.ObjectCreationExpression(
-            cancellationTokenType,
-            generator.TrueLiteralExpression());
+        ObjectCreationExpressionSyntax canceledTokenExpression = SyntaxFactory.ObjectCreationExpression((TypeSyntax)generator.TypeExpression(cancellationTokenType))
+            .WithArgumentList(
+                SyntaxFactory.ArgumentList(
+                    SyntaxFactory.SingletonSeparatedList(
+                        SyntaxFactory.Argument(SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression))
+                            .WithNameColon(SyntaxFactory.NameColon(SyntaxFactory.IdentifierName("canceled"))))));
         var fromCanceledInvocation = (ExpressionSyntax)generator.InvocationExpression(
             generator.MemberAccessExpression(generator.TypeExpressionForStaticMemberAccess(taskType), fromCanceledName),
             SyntaxFactory.ConditionalExpression(

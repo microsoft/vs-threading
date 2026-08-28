@@ -16,7 +16,7 @@ public class VSTHRD202RemoveUnnecessaryAsyncAnalyzerTests
             {
                 async Task<string> SomethingElseAsync() => "result";
 
-                [|async|] Task<string> DoSomethingAsync()
+                public [|async|] /* keep this comment */ Task<string> DoSomethingAsync()
                 {
                     return await SomethingElseAsync();
                 }
@@ -30,7 +30,7 @@ public class VSTHRD202RemoveUnnecessaryAsyncAnalyzerTests
             {
                 async Task<string> SomethingElseAsync() => "result";
 
-                Task<string> DoSomethingAsync()
+                public /* keep this comment */ Task<string> DoSomethingAsync()
                 {
                     return SomethingElseAsync();
                 }
@@ -44,7 +44,7 @@ public class VSTHRD202RemoveUnnecessaryAsyncAnalyzerTests
             {
                 async Task<string> SomethingElseAsync() => "result";
 
-                Task<string> DoSomethingAsync()
+                public /* keep this comment */ Task<string> DoSomethingAsync()
                 {
                     try
                     {
@@ -52,7 +52,7 @@ public class VSTHRD202RemoveUnnecessaryAsyncAnalyzerTests
                     }
                     catch (OperationCanceledException ex)
                     {
-                        return Task.FromCanceled<string>(ex.CancellationToken.IsCancellationRequested ? ex.CancellationToken : new System.Threading.CancellationToken(true));
+                        return Task.FromCanceled<string>(ex.CancellationToken.IsCancellationRequested ? ex.CancellationToken : new System.Threading.CancellationToken(canceled: true));
                     }
                     catch (Exception ex)
                     {
@@ -115,7 +115,7 @@ public class VSTHRD202RemoveUnnecessaryAsyncAnalyzerTests
                     }
                     catch (OperationCanceledException ex)
                     {
-                        return Task.FromCanceled(ex.CancellationToken.IsCancellationRequested ? ex.CancellationToken : new System.Threading.CancellationToken(true));
+                        return Task.FromCanceled(ex.CancellationToken.IsCancellationRequested ? ex.CancellationToken : new System.Threading.CancellationToken(canceled: true));
                     }
                     catch (Exception ex)
                     {
@@ -174,7 +174,7 @@ public class VSTHRD202RemoveUnnecessaryAsyncAnalyzerTests
                     }
                     catch (OperationCanceledException ex)
                     {
-                        return Task.FromCanceled<int>(ex.CancellationToken.IsCancellationRequested ? ex.CancellationToken : new System.Threading.CancellationToken(true));
+                        return Task.FromCanceled<int>(ex.CancellationToken.IsCancellationRequested ? ex.CancellationToken : new System.Threading.CancellationToken(canceled: true));
                     }
                     catch (Exception ex)
                     {
