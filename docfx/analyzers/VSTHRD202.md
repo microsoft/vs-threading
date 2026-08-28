@@ -11,7 +11,7 @@ async Task<string> DoSomethingAsync()
 }
 ```
 
-The analyzer also recognizes `.ConfigureAwait(bool)` on the final expression:
+The analyzer also recognizes `.ConfigureAwait(bool)` and `.ConfigureAwaitRunInline()` on the final expression:
 
 ```csharp
 async Task DoSomethingAsync()
@@ -24,7 +24,7 @@ It does not report methods with multiple awaits, a non-terminal await, an await 
 
 ## Code fixes
 
-The minimal code fix removes `async`, `await`, and any `.ConfigureAwait(bool)` call:
+The minimal code fix removes `async`, `await`, and a supported task configuration call such as `.ConfigureAwait(bool)` or `.ConfigureAwaitRunInline()`:
 
 ```csharp
 Task<string> DoSomethingAsync()

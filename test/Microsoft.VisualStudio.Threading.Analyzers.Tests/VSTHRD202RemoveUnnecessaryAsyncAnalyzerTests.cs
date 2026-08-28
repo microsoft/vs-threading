@@ -92,7 +92,7 @@ public class VSTHRD202RemoveUnnecessaryAsyncAnalyzerTests
                 [|async|] Task DoSomethingAsync()
                 {
                     Prepare();
-                    await SomethingElseAsync().ConfigureAwait(false);
+                    await (SomethingElseAsync().ConfigureAwait(false));
                 }
             }
             """;
@@ -211,7 +211,7 @@ public class VSTHRD202RemoveUnnecessaryAsyncAnalyzerTests
 
                 [|async|] Task DoSomethingAsync()
                 {
-                    await SomethingElseAsync().ConfigureAwaitRunInline();
+                    await (SomethingElseAsync().ConfigureAwaitRunInline());
                 }
             }
             """;

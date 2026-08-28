@@ -104,9 +104,15 @@ public class VSTHRD202RemoveUnnecessaryAsyncCodeFix : CodeFixProvider
 
     private static ExpressionSyntax GetReturnedTaskExpression(AwaitExpressionSyntax awaitExpression, SemanticModel semanticModel, CancellationToken cancellationToken)
     {
-        if (awaitExpression.Expression is InvocationExpressionSyntax invocationExpression
+        ExpressionSyntax expression = awaitExpression.Expression;
+        while (expression is ParenthesizedExpressionSyntax parenthesizedExpression)
+        {
+            expression = parenthesizedExpression.Expression;
+        }
+
+        if (expression is InvocationExpressionSyntax invocationExpression
             && invocationExpression.Expression is MemberAccessExpressionSyntax memberAccess
-            && semanticModel.GetOperation(awaitExpression.Expression, cancellationToken) is IInvocationOperation invocation
+            && semanticModel.GetOperation(expression, cancellationToken) is IInvocationOperation invocation
             && IsTaskConfigureAwait(invocation))
         {
             return memberAccess.Expression.WithTriviaFrom(awaitExpression);

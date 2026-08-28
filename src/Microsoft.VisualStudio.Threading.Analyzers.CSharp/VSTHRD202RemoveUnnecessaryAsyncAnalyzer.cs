@@ -108,14 +108,26 @@ public class VSTHRD202RemoveUnnecessaryAsyncAnalyzer : DiagnosticAnalyzer
 
     private static IOperation UnwrapConfigureAwait(IAwaitOperation awaitOperation, SemanticModel semanticModel, CancellationToken cancellationToken)
     {
-        if (awaitOperation.Operation is IInvocationOperation invocation && IsTaskConfigureAwait(invocation))
+        IOperation operation = awaitOperation.Operation;
+        while (operation is IParenthesizedOperation parenthesizedOperation)
+        {
+            operation = parenthesizedOperation.Operand;
+        }
+
+        if (operation is IInvocationOperation invocation && IsTaskConfigureAwait(invocation))
         {
             if (invocation.Instance is IOperation instance)
             {
                 return instance;
             }
 
-            if (awaitOperation.Syntax is AwaitExpressionSyntax { Expression: InvocationExpressionSyntax invocationSyntax }
+            ExpressionSyntax expression = ((AwaitExpressionSyntax)awaitOperation.Syntax).Expression;
+            while (expression is ParenthesizedExpressionSyntax parenthesizedExpression)
+            {
+                expression = parenthesizedExpression.Expression;
+            }
+
+            if (expression is InvocationExpressionSyntax invocationSyntax
                 && invocationSyntax.Expression is MemberAccessExpressionSyntax memberAccess
                 && semanticModel.GetOperation(memberAccess.Expression, cancellationToken) is IOperation receiver)
             {
@@ -123,7 +135,7 @@ public class VSTHRD202RemoveUnnecessaryAsyncAnalyzer : DiagnosticAnalyzer
             }
         }
 
-        return awaitOperation.Operation;
+        return operation;
     }
 
     private static bool IsTaskConfigureAwait(IInvocationOperation invocation)
