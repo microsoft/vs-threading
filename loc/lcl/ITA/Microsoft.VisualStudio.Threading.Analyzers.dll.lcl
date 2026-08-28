@@ -209,6 +209,24 @@
         </Str>
         <Disp Icon="Str" />
       </Item>
+      <Item ItemId=";VSTHRD013_MessageFormat" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[CompletedTaskAttribute cannot be applied to mutable member "{0}". Apply it only to methods, readonly fields, or non-ref get-only properties.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Non è possibile applicare CompletedTaskAttribute al membro modificabile "{0}". Applicarlo solo a metodi, campi readonly o proprietà non-ref get-only.]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";VSTHRD013_Title" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Apply CompletedTaskAttribute only to immutable members]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Applica CompletedTaskAttribute solo a membri non modificabili]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
       <Item ItemId=";VSTHRD100_CodeFix_Title" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Change return type to Task]]></Val>
@@ -613,6 +631,42 @@
           <Val><![CDATA[Avoid creating JoinableTaskContext with null SynchronizationContext]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
             <Val><![CDATA[Evitare di creare JoinableTaskContext con SynchronizationContext se è null]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";VSTHRD116_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[ThreadStaticAttribute has no effect on a non-static field]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[ThreadStaticAttribute non ha alcun effetto su un campo non statico]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";VSTHRD116_Title" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Use ThreadStaticAttribute only with static fields]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Usare ThreadStaticAttribute solo con campi statici]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";VSTHRD117_MessageFormat" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[ThreadStatic fields should not be initialized by a field initializer or static constructor because the value is only assigned on the type-initializing thread]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[I campi ThreadStatic non devono essere inizializzati da un inizializzatore di campo o da un costruttore statico perché il valore viene assegnato solo nel thread di inizializzazione del tipo]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";VSTHRD117_Title" ItemType="0" PsrId="211" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Avoid initialization of ThreadStatic fields in a type initializer]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Evitare l'inizializzazione dei campi ThreadStatic in un inizializzatore del tipo]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
