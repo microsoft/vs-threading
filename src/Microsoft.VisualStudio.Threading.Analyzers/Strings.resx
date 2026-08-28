@@ -387,6 +387,6 @@ Start the work within this context, or use JoinableTaskFactory.RunAsync to start
   </data>
   <data name="VSTHRD202_CodeFix_WrapExceptions_Title" xml:space="preserve">
     <value>Remove async and await, wrapping synchronous exceptions in the returned Task</value>
-    <comment>"async" and "await" are C# keywords and should not be translated.</comment>
+    <comment>"async", "await", and "Task" are C# terms and should not be translated.</comment>
   </data>
 </root>
