@@ -1,0 +1,8 @@
+# These APIs have Async-suffixed alternatives that are not generally equivalent to or preferred over their synchronous counterparts.
+[Microsoft.EntityFrameworkCore.DbContext]::Add
+[Microsoft.EntityFrameworkCore.DbContext]::AddRange
+[Microsoft.EntityFrameworkCore.DbSet`1]::Add
+[Microsoft.EntityFrameworkCore.DbSet`1]::AddRange
+[NUnit.Framework.Assert]::That
+[Xunit.Assert]::Throws
+[Xunit.Assert]::ThrowsAny

@@ -35,4 +35,3 @@ Some APIs may have async versions that are less efficient or inappropriate for c
 
 See our [configuration](configuration.md) topic to learn how to exclude specific methods
 using the `vs-threading.SyncMethodsToExcludeFromVSTHRD103.txt` file.
-```

@@ -2779,6 +2779,87 @@ namespace TestNamespace {
     }
 
     [Fact]
+    public async Task KnownFrameworkMethodsWithNonEquivalentAsyncAlternativesDoNotGenerateWarning()
+    {
+        string test = """
+            using System;
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task TestAsync()
+                {
+                    Xunit.Assert.Throws<Exception>(() => { });
+                    Xunit.Assert.ThrowsAny<Exception>(() => { });
+                    NUnit.Framework.Assert.That(true, true);
+
+                    var context = new Microsoft.EntityFrameworkCore.DbContext();
+                    context.Add(new object());
+                    context.AddRange(new object());
+
+                    var set = new Microsoft.EntityFrameworkCore.DbSet<object>();
+                    set.Add(new object());
+                    set.AddRange(new object());
+
+                    Unrelated.Assert.{|#0:Throws<Exception>|}(() => { });
+                }
+            }
+
+            namespace Xunit
+            {
+                static class Assert
+                {
+                    public static void Throws<T>(Action action) { }
+                    public static Task ThrowsAsync<T>(Action action) => Task.CompletedTask;
+                    public static void ThrowsAny<T>(Action action) { }
+                    public static Task ThrowsAnyAsync<T>(Action action) => Task.CompletedTask;
+                }
+            }
+
+            namespace NUnit.Framework
+            {
+                static class Assert
+                {
+                    public static void That<T>(T actual, T expected) { }
+                    public static Task ThatAsync<T>(T actual, T expected) => Task.CompletedTask;
+                }
+            }
+
+            namespace Microsoft.EntityFrameworkCore
+            {
+                class DbContext
+                {
+                    public void Add(object entity) { }
+                    public Task AddAsync(object entity) => Task.CompletedTask;
+                    public void AddRange(params object[] entities) { }
+                    public Task AddRangeAsync(params object[] entities) => Task.CompletedTask;
+                }
+
+                class DbSet<T>
+                {
+                    public void Add(T entity) { }
+                    public Task AddAsync(T entity) => Task.CompletedTask;
+                    public void AddRange(params T[] entities) { }
+                    public Task AddRangeAsync(params T[] entities) => Task.CompletedTask;
+                }
+            }
+
+            namespace Unrelated
+            {
+                static class Assert
+                {
+                    public static void Throws<T>(Action action) { }
+                    public static Task ThrowsAsync<T>(Action action) => Task.CompletedTask;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(
+            test,
+            CSVerify.Diagnostic(Descriptor).WithLocation(0).WithArguments("Throws<Exception>", "ThrowsAsync"));
+    }
+
+    [Fact]
     public async Task GenericTypeExclusion_DoesNotExcludeNonGenericType()
     {
         string test = """
