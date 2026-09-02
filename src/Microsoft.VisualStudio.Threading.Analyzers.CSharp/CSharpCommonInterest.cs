@@ -391,6 +391,151 @@ internal static class CSharpCommonInterest
     }
 
     /// <summary>
+    /// Determines whether a method carries async-compatible values from its parameters into its return value.
+    /// </summary>
+    /// <remarks>
+    /// Synchronous higher-order methods may compose asynchronous work without synchronously blocking on it.
+    /// For example, <c>Enumerable.Select</c> can project values into an <c>IEnumerable&lt;Task&gt;</c>.
+    /// In such cases, an Async-suffixed method is not necessarily a preferable alternative.
+    /// </remarks>
+    internal static bool ReturnsAsyncCompatibleValuesFromParameters(IMethodSymbol method)
+    {
+        IMethodSymbol constructedMethod = method;
+        IMethodSymbol methodDefinition = constructedMethod.OriginalDefinition;
+        foreach (ITypeParameterSymbol typeParameter in methodDefinition.TypeParameters)
+        {
+            if (IsAsyncCompatibleTypeParameterFlow(typeParameter))
+            {
+                return true;
+            }
+        }
+
+        for (INamedTypeSymbol? containingType = methodDefinition.ContainingType; containingType is object; containingType = containingType.ContainingType)
+        {
+            foreach (ITypeParameterSymbol typeParameter in containingType.TypeParameters)
+            {
+                if (IsAsyncCompatibleTypeParameterFlow(typeParameter))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+
+        bool IsAsyncCompatibleTypeParameterFlow(ITypeParameterSymbol typeParameter)
+            => ContainsTypeParameterInOutputPosition(methodDefinition.ReturnType, typeParameter)
+                && IsUsedByParameter(typeParameter)
+                && GetConstructedTypeArgument(constructedMethod, typeParameter) is { } typeArgument
+                && ContainsAsyncCompatibleType(typeArgument);
+
+        bool IsUsedByParameter(ITypeParameterSymbol typeParameter)
+        {
+            if (methodDefinition.Parameters.Any(
+                parameter => parameter.RefKind != RefKind.Out
+                    && ContainsTypeParameterInOutputPosition(parameter.Type, typeParameter)))
+            {
+                return true;
+            }
+
+            IMethodSymbol? unreducedDefinition = method.ReducedFrom?.OriginalDefinition;
+            return unreducedDefinition is object
+                && typeParameter.TypeParameterKind == TypeParameterKind.Method
+                && unreducedDefinition.Parameters.Length > 0
+                && ContainsTypeParameterInOutputPosition(
+                    unreducedDefinition.Parameters[0].Type,
+                    unreducedDefinition.TypeParameters[typeParameter.Ordinal]);
+        }
+
+        static bool ContainsAsyncCompatibleType(ITypeSymbol type, VarianceKind variance = VarianceKind.Out)
+        {
+            if (variance != VarianceKind.In && type.IsAsyncCompatibleReturnType())
+            {
+                return true;
+            }
+
+            if (type is IArrayTypeSymbol arrayType)
+            {
+                return ContainsAsyncCompatibleType(arrayType.ElementType, variance);
+            }
+
+            if (type is INamedTypeSymbol namedType)
+            {
+                for (int i = 0; i < namedType.TypeArguments.Length; i++)
+                {
+                    VarianceKind typeArgumentVariance = i < namedType.OriginalDefinition.TypeParameters.Length
+                        ? namedType.OriginalDefinition.TypeParameters[i].Variance
+                        : VarianceKind.None;
+                    if (ContainsAsyncCompatibleType(namedType.TypeArguments[i], ComposeVariance(variance, typeArgumentVariance)))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        static bool ContainsTypeParameterInOutputPosition(
+            ITypeSymbol type,
+            ITypeParameterSymbol typeParameter,
+            VarianceKind variance = VarianceKind.Out)
+        {
+            if (variance != VarianceKind.In && SymbolEqualityComparer.Default.Equals(type, typeParameter))
+            {
+                return true;
+            }
+
+            if (type is IArrayTypeSymbol arrayType)
+            {
+                return ContainsTypeParameterInOutputPosition(arrayType.ElementType, typeParameter, variance);
+            }
+
+            if (type is INamedTypeSymbol namedType)
+            {
+                for (int i = 0; i < namedType.TypeArguments.Length; i++)
+                {
+                    VarianceKind typeArgumentVariance = i < namedType.OriginalDefinition.TypeParameters.Length
+                        ? namedType.OriginalDefinition.TypeParameters[i].Variance
+                        : VarianceKind.None;
+                    if (ContainsTypeParameterInOutputPosition(
+                        namedType.TypeArguments[i],
+                        typeParameter,
+                        ComposeVariance(variance, typeArgumentVariance)))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        static VarianceKind ComposeVariance(VarianceKind outer, VarianceKind inner)
+            => outer == VarianceKind.None || inner == VarianceKind.None
+                ? VarianceKind.None
+                : outer == inner ? VarianceKind.Out : VarianceKind.In;
+
+        static ITypeSymbol? GetConstructedTypeArgument(IMethodSymbol constructedMethod, ITypeParameterSymbol typeParameter)
+        {
+            if (typeParameter.TypeParameterKind == TypeParameterKind.Method)
+            {
+                return constructedMethod.TypeArguments[typeParameter.Ordinal];
+            }
+
+            for (INamedTypeSymbol? containingType = constructedMethod.ContainingType; containingType is object; containingType = containingType.ContainingType)
+            {
+                if (SymbolEqualityComparer.Default.Equals(containingType.OriginalDefinition, typeParameter.ContainingSymbol))
+                {
+                    return containingType.TypeArguments[typeParameter.Ordinal];
+                }
+            }
+
+            return null;
+        }
+    }
+
+    /// <summary>
     /// Determines whether a blocking member access has a receiver that is provably complete.
     /// </summary>
     internal static bool HasTaskCompleted(SyntaxNodeAnalysisContext context, MemberAccessExpressionSyntax memberAccessSyntax)

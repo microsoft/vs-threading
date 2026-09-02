@@ -172,6 +172,7 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
             && !methodsExcludedFromVSTHRD103.Contains(methodDefinition)
             && !invokedMethod.Name.EndsWith(VSTHRD200UseAsyncNamingConventionAnalyzer.MandatoryAsyncSuffix, StringComparison.CurrentCulture)
             && !invokedMethod.HasAsyncCompatibleReturnType()
+            && !CSharpCommonInterest.ReturnsAsyncCompatibleValuesFromParameters(invokedMethod)
             && IsInTaskReturningMethodOrDelegate(context)
             && HasAsyncAlternative(context, invocationExpressionSyntax, invokedMethod);
         if (!isBuiltInSyncBlockingMethod

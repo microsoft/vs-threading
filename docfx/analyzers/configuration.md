@@ -97,13 +97,27 @@ when in an async context. Sometimes certain APIs have async versions but those a
 are significantly slower, less efficient, or simply not preferred. These methods can be 
 excluded from VSTHRD103 analysis by specifying them in a configuration file.
 
-**Filename:** `vs-threading.SyncMethodsToExcludeFromVSTHRD103.txt`
+**Filename:** `vs-threading.SyncMethodsToExcludeFromVSTHRD103.txt`, or
+`vs-threading.SyncMethodsToExcludeFromVSTHRD103.<suffix>.txt`
 
 **Line format:** `[Namespace.TypeName]::MethodName`
 
 **Sample:** `[System.Data.SqlClient.SqlDataReader]::Read`
 
 **Generic sample:** ``[Microsoft.EntityFrameworkCore.DbSet`1]::Add``
+
+The analyzer package supplies default exclusions for APIs whose Async-suffixed alternatives
+are intended for different operations or exceptional use cases:
+
+| API | Excluded methods |
+| --- | --- |
+| Entity Framework Core `DbContext` | `Add`, `AddRange` |
+| Entity Framework Core `DbSet<TEntity>` | `Add`, `AddRange` |
+| NUnit `Assert` | `That` |
+| xUnit `Assert` | `Throws`, `ThrowsAny` |
+
+Projects and NuGet packages can extend this list by adding their own files that match the
+filename pattern above.
 
 ## Additional synchronous blocking methods for VSTHRD002
 

@@ -76,30 +76,36 @@ public class ThreadStaticAnalyzerTests
         await CSVerify.VerifyAnalyzerAsync(test);
     }
 
-    [Fact]
-    public async Task AutoPropertyInlineInitialization_CSharp()
+    [Theory]
+    [InlineData("new object()", DiagnosticSeverity.Warning)]
+    [InlineData("null", DiagnosticSeverity.Info)]
+    public async Task AutoPropertyInlineInitialization_CSharp(string value, DiagnosticSeverity severity)
     {
-        const string test = """
+        string test = $$"""
             using System;
 
             class Test
             {
                 [field: ThreadStatic]
-                private static object Property { get; set; } {|VSTHRD117:= new object()|};
+                private static object Property { get; set; } {|#0:= {{value}}|};
             }
             """;
 
-        await CSVerify.VerifyAnalyzerAsync(test);
+        await CSVerify.VerifyAnalyzerAsync(test, new DiagnosticResult(ThreadStaticAnalyzer.TypeInitializerAssignmentId, severity).WithLocation(0));
     }
 
     [Theory]
-    [InlineData("object", "new object()")]
-    [InlineData("object", "default")]
-    [InlineData("object", "null")]
-    [InlineData("int", "42")]
-    [InlineData("int", "default")]
-    [InlineData("int", "0")]
-    public async Task InlineInitialization_CSharp(string type, string value)
+    [InlineData("object", "new object()", DiagnosticSeverity.Warning)]
+    [InlineData("object", "default", DiagnosticSeverity.Info)]
+    [InlineData("object", "null", DiagnosticSeverity.Info)]
+    [InlineData("int", "42", DiagnosticSeverity.Warning)]
+    [InlineData("int", "default", DiagnosticSeverity.Info)]
+    [InlineData("int", "0", DiagnosticSeverity.Info)]
+    [InlineData("bool", "false", DiagnosticSeverity.Info)]
+    [InlineData("char", "'\\0'", DiagnosticSeverity.Info)]
+    [InlineData("int?", "null", DiagnosticSeverity.Info)]
+    [InlineData("object", "0", DiagnosticSeverity.Warning)]
+    public async Task InlineInitialization_CSharp(string type, string value, DiagnosticSeverity severity)
     {
         string test = $$"""
             using System;
@@ -107,11 +113,11 @@ public class ThreadStaticAnalyzerTests
             class Test
             {
                 [ThreadStatic]
-                private static {{type}} field {|VSTHRD117:= {{value}}|};
+                private static {{type}} field {|#0:= {{value}}|};
             }
             """;
 
-        await CSVerify.VerifyAnalyzerAsync(test);
+        await CSVerify.VerifyAnalyzerAsync(test, new DiagnosticResult(ThreadStaticAnalyzer.TypeInitializerAssignmentId, severity).WithLocation(0));
     }
 
     [Fact]
@@ -366,22 +372,24 @@ public class ThreadStaticAnalyzerTests
     }
 
     [Theory]
-    [InlineData("Object", "New Object()")]
-    [InlineData("Object", "Nothing")]
-    [InlineData("Integer", "42")]
-    [InlineData("Integer", "0")]
-    public async Task InlineInitialization_VisualBasic(string type, string value)
+    [InlineData("Object", "New Object()", DiagnosticSeverity.Warning)]
+    [InlineData("Object", "Nothing", DiagnosticSeverity.Info)]
+    [InlineData("Integer", "42", DiagnosticSeverity.Warning)]
+    [InlineData("Integer", "0", DiagnosticSeverity.Info)]
+    [InlineData("Boolean", "False", DiagnosticSeverity.Info)]
+    [InlineData("Object", "0", DiagnosticSeverity.Warning)]
+    public async Task InlineInitialization_VisualBasic(string type, string value, DiagnosticSeverity severity)
     {
         string test = $$"""
             Imports System
 
             Class Test
                 <ThreadStatic>
-                Private Shared field As {{type}} {|VSTHRD117:= {{value}}|}
+                Private Shared field As {{type}} {|#0:= {{value}}|}
             End Class
             """;
 
-        await VBVerify.VerifyAnalyzerAsync(test);
+        await VBVerify.VerifyAnalyzerAsync(test, new DiagnosticResult(ThreadStaticAnalyzer.TypeInitializerAssignmentId, severity).WithLocation(0));
     }
 
     [Fact]

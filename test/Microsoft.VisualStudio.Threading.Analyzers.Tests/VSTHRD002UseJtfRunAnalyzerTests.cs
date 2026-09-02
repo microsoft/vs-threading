@@ -1346,6 +1346,44 @@ class Test {
     }
 
     [Fact]
+    public async Task ConfiguredTaskFlowMethodInTaskReturningMethodReports()
+    {
+        string test = """
+            using System;
+            using System.Collections.Generic;
+            using System.Threading.Tasks;
+
+            static class Helpers
+            {
+                internal static IEnumerable<TResult> Project<TSource, TResult>(
+                    IEnumerable<TSource> source,
+                    Func<TSource, TResult> selector) => throw null;
+
+                internal static Task<IEnumerable<TResult>> ProjectAsync<TSource, TResult>(
+                    IEnumerable<TSource> source,
+                    Func<TSource, TResult> selector) => throw null;
+            }
+
+            class Test
+            {
+                Task FAsync(IEnumerable<int> values)
+                {
+                    IEnumerable<Task> tasks = Helpers.[|Project|](values, value => Task.CompletedTask);
+                    return Task.WhenAll(tasks);
+                }
+            }
+            """;
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            FixedCode = test,
+        };
+        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncBlockingMethods.txt", "[Helpers]::Project"));
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
     public async Task ConditionalTaskWaitInSynchronousMethodReports()
     {
         string test = """

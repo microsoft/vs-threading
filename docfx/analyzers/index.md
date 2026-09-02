@@ -33,6 +33,7 @@ ID | Title | Severity | Supports | Default diagnostic severity
 [VSTHRD116](VSTHRD116.md) | Use `ThreadStaticAttribute` only with static fields | Advisory | | Warning
 [VSTHRD117](VSTHRD117.md) | Avoid initialization of `ThreadStatic` fields in a type initializer | Advisory | | Warning
 [VSTHRD200](VSTHRD200.md) | Use `Async` naming convention | Guideline | [VSTHRD103](VSTHRD103.md) | Warning
+[VSTHRD202](VSTHRD202.md) | Remove unnecessary async state machine | Guideline | | Info
 
 ## Severity descriptions
 

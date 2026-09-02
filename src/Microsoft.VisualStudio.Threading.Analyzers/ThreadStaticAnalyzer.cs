@@ -170,19 +170,76 @@ public abstract class ThreadStaticAnalyzer : DiagnosticAnalyzer
     private static void AnalyzeFieldInitializer(OperationAnalysisContext context, INamedTypeSymbol threadStaticAttribute)
     {
         var initializer = (IFieldInitializerOperation)context.Operation;
-        if (initializer.InitializedFields.Any(field => field.IsStatic && HasThreadStaticAttribute(field, threadStaticAttribute)))
+        IFieldSymbol? field = initializer.InitializedFields.FirstOrDefault(field => field.IsStatic && HasThreadStaticAttribute(field, threadStaticAttribute));
+        if (field is not null)
         {
-            context.ReportDiagnostic(Diagnostic.Create(TypeInitializerAssignmentDescriptor, initializer.Syntax.GetLocation()));
+            context.ReportDiagnostic(CreateTypeInitializerAssignmentDiagnostic(initializer.Syntax.GetLocation(), IsDefaultValue(initializer.Value, field.Type)));
         }
     }
 
     private static void AnalyzePropertyInitializer(OperationAnalysisContext context, INamedTypeSymbol threadStaticAttribute)
     {
         var initializer = (IPropertyInitializerOperation)context.Operation;
-        if (initializer.InitializedProperties.Any(property => property.IsStatic && GetField(property) is IFieldSymbol field && HasThreadStaticAttribute(field, threadStaticAttribute)))
+        IPropertySymbol? property = initializer.InitializedProperties.FirstOrDefault(property => property.IsStatic && GetField(property) is IFieldSymbol field && HasThreadStaticAttribute(field, threadStaticAttribute));
+        if (property is not null)
         {
-            context.ReportDiagnostic(Diagnostic.Create(TypeInitializerAssignmentDescriptor, initializer.Syntax.GetLocation()));
+            context.ReportDiagnostic(CreateTypeInitializerAssignmentDiagnostic(initializer.Syntax.GetLocation(), IsDefaultValue(initializer.Value, property.Type)));
         }
+    }
+
+    private static Diagnostic CreateTypeInitializerAssignmentDiagnostic(Location location, bool isDefaultValue)
+        => Diagnostic.Create(
+            TypeInitializerAssignmentDescriptor,
+            location,
+            isDefaultValue ? DiagnosticSeverity.Info : TypeInitializerAssignmentDescriptor.DefaultSeverity,
+            additionalLocations: null,
+            properties: null);
+
+    private static bool IsDefaultValue(IOperation value, ITypeSymbol targetType)
+    {
+        while (value is IConversionOperation { IsImplicit: true } conversion)
+        {
+            value = conversion.Operand;
+        }
+
+        if (value is IDefaultValueOperation)
+        {
+            return true;
+        }
+
+        Optional<object?> constant = value.ConstantValue;
+        if (!constant.HasValue)
+        {
+            return false;
+        }
+
+        if (constant.Value is null)
+        {
+            return targetType.IsReferenceType
+                || targetType.TypeKind is TypeKind.Pointer or TypeKind.FunctionPointer
+                || targetType.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T;
+        }
+
+        SpecialType specialType = targetType.TypeKind == TypeKind.Enum
+            ? ((INamedTypeSymbol)targetType).EnumUnderlyingType!.SpecialType
+            : targetType.SpecialType;
+        return specialType switch
+        {
+            SpecialType.System_Boolean => constant.Value is false,
+            SpecialType.System_Char => constant.Value is '\0',
+            SpecialType.System_SByte => constant.Value is sbyte sbyteValue && sbyteValue == 0,
+            SpecialType.System_Byte => constant.Value is byte byteValue && byteValue == 0,
+            SpecialType.System_Int16 => constant.Value is short int16Value && int16Value == 0,
+            SpecialType.System_UInt16 => constant.Value is ushort uint16Value && uint16Value == 0,
+            SpecialType.System_Int32 => constant.Value is int int32Value && int32Value == 0,
+            SpecialType.System_UInt32 => constant.Value is uint uint32Value && uint32Value == 0,
+            SpecialType.System_Int64 => constant.Value is long int64Value && int64Value == 0,
+            SpecialType.System_UInt64 => constant.Value is ulong uint64Value && uint64Value == 0,
+            SpecialType.System_Single => constant.Value is float singleValue && singleValue == 0,
+            SpecialType.System_Double => constant.Value is double doubleValue && doubleValue == 0,
+            SpecialType.System_Decimal => constant.Value is decimal decimalValue && decimalValue == 0,
+            _ => false,
+        };
     }
 
     private static void AnalyzeAssignment(OperationAnalysisContext context, INamedTypeSymbol threadStaticAttribute)

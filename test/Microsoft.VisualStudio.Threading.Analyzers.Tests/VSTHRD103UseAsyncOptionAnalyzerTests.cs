@@ -1984,6 +1984,135 @@ class Test {
     }
 
     [Fact]
+    public async Task TaskProducingProjectionDoesNotGenerateWarning()
+    {
+        string test = """
+            using System;
+            using System.Collections.Generic;
+            using System.Linq;
+            using System.Threading.Tasks;
+
+            class Item { }
+
+            class Test
+            {
+                async Task ProcessAllAsync(IEnumerable<Item> items)
+                {
+                    await Task.WhenAll(items.Select(ProcessAsync));
+
+                    IEnumerable<Task> tasks = items.Select(ProcessAsync);
+                    await Task.WhenAll(tasks);
+                }
+
+                Task ProcessAsync(Item item) => Task.CompletedTask;
+            }
+
+            static class AsyncEnumerableExtensions
+            {
+                public static Task<IEnumerable<TResult>> SelectAsync<TSource, TResult>(
+                    this IEnumerable<TSource> source,
+                    Func<TSource, TResult> selector) => Task.FromResult(source.Select(selector));
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task TaskLikeValuesFlowingThroughContainersDoNotGenerateWarning()
+    {
+        string test = """
+            using System;
+            using System.Collections.Generic;
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                Task ProcessAllAsync(IEnumerable<int> items, Task existingTask)
+                {
+                    _ = Map(items, ProcessAsync);
+                    _ = Wrap(existingTask);
+                    _ = WrapInArray(existingTask);
+                    _ = existingTask.WrapInArray();
+                    return Task.CompletedTask;
+                }
+
+                ValueTask<int> ProcessAsync(int item) => new ValueTask<int>(item);
+
+                static IReadOnlyList<TResult> Map<TSource, TResult>(
+                    IEnumerable<TSource> source,
+                    Func<TSource, TResult> selector) => throw null;
+
+                static Task<IReadOnlyList<TResult>> MapAsync<TSource, TResult>(
+                    IEnumerable<TSource> source,
+                    Func<TSource, TResult> selector) => throw null;
+
+                static (T, int) Wrap<T>(T value) => (value, 0);
+
+                static Task<(T, int)> WrapAsync<T>(T value) => Task.FromResult((value, 0));
+
+                static T[] WrapInArray<T>(T value) => new[] { value };
+
+                static Task<T[]> WrapInArrayAsync<T>(T value) => Task.FromResult(new[] { value });
+            }
+
+            static class TaskCarryingExtensions
+            {
+                internal static T[] WrapInArray<T>(this T value) => new[] { value };
+
+                internal static Task<T[]> WrapInArrayAsync<T>(this T value) => Task.FromResult(new[] { value });
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task AsyncAlternativeStillWarnsWhenTaskLikeValuesDoNotFlowToReturnValue()
+    {
+        string test = """
+            using System;
+            using System.Collections.Generic;
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                Task ProcessAllAsync()
+                {
+                    _ = {|#0:GetTasks|}();
+                    {|#1:Run|}(() => Task.CompletedTask);
+                    _ = {|#2:Wrap|}(Task.CompletedTask);
+                    _ = {|#3:Load<Task>|}(task => { });
+                    return Task.CompletedTask;
+                }
+
+                static IEnumerable<Task> GetTasks() => throw null;
+
+                static Task<IEnumerable<Task>> GetTasksAsync() => throw null;
+
+                static void Run(Func<Task> action) { }
+
+                static Task RunAsync(Func<Task> action) => action();
+
+                static (Task, int) Wrap(Task task) => (task, 0);
+
+                static Task<(Task, int)> WrapAsync(Task task) => Task.FromResult((task, 0));
+
+                static IEnumerable<T> Load<T>(Action<T> consumer) => throw null;
+
+                static Task<IEnumerable<T>> LoadAsync<T>(Action<T> consumer) => throw null;
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(
+            test,
+            CSVerify.Diagnostic(Descriptor).WithLocation(0).WithArguments("GetTasks", "GetTasksAsync"),
+            CSVerify.Diagnostic(Descriptor).WithLocation(1).WithArguments("Run", "RunAsync"),
+            CSVerify.Diagnostic(Descriptor).WithLocation(2).WithArguments("Wrap", "WrapAsync"),
+            CSVerify.Diagnostic(Descriptor).WithLocation(3).WithArguments("Load<Task>", "LoadAsync"));
+    }
+
+    [Fact]
     public async Task TaskGetAwaiterGetResultInTaskReturningMethodGeneratesWarning()
     {
         var test = @"
@@ -2647,6 +2776,87 @@ namespace TestNamespace {
 
         // No diagnostic expected because SlowSyncMethod is excluded via AdditionalFiles
         await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task KnownFrameworkMethodsWithNonEquivalentAsyncAlternativesDoNotGenerateWarning()
+    {
+        string test = """
+            using System;
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task TestAsync()
+                {
+                    Xunit.Assert.Throws<Exception>(() => { });
+                    Xunit.Assert.ThrowsAny<Exception>(() => { });
+                    NUnit.Framework.Assert.That(true, true);
+
+                    var context = new Microsoft.EntityFrameworkCore.DbContext();
+                    context.Add(new object());
+                    context.AddRange(new object());
+
+                    var set = new Microsoft.EntityFrameworkCore.DbSet<object>();
+                    set.Add(new object());
+                    set.AddRange(new object());
+
+                    Unrelated.Assert.{|#0:Throws<Exception>|}(() => { });
+                }
+            }
+
+            namespace Xunit
+            {
+                static class Assert
+                {
+                    public static void Throws<T>(Action action) { }
+                    public static Task ThrowsAsync<T>(Action action) => Task.CompletedTask;
+                    public static void ThrowsAny<T>(Action action) { }
+                    public static Task ThrowsAnyAsync<T>(Action action) => Task.CompletedTask;
+                }
+            }
+
+            namespace NUnit.Framework
+            {
+                static class Assert
+                {
+                    public static void That<T>(T actual, T expected) { }
+                    public static Task ThatAsync<T>(T actual, T expected) => Task.CompletedTask;
+                }
+            }
+
+            namespace Microsoft.EntityFrameworkCore
+            {
+                class DbContext
+                {
+                    public void Add(object entity) { }
+                    public Task AddAsync(object entity) => Task.CompletedTask;
+                    public void AddRange(params object[] entities) { }
+                    public Task AddRangeAsync(params object[] entities) => Task.CompletedTask;
+                }
+
+                class DbSet<T>
+                {
+                    public void Add(T entity) { }
+                    public Task AddAsync(T entity) => Task.CompletedTask;
+                    public void AddRange(params T[] entities) { }
+                    public Task AddRangeAsync(params T[] entities) => Task.CompletedTask;
+                }
+            }
+
+            namespace Unrelated
+            {
+                static class Assert
+                {
+                    public static void Throws<T>(Action action) { }
+                    public static Task ThrowsAsync<T>(Action action) => Task.CompletedTask;
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(
+            test,
+            CSVerify.Diagnostic(Descriptor).WithLocation(0).WithArguments("Throws<Exception>", "ThrowsAsync"));
     }
 
     [Fact]

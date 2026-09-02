@@ -373,4 +373,20 @@ Start the work within this context, or use JoinableTaskFactory.RunAsync to start
   <data name="VSTHRD117_MessageFormat" xml:space="preserve">
     <value>ThreadStatic fields should not be initialized by a field initializer or static constructor because the value is only assigned on the type-initializing thread</value>
   </data>
+  <data name="VSTHRD202_Title" xml:space="preserve">
+    <value>Remove unnecessary async state machine</value>
+    <comment>"async" is a C# keyword and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD202_MessageFormat" xml:space="preserve">
+    <value>This method can return the Task directly instead of using async and await</value>
+    <comment>"Task", "async", and "await" are C# terms and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD202_CodeFix_Minimal_Title" xml:space="preserve">
+    <value>Remove async and await</value>
+    <comment>"async" and "await" are C# keywords and should not be translated.</comment>
+  </data>
+  <data name="VSTHRD202_CodeFix_WrapExceptions_Title" xml:space="preserve">
+    <value>Remove async and await, wrapping synchronous exceptions in the returned Task</value>
+    <comment>"async", "await", and "Task" are C# terms and should not be translated.</comment>
+  </data>
 </root>
