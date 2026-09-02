@@ -740,6 +740,42 @@
         </Str>
         <Disp Icon="Str" />
       </Item>
+      <Item ItemId=";VSTHRD202_CodeFix_Minimal_Title" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Remove async and await]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Quitar async y await]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";VSTHRD202_CodeFix_WrapExceptions_Title" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Remove async and await, wrapping synchronous exceptions in the returned Task]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Quitar async y await, encapsulando excepciones sincrónicas en la tarea devuelta]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";VSTHRD202_MessageFormat" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[This method can return the Task directly instead of using async and await]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Este método puede devolver la tarea directamente en lugar de usar async y await]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";VSTHRD202_Title" ItemType="0" PsrId="211" InstFlg="true" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Remove unnecessary async state machine]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Quitar máquina de estados asincrónicos innecesaria]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
     </Item>
   </Item>
   <Item ItemId=";Version" ItemType="0" PsrId="211" Leaf="false">
