@@ -10,9 +10,12 @@ using Microsoft.CodeAnalysis.Operations;
 namespace Microsoft.VisualStudio.Threading.Analyzers;
 
 /// <summary>
-/// Finds await expressions on <see cref="Task"/> that do not use <see cref="Task.ConfigureAwait(bool)"/>.
-/// Also works on <see cref="ValueTask"/>.
+/// Finds methods that return <see langword="null"/> in place of a <see cref="Task"/> or <see cref="Task{TResult}"/>.
 /// </summary>
+/// <remarks>
+/// <see cref="ValueTask"/> and <see cref="ValueTask{TResult}"/> are value types, so <see langword="null"/> cannot be
+/// returned in their place and the compiler already prevents this pattern for them.
+/// </remarks>
 public abstract class AbstractVSTHRD114AvoidReturningNullTaskAnalyzer : DiagnosticAnalyzer
 {
     public const string Id = "VSTHRD114";
