@@ -871,6 +871,66 @@ class Test {
     }
 
     [Fact]
+    public async Task InvokeVsSolutionAfterSwitchedToMainThreadAsyncInAnonymousMethod()
+    {
+        var test = @"
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Threading;
+
+namespace Microsoft.VisualStudio.Shell.Interop {
+    interface IVsInvokablePrivate {
+        int Invoke();
+    }
+}
+
+class Test {
+    private JoinableTaskContext joinableTaskContext;
+
+    int Invoke(IVsInvokablePrivate invokable) {
+        return this.joinableTaskContext.Factory.Run(async delegate {
+            await this.joinableTaskContext.Factory.SwitchToMainThreadAsync();
+            return invokable.Invoke();
+        });
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task CodeFixWithNoMainThreadSwitchingMethodsInAnonymousMethod()
+    {
+        var test = @"
+using System;
+using System.Threading.Tasks;
+
+namespace TestNS {
+    interface IThreadAffinitized {
+        int Invoke();
+    }
+}
+
+class Test {
+    void F(TestNS.IThreadAffinitized value) {
+        Func<Task<int>> callback = async delegate {
+            await Task.Yield();
+            return value.Invoke();
+        };
+    }
+}
+";
+        var verifier = new CSVerify.Test
+        {
+            TestCode = test,
+            ExpectedDiagnostics = { CSVerify.Diagnostic(DescriptorAsync).WithSpan(15, 26, 15, 32).WithArguments("IThreadAffinitized") },
+            FixedCode = test,
+        };
+        verifier.TestState.AdditionalFilesFactories.Clear();
+        verifier.TestState.AdditionalFiles.Add(("vs-threading.MembersRequiringMainThread.txt", "[TestNS.IThreadAffinitized]"));
+        await verifier.RunAsync();
+    }
+
+    [Fact]
     public async Task InvokeVsSolutionInLambda()
     {
         var test = @"

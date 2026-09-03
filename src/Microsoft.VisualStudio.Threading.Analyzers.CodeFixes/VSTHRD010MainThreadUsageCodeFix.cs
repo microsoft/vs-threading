@@ -62,8 +62,11 @@ public class VSTHRD010MainThreadUsageCodeFix : CodeFixProvider
         Regex lookupKey = (container.IsAsync || convertToAsync)
             ? CommonInterest.FileNamePatternForMethodsThatSwitchToMainThread
             : CommonInterest.FileNamePatternForMethodsThatAssertMainThread;
-        string[]? options = diagnostic.Properties[lookupKey.ToString()]?.Split('\n');
-        if (options?.Length > 0)
+        string[] options = diagnostic.Properties[lookupKey.ToString()]?
+            .Split('\n')
+            .Where(option => !string.IsNullOrWhiteSpace(option))
+            .ToArray() ?? Array.Empty<string>();
+        if (options.Length > 0)
         {
             // For any symbol lookups, we want to consider the position of the very first statement in the block.
             int positionForLookup = container.BlockOrExpression.GetLocation().SourceSpan.Start + 1;
