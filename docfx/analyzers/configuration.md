@@ -93,8 +93,8 @@ thread.
 ## Methods to exclude from VSTHRD103 checks
 
 The VSTHRD103 analyzer flags calls to synchronous methods where asynchronous equivalents exist,
-when in an async context. Sometimes certain APIs have async versions but those async versions 
-are significantly slower, less efficient, or simply not preferred. These methods can be 
+when in an async context. Sometimes certain APIs have async versions but those async versions
+are significantly slower, less efficient, or simply not preferred. These methods can be
 excluded from VSTHRD103 analysis by specifying them in a configuration file.
 
 **Filename:** `vs-threading.SyncMethodsToExcludeFromVSTHRD103.txt`, or
@@ -113,6 +113,7 @@ are intended for different operations or exceptional use cases:
 | --- | --- |
 | Entity Framework Core `DbContext` | `Add`, `AddRange` |
 | Entity Framework Core `DbSet<TEntity>` | `Add`, `AddRange` |
+| Entity Framework Core `IDbContextFactory<TContext>` | `CreateDbContext` |
 | NUnit `Assert` | `That` |
 | xUnit `Assert` | `Throws`, `ThrowsAny` |
 

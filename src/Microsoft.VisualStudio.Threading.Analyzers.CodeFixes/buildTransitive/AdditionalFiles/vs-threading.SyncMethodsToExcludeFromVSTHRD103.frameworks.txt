@@ -3,6 +3,7 @@
 [Microsoft.EntityFrameworkCore.DbContext]::AddRange
 [Microsoft.EntityFrameworkCore.DbSet`1]::Add
 [Microsoft.EntityFrameworkCore.DbSet`1]::AddRange
+[Microsoft.EntityFrameworkCore.IDbContextFactory`1]::CreateDbContext
 [NUnit.Framework.Assert]::That
 [Xunit.Assert]::Throws
 [Xunit.Assert]::ThrowsAny
