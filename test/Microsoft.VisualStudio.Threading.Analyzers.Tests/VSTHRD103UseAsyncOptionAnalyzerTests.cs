@@ -2801,6 +2801,9 @@ namespace TestNamespace {
                     set.Add(new object());
                     set.AddRange(new object());
 
+                    Microsoft.EntityFrameworkCore.IDbContextFactory<Microsoft.EntityFrameworkCore.DbContext> factory = new Microsoft.EntityFrameworkCore.DbContextFactory<Microsoft.EntityFrameworkCore.DbContext>();
+                    factory.CreateDbContext();
+
                     Unrelated.Assert.{|#0:Throws<Exception>|}(() => { });
                 }
             }
@@ -2841,6 +2844,18 @@ namespace TestNamespace {
                     public Task AddAsync(T entity) => Task.CompletedTask;
                     public void AddRange(params T[] entities) { }
                     public Task AddRangeAsync(params T[] entities) => Task.CompletedTask;
+                }
+
+                interface IDbContextFactory<TContext> where TContext : DbContext
+                {
+                    TContext CreateDbContext();
+                    Task<TContext> CreateDbContextAsync();
+                }
+
+                class DbContextFactory<TContext> : IDbContextFactory<TContext> where TContext : DbContext, new()
+                {
+                    public TContext CreateDbContext() => new TContext();
+                    public Task<TContext> CreateDbContextAsync() => Task.FromResult(new TContext());
                 }
             }
 
