@@ -52,20 +52,6 @@ Use `nbgv tag` to create a tag for a particular commit that you mean to release.
 
 Push the tag.
 
-### GitHub Actions
-
-When your repo is hosted by GitHub and you are using GitHub Actions, you should create a GitHub Release using the standard GitHub UI.
-Having previously used `nbgv tag` and pushing the tag will help you identify the precise commit and name to use for this release.
-
-After publishing the release, the `.github/workflows/release.yml` workflow will be automatically triggered, which will:
-
-1. Find the most recent `.github/workflows/build.yml` GitHub workflow run of the tagged release.
-1. Upload the `deployables-Linux` artifact from that workflow run to your GitHub Release.
-1. Any nuget packages in the `deployables-Linux` artifact will be pushed to nuget.org.
-
-The workflow is written to leverage NuGet.org Trusted Publishing.
-You should set `NUGET_USER` as a repo secret to satisfy Trusted Publishing requirements.
-
 ### Azure Pipelines
 
 When your repo builds with Azure Pipelines, use the `azure-pipelines/release.yml` pipeline.
