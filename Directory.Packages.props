@@ -38,7 +38,8 @@
     <PackageVersion Include="System.ValueTuple" Version="4.6.2" />
     <PackageVersion Include="xunit.v3.core.mtp-v2" Version="3.2.2" Condition="'$(TargetFramework)' == 'net472'" />
     <PackageVersion Include="xunit.v3.core.mtp-v2" Version="4.0.1" Condition="'$(TargetFramework)' != 'net472'" />
-    <PackageVersion Include="Xunit.Combinatorial" Version="2.0.24" />
+    <PackageVersion Include="Xunit.Combinatorial" Version="2.0.24" Condition="'$(TargetFramework)' == 'net472'" />
+    <PackageVersion Include="Xunit.Combinatorial" Version="2.1.41" Condition="'$(TargetFramework)' != 'net472'" />
     <PackageVersion Include="Xunit.StaFact" Version="3.0.13" Condition="'$(TargetFramework)' == 'net472'" />
     <PackageVersion Include="Xunit.StaFact" Version="4.0.23" Condition="'$(TargetFramework)' != 'net472'" />
   </ItemGroup>
