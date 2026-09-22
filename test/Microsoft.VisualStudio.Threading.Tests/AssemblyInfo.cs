@@ -3,4 +3,4 @@
 
 // Some of our tests measure stress, GC pressure, etc.
 // It messes with reliable test results when other threads are doing random stuff.
-[assembly: CollectionBehavior(DisableTestParallelization = true)]
+[assembly: Xunit.v3.Parallelization(Mode = Xunit.Sdk.ParallelMode.None)]
