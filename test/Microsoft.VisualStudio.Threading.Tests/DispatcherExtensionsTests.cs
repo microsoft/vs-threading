@@ -4,6 +4,7 @@
 #if NETFRAMEWORK || WINDOWS
 
 using System;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
@@ -64,6 +65,85 @@ public class DispatcherExtensionsTests : JoinableTaskTestBase
                 Assert.False(idleTask.IsCompleted);
             });
             await Task.WhenAll(idleTask.Task, normalTask.Task).WithCancellation(this.TimeoutToken);
+        });
+    }
+
+    [Fact]
+    public void WithPriority_PreservesDispatcherCultureSemantics()
+    {
+        this.SimulateUIThread(async delegate
+        {
+            var dispatcherCulture = CultureInfo.GetCultureInfo("en-US");
+            var postingCulture = CultureInfo.GetCultureInfo("fr-FR");
+            var callbackCulture = CultureInfo.GetCultureInfo("de-DE");
+            Dispatcher dispatcher = Dispatcher.CurrentDispatcher;
+            JoinableTaskFactory factory = this.asyncPump.WithPriority(dispatcher, DispatcherPriority.Normal);
+            var dispatcherCultureEstablished = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            CultureInfo? originalDispatcherCulture = null;
+            CultureInfo? originalDispatcherUICulture = null;
+            _ = dispatcher.BeginInvoke(new Action(delegate
+            {
+                originalDispatcherCulture = CultureInfo.CurrentCulture;
+                originalDispatcherUICulture = CultureInfo.CurrentUICulture;
+                CultureInfo.CurrentCulture = dispatcherCulture;
+                CultureInfo.CurrentUICulture = dispatcherCulture;
+                dispatcherCultureEstablished.SetResult(null);
+            }));
+            await dispatcherCultureEstablished.Task.WithCancellation(this.TimeoutToken);
+
+            try
+            {
+                CultureInfo? observedCulture = null;
+                CultureInfo? observedUICulture = null;
+                CultureInfo? cultureAfterCallback = null;
+                var callbackCompleted = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var observedAfterCallback = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                await Task.Run(delegate
+                {
+                    CultureInfo.CurrentCulture = postingCulture;
+                    CultureInfo.CurrentUICulture = postingCulture;
+                    JoinableTaskFactory.MainThreadAwaiter awaiter = factory.SwitchToMainThreadAsync().GetAwaiter();
+                    awaiter.OnCompleted(delegate
+                    {
+                        try
+                        {
+                            awaiter.GetResult();
+                            observedCulture = CultureInfo.CurrentCulture;
+                            observedUICulture = CultureInfo.CurrentUICulture;
+                            CultureInfo.CurrentCulture = callbackCulture;
+                            CultureInfo.CurrentUICulture = callbackCulture;
+                            _ = dispatcher.BeginInvoke(new Action(delegate
+                            {
+                                cultureAfterCallback = CultureInfo.CurrentCulture;
+                                observedAfterCallback.SetResult(null);
+                            }));
+                            callbackCompleted.SetResult(null);
+                        }
+                        catch (Exception ex)
+                        {
+                            callbackCompleted.SetException(ex);
+                        }
+                    });
+                });
+
+                await callbackCompleted.Task.WithCancellation(this.TimeoutToken);
+                await observedAfterCallback.Task.WithCancellation(this.TimeoutToken);
+                Assert.Equal(dispatcherCulture, observedCulture);
+                Assert.Equal(dispatcherCulture, observedUICulture);
+                Assert.Equal(callbackCulture, cultureAfterCallback);
+            }
+            finally
+            {
+                var dispatcherCultureRestored = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+                _ = dispatcher.BeginInvoke(new Action(delegate
+                {
+                    CultureInfo.CurrentCulture = originalDispatcherCulture!;
+                    CultureInfo.CurrentUICulture = originalDispatcherUICulture!;
+                    dispatcherCultureRestored.SetResult(null);
+                }));
+                await dispatcherCultureRestored.Task.WithCancellation(this.TimeoutToken);
+            }
         });
     }
 
