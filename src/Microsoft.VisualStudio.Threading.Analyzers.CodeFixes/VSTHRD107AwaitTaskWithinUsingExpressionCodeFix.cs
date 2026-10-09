@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -56,25 +56,32 @@ public class VSTHRD107AwaitTaskWithinUsingExpressionCodeFix : CodeFixProvider
                 {
                     Document? document = context.Document;
                     SyntaxNode? root = await document.GetSyntaxRootOrThrowAsync(ct).ConfigureAwait(false);
-                    MethodDeclarationSyntax method = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<MethodDeclarationSyntax>() ?? throw new InvalidOperationException("Unable to find MethodDeclaration.");
+                    MethodDeclarationSyntax? method = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<MethodDeclarationSyntax>();
 
-                    (document, method, _) = await FixUtils.UpdateDocumentAsync(
-                        document,
-                        method,
-                        m =>
-                        {
-                            root = m.SyntaxTree.GetRoot(ct);
-                            UsingStatementSyntax? usingStatement = root.FindNode(diagnostic.Location.SourceSpan).FirstAncestorOrSelf<UsingStatementSyntax>() ?? throw new InvalidOperationException("Unable to find using statement.");
-                            AwaitExpressionSyntax awaitExpression = SyntaxFactory.AwaitExpression(
-                                SyntaxFactory.ParenthesizedExpression(usingStatement.Expression!));
-                            UsingStatementSyntax modifiedUsingStatement = usingStatement.WithExpression(awaitExpression)
-                                .WithAdditionalAnnotations(Simplifier.Annotation);
-                            return m.ReplaceNode(usingStatement, modifiedUsingStatement);
-                        },
-                        ct).ConfigureAwait(false);
-                    (document, method) = await method.MakeMethodAsync(document, ct).ConfigureAwait(false);
+                    if (method is not null)
+                    {
+                        (document, method, _) = await FixUtils.UpdateDocumentAsync(
+                            document,
+                            method,
+                            m =>
+                            {
+                                root = m.SyntaxTree.GetRoot(ct);
+                                ExpressionSyntax expression = root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: true).FirstAncestorOrSelf<ExpressionSyntax>()
+                                    ?? throw new InvalidOperationException("Unable to find expression.");
+                                return (MethodDeclarationSyntax)ReplaceExpressionWithAwait(m, expression);
+                            },
+                            ct).ConfigureAwait(false);
+                        (document, method) = await method.MakeMethodAsync(document, ct).ConfigureAwait(false);
 
-                    return document.Project.Solution;
+                        return document.Project.Solution;
+                    }
+                    else
+                    {
+                        ExpressionSyntax expression = root.FindNode(diagnostic.Location.SourceSpan, getInnermostNodeForTie: true).FirstAncestorOrSelf<ExpressionSyntax>()
+                            ?? throw new InvalidOperationException("Unable to find expression.");
+                        SyntaxNode newRoot = ReplaceExpressionWithAwait(root, expression);
+                        return document.WithSyntaxRoot(newRoot).Project.Solution;
+                    }
                 },
                 "only action"),
             diagnostic);
@@ -84,4 +91,30 @@ public class VSTHRD107AwaitTaskWithinUsingExpressionCodeFix : CodeFixProvider
 
     /// <inheritdoc />
     public override FixAllProvider GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
+
+    private static SyntaxNode ReplaceExpressionWithAwait(SyntaxNode syntaxRoot, ExpressionSyntax expression)
+    {
+        ExpressionSyntax expressionToAwait = expression switch
+        {
+            InvocationExpressionSyntax => expression.WithoutTrivia(),
+            IdentifierNameSyntax => expression.WithoutTrivia(),
+            MemberAccessExpressionSyntax => expression.WithoutTrivia(),
+            ElementAccessExpressionSyntax => expression.WithoutTrivia(),
+            _ => SyntaxFactory.ParenthesizedExpression(expression.WithoutTrivia()),
+        };
+
+        AwaitExpressionSyntax awaitExpression = SyntaxFactory.AwaitExpression(expressionToAwait)
+            .WithTriviaFrom(expression)
+            .WithAdditionalAnnotations(Simplifier.Annotation);
+
+        StatementSyntax? statement = expression.FirstAncestorOrSelf<StatementSyntax>();
+        if (statement is not null)
+        {
+            StatementSyntax newStatement = statement.ReplaceNode(expression, awaitExpression)
+                .WithAdditionalAnnotations(Simplifier.Annotation);
+            return syntaxRoot.ReplaceNode(statement, newStatement);
+        }
+
+        return syntaxRoot.ReplaceNode(expression, awaitExpression);
+    }
 }
