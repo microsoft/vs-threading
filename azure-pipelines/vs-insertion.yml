@@ -63,7 +63,7 @@ extends:
       - job: insert
         dependsOn: upload
         displayName: VS insertion
-        pool: VSEngSS-MicroBuild2022-1ES
+        pool: VSEng-MicroBuildVSStable
         templateContext:
           outputParentDirectory: $(Pipeline.Workspace)/CI
         steps:

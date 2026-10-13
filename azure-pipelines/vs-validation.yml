@@ -101,7 +101,7 @@ extends:
       - job: insertion
         displayName: VS insertion
         dependsOn: upload
-        pool: VSEngSS-MicroBuild2022-1ES
+        pool: VSEng-MicroBuildVSStable
         steps:
         - checkout: self
           clean: true
