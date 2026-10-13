@@ -12,6 +12,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Operations;
 
 namespace Microsoft.VisualStudio.Threading.Analyzers;
 
@@ -175,7 +176,10 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
                             && m.HasAsyncCompatibleReturnType())
                         {
                             // Check if this method is excluded from VSTHRD103 diagnostics
-                            if (this.IsExcluded(methodSymbol))
+                            if (this.IsExcluded(methodSymbol)
+                                || (!methodSymbol.IsStatic
+                                    && context.SemanticModel.GetOperation(invocationExpressionSyntax, context.CancellationToken) is IInvocationOperation { Instance.Type: { } receiverType }
+                                    && this.excludedMethods.Any(excluded => excluded.Name == methodSymbol.Name && excluded.ContainingType.IsMatch(receiverType))))
                             {
                                 return;
                             }

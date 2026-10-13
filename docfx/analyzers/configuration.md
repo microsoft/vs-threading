@@ -106,8 +106,11 @@ excluded from VSTHRD103 analysis by specifying them in a configuration file.
 
 **Generic sample:** ``[Microsoft.EntityFrameworkCore.DbSet`1]::Add``
 
+For instance methods, exclusions match either the declaring type or the receiver's static type.
+This allows excluding inherited methods for a specific receiver type without excluding them for all derived types.
+
 The analyzer package supplies default exclusions for APIs whose Async-suffixed alternatives
-are intended for different operations or exceptional use cases:
+are intended for different operations or exceptional use cases, or offer no benefit for in-memory operations:
 
 | API | Excluded methods |
 | --- | --- |
@@ -115,6 +118,7 @@ are intended for different operations or exceptional use cases:
 | Entity Framework Core `DbSet<TEntity>` | `Add`, `AddRange` |
 | Entity Framework Core `IDbContextFactory<TContext>` | `CreateDbContext` |
 | NUnit `Assert` | `That` |
+| `System.IO.MemoryStream` | `CopyTo`, `Dispose`, `Flush`, `Read`, `Write` |
 | xUnit `Assert` | `Throws`, `ThrowsAny` |
 
 Projects and NuGet packages can extend this list by adding their own files that match the

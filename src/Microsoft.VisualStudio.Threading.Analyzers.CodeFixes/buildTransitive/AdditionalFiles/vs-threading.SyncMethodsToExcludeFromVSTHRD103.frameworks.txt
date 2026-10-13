@@ -5,5 +5,10 @@
 [Microsoft.EntityFrameworkCore.DbSet`1]::AddRange
 [Microsoft.EntityFrameworkCore.IDbContextFactory`1]::CreateDbContext
 [NUnit.Framework.Assert]::That
+[System.IO.MemoryStream]::CopyTo
+[System.IO.MemoryStream]::Dispose
+[System.IO.MemoryStream]::Flush
+[System.IO.MemoryStream]::Read
+[System.IO.MemoryStream]::Write
 [Xunit.Assert]::Throws
 [Xunit.Assert]::ThrowsAny
