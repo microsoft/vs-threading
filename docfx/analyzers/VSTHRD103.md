@@ -33,8 +33,9 @@ async Task DoAsync()
 This analyzer can be configured to exclude specific APIs from generating diagnostics.
 Some APIs may have async versions that are less efficient or inappropriate for certain use cases.
 
-Synchronous `MemoryStream` operations are excluded by default because they access memory rather than performing blocking I/O.
+Synchronous `MemoryStream` operations are excluded by default because accessing their in-memory data does not require asynchronous I/O.
 This exemption applies when the receiver is statically typed as `MemoryStream`, not when it is typed as `Stream`.
+For `CopyTo`, the destination may still perform blocking I/O; consider `CopyToAsync` when copying to such a destination.
 
 See our [configuration](configuration.md) topic to learn how to exclude specific methods
 using the `vs-threading.SyncMethodsToExcludeFromVSTHRD103.txt` file.
