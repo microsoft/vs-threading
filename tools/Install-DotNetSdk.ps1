@@ -21,6 +21,8 @@
     Installs a x86 SDK and runtimes in addition to the x64 ones. Only supported on Windows. Ignored on others.
 .PARAMETER IncludeAspNetCore
     Installs the ASP.NET Core runtime along with the .NET runtime.
+.PARAMETER Upgrade
+    Checks for newer runtime and SDK channel patches even when a matching installation exists.
 #>
 [CmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='Medium')]
 Param (
@@ -28,7 +30,8 @@ Param (
     [string]$InstallLocality='user',
     [switch]$SdkOnly,
     [switch]$IncludeX86,
-    [switch]$IncludeAspNetCore
+    [switch]$IncludeAspNetCore,
+    [switch]$Upgrade
 )
 
 $DotNetInstallScriptRoot = "$PSScriptRoot/../obj/tools"
@@ -204,7 +207,7 @@ Function Test-DotNetRuntimeInstalled(
     [string]$Runtime,
     [Version]$Version
 ) {
-    if (!$DotNetRoot) {
+    if ($Upgrade -or !$DotNetRoot) {
         return $false
     }
 
@@ -239,6 +242,10 @@ Function Test-DotNetSdkInstalled($DotNetRoot, $Version, $Channel) {
 
     if ($Version) {
         return Test-Path -LiteralPath (Join-Path $sdkRoot $Version) -PathType Container
+    }
+
+    if ($Upgrade) {
+        return $false
     }
 
     $channelVersion = $null

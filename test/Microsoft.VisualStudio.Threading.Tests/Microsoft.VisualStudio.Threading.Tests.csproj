@@ -34,7 +34,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Nullable" PrivateAssets="all" />
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" />
+    <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Condition="'$(TargetFramework)' == 'net472'" />
     <PackageReference Include="Xunit.StaFact" Condition="'$(TargetFramework)' != 'net10.0'" />
     <PackageReference Include="xunit.v3.mtp-v2" Condition="'$(TargetFramework)' != 'net10.0'" />
     <PackageReference Include="xunit.v3.aot.mtp-v2" Condition="'$(TargetFramework)' == 'net10.0'" />
