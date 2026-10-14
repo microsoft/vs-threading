@@ -63,7 +63,9 @@ internal static class TestUtilities
             }
 
             SingleThreadedTestSynchronizationContext.IFrame? frame = SingleThreadedTestSynchronizationContext.NewFrame();
-            t.ContinueWith(_ => { frame.Continue = false; }, TaskScheduler.Default);
+
+            // The frame cannot be stopped until PushFrame assigns its owner.
+            t.ContinueWith(_ => syncCtx.Post(_ => frame.Continue = false, null), TaskScheduler.Default);
             SingleThreadedTestSynchronizationContext.PushFrame(syncCtx, frame);
 
             t.GetAwaiter().GetResult();

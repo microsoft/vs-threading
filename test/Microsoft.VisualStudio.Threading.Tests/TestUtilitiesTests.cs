@@ -36,6 +36,19 @@ public class TestUtilitiesTests
     }
 
     [Fact]
+    public async Task RunOnUIThread_CompletesSynchronousActions()
+    {
+        for (int i = 0; i < 100; i++)
+        {
+            bool executed = false;
+            Task completion = Task.Run(() => TestUtilities.RunOnUIThread((Action)(() => executed = true)));
+            Assert.Same(completion, await Task.WhenAny(completion, Task.Delay(TimeSpan.FromSeconds(5))));
+            await completion;
+            Assert.True(executed);
+        }
+    }
+
+    [Fact]
     public void RunOnUIThread_PropagatesSynchronousExceptions()
     {
         var expected = new InvalidOperationException();

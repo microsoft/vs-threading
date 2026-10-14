@@ -130,6 +130,7 @@ if ($isMTP) {
                 ,'--results-directory',$testLogs
                 ,'--report-trx'
                 ,'--report-trx-filename',"$($nativeAotTest.ProjectName)_$($nativeAotTest.TargetFramework)_NativeAOT_{arch}.trx"
+                ,'--timeout','5m'
             )
             if ($env:OS -eq 'Windows_NT') {
                 $nativeAotArgs += $dumpSwitches

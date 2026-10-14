@@ -19,6 +19,20 @@ if (!$diagnostics) {
 }
 
 $dumpSwitches = '--hangdump', '--hangdump-timeout', '5m', '--crashdump'
+$nativeOptions = $ast.Find({
+    param($node)
+    $node -is [System.Management.Automation.Language.AssignmentStatementAst] -and
+        $node.Left.Extent.Text -eq '$nativeAotArgs'
+}, $true)
+$nativeAotTest = @{ ProjectName = 'Tests'; TargetFramework = 'net10.0' }
+$testLogs = 'TestResults'
+. ([scriptblock]::Create($nativeOptions.Extent.Text))
+$nativeAotArgs = @($nativeAotArgs | ForEach-Object { [string]$_ })
+$timeoutIndex = [Array]::IndexOf($nativeAotArgs, '--timeout')
+if ($timeoutIndex -lt 0 -or $nativeAotArgs[$timeoutIndex + 1] -ne '5m') {
+    throw 'NativeAOT tests must have a global timeout on every platform.'
+}
+
 $oldOS = $env:OS
 try {
     $env:OS = 'Windows_NT'
