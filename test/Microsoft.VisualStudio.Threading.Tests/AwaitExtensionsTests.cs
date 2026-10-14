@@ -27,8 +27,9 @@ public partial class AwaitExtensionsTests : TestBase
         B,
     }
 
-    [Theory, InlineData(false),
-        InlineData(true)]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void TaskYield_ConfigureAwait_OnDispatcher(bool useDefaultYield)
     {
         this.ExecuteOnDispatcher(async delegate
@@ -54,8 +55,9 @@ public partial class AwaitExtensionsTests : TestBase
         });
     }
 
-    [Theory, InlineData(false),
-        InlineData(true)]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void TaskYield_ConfigureAwait_OnDefaultSyncContext(bool useDefaultYield)
     {
         Task.Run(async delegate
@@ -82,8 +84,9 @@ public partial class AwaitExtensionsTests : TestBase
         });
     }
 
-    [Theory, InlineData(false),
-        InlineData(true)]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void TaskYield_ConfigureAwait_OnNonDefaultTaskScheduler(bool useDefaultYield)
     {
         var scheduler = new MockTaskScheduler();
@@ -113,8 +116,9 @@ public partial class AwaitExtensionsTests : TestBase
             scheduler).Unwrap().GetAwaiter().GetResult();
     }
 
-    [Theory, InlineData(false),
-        InlineData(true)]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void TaskYield_ConfigureAwait_OnDefaultTaskScheduler(bool useDefaultYield)
     {
         Task.Run(
@@ -140,8 +144,9 @@ public partial class AwaitExtensionsTests : TestBase
             }).GetAwaiter().GetResult();
     }
 
-    [Theory, InlineData(false),
-        InlineData(true)]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task TaskYield_ConfigureAwait_OnCompleted_CapturesExecutionContext(bool captureContext)
     {
         var taskResultSource = new TaskCompletionSource<object?>();
@@ -219,15 +224,15 @@ public partial class AwaitExtensionsTests : TestBase
     }
 
     [Theory]
-    [InlineData(NamedSyncContext.None, NamedSyncContext.None),
-        InlineData(NamedSyncContext.None, NamedSyncContext.A),
-        InlineData(NamedSyncContext.None, NamedSyncContext.B),
-        InlineData(NamedSyncContext.A, NamedSyncContext.None),
-        InlineData(NamedSyncContext.A, NamedSyncContext.A),
-        InlineData(NamedSyncContext.A, NamedSyncContext.B),
-        InlineData(NamedSyncContext.B, NamedSyncContext.None),
-        InlineData(NamedSyncContext.B, NamedSyncContext.A),
-        InlineData(NamedSyncContext.B, NamedSyncContext.B)]
+    [InlineData(NamedSyncContext.None, NamedSyncContext.None)]
+    [InlineData(NamedSyncContext.None, NamedSyncContext.A)]
+    [InlineData(NamedSyncContext.None, NamedSyncContext.B)]
+    [InlineData(NamedSyncContext.A, NamedSyncContext.None)]
+    [InlineData(NamedSyncContext.A, NamedSyncContext.A)]
+    [InlineData(NamedSyncContext.A, NamedSyncContext.B)]
+    [InlineData(NamedSyncContext.B, NamedSyncContext.None)]
+    [InlineData(NamedSyncContext.B, NamedSyncContext.A)]
+    [InlineData(NamedSyncContext.B, NamedSyncContext.B)]
     public void ConfigureAwaitRunInline_NoExtraThreadSwitching(NamedSyncContext invokeOn, NamedSyncContext completeOn)
     {
         // Set up various SynchronizationContexts that we may invoke or complete the async method with.
@@ -263,15 +268,15 @@ public partial class AwaitExtensionsTests : TestBase
     }
 
     [Theory]
-    [InlineData(NamedSyncContext.None, NamedSyncContext.None),
-        InlineData(NamedSyncContext.None, NamedSyncContext.A),
-        InlineData(NamedSyncContext.None, NamedSyncContext.B),
-        InlineData(NamedSyncContext.A, NamedSyncContext.None),
-        InlineData(NamedSyncContext.A, NamedSyncContext.A),
-        InlineData(NamedSyncContext.A, NamedSyncContext.B),
-        InlineData(NamedSyncContext.B, NamedSyncContext.None),
-        InlineData(NamedSyncContext.B, NamedSyncContext.A),
-        InlineData(NamedSyncContext.B, NamedSyncContext.B)]
+    [InlineData(NamedSyncContext.None, NamedSyncContext.None)]
+    [InlineData(NamedSyncContext.None, NamedSyncContext.A)]
+    [InlineData(NamedSyncContext.None, NamedSyncContext.B)]
+    [InlineData(NamedSyncContext.A, NamedSyncContext.None)]
+    [InlineData(NamedSyncContext.A, NamedSyncContext.A)]
+    [InlineData(NamedSyncContext.A, NamedSyncContext.B)]
+    [InlineData(NamedSyncContext.B, NamedSyncContext.None)]
+    [InlineData(NamedSyncContext.B, NamedSyncContext.A)]
+    [InlineData(NamedSyncContext.B, NamedSyncContext.B)]
     public void ConfigureAwaitRunInlineOfT_NoExtraThreadSwitching(NamedSyncContext invokeOn, NamedSyncContext completeOn)
     {
         // Set up various SynchronizationContexts that we may invoke or complete the async method with.
@@ -358,8 +363,9 @@ public partial class AwaitExtensionsTests : TestBase
         await taskResultSource.Task;
     }
 
-    [Theory, InlineData(false),
-        InlineData(true)]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task AwaitTaskScheduler_OnCompleted_CapturesExecutionContext(bool defaultTaskScheduler)
     {
         var taskResultSource = new TaskCompletionSource<object?>();
@@ -497,8 +503,8 @@ public partial class AwaitExtensionsTests : TestBase
     }
 
     [Theory]
-    [InlineData(false),
-        InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ConfigureAwaitForAggregateException_OnDispatcher(bool continueOnCapturedContext)
     {
         this.ExecuteOnDispatcher(async delegate

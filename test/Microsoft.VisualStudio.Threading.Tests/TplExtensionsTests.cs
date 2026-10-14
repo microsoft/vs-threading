@@ -350,8 +350,8 @@ public class TplExtensionsTests : TestBase
     /// is captured and used to schedule the continuation, the <see cref="ExecutionContext"/> is always captured and applied.
     /// </summary>
     [Theory]
-    [InlineData(false),
-        InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task NoThrowAwaitable_Await_CapturesExecutionContext(bool captureContext)
     {
         var awaitableTcs = new TaskCompletionSource<object?>();
@@ -374,8 +374,8 @@ public class TplExtensionsTests : TestBase
     /// is captured and used to schedule the continuation, the <see cref="ExecutionContext"/> is always captured and applied.
     /// </summary>
     [Theory]
-    [InlineData(false),
-        InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task NoThrowAwaitable_OnCompleted_CapturesExecutionContext(bool captureContext)
     {
         var testResultTcs = new TaskCompletionSource<object?>();
@@ -403,8 +403,8 @@ public class TplExtensionsTests : TestBase
     }
 
     [Theory]
-    [InlineData(false),
-        InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task NoThrowAwaitable_UnsafeOnCompleted_DoesNotCaptureExecutionContext(bool captureContext)
     {
         var testResultTcs = new TaskCompletionSource<object?>();
@@ -452,8 +452,8 @@ public class TplExtensionsTests : TestBase
     /// is captured and used to schedule the continuation, the <see cref="ExecutionContext"/> is always captured and applied.
     /// </summary>
     [Theory]
-    [InlineData(false),
-        InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task NoThrowAwaitable_ValueTask_Await_CapturesExecutionContext(bool captureContext)
     {
         var awaitableTcs = new TaskCompletionSource<object?>();
@@ -476,8 +476,8 @@ public class TplExtensionsTests : TestBase
     /// is captured and used to schedule the continuation, the <see cref="ExecutionContext"/> is always captured and applied.
     /// </summary>
     [Theory]
-    [InlineData(false),
-        InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task NoThrowAwaitable_ValueTask_OnCompleted_CapturesExecutionContext(bool captureContext)
     {
         var testResultTcs = new TaskCompletionSource<object?>();
@@ -505,8 +505,8 @@ public class TplExtensionsTests : TestBase
     }
 
     [Theory]
-    [InlineData(false),
-        InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task NoThrowAwaitable_ValueTask_UnsafeOnCompleted_DoesNotCaptureExecutionContext(bool captureContext)
     {
         var testResultTcs = new TaskCompletionSource<object?>();
@@ -602,8 +602,8 @@ public class TplExtensionsTests : TestBase
     /// is captured and used to schedule the continuation, the <see cref="ExecutionContext"/> is always captured and applied.
     /// </summary>
     [Theory]
-    [InlineData(false),
-        InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task NoThrowAwaitable_ValueTaskT_Await_CapturesExecutionContext(bool captureContext)
     {
         var awaitableTcs = new TaskCompletionSource<object?>();
@@ -626,8 +626,8 @@ public class TplExtensionsTests : TestBase
     /// is captured and used to schedule the continuation, the <see cref="ExecutionContext"/> is always captured and applied.
     /// </summary>
     [Theory]
-    [InlineData(false),
-        InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task NoThrowAwaitable_ValueTaskT_OnCompleted_CapturesExecutionContext(bool captureContext)
     {
         var testResultTcs = new TaskCompletionSource<object?>();
@@ -655,8 +655,8 @@ public class TplExtensionsTests : TestBase
     }
 
     [Theory]
-    [InlineData(false),
-        InlineData(true)]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task NoThrowAwaitable_ValueTaskT_UnsafeOnCompleted_DoesNotCaptureExecutionContext(bool captureContext)
     {
         var testResultTcs = new TaskCompletionSource<object?>();
