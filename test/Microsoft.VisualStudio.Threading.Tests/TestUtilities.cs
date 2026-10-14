@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft;
@@ -14,6 +15,26 @@ using Xunit.Sdk;
 
 internal static class TestUtilities
 {
+    internal static void RunOnSta(Action action) => RunOnSta(() =>
+    {
+        action();
+        return Task.CompletedTask;
+    }).GetAwaiter().GetResult();
+
+    internal static Task RunOnSta(Func<Task> action)
+    {
+        Assert.SkipUnless(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "STA threads require Windows.");
+        return RunOnThread(action, singleThreadedContext: false);
+    }
+
+    internal static void RunOnUIThread(Action action) => RunOnUIThread(() =>
+    {
+        action();
+        return Task.CompletedTask;
+    }).GetAwaiter().GetResult();
+
+    internal static Task RunOnUIThread(Func<Task> action) => RunOnThread(action, singleThreadedContext: true);
+
     internal static Task SetAsync(this TaskCompletionSource<object?> tcs)
     {
         return Task.Run(() => tcs.TrySetResult(null));
@@ -299,6 +320,40 @@ internal static class TestUtilities
     {
         WaitWithoutInlining(task, throwOriginalException);
         return task.Result;
+    }
+
+    private static Task RunOnThread(Func<Task> action, bool singleThreadedContext)
+    {
+        var completion = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                if (singleThreadedContext)
+                {
+                    Run(action);
+                }
+                else
+                {
+                    action().GetAwaiter().GetResult();
+                }
+
+                completion.SetResult(null);
+            }
+            catch (Exception ex)
+            {
+                completion.SetException(ex);
+            }
+        });
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+#pragma warning disable CA1416 // RuntimeInformation guard supports the .NET Framework target too.
+            thread.SetApartmentState(ApartmentState.STA);
+#pragma warning restore CA1416
+        }
+
+        thread.Start();
+        return completion.Task;
     }
 
     private static string AssemblyCommandLineArguments(params string[] args) => string.Join(" ", args.Select(a => $"\"{a}\""));

@@ -39,21 +39,24 @@ public class TestBaseTests : TestBase
         }));
     }
 
-    [StaFact]
+    [Fact]
     public void ExecuteOnDispatcher_ExecutesDelegateOnSTA()
     {
-        bool executed = false;
-        this.ExecuteOnDispatcher(delegate
+        TestUtilities.RunOnSta(() =>
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            bool executed = false;
+            this.ExecuteOnDispatcher(delegate
             {
-                Assert.Equal(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
-            }
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    Assert.Equal(ApartmentState.STA, Thread.CurrentThread.GetApartmentState());
+                }
 
-            Assert.NotNull(SynchronizationContext.Current);
-            executed = true;
+                Assert.NotNull(SynchronizationContext.Current);
+                executed = true;
+            });
+            Assert.True(executed);
         });
-        Assert.True(executed);
     }
 
     [Fact]

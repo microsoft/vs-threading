@@ -18,10 +18,13 @@ public class JoinableTaskTests : JoinableTaskTestBase
     {
     }
 
-    [StaFact]
+    [Fact]
     public void RunFuncOfTaskSTA()
     {
-        this.RunFuncOfTaskHelper();
+        TestUtilities.RunOnSta(() =>
+        {
+            new JoinableTaskTests(this.Logger).RunFuncOfTaskHelper();
+        });
     }
 
     [Fact]
@@ -4544,6 +4547,9 @@ public class JoinableTaskTests : JoinableTaskTestBase
     /// Writes out a DGML graph of pending tasks and collections to the test context.
     /// </summary>
     /// <param name="context">A specific context to collect data from; <see langword="null" /> will use this.context.</param>
+#if NET10_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Tests deliberately exercise best-effort hang reports, including when trimmed.")]
+#endif
     private void PrintActiveTasksReport(JoinableTaskContext? context = null)
     {
         context = context ?? this.context;

@@ -23,7 +23,7 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove($(MSBuildThisFile), $(MSBuildThisFileDirectory)..))" />
 
   <Target Name="GetNativeAOTTestVariants" Returns="@(_NativeAOTTest)"
-          Condition="'$(IsTestProject)' == 'true' and '$(PublishNativeAOTTests)' == 'true'">
+          Condition="'$(IsTestProject)' == 'true'">
     <ItemGroup Condition="'$(TargetFramework)' == ''">
       <_TestFramework Include="$(TargetFrameworks)" />
     </ItemGroup>
@@ -34,7 +34,7 @@
     </MSBuild>
     <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="GetNativeAOTTestExecutable"
              Properties="NativeAOT=true"
-             Condition="'$(TargetFramework)' != '' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
+             Condition="'$(TargetFramework)' != '' and '$(PublishNativeAOTTests)' == 'true' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
       <Output TaskParameter="TargetOutputs" ItemName="_NativeAOTTest" />
     </MSBuild>
   </Target>

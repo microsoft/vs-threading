@@ -112,7 +112,8 @@ public class JoinableTaskTokenTests : JoinableTaskTestBase
             JoinableTaskCreationOptions.None).Join();
     }
 
-    [Theory, PairwiseData]
+    [Theory, InlineData(false),
+        InlineData(true)]
     public async Task RunAsync_AvoidsDeadlockWithParent(bool includeOtherContexts)
     {
         string? parentToken = includeOtherContexts ? "abc:dead;ghi:coffee" : null;
@@ -161,7 +162,8 @@ public class JoinableTaskTokenTests : JoinableTaskTestBase
         outerTask.Join(this.TimeoutToken);
     }
 
-    [Theory, PairwiseData]
+    [Theory, InlineData(false),
+        InlineData(true)]
     public async Task RunAsyncOfT_AvoidsDeadlockWithParent(bool includeOtherContexts)
     {
         string? parentToken = includeOtherContexts ? "abc:dead;ghi:coffee" : null;

@@ -179,7 +179,8 @@ public class CancellationTokenExtensionsTests : TestBase
     }
 
     [Theory]
-    [CombinatorialData]
+    [InlineData(false),
+        InlineData(true)]
     public void CombineWith_Array_TwoCancelable_AmidMany_FirstOriginal(bool cancelFirst)
     {
         var cts1 = new CancellationTokenSource();
@@ -202,7 +203,8 @@ public class CancellationTokenExtensionsTests : TestBase
     }
 
     [Theory]
-    [CombinatorialData]
+    [InlineData(false),
+        InlineData(true)]
     public void CombineWith_Array_TwoCancelable_AmidMany(bool cancelFirst)
     {
         var cts1 = new CancellationTokenSource();
@@ -224,8 +226,10 @@ public class CancellationTokenExtensionsTests : TestBase
         }
     }
 
-    [Theory, CombinatorialData]
-    public void CombineWith_Array_ThreeCancelable_AmidMany([CombinatorialRange(0, 3)] int canceledIndex)
+    [Theory, InlineData(0),
+        InlineData(1),
+        InlineData(2)]
+    public void CombineWith_Array_ThreeCancelable_AmidMany(int canceledIndex)
     {
         CancellationTokenSource[] cts = new CancellationTokenSource[3];
         for (int i = 0; i < 3; i++)

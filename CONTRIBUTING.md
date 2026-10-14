@@ -47,7 +47,11 @@ There may be tests that are known to be unstable or have special requirements. T
 
 To build both managed and NativeAOT tests, run `dotnet publish test -c Release`.
 Then run `./tools/dotnet-test-cloud.ps1 -Configuration Release -IncludeNativeAOT`.
-The traversal project publishes each eligible test framework targeting .NET.
+The threading library tests retain xUnit. Their .NET 10 target uses `xunit.v3.aot.mtp-v2`
+and is the only unit-test target published as NativeAOT; older frameworks use the
+reflection-based xUnit runner. Analyzer tests remain managed-only.
+The shared tests use built-in xUnit theory data and explicit STA/UI-thread helpers
+because the reflection-based combinatorial and STA discoverers cannot run under NativeAOT.
 Keep test projects in the solution as well: managed test runs still use the solution, while NativeAOT runs use the traversal's evaluated executable paths.
 Test projects can opt out of NativeAOT publishing with `<PublishNativeAOTTests>false</PublishNativeAOTTests>`.
 One restore includes all test target frameworks, runtime identifiers, and NativeAOT compiler dependencies.
@@ -58,7 +62,7 @@ The `ConfigureNativeAOTTestFeatures` target disables those features only in the 
 It preserves all other runtime feature options, including invariant globalization, so native compilation and linking use consistent settings.
 Test builds use invariant globalization and retain only English satellite resources; RID-specific builds are self-contained.
 Shipping libraries targeting .NET opt into NativeAOT compatibility analysis with `IsAotCompatible`.
-The `test/AotCompatibilityTest` project complements those analyzers by rooting the shipping assembly and passing it through the NativeAOT compiler during every traversal publish.
+The `test/NativeAOTCompatibility.Test` project complements those analyzers by rooting the shipping assembly and passing it through the NativeAOT compiler during every traversal publish.
 Add each shipping assembly that must be validated as a `TrimmerRootAssembly`, and keep this project publishable in `test/dirs.proj`.
 Root `Directory.Build.props` supplies project-reference defaults for both traversal and SDK projects that remove the `_IsPublishing` global property for managed dependencies, avoiding duplicate project instances that write to the same outputs during parallel publishing.
 

@@ -125,7 +125,8 @@ public class ProgressWithCompletionTests : TestBase
     }
 
     [Theory]
-    [PairwiseData]
+    [InlineData(false),
+        InlineData(true)]
     public void DoesNotDeadlockWhenCallbackCapturesSyncContext(bool captureMainThreadContext)
     {
         SynchronizationContext? syncContext = SingleThreadedTestSynchronizationContext.New();

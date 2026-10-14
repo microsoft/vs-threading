@@ -117,7 +117,7 @@ if ($isMTP) {
         foreach ($nativeAotTest in $nativeAotTests) {
             $testExecutable = $nativeAotTest.ExecutablePath
             if (-not (Test-Path -LiteralPath $testExecutable -PathType Leaf)) {
-                Write-Error "Expected NativeAOT TUnit test executable '$testExecutable' was not found."
+                Write-Error "Expected NativeAOT test executable '$testExecutable' was not found."
                 $failedTests += 1
                 continue
             }
@@ -134,7 +134,7 @@ if ($isMTP) {
             if ($IsWindows) {
                 $nativeAotArgs += $dumpSwitches
             }
-            Write-Host "Running NativeAOT TUnit tests from '$testExecutable'." -ForegroundColor Cyan
+            Write-Host "Running NativeAOT tests from '$testExecutable'." -ForegroundColor Cyan
             & $testExecutable @nativeAotArgs @extraArgs
             if ($LASTEXITCODE -ne 0) { $failedTests += 1 }
         }

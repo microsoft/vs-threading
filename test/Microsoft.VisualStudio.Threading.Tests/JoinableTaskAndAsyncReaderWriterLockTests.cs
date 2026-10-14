@@ -21,12 +21,17 @@ public class JoinableTaskAndAsyncReaderWriterLockTests : TestBase
         InitializeJoinableTaskFactory(out this.joinableCollection, out this.asyncPump);
     }
 
-    [StaFact]
+    [Fact]
     public void LockWithinRunSTA()
     {
-        this.asyncPump.Run(async delegate
+        TestUtilities.RunOnSta(() =>
         {
-            await this.VerifyReadLockAsync();
+            InitializeJoinableTaskFactory(out this.joinableCollection, out this.asyncPump);
+            Assert.True(this.asyncPump.Context.IsOnMainThread);
+            this.asyncPump.Run(async delegate
+            {
+                await this.VerifyReadLockAsync();
+            });
         });
     }
 
@@ -55,13 +60,18 @@ public class JoinableTaskAndAsyncReaderWriterLockTests : TestBase
         }).WaitWithoutInlining(throwOriginalException: true);
     }
 
-    [StaFact]
+    [Fact]
     public void LockWithinRunAfterYieldSTA()
     {
-        this.asyncPump.Run(async delegate
+        TestUtilities.RunOnSta(() =>
         {
-            await Task.Yield();
-            await this.VerifyReadLockAsync();
+            InitializeJoinableTaskFactory(out this.joinableCollection, out this.asyncPump);
+            Assert.True(this.asyncPump.Context.IsOnMainThread);
+            this.asyncPump.Run(async delegate
+            {
+                await Task.Yield();
+                await this.VerifyReadLockAsync();
+            });
         });
     }
 
@@ -78,10 +88,15 @@ public class JoinableTaskAndAsyncReaderWriterLockTests : TestBase
         }).WaitWithoutInlining(throwOriginalException: true);
     }
 
-    [StaFact]
+    [Fact]
     public void LockWithinRunAsyncAfterYieldSTA()
     {
-        this.LockWithinRunAsyncAfterYieldHelper();
+        TestUtilities.RunOnSta(() =>
+        {
+            InitializeJoinableTaskFactory(out this.joinableCollection, out this.asyncPump);
+            Assert.True(this.asyncPump.Context.IsOnMainThread);
+            this.LockWithinRunAsyncAfterYieldHelper();
+        });
     }
 
     [Fact]
