@@ -54,7 +54,6 @@
     <RidOsArchitecture Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)' == 'ARM64'">arm64</RidOsArchitecture>
 
     <DefaultRuntimeIdentifier>$(RidOsPrefix)-$(RidOsArchitecture)</DefaultRuntimeIdentifier>
-    <!-- <AvailableRuntimeIdentifiers>$(RidOsPrefix)-arm64;$(RidOsPrefix)-x64</AvailableRuntimeIdentifiers> -->
     <AvailableRuntimeIdentifiers>$(DefaultRuntimeIdentifier)</AvailableRuntimeIdentifiers>
   </PropertyGroup>
 
@@ -67,6 +66,11 @@
   </ItemGroup>
 
   <ItemDefinitionGroup>
+    <ProjectReference>
+      <!-- Keep referenced builds identical to the traversal's managed builds. -->
+      <GlobalPropertiesToRemove>_IsPublishing</GlobalPropertiesToRemove>
+      <UndefineProperties Condition="'$(UsingMicrosoftTraversalSdk)' == 'true'">_IsPublishing</UndefineProperties>
+    </ProjectReference>
     <!-- We always want MSBuild properties generated that point at the restored location of each package. -->
     <PackageReference GeneratePathProperty="true" />
   </ItemDefinitionGroup>

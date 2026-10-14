@@ -1,7 +1,9 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project>
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <PropertyGroup>
     <TargetFrameworks>net8.0</TargetFrameworks>
     <OutputType>Exe</OutputType>
+    <PublishNativeAOTTests>false</PublishNativeAOTTests>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -48,4 +50,9 @@
       <Private>true</Private>
     </ProjectReference>
   </ItemGroup>
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+  <PropertyGroup>
+    <!-- Override the shared test targets: xunit's MTP runner requires an app host. -->
+    <UseAppHost>true</UseAppHost>
+  </PropertyGroup>
 </Project>
