@@ -12,7 +12,9 @@ public class AsyncLazyInitializerTests : TestBase
     {
     }
 
-    [Theory, CombinatorialData]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void Ctor_NullAction(bool specifyJtf)
     {
         JoinableTaskFactory? jtf = specifyJtf ? new JoinableTaskContext().Factory : null; // use our own so we don't get main thread deadlocks, which isn't the point of this test.

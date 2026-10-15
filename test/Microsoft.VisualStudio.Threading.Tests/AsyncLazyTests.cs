@@ -86,7 +86,9 @@ public class AsyncLazyTests : TestBase
     /// Verifies that multiple sequential calls to <see cref="AsyncLazy{T}.GetValueAsync()"/>
     /// do not result in multiple invocations of the value factory.
     /// </summary>
-    [Theory, CombinatorialData]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task ValueFactoryExecutedOnlyOnceSequential(bool specifyJtf)
     {
         JoinableTaskFactory? jtf = specifyJtf ? new JoinableTaskContext().Factory : null; // use our own so we don't get main thread deadlocks, which isn't the point of this test.
@@ -113,7 +115,9 @@ public class AsyncLazyTests : TestBase
     /// Verifies that multiple concurrent calls to <see cref="AsyncLazy{T}.GetValueAsync()"/>
     /// do not result in multiple invocations of the value factory.
     /// </summary>
-    [Theory, CombinatorialData]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ValueFactoryExecutedOnlyOnceConcurrent(bool specifyJtf)
     {
         JoinableTaskFactory? jtf = specifyJtf ? new JoinableTaskContext().Factory : null; // use our own so we don't get main thread deadlocks, which isn't the point of this test.
@@ -163,7 +167,9 @@ public class AsyncLazyTests : TestBase
         GC.KeepAlive(lazy);
     }
 
-    [Theory, CombinatorialData]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task AsyncPumpReleasedAfterExecution(bool throwInValueFactory)
     {
         WeakReference collectible = await this.AsyncPumpReleasedAfterExecution_Helper(throwInValueFactory);
@@ -178,7 +184,9 @@ public class AsyncLazyTests : TestBase
         Assert.False(collectible.IsAlive);
     }
 
-    [Theory, CombinatorialData]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ValueFactoryThrowsSynchronously(bool specifyJtf)
     {
         JoinableTaskFactory? jtf = specifyJtf ? new JoinableTaskContext().Factory : null; // use our own so we don't get main thread deadlocks, which isn't the point of this test.
@@ -199,7 +207,9 @@ public class AsyncLazyTests : TestBase
         Assert.IsType<ApplicationException>(task1.Exception!.InnerException);
     }
 
-    [Theory, CombinatorialData]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task ValueFactoryReentersValueFactorySynchronously(bool specifyJtf)
     {
         JoinableTaskFactory? jtf = specifyJtf ? new JoinableTaskContext().Factory : null; // use our own so we don't get main thread deadlocks, which isn't the point of this test.
@@ -221,7 +231,9 @@ public class AsyncLazyTests : TestBase
         await Assert.ThrowsAsync<InvalidOperationException>(() => lazy.GetValueAsync());
     }
 
-    [Theory, CombinatorialData]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task ValueFactoryReentersValueFactoryAsynchronously(bool specifyJtf)
     {
         JoinableTaskFactory? jtf = specifyJtf ? new JoinableTaskContext().Factory : null; // use our own so we don't get main thread deadlocks, which isn't the point of this test.
@@ -293,7 +305,9 @@ public class AsyncLazyTests : TestBase
         Assert.True(lazy.IsValueFactoryCompleted);
     }
 
-    [Theory, CombinatorialData]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void GetValue(bool specifyJtf)
     {
         JoinableTaskFactory? jtf = specifyJtf ? new JoinableTaskContext().Factory : null; // use our own so we don't get main thread deadlocks, which isn't the point of this test.
@@ -301,7 +315,9 @@ public class AsyncLazyTests : TestBase
         Assert.Equal(5, lazy.GetValue().Data);
     }
 
-    [Theory, CombinatorialData]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void GetValue_Precanceled(bool specifyJtf)
     {
         JoinableTaskFactory? jtf = specifyJtf ? new JoinableTaskContext().Factory : null; // use our own so we don't get main thread deadlocks, which isn't the point of this test.
@@ -309,7 +325,9 @@ public class AsyncLazyTests : TestBase
         Assert.Throws<OperationCanceledException>(() => lazy.GetValue(new CancellationToken(canceled: true)));
     }
 
-    [Theory, CombinatorialData]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task GetValue_CalledAfterGetValueAsyncHasCompleted(bool specifyJtf)
     {
         JoinableTaskFactory? jtf = specifyJtf ? new JoinableTaskContext().Factory : null; // use our own so we don't get main thread deadlocks, which isn't the point of this test.
@@ -318,7 +336,9 @@ public class AsyncLazyTests : TestBase
         Assert.Same(result, lazy.GetValue());
     }
 
-    [Theory, CombinatorialData]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task GetValue_CalledAfterGetValueAsync_InProgress(bool specifyJtf)
     {
         var completeValueFactory = new AsyncManualResetEvent();
@@ -339,7 +359,9 @@ public class AsyncLazyTests : TestBase
         Assert.Same(results[0], results[1]);
     }
 
-    [Theory, CombinatorialData]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task GetValue_ThenCanceled(bool specifyJtf)
     {
         var completeValueFactory = new AsyncManualResetEvent();
@@ -358,7 +380,9 @@ public class AsyncLazyTests : TestBase
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => getValueTask);
     }
 
-    [Theory, CombinatorialData]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void GetValue_ValueFactoryThrows(bool specifyJtf)
     {
         var exception = new InvalidOperationException();
@@ -407,7 +431,15 @@ public class AsyncLazyTests : TestBase
     }
 
     [Theory]
-    [CombinatorialData]
+    [InlineData(NamedSyncContext.None, NamedSyncContext.None)]
+    [InlineData(NamedSyncContext.None, NamedSyncContext.A)]
+    [InlineData(NamedSyncContext.None, NamedSyncContext.B)]
+    [InlineData(NamedSyncContext.A, NamedSyncContext.None)]
+    [InlineData(NamedSyncContext.A, NamedSyncContext.A)]
+    [InlineData(NamedSyncContext.A, NamedSyncContext.B)]
+    [InlineData(NamedSyncContext.B, NamedSyncContext.None)]
+    [InlineData(NamedSyncContext.B, NamedSyncContext.A)]
+    [InlineData(NamedSyncContext.B, NamedSyncContext.B)]
     public void AsyncLazy_CompletesOnThreadWithValueFactory(NamedSyncContext invokeOn, NamedSyncContext completeOn)
     {
         // Set up various SynchronizationContexts that we may invoke or complete the async method with.
@@ -495,7 +527,8 @@ public class AsyncLazyTests : TestBase
     /// Verifies that no deadlock occurs if the value factory synchronously blocks while switching to the UI thread.
     /// </summary>
     [Theory]
-    [CombinatorialData]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ValueFactoryRequiresMainThreadHeldByOtherSync(bool passJtfToLazyCtor)
     {
         SynchronizationContext? ctxt = SingleThreadedTestSynchronizationContext.New();
@@ -784,7 +817,9 @@ public class AsyncLazyTests : TestBase
         }
     }
 
-    [Theory, PairwiseData]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task SuppressRecursiveFactoryDetection_WithJTF(bool suppressWithJTF)
     {
         JoinableTaskContext? context = this.InitializeJTCAndSC();
@@ -856,7 +891,10 @@ public class AsyncLazyTests : TestBase
         await this.AssertDisposedLazyAsync(lazy);
     }
 
-    [Theory, CombinatorialData]
+    [Theory]
+    [InlineData(DisposeStyle.IDisposable)]
+    [InlineData(DisposeStyle.SystemIAsyncDisposable)]
+    [InlineData(DisposeStyle.ThreadingIAsyncDisposable)]
     public async Task Dispose_Disposable_Completed(DisposeStyle variety)
     {
         AsyncLazy<object> lazy = new(() => Task.FromResult<object>(DisposableFactory(variety)));
@@ -875,7 +913,10 @@ public class AsyncLazyTests : TestBase
         await this.AssertDisposedLazyAsync(lazy);
     }
 
-    [Theory, CombinatorialData]
+    [Theory]
+    [InlineData(DisposeStyle.IDisposable)]
+    [InlineData(DisposeStyle.SystemIAsyncDisposable)]
+    [InlineData(DisposeStyle.ThreadingIAsyncDisposable)]
     public async Task Dispose_Disposable_Incomplete(DisposeStyle variety)
     {
         AsyncManualResetEvent unblock = new();

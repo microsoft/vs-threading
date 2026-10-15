@@ -82,7 +82,7 @@ if (!$NoPrerequisites) {
         & "$PSScriptRoot\tools\Install-NuGetCredProvider.ps1" -AccessToken $AccessToken -Force:$UpgradePrerequisites
     }
 
-    & "$PSScriptRoot\tools\Install-DotNetSdk.ps1" -InstallLocality $InstallLocality
+    & "$PSScriptRoot\tools\Install-DotNetSdk.ps1" -InstallLocality $InstallLocality -Upgrade:$UpgradePrerequisites
     if ($LASTEXITCODE -eq 3010) {
         Exit 3010
     }
@@ -109,10 +109,11 @@ try {
 
     if (!$NoRestore -and $PSCmdlet.ShouldProcess("NuGet packages", "Restore")) {
         Write-Host "Restoring NuGet packages" -ForegroundColor $HeaderColor
-        dotnet restore @RestoreArguments
+        dotnet restore "$PSScriptRoot/tools/dirs.proj" @RestoreArguments
         if ($lastexitcode -ne 0) {
             throw "Failure while restoring packages."
         }
+
     }
 
     if (!$NoToolRestore -and $PSCmdlet.ShouldProcess("dotnet tool", "restore")) {

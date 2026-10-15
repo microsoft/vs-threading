@@ -2,5 +2,6 @@
   <ItemGroup>
     <ProjectReference Include="$(RepoRootPath)src\dirs.proj" />
     <ProjectReference Include="$(RepoRootPath)test\dirs.proj" />
+    <ProjectReference Include="$(RepoRootPath)samples\samples.csproj" Pack="false" Publish="false" />
   </ItemGroup>
 </Project>

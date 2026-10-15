@@ -2,7 +2,20 @@
   <ItemGroup>
     <ProjectReference Include="**\*.csproj" Exclude="NativeAOTCompatibility.Test\**" Publish="false" />
 
-    <MultiRIDProjectReference Include="NativeAOTCompatibility.Test\NativeAOTCompatibility.Test.csproj" TargetFramework="net10.0" />
-    <MultiRIDProjectReference Include="NativeAOTCompatibility.Test\NativeAOTCompatibility.Test.csproj" TargetFramework="net10.0-windows" Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
+    <ProjectReference Include="NativeAOTCompatibility.Test\NativeAOTCompatibility.Test.csproj" Publish="false" />
   </ItemGroup>
+  <Target Name="GetNativeAOTTests" Returns="@(_NativeAOTTest)">
+    <MSBuild Projects="@(ProjectReference)" Targets="GetNativeAOTTestVariants" BuildInParallel="true">
+      <Output TaskParameter="TargetOutputs" ItemName="_NativeAOTTest" />
+    </MSBuild>
+  </Target>
+  <Target Name="PublishNativeAOTTests" AfterTargets="Publish" DependsOnTargets="GetNativeAOTTests">
+    <MSBuild Projects="@(_NativeAOTTest)" Targets="Publish"
+             Properties="TargetFramework=%(_NativeAOTTest.TargetFramework);NativeAOT=true"
+             BuildInParallel="true" />
+    <MSBuild Projects="NativeAOTCompatibility.Test\NativeAOTCompatibility.Test.csproj" Targets="Publish"
+             Properties="TargetFramework=net10.0" />
+    <MSBuild Projects="NativeAOTCompatibility.Test\NativeAOTCompatibility.Test.csproj" Targets="Publish"
+             Properties="TargetFramework=net10.0-windows" Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
+  </Target>
 </Project>

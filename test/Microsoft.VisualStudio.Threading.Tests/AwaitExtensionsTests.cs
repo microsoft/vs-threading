@@ -27,7 +27,9 @@ public partial class AwaitExtensionsTests : TestBase
         B,
     }
 
-    [Theory, CombinatorialData]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void TaskYield_ConfigureAwait_OnDispatcher(bool useDefaultYield)
     {
         this.ExecuteOnDispatcher(async delegate
@@ -53,7 +55,9 @@ public partial class AwaitExtensionsTests : TestBase
         });
     }
 
-    [Theory, CombinatorialData]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void TaskYield_ConfigureAwait_OnDefaultSyncContext(bool useDefaultYield)
     {
         Task.Run(async delegate
@@ -80,7 +84,9 @@ public partial class AwaitExtensionsTests : TestBase
         });
     }
 
-    [Theory, CombinatorialData]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void TaskYield_ConfigureAwait_OnNonDefaultTaskScheduler(bool useDefaultYield)
     {
         var scheduler = new MockTaskScheduler();
@@ -110,7 +116,9 @@ public partial class AwaitExtensionsTests : TestBase
             scheduler).Unwrap().GetAwaiter().GetResult();
     }
 
-    [Theory, CombinatorialData]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void TaskYield_ConfigureAwait_OnDefaultTaskScheduler(bool useDefaultYield)
     {
         Task.Run(
@@ -136,7 +144,9 @@ public partial class AwaitExtensionsTests : TestBase
             }).GetAwaiter().GetResult();
     }
 
-    [Theory, CombinatorialData]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task TaskYield_ConfigureAwait_OnCompleted_CapturesExecutionContext(bool captureContext)
     {
         var taskResultSource = new TaskCompletionSource<object?>();
@@ -214,7 +224,15 @@ public partial class AwaitExtensionsTests : TestBase
     }
 
     [Theory]
-    [CombinatorialData]
+    [InlineData(NamedSyncContext.None, NamedSyncContext.None)]
+    [InlineData(NamedSyncContext.None, NamedSyncContext.A)]
+    [InlineData(NamedSyncContext.None, NamedSyncContext.B)]
+    [InlineData(NamedSyncContext.A, NamedSyncContext.None)]
+    [InlineData(NamedSyncContext.A, NamedSyncContext.A)]
+    [InlineData(NamedSyncContext.A, NamedSyncContext.B)]
+    [InlineData(NamedSyncContext.B, NamedSyncContext.None)]
+    [InlineData(NamedSyncContext.B, NamedSyncContext.A)]
+    [InlineData(NamedSyncContext.B, NamedSyncContext.B)]
     public void ConfigureAwaitRunInline_NoExtraThreadSwitching(NamedSyncContext invokeOn, NamedSyncContext completeOn)
     {
         // Set up various SynchronizationContexts that we may invoke or complete the async method with.
@@ -250,7 +268,15 @@ public partial class AwaitExtensionsTests : TestBase
     }
 
     [Theory]
-    [CombinatorialData]
+    [InlineData(NamedSyncContext.None, NamedSyncContext.None)]
+    [InlineData(NamedSyncContext.None, NamedSyncContext.A)]
+    [InlineData(NamedSyncContext.None, NamedSyncContext.B)]
+    [InlineData(NamedSyncContext.A, NamedSyncContext.None)]
+    [InlineData(NamedSyncContext.A, NamedSyncContext.A)]
+    [InlineData(NamedSyncContext.A, NamedSyncContext.B)]
+    [InlineData(NamedSyncContext.B, NamedSyncContext.None)]
+    [InlineData(NamedSyncContext.B, NamedSyncContext.A)]
+    [InlineData(NamedSyncContext.B, NamedSyncContext.B)]
     public void ConfigureAwaitRunInlineOfT_NoExtraThreadSwitching(NamedSyncContext invokeOn, NamedSyncContext completeOn)
     {
         // Set up various SynchronizationContexts that we may invoke or complete the async method with.
@@ -337,7 +363,9 @@ public partial class AwaitExtensionsTests : TestBase
         await taskResultSource.Task;
     }
 
-    [Theory, CombinatorialData]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task AwaitTaskScheduler_OnCompleted_CapturesExecutionContext(bool defaultTaskScheduler)
     {
         var taskResultSource = new TaskCompletionSource<object?>();
@@ -475,7 +503,8 @@ public partial class AwaitExtensionsTests : TestBase
     }
 
     [Theory]
-    [CombinatorialData]
+    [InlineData(false)]
+    [InlineData(true)]
     public void ConfigureAwaitForAggregateException_OnDispatcher(bool continueOnCapturedContext)
     {
         this.ExecuteOnDispatcher(async delegate
@@ -790,11 +819,7 @@ public partial class AwaitExtensionsTests : TestBase
     public async Task AwaitRegKeyChange_DoesNotPreventAppTerminationOnWin7()
     {
         Assert.SkipUnless(RuntimeInformation.IsOSPlatform(OSPlatform.Windows), "Windows only");
-        string testExePath = Path.GetFullPath(Path.Combine(
-            AppDomain.CurrentDomain.BaseDirectory!,
-            "..",
-            "..",
-            "..",
+        string relativeTestExePath = Path.Combine(
             "Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher",
 #if DEBUG
             "Debug",
@@ -802,7 +827,15 @@ public partial class AwaitExtensionsTests : TestBase
             "Release",
 #endif
             "net472",
-            "Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.exe"));
+            "Microsoft.VisualStudio.Threading.Tests.Win7RegistryWatcher.exe");
+        DirectoryInfo? directory = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory!);
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, relativeTestExePath)))
+        {
+            directory = directory.Parent;
+        }
+
+        Assert.NotNull(directory);
+        string testExePath = Path.Combine(directory.FullName, relativeTestExePath);
         this.Logger.WriteLine("Using testexe path: {0}", testExePath);
         var psi = new ProcessStartInfo(testExePath)
         {

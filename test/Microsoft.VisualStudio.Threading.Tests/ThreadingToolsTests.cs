@@ -244,36 +244,45 @@ public class ThreadingToolsTests : TestBase
         WithCancellationSyncBlockOnNoncancelableToken();
     }
 
-    [UIFact]
+    [Fact]
     public void WithCancellationNoDeadlockFromSyncContextWithinJTFRun_Canceled()
     {
-        var jtc = new JoinableTaskContext();
-        jtc.Factory.Run(delegate
+        TestUtilities.RunOnUIThread(() =>
         {
-            WithCancellationSyncBlock(simulateCancellation: true);
-            return Task.CompletedTask;
+            var jtc = new JoinableTaskContext();
+            jtc.Factory.Run(delegate
+            {
+                WithCancellationSyncBlock(simulateCancellation: true);
+                return Task.CompletedTask;
+            });
         });
     }
 
-    [UIFact]
+    [Fact]
     public void WithCancellationNoDeadlockFromSyncContextWithinJTFRun_Completed()
     {
-        var jtc = new JoinableTaskContext();
-        jtc.Factory.Run(delegate
+        TestUtilities.RunOnUIThread(() =>
         {
-            WithCancellationSyncBlock(simulateCancellation: false);
-            return Task.CompletedTask;
+            var jtc = new JoinableTaskContext();
+            jtc.Factory.Run(delegate
+            {
+                WithCancellationSyncBlock(simulateCancellation: false);
+                return Task.CompletedTask;
+            });
         });
     }
 
-    [UIFact]
+    [Fact]
     public void WithCancellationNoncancelableNoDeadlockFromSyncContextWithinJTFRun()
     {
-        var jtc = new JoinableTaskContext();
-        jtc.Factory.Run(delegate
+        TestUtilities.RunOnUIThread(() =>
         {
-            WithCancellationSyncBlockOnNoncancelableToken();
-            return Task.CompletedTask;
+            var jtc = new JoinableTaskContext();
+            jtc.Factory.Run(delegate
+            {
+                WithCancellationSyncBlockOnNoncancelableToken();
+                return Task.CompletedTask;
+            });
         });
     }
 
