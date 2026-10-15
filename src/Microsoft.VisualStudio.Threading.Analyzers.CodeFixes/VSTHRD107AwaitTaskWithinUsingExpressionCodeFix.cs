@@ -96,9 +96,9 @@ public class VSTHRD107AwaitTaskWithinUsingExpressionCodeFix : CodeFixProvider
     {
         // We're moving trivia from the original expression to the overall await expression.
         ExpressionSyntax expressionToAwait = expression.WithoutTrivia();
-        
+
         // Complex expressions should be parenthesized to ensure the `await` is applied to the whole expression.
-        if (expressionToAwait is not (InvocationExpressionSyntax or IdentifierNameSyntax or MemberAccessExpressionSyntax or ElementAccessExpressionSyntax)
+        if (expressionToAwait is not (InvocationExpressionSyntax or IdentifierNameSyntax or MemberAccessExpressionSyntax or ElementAccessExpressionSyntax))
         {
             expressionToAwait = SyntaxFactory.ParenthesizedExpression(expressionToAwait);
         }

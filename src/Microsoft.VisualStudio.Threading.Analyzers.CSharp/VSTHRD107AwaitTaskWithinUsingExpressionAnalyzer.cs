@@ -64,6 +64,10 @@ public class VSTHRD107AwaitTaskWithinUsingExpressionAnalyzer : DiagnosticAnalyze
     private void AnalyzeUsingStatement(SyntaxNodeAnalysisContext context)
     {
         var usingStatement = (UsingStatementSyntax)context.Node;
+
+        // In C# 8+, an asynchronous using statement (`await using (...)`) disposes the target
+        // asynchronously via IAsyncDisposable. This analyzer only flags unawaited tasks in synchronous
+        // using statements that dispose via IDisposable.
         if (usingStatement.AwaitKeyword.IsKind(SyntaxKind.AwaitKeyword))
         {
             return;
@@ -82,6 +86,9 @@ public class VSTHRD107AwaitTaskWithinUsingExpressionAnalyzer : DiagnosticAnalyze
     private void AnalyzeLocalDeclaration(SyntaxNodeAnalysisContext context)
     {
         var localDeclaration = (LocalDeclarationStatementSyntax)context.Node;
+
+        // Check synchronous `using var x = ...;` declarations.
+        // Skip `await using var x = ...;` because it targets IAsyncDisposable rather than IDisposable.
         if (localDeclaration.UsingKeyword.IsKind(SyntaxKind.UsingKeyword) &&
             !localDeclaration.AwaitKeyword.IsKind(SyntaxKind.AwaitKeyword))
         {
