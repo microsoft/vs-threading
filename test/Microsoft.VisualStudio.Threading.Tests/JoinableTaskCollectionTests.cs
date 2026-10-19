@@ -125,6 +125,75 @@ public class JoinableTaskCollectionTests : JoinableTaskTestBase
         });
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void JoinWithPendingMainThreadWork(bool hasPendingWork)
+    {
+        JoinableTaskCollection collection = this.context.CreateCollection();
+        JoinableTaskFactory factory = this.context.CreateFactory(collection);
+        var workQueued = new AsyncManualResetEvent();
+        var finishWork = new AsyncManualResetEvent();
+        using var resumeMainThread = new ManualResetEventSlim();
+        var waitingFactory = new PausedWaitJoinableTaskFactory(this.context, resumeMainThread, this.TimeoutToken);
+        Task<JoinableTask> childStarted = Task.Run(() => factory.RunAsync(async delegate
+        {
+            if (hasPendingWork)
+            {
+                await factory.SwitchToMainThreadAsync(this.TimeoutToken).GetAwaiter().YieldAndNotify(workQueued);
+            }
+            else
+            {
+                workQueued.Set();
+                await finishWork.WaitAsync(this.TimeoutToken);
+            }
+        }));
+
+        waitingFactory.Run(async delegate
+        {
+            await TaskScheduler.Default.SwitchTo(alwaysYield: true);
+            try
+            {
+                JoinableTask child = await childStarted;
+                await workQueued.WaitAsync(this.TimeoutToken);
+                await waitingFactory.WaitedOnce.WaitAsync(this.TimeoutToken);
+
+                for (int i = 0; i < 100; i++)
+                {
+                    collection.Join().Dispose();
+                }
+
+#if NET
+                const int Iterations = 1000;
+                long allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+                for (int i = 0; i < Iterations; i++)
+                {
+                    collection.Join().Dispose();
+                }
+
+                long allocatedBytes = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+                this.Logger.WriteLine("Pending work: {0}; allocated bytes per join: {1}", hasPendingWork, allocatedBytes / Iterations);
+
+                // Only dependency-tracking and event-pulse allocations remain after warm-up.
+                long maximumBytesPerJoin = hasPendingWork ? 240 : 144;
+                Assert.InRange(allocatedBytes, 0, maximumBytesPerJoin * Iterations);
+#endif
+
+                finishWork.Set();
+                using (collection.Join())
+                {
+                    resumeMainThread.Set();
+                    await child.JoinAsync(this.TimeoutToken);
+                }
+            }
+            finally
+            {
+                finishWork.Set();
+                resumeMainThread.Set();
+            }
+        });
+    }
+
     [Fact]
     public void AddTwiceRemoveOnceRemovesWhenNotRefCounting()
     {
@@ -209,5 +278,27 @@ public class JoinableTaskCollectionTests : JoinableTaskTestBase
 
         Task waiter = collection.JoinTillEmptyAsync();
         Assert.True(waiter.Wait(UnexpectedTimeout));
+    }
+
+    private sealed class PausedWaitJoinableTaskFactory : JoinableTaskFactory
+    {
+        private readonly ManualResetEventSlim resumeMainThread;
+        private readonly CancellationToken cancellationToken;
+
+        internal PausedWaitJoinableTaskFactory(JoinableTaskContext context, ManualResetEventSlim resumeMainThread, CancellationToken cancellationToken)
+            : base(context)
+        {
+            this.resumeMainThread = resumeMainThread;
+            this.cancellationToken = cancellationToken;
+        }
+
+        internal AsyncManualResetEvent WaitedOnce { get; } = new AsyncManualResetEvent();
+
+        protected override void WaitSynchronously(Task task)
+        {
+            this.WaitedOnce.Set();
+            this.resumeMainThread.Wait(this.cancellationToken);
+            base.WaitSynchronously(task);
+        }
     }
 }

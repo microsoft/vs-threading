@@ -16,7 +16,11 @@ namespace Microsoft.VisualStudio.Threading;
 /// </summary>
 internal static class JoinableTaskDependencyGraph
 {
+    private const int MaxRetainedNotificationListCapacity = 64;
+
     private static readonly HashSet<IJoinableTaskDependent> EmptySet = new HashSet<IJoinableTaskDependent>();
+
+    private static List<AsyncManualResetEvent>? notificationListPool;
 
     /// <summary>
     /// Gets a value indicating whether there is no child depenent item.
@@ -297,7 +301,7 @@ internal static class JoinableTaskDependencyGraph
         /// <remarks>
         /// When the value in an entry is decremented to 0, the entry is removed from the map.
         /// </remarks>
-        private Dictionary<IJoinableTaskDependent, int> childDependentNodes;
+        private SmallDependencyMap<IJoinableTaskDependent> childDependentNodes;
 
         /// <summary>
         /// The head of a singly linked list of records to track which task may process events of this task.
@@ -348,58 +352,56 @@ internal static class JoinableTaskDependencyGraph
             using (parentTaskOrCollection.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
             {
                 List<AsyncManualResetEvent>? eventsNeedNotify = null;
-                lock (parentTaskOrCollection.JoinableTaskContext.SyncContextLock)
+                try
                 {
-                    var joinableTask = joinChild as JoinableTask;
-                    if (joinableTask?.IsFullyCompleted == true)
+                    lock (parentTaskOrCollection.JoinableTaskContext.SyncContextLock)
                     {
-                        return default(JoinableTaskCollection.JoinRelease);
-                    }
-
-                    ref JoinableTaskDependentData data = ref parentTaskOrCollection.GetJoinableTaskDependentData();
-                    if (data.childDependentNodes is null)
-                    {
-                        data.childDependentNodes = new Dictionary<IJoinableTaskDependent, int>(capacity: 2);
-                    }
-
-                    if (data.childDependentNodes.TryGetValue(joinChild, out int refCount) && !parentTaskOrCollection.NeedRefCountChildDependencies)
-                    {
-                        return default(JoinableTaskCollection.JoinRelease);
-                    }
-
-                    data.childDependentNodes[joinChild] = ++refCount;
-                    if (refCount == 1)
-                    {
-                        // This constitutes a significant change, so we should apply synchronous task tracking to the new child.
-                        joinChild.OnAddedToDependency(parentTaskOrCollection);
-                        IReadOnlyCollection<PendingNotification>? tasksNeedNotify = AddDependingSynchronousTaskToChild(parentTaskOrCollection, joinChild);
-                        if (tasksNeedNotify.Count > 0)
+                        var joinableTask = joinChild as JoinableTask;
+                        if (joinableTask?.IsFullyCompleted == true)
                         {
-                            eventsNeedNotify = new List<AsyncManualResetEvent>(tasksNeedNotify.Count);
-                            foreach (PendingNotification taskToNotify in tasksNeedNotify)
-                            {
-                                AsyncManualResetEvent? notifyEvent = taskToNotify.SynchronousTask.RegisterPendingEventsForSynchrousTask(taskToNotify.TaskHasPendingMessages, taskToNotify.NewPendingMessagesCount);
-                                if (notifyEvent is object)
-                                {
-                                    eventsNeedNotify.Add(notifyEvent);
-                                }
-                            }
+                            return default(JoinableTaskCollection.JoinRelease);
                         }
 
-                        parentTaskOrCollection.OnDependencyAdded(joinChild);
-                    }
-                }
+                        ref JoinableTaskDependentData data = ref parentTaskOrCollection.GetJoinableTaskDependentData();
+                        if (data.childDependentNodes is null)
+                        {
+                            data.childDependentNodes = new SmallDependencyMap<IJoinableTaskDependent>();
+                        }
 
-                // We explicitly do this outside our lock.
-                if (eventsNeedNotify is object)
-                {
-                    foreach (AsyncManualResetEvent? queueEvent in eventsNeedNotify)
+                        if (data.childDependentNodes.TryGetValue(joinChild, out int refCount) && !parentTaskOrCollection.NeedRefCountChildDependencies)
+                        {
+                            return default(JoinableTaskCollection.JoinRelease);
+                        }
+
+                        data.childDependentNodes[joinChild] = ++refCount;
+                        if (refCount == 1)
+                        {
+                            // This constitutes a significant change, so we should apply synchronous task tracking to the new child.
+                            joinChild.OnAddedToDependency(parentTaskOrCollection);
+                            AddDependingSynchronousTaskToChild(parentTaskOrCollection, joinChild, ref eventsNeedNotify);
+
+                            parentTaskOrCollection.OnDependencyAdded(joinChild);
+                        }
+                    }
+
+                    // We explicitly do this outside our lock.
+                    if (eventsNeedNotify is object)
                     {
-                        queueEvent.PulseAll();
+                        foreach (AsyncManualResetEvent? queueEvent in eventsNeedNotify)
+                        {
+                            queueEvent.PulseAll();
+                        }
+                    }
+
+                    return new JoinableTaskCollection.JoinRelease(parentTaskOrCollection, joinChild);
+                }
+                finally
+                {
+                    if (eventsNeedNotify is object)
+                    {
+                        InternalUtilities.ReturnList(ref notificationListPool, eventsNeedNotify, MaxRetainedNotificationListCapacity);
                     }
                 }
-
-                return new JoinableTaskCollection.JoinRelease(parentTaskOrCollection, joinChild);
             }
         }
 
@@ -478,7 +480,7 @@ internal static class JoinableTaskDependencyGraph
                 }
             }
 
-            Dictionary<IJoinableTaskDependent, int>? childDependentNodes = taskOrCollection.GetJoinableTaskDependentData().childDependentNodes;
+            SmallDependencyMap<IJoinableTaskDependent>? childDependentNodes = taskOrCollection.GetJoinableTaskDependentData().childDependentNodes;
             if (childDependentNodes is object)
             {
                 foreach (KeyValuePair<IJoinableTaskDependent, int> item in childDependentNodes)
@@ -562,7 +564,7 @@ internal static class JoinableTaskDependencyGraph
                         return;
                     }
 
-                    Dictionary<IJoinableTaskDependent, int>? dependencies = taskOrCollection.GetJoinableTaskDependentData().childDependentNodes;
+                    SmallDependencyMap<IJoinableTaskDependent>? dependencies = taskOrCollection.GetJoinableTaskDependentData().childDependentNodes;
                     if (dependencies is object)
                     {
                         foreach (KeyValuePair<IJoinableTaskDependent, int> item in dependencies)
@@ -690,7 +692,7 @@ internal static class JoinableTaskDependencyGraph
 
                 if (this.childDependentNodes is object)
                 {
-                    Dictionary<IJoinableTaskDependent, int>.KeyCollection? childrenTasks = this.childDependentNodes.Keys;
+                    IReadOnlyCollection<IJoinableTaskDependent> childrenTasks = this.childDependentNodes.Keys;
                     while (existingTaskTracking is object)
                     {
                         RemoveDependingSynchronousTaskFrom(childrenTasks, existingTaskTracking.SynchronousTask, force: existingTaskTracking.SynchronousTask == thisDependentNode);
@@ -763,8 +765,8 @@ internal static class JoinableTaskDependencyGraph
         /// </summary>
         /// <param name="dependentNode">The current joinableTask or collection owns the data.</param>
         /// <param name="child">The new child task.</param>
-        /// <returns>Pairs of synchronous tasks we need notify and the event source triggering it, plus the number of pending events.</returns>
-        private static IReadOnlyCollection<PendingNotification> AddDependingSynchronousTaskToChild(IJoinableTaskDependent dependentNode, IJoinableTaskDependent child)
+        /// <param name="eventsNeedNotify">Receives the events to pulse after releasing the JTF lock.</param>
+        private static void AddDependingSynchronousTaskToChild(IJoinableTaskDependent dependentNode, IJoinableTaskDependent child, ref List<AsyncManualResetEvent>? eventsNeedNotify)
         {
             Requires.NotNull(dependentNode, nameof(dependentNode));
             Requires.NotNull(child, nameof(child));
@@ -774,10 +776,9 @@ internal static class JoinableTaskDependencyGraph
             int count = data.CountOfDependingSynchronousTasks();
             if (count == 0)
             {
-                return Array.Empty<PendingNotification>();
+                return;
             }
 
-            var tasksNeedNotify = new List<PendingNotification>(count);
             DependentSynchronousTask? existingTaskTracking = data.dependingSynchronousTaskTracking;
             while (existingTaskTracking is object)
             {
@@ -785,13 +786,16 @@ internal static class JoinableTaskDependencyGraph
                 JoinableTask? eventTriggeringTask = AddDependingSynchronousTask(child, existingTaskTracking.SynchronousTask, ref totalEventNumber);
                 if (eventTriggeringTask is object)
                 {
-                    tasksNeedNotify.Add(new PendingNotification(existingTaskTracking.SynchronousTask, eventTriggeringTask, totalEventNumber));
+                    AsyncManualResetEvent? notifyEvent = existingTaskTracking.SynchronousTask.RegisterPendingEventsForSynchrousTask(eventTriggeringTask, totalEventNumber);
+                    if (notifyEvent is object)
+                    {
+                        eventsNeedNotify ??= InternalUtilities.RentList(ref notificationListPool, count);
+                        eventsNeedNotify.Add(notifyEvent);
+                    }
                 }
 
                 existingTaskTracking = existingTaskTracking.Next;
             }
-
-            return tasksNeedNotify;
         }
 
         /// <summary>
@@ -1049,38 +1053,6 @@ internal static class JoinableTaskDependencyGraph
                 RemoveDependingSynchronousTask(child, existingTaskTracking.SynchronousTask);
                 existingTaskTracking = existingTaskTracking.Next;
             }
-        }
-
-        /// <summary>
-        /// The record of a pending notification we need send to the synchronous task that we have some new messages to process.
-        /// </summary>
-        private readonly struct PendingNotification
-        {
-            internal PendingNotification(JoinableTask synchronousTask, JoinableTask taskHasPendingMessages, int newPendingMessagesCount)
-            {
-                Requires.NotNull(synchronousTask, nameof(synchronousTask));
-                Requires.NotNull(taskHasPendingMessages, nameof(taskHasPendingMessages));
-
-                this.SynchronousTask = synchronousTask;
-                this.TaskHasPendingMessages = taskHasPendingMessages;
-                this.NewPendingMessagesCount = newPendingMessagesCount;
-            }
-
-            /// <summary>
-            /// Gets the synchronous task which need process new messages.
-            /// </summary>
-            internal JoinableTask SynchronousTask { get; }
-
-            /// <summary>
-            /// Gets one JoinableTask which may have pending messages. We may have multiple new JoinableTasks which contains pending messages.
-            /// This is just one of them.  It gives the synchronous task a way to start quickly without searching all messages.
-            /// </summary>
-            internal JoinableTask TaskHasPendingMessages { get; }
-
-            /// <summary>
-            /// Gets the total number of new pending messages.  The real number could be less than that, but should not be more than that.
-            /// </summary>
-            internal int NewPendingMessagesCount { get; }
         }
 
         /// <summary>

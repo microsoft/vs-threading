@@ -275,6 +275,17 @@ public partial class JoinableTask : IJoinableTaskDependent
     {
         get
         {
+            JoinableTaskFlags currentState = this.state;
+            if ((currentState & JoinableTaskFlags.CompleteFinalized) != 0)
+            {
+                return true;
+            }
+
+            if ((currentState & JoinableTaskFlags.CompleteRequested) == 0)
+            {
+                return false;
+            }
+
             using (this.JoinableTaskContext.NoMessagePumpSynchronizationContext.Apply())
             {
                 lock (this.JoinableTaskContext.SyncContextLock)
