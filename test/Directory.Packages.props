@@ -3,6 +3,6 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove($(MSBuildThisFile), $(MSBuildThisFileDirectory)..))" />
 
   <ItemGroup>
-    <PackageVersion Update="System.Collections.Immutable" Version="10.0.1" />
+    <PackageVersion Update="System.Collections.Immutable" Version="10.0.14" />
   </ItemGroup>
 </Project>
