@@ -22,6 +22,7 @@ jobs:
     permissions:
       # If you want to clone the repository as part of your setup steps, for example to install dependencies, you'll need the `contents: read` permission. If you don't clone the repository in your setup steps, Copilot will do this for you automatically after the steps complete.
       contents: read
+      id-token: write
 
     # You can define any steps you want, and they will run before the agent starts.
     # If you do not check out your code, Copilot will do this for you.
@@ -29,6 +30,36 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         fetch-depth: 0 # avoid shallow clone so nbgv can do its work.
+    - name: Authenticate to Azure with GitHub OIDC
+      id: azure-login
+      # This tenant requires enterprise-issued assertions. Other owners restore anonymously.
+      # Same-repository dependency update PRs authenticate; fork PRs do not.
+      if: github.repository_owner == 'microsoft' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+      uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+      with:
+        client-id: 2799af29-63f3-404f-bdcf-67ff9c70abc9
+        tenant-id: 72f988bf-86f1-41af-91ab-2d7cd011db47
+        allow-no-subscriptions: true
+        audience: api://AzureADTokenExchange
+    - name: Configure Azure Artifacts credentials
+      if: steps.azure-login.outcome == 'success'
+      shell: pwsh
+      run: |
+        $accessToken = az account get-access-token --resource 499b84ac-1321-427f-aa17-267ca6975798 --query accessToken --output tsv
+        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($accessToken)) {
+          throw 'Failed to acquire an Azure DevOps access token.'
+        }
+        Write-Output "::add-mask::$accessToken"
+        $nugetConfig = [xml](Get-Content -LiteralPath nuget.config -Raw)
+        $sources = @($nugetConfig.configuration.packageSources.add | Where-Object {
+          $_.value -match '^https://pkgs\.dev\.azure\.com/' -or $_.value -match '^https://[\w-]+\.pkgs\.visualstudio\.com/'
+        })
+        if ($sources.Count -eq 0) {
+          throw 'No Azure Artifacts package sources were found in nuget.config.'
+        }
+        foreach ($source in $sources) {
+          Add-Content -LiteralPath $env:GITHUB_ENV -Encoding utf8 -Value "NuGetPackageSourceCredentials_$($source.key)=Username=ado;Password=$accessToken;ValidAuthenticationTypes=Basic"
+        }
     - name: ⚙ Install prerequisites
       run: |
         ./init.ps1 -UpgradePrerequisites -NoNuGetCredProvider
