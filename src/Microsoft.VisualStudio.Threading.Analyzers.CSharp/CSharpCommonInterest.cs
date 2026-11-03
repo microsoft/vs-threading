@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -1223,9 +1222,11 @@ internal static class CSharpCommonInterest
                     && ConditionProvesCompletion(context, binary.Right, taskSymbols, conditionValue: false);
             }
 
-            bool equalityHolds = binary.IsKind(SyntaxKind.EqualsExpression) ? conditionValue
-                : binary.IsKind(SyntaxKind.NotEqualsExpression) ? !conditionValue
-                : false;
+            bool equalityHolds = binary.IsKind(SyntaxKind.EqualsExpression)
+                ? conditionValue
+                : binary.IsKind(SyntaxKind.NotEqualsExpression)
+                    ? !conditionValue
+                    : false;
             if ((binary.IsKind(SyntaxKind.EqualsExpression) || binary.IsKind(SyntaxKind.NotEqualsExpression))
                 && IsRanToCompletionComparison(context, binary.Left, binary.Right, taskSymbols))
             {

@@ -263,9 +263,9 @@ public sealed class CSharpUtils : LanguageUtils
         return objectCreation.Syntax;
     }
 
-    public override bool MethodReturnsNullableReferenceType(IMethodSymbol methodSymbol)
+    public override bool MethodReturnsNullableReferenceType(IMethodSymbol method)
     {
-        SyntaxReference? syntaxReference = methodSymbol.DeclaringSyntaxReferences.FirstOrDefault();
+        SyntaxReference? syntaxReference = method.DeclaringSyntaxReferences.FirstOrDefault();
         if (syntaxReference is null)
         {
             return false;

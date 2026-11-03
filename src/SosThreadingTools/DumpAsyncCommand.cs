@@ -11,7 +11,7 @@ namespace CpsDbg;
 
 internal class DumpAsyncCommand : SOSLinkedCommand, ICommandHandler
 {
-    internal DumpAsyncCommand(IntPtr pUnknown, bool isRunningAsExtension)
+    internal DumpAsyncCommand(nint pUnknown, bool isRunningAsExtension)
         : base(pUnknown, isRunningAsExtension)
     {
     }

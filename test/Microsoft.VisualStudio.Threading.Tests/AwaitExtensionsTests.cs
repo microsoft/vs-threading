@@ -238,14 +238,16 @@ public partial class AwaitExtensionsTests : TestBase
         // Set up various SynchronizationContexts that we may invoke or complete the async method with.
         SynchronizationContext? aSyncContext = SingleThreadedTestSynchronizationContext.New();
         SynchronizationContext? bSyncContext = SingleThreadedTestSynchronizationContext.New();
-        SynchronizationContext? invokeOnSyncContext = invokeOn == NamedSyncContext.None ? null
-            : invokeOn == NamedSyncContext.A ? aSyncContext
-            : invokeOn == NamedSyncContext.B ? bSyncContext
-            : throw new ArgumentOutOfRangeException(nameof(invokeOn));
-        SynchronizationContext? completeOnSyncContext = completeOn == NamedSyncContext.None ? null
-            : completeOn == NamedSyncContext.A ? aSyncContext
-            : completeOn == NamedSyncContext.B ? bSyncContext
-            : throw new ArgumentOutOfRangeException(nameof(completeOn));
+        SynchronizationContext? invokeOnSyncContext =
+            invokeOn == NamedSyncContext.None ? null :
+            invokeOn == NamedSyncContext.A ? aSyncContext :
+            invokeOn == NamedSyncContext.B ? bSyncContext :
+            throw new ArgumentOutOfRangeException(nameof(invokeOn));
+        SynchronizationContext? completeOnSyncContext =
+            completeOn == NamedSyncContext.None ? null :
+            completeOn == NamedSyncContext.A ? aSyncContext :
+            completeOn == NamedSyncContext.B ? bSyncContext :
+            throw new ArgumentOutOfRangeException(nameof(completeOn));
 
         // Set up a single-threaded SynchronizationContext that we'll invoke the async method within.
         SynchronizationContext.SetSynchronizationContext(invokeOnSyncContext);
@@ -282,14 +284,16 @@ public partial class AwaitExtensionsTests : TestBase
         // Set up various SynchronizationContexts that we may invoke or complete the async method with.
         SynchronizationContext? aSyncContext = SingleThreadedTestSynchronizationContext.New();
         SynchronizationContext? bSyncContext = SingleThreadedTestSynchronizationContext.New();
-        SynchronizationContext? invokeOnSyncContext = invokeOn == NamedSyncContext.None ? null
-            : invokeOn == NamedSyncContext.A ? aSyncContext
-            : invokeOn == NamedSyncContext.B ? bSyncContext
-            : throw new ArgumentOutOfRangeException(nameof(invokeOn));
-        SynchronizationContext? completeOnSyncContext = completeOn == NamedSyncContext.None ? null
-            : completeOn == NamedSyncContext.A ? aSyncContext
-            : completeOn == NamedSyncContext.B ? bSyncContext
-            : throw new ArgumentOutOfRangeException(nameof(completeOn));
+        SynchronizationContext? invokeOnSyncContext =
+            invokeOn == NamedSyncContext.None ? null :
+            invokeOn == NamedSyncContext.A ? aSyncContext :
+            invokeOn == NamedSyncContext.B ? bSyncContext :
+            throw new ArgumentOutOfRangeException(nameof(invokeOn));
+        SynchronizationContext? completeOnSyncContext =
+            completeOn == NamedSyncContext.None ? null :
+            completeOn == NamedSyncContext.A ? aSyncContext :
+            completeOn == NamedSyncContext.B ? bSyncContext :
+            throw new ArgumentOutOfRangeException(nameof(completeOn));
 
         // Set up a single-threaded SynchronizationContext that we'll invoke the async method within.
         SynchronizationContext.SetSynchronizationContext(invokeOnSyncContext);
