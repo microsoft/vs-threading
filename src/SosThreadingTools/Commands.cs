@@ -10,7 +10,7 @@ namespace CpsDbg;
 internal static class Commands
 {
     [UnmanagedCallersOnly(EntryPoint = "dumpasync", CallConvs = new[] { typeof(CallConvStdcall) })]
-    public static unsafe void DumpAsync(IntPtr client, byte* args)
+    public static unsafe void DumpAsync(nint client, byte* args)
     {
         ExecuteCommand(new DumpAsyncCommand(client, isRunningAsExtension: true), args);
     }
@@ -19,7 +19,7 @@ internal static class Commands
     {
         try
         {
-            string? strArgs = Marshal.PtrToStringAnsi((IntPtr)args);
+            string? strArgs = Marshal.PtrToStringAnsi((nint)args);
             command.Execute(strArgs ?? string.Empty);
         }
         catch (Exception ex)

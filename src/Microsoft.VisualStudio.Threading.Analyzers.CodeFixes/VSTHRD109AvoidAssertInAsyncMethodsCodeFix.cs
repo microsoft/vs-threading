@@ -2,11 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -16,7 +13,6 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Simplification;
-using Microsoft.VisualStudio.Threading;
 
 namespace Microsoft.VisualStudio.Threading.Analyzers;
 
@@ -72,9 +68,10 @@ public class VSTHRD109AvoidAssertInAsyncMethodsCodeFix : CodeFixProvider
             {
                 // We're looking for methods that either require no parameters,
                 // or (if we have one to give) that have just one parameter that is a CancellationToken.
-                IMethodSymbol? proposedMethod = semanticModel is null ? null : Utils.FindMethodGroup(semanticModel, option)
-                    .FirstOrDefault(m => !m.Parameters.Any(p => !p.HasExplicitDefaultValue) ||
-                        (cancellationTokenSymbol is object && m.Parameters.Length == 1 && Utils.IsCancellationTokenParameter(m.Parameters[0])));
+                IMethodSymbol? proposedMethod = semanticModel is null
+                    ? null
+                    : Utils.FindMethodGroup(semanticModel, option)
+                        .FirstOrDefault(m => !m.Parameters.Any(p => !p.HasExplicitDefaultValue) || (cancellationTokenSymbol is object && m.Parameters.Length == 1 && Utils.IsCancellationTokenParameter(m.Parameters[0])));
                 if (proposedMethod is null)
                 {
                     // We can't find it, so don't offer to use it.

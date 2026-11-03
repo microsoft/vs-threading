@@ -488,20 +488,20 @@ internal class WeakKeyDictionary<TKey, TValue> : IEnumerable<KeyValuePair<TKey, 
         /// <summary>
         /// Gets the hashcode.
         /// </summary>
-        public int GetHashCode(WeakReference<T> item)
+        public int GetHashCode(WeakReference<T> obj)
         {
             // item.GetHashCode() returns a cached value from when the Target was referenced,
             // and was calculated using this.underlyingComparer.
-            return item.GetHashCode();
+            return obj.GetHashCode();
         }
 
         /// <summary>
         /// Compares the weak references for equality.
         /// </summary>
-        public bool Equals(WeakReference<T> left, WeakReference<T> right)
+        public bool Equals(WeakReference<T> x, WeakReference<T> y)
         {
             // PERF: do not add any code here that will cause the value type parameters to be boxed!
-            return this.underlyingComparer.Equals(left.Target, right.Target);
+            return this.underlyingComparer.Equals(x.Target, y.Target);
         }
     }
 }

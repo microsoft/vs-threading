@@ -445,14 +445,16 @@ public class AsyncLazyTests : TestBase
         // Set up various SynchronizationContexts that we may invoke or complete the async method with.
         SynchronizationContext? aSyncContext = SingleThreadedTestSynchronizationContext.New();
         SynchronizationContext? bSyncContext = SingleThreadedTestSynchronizationContext.New();
-        SynchronizationContext? invokeOnSyncContext = invokeOn == NamedSyncContext.None ? null
-            : invokeOn == NamedSyncContext.A ? aSyncContext
-            : invokeOn == NamedSyncContext.B ? bSyncContext
-            : throw new ArgumentOutOfRangeException(nameof(invokeOn));
-        SynchronizationContext? completeOnSyncContext = completeOn == NamedSyncContext.None ? null
-            : completeOn == NamedSyncContext.A ? aSyncContext
-            : completeOn == NamedSyncContext.B ? bSyncContext
-            : throw new ArgumentOutOfRangeException(nameof(completeOn));
+        SynchronizationContext? invokeOnSyncContext =
+            invokeOn == NamedSyncContext.None ? null :
+            invokeOn == NamedSyncContext.A ? aSyncContext :
+            invokeOn == NamedSyncContext.B ? bSyncContext :
+            throw new ArgumentOutOfRangeException(nameof(invokeOn));
+        SynchronizationContext? completeOnSyncContext =
+            completeOn == NamedSyncContext.None ? null :
+            completeOn == NamedSyncContext.A ? aSyncContext :
+            completeOn == NamedSyncContext.B ? bSyncContext :
+            throw new ArgumentOutOfRangeException(nameof(completeOn));
 
         // Set up a single-threaded SynchronizationContext that we'll invoke the async method within.
         SynchronizationContext.SetSynchronizationContext(invokeOnSyncContext);
@@ -1149,11 +1151,11 @@ public class AsyncLazyTests : TestBase
 
     private abstract class DisposableBase
     {
-        protected readonly AsyncManualResetEvent disposalEvent = new();
+        protected readonly AsyncManualResetEvent DisposalEvent = new();
 
-        public Task Disposed => this.disposalEvent.WaitAsync();
+        public Task Disposed => this.DisposalEvent.WaitAsync();
 
-        public bool IsDisposed => this.disposalEvent.IsSet;
+        public bool IsDisposed => this.DisposalEvent.IsSet;
     }
 
     private sealed class ValueFactory
@@ -1166,7 +1168,7 @@ public class AsyncLazyTests : TestBase
 
     private class Disposable : DisposableBase, IDisposableObservable
     {
-        public void Dispose() => this.disposalEvent.Set();
+        public void Dispose() => this.DisposalEvent.Set();
     }
 
     private class SystemAsyncDisposable : DisposableBase, System.IAsyncDisposable
@@ -1175,7 +1177,7 @@ public class AsyncLazyTests : TestBase
 
         public async ValueTask DisposeAsync()
         {
-            this.disposalEvent.Set();
+            this.DisposalEvent.Set();
             if (this.YieldDuringDispose)
             {
                 await Task.Yield();
@@ -1187,7 +1189,7 @@ public class AsyncLazyTests : TestBase
     {
         public Task DisposeAsync()
         {
-            this.disposalEvent.Set();
+            this.DisposalEvent.Set();
             return Task.CompletedTask;
         }
     }

@@ -669,10 +669,10 @@ public partial class JoinableTask : IJoinableTaskDependent
         return ref this.dependentData;
     }
 
-    void IJoinableTaskDependent.OnAddedToDependency(IJoinableTaskDependent parentNode)
+    void IJoinableTaskDependent.OnAddedToDependency(IJoinableTaskDependent parent)
     {
-        Requires.NotNull(parentNode, nameof(parentNode));
-        this.dependencyParents.Add(parentNode);
+        Requires.NotNull(parent, nameof(parent));
+        this.dependencyParents.Add(parent);
     }
 
     void IJoinableTaskDependent.OnRemovedFromDependency(IJoinableTaskDependent parentNode)

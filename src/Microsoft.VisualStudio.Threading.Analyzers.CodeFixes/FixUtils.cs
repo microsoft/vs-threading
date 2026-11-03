@@ -457,10 +457,7 @@ internal static class FixUtils
 
         public override SyntaxNode? Visit(SyntaxNode? node)
         {
-            return base.Visit(
-                (node?.HasAnnotation(this.annotationToRemove) ?? false)
-                ? node.WithoutAnnotations(this.annotationToRemove)
-                : node);
+            return base.Visit(node?.HasAnnotation(this.annotationToRemove) is true ? node.WithoutAnnotations(this.annotationToRemove) : node);
         }
     }
 }

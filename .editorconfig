@@ -200,6 +200,9 @@ dotnet_diagnostic.SA1133.severity = none
 # SA1108: Block statements should not contain embedded comments
 dotnet_diagnostic.SA1108.severity = suggestion
 
+# Suppress warnings because there are false positives that will be fixed in a future StyleCop.Analyzers version.
+dotnet_diagnostic.SA1121.severity = suggestion
+
 # CSIsNull001: Use `is null` for null checks
 dotnet_diagnostic.CSIsNull001.severity = warning
 
