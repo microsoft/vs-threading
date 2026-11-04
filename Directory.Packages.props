@@ -13,7 +13,7 @@
   <ItemGroup>
     <PackageVersion Include="DNNE" Version="2.1.2" />
     <PackageVersion Include="MessagePack" Version="2.5.307" />
-    <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.10" />
+    <PackageVersion Include="Microsoft.Bcl.AsyncInterfaces" Version="10.0.14" />
     <PackageVersion Include="Microsoft.CodeAnalysis" Version="$(CodeAnalysisVersion)" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="$(CodeAnalysisVersion)" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Common" Version="$(CodeAnalysisVersion)" />
@@ -23,8 +23,8 @@
     <PackageVersion Include="Microsoft.CodeAnalysis.VisualBasic" Version="$(CodeAnalysisVersion)" />
     <PackageVersion Include="Microsoft.CodeAnalysis.VisualBasic.CodeFix.Testing" Version="$(CodefixTestingVersion)" />
     <PackageVersion Include="Microsoft.CodeAnalysis.VisualBasic.CodeFix.Testing.XUnit" Version="$(CodefixTestingVersion)" />
-    <PackageVersion Include="Microsoft.Diagnostics.Runtime.Utilities" Version="4.0.732401" />
-    <PackageVersion Include="Microsoft.Diagnostics.Runtime" Version="4.1.745802" />
+    <PackageVersion Include="Microsoft.Diagnostics.Runtime.Utilities" Version="4.2.751201" />
+    <PackageVersion Include="Microsoft.Diagnostics.Runtime" Version="4.2.751201" />
     <PackageVersion Include="Microsoft.VisualStudio.Interop" Version="17.14.40260" />
     <PackageVersion Include="Microsoft.VisualStudio.Shell.15.0" Version="17.14.40264" />
     <PackageVersion Include="Microsoft.VisualStudio.Shell.Framework" Version="17.14.40264" />
