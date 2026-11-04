@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using JoinableTaskSynchronizationContext = Microsoft.VisualStudio.Threading.JoinableTask.JoinableTaskSynchronizationContext;
@@ -23,10 +24,23 @@ namespace Microsoft.VisualStudio.Threading;
 /// </remarks>
 public partial class JoinableTaskFactory
 {
+    private static readonly ContextCallback ExecutePendingUnderlyingSynchronizationContextCallbackDelegate = state =>
+    {
+        var callback = ((SendOrPostCallback Callback, object State))state!;
+        callback.Callback(callback.State);
+    };
+
+    private static readonly SendOrPostCallback ExecuteOnePendingUnderlyingSynchronizationContextCallbackDelegate = state => ((UnderlyingSynchronizationContextCallback)state!).Execute();
+
+    [ThreadStatic]
+    private static List<JoinableTaskFactory>? synchronouslyPostingFactories;
+
     /// <summary>
     /// The <see cref="JoinableTaskContext"/> that owns this instance.
     /// </summary>
     private readonly JoinableTaskContext owner;
+
+    private readonly object pendingUnderlyingSynchronizationContextCallbacksLock = new();
 
     private readonly SynchronizationContext? mainThreadJobSyncContext;
 
@@ -34,6 +48,10 @@ public partial class JoinableTaskFactory
     /// The collection to add all created tasks to. May be <see langword="null" />.
     /// </summary>
     private readonly JoinableTaskCollection? jobCollection;
+
+    private Queue<(SendOrPostCallback Callback, object State, ExecutionContext? ExecutionContext)>? pendingUnderlyingSynchronizationContextCallbacks;
+
+    private bool underlyingSynchronizationContextCallbackPending;
 
     /// <summary>
     /// Backing field for the <see cref="HangDetectionTimeout"/> property.
@@ -460,12 +478,57 @@ public partial class JoinableTaskFactory
     }
 
     /// <summary>
+    /// Executes a pending callback under its captured execution context.
+    /// </summary>
+    /// <param name="callback">The callback to invoke.</param>
+    /// <param name="state">State to pass to the callback.</param>
+    /// <param name="executionContext">The execution context captured for the callback, or <see langword="null"/> when flow was suppressed.</param>
+    internal virtual void ExecutePendingUnderlyingSynchronizationContextCallback(
+        SendOrPostCallback callback,
+        object state,
+        ExecutionContext? executionContext)
+    {
+        if (executionContext is object)
+        {
+            ExecutionContext.Run(executionContext, ExecutePendingUnderlyingSynchronizationContextCallbackDelegate, (callback, state));
+        }
+        else
+        {
+            callback(state);
+        }
+    }
+
+    /// <summary>
     /// Posts a message to the specified underlying SynchronizationContext for processing when the main thread
     /// is freely available.
     /// </summary>
     /// <param name="callback">The callback to invoke.</param>
     /// <param name="state">State to pass to the callback.</param>
+    /// <remarks>
+    /// The base implementation coalesces pending callbacks. An override replaces that behavior entirely,
+    /// preserving the semantics of derived types written before coalescing was introduced. A derived type
+    /// may opt into coalescing by calling <see cref="PostToUnderlyingSynchronizationContextWithCoalescing"/>
+    /// from this override and overriding <see cref="PostToUnderlyingSynchronizationContextCore"/> to perform
+    /// the actual post.
+    /// </remarks>
     protected internal virtual void PostToUnderlyingSynchronizationContext(SendOrPostCallback callback, object state)
+    {
+        Requires.NotNull(callback, nameof(callback));
+        Assumes.NotNull(this.UnderlyingSynchronizationContext);
+
+        this.PostToUnderlyingSynchronizationContextWithCoalescing(callback, state);
+    }
+
+    /// <summary>
+    /// Posts a message directly to the underlying synchronization context.
+    /// </summary>
+    /// <param name="callback">The callback to invoke.</param>
+    /// <param name="state">State to pass to the callback.</param>
+    /// <remarks>
+    /// Derived types that opt into coalescing should override this method, rather than
+    /// <see cref="PostToUnderlyingSynchronizationContext"/>, with their custom dispatcher operation.
+    /// </remarks>
+    protected internal virtual void PostToUnderlyingSynchronizationContextCore(SendOrPostCallback callback, object state)
     {
         Requires.NotNull(callback, nameof(callback));
         Assumes.NotNull(this.UnderlyingSynchronizationContext);
@@ -635,6 +698,62 @@ public partial class JoinableTaskFactory
     }
 
     /// <summary>
+    /// Posts a message to the underlying synchronization context while coalescing pending messages.
+    /// </summary>
+    /// <param name="callback">The callback to invoke.</param>
+    /// <param name="state">
+    /// State to pass to the callback. Implementing <see cref="IPendingExecutionRequestState"/> allows
+    /// the callback to be removed from the private queue when it has already executed by another means.
+    /// </param>
+    /// <remarks>
+    /// This method is intended for derived types that override <see cref="PostToUnderlyingSynchronizationContext"/>
+    /// and explicitly opt into coalescing. Such types should also override
+    /// <see cref="PostToUnderlyingSynchronizationContextCore"/> to perform the actual dispatcher post.
+    /// </remarks>
+    protected void PostToUnderlyingSynchronizationContextWithCoalescing(SendOrPostCallback callback, object state)
+    {
+        Requires.NotNull(callback, nameof(callback));
+
+        ExecutionContext? executionContext = ExecutionContext.Capture();
+        bool postCallback = false;
+        lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
+        {
+            this.pendingUnderlyingSynchronizationContextCallbacks ??= new Queue<(SendOrPostCallback, object, ExecutionContext?)>();
+            this.RemoveCompletedPendingUnderlyingSynchronizationContextCallbacks();
+            this.pendingUnderlyingSynchronizationContextCallbacks.Enqueue((callback, state, executionContext));
+            if (!this.underlyingSynchronizationContextCallbackPending)
+            {
+                this.underlyingSynchronizationContextCallbackPending = true;
+                postCallback = true;
+            }
+        }
+
+        if (postCallback)
+        {
+            this.PostPendingUnderlyingSynchronizationContextCallback(propagateException: true);
+        }
+    }
+
+    /// <summary>
+    /// Checks whether this thread is currently inside an underlying synchronous post for the specified factory.
+    /// </summary>
+    /// <remarks>
+    /// The full chain is tracked so nested posts across factories (for example A to B to A) recognize an
+    /// ancestor factory and drain it iteratively instead of recursively posting another driver message.
+    /// </remarks>
+    private static bool IsSynchronouslyPosting(JoinableTaskFactory factory)
+    {
+        return synchronouslyPostingFactories?.Contains(factory) is true;
+    }
+
+    private static void DisposeExecutionContext(ExecutionContext? executionContext)
+    {
+#if NETFRAMEWORK
+        executionContext?.Dispose();
+#endif
+    }
+
+    /// <summary>
     /// Throws an exception if an active AsyncReaderWriterLock
     /// upgradeable read or write lock is held by the caller.
     /// </summary>
@@ -656,6 +775,168 @@ public partial class JoinableTaskFactory
         {
             Report.Fail(Strings.NotAllowedUnderURorWLock); // pops a CHK assert dialog, but doesn't throw.
             Verify.FailOperation(Strings.NotAllowedUnderURorWLock); // actually throws, even in RET.
+        }
+    }
+
+    /// <summary>
+    /// Executes one callback from the private queue and, when more work is already queued,
+    /// posts its successor to the underlying synchronization context before invoking the callback.
+    /// </summary>
+    /// <remarks>
+    /// Posting the successor first ensures that code invoked by the callback can enter a nested
+    /// message loop and find the next message already available. Synchronization contexts that
+    /// execute <see cref="SynchronizationContext.Post(SendOrPostCallback, object?)"/> inline are
+    /// drained iteratively instead to avoid recursive stack growth.
+    /// </remarks>
+    private void ExecuteOnePendingUnderlyingSynchronizationContextCallback()
+    {
+        bool continueSynchronously;
+        ExceptionDispatchInfo? synchronousCallbackException = null;
+        do
+        {
+            continueSynchronously = false;
+            (SendOrPostCallback Callback, object State, ExecutionContext? ExecutionContext)? callback = null;
+            bool postSuccessor = false;
+            bool completeSynchronousDrainAfterCallback = false;
+            try
+            {
+                lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
+                {
+                    this.RemoveCompletedPendingUnderlyingSynchronizationContextCallbacks();
+                    if (this.pendingUnderlyingSynchronizationContextCallbacks?.Count > 0)
+                    {
+                        callback = this.pendingUnderlyingSynchronizationContextCallbacks.Dequeue();
+                    }
+
+                    this.RemoveCompletedPendingUnderlyingSynchronizationContextCallbacks();
+                    if (IsSynchronouslyPosting(this))
+                    {
+                        completeSynchronousDrainAfterCallback = true;
+                        continueSynchronously = this.pendingUnderlyingSynchronizationContextCallbacks?.Count > 0;
+                    }
+                    else if (this.pendingUnderlyingSynchronizationContextCallbacks?.Count > 0)
+                    {
+                        postSuccessor = true;
+                    }
+                    else
+                    {
+                        this.pendingUnderlyingSynchronizationContextCallbacks = null;
+                        this.underlyingSynchronizationContextCallbackPending = false;
+                    }
+                }
+
+                if (postSuccessor)
+                {
+                    this.PostPendingUnderlyingSynchronizationContextCallback(propagateException: false);
+                }
+
+                if (callback is { } work)
+                {
+                    try
+                    {
+                        this.ExecutePendingUnderlyingSynchronizationContextCallback(work.Callback, work.State, work.ExecutionContext);
+                    }
+                    catch (Exception ex) when (completeSynchronousDrainAfterCallback)
+                    {
+                        synchronousCallbackException ??= ExceptionDispatchInfo.Capture(ex);
+                    }
+                    finally
+                    {
+                        DisposeExecutionContext(work.ExecutionContext);
+                    }
+                }
+            }
+            finally
+            {
+                if (completeSynchronousDrainAfterCallback)
+                {
+                    lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
+                    {
+                        this.RemoveCompletedPendingUnderlyingSynchronizationContextCallbacks();
+                        if (this.pendingUnderlyingSynchronizationContextCallbacks?.Count > 0)
+                        {
+                            continueSynchronously = true;
+                        }
+                        else
+                        {
+                            this.pendingUnderlyingSynchronizationContextCallbacks = null;
+                            this.underlyingSynchronizationContextCallbackPending = false;
+                        }
+                    }
+                }
+            }
+        }
+        while (continueSynchronously);
+
+        synchronousCallbackException?.Throw();
+    }
+
+    private void PostPendingUnderlyingSynchronizationContextCallback(bool propagateException)
+    {
+        var driver = new UnderlyingSynchronizationContextCallback(this);
+        try
+        {
+            List<JoinableTaskFactory> synchronousPostingChain = synchronouslyPostingFactories ??= new();
+            synchronousPostingChain.Add(this);
+            bool restoreFlow = !ExecutionContext.IsFlowSuppressed();
+            if (restoreFlow)
+            {
+                ExecutionContext.SuppressFlow();
+            }
+
+            try
+            {
+                this.PostToUnderlyingSynchronizationContextCore(ExecuteOnePendingUnderlyingSynchronizationContextCallbackDelegate, driver);
+            }
+            finally
+            {
+                if (restoreFlow)
+                {
+                    ExecutionContext.RestoreFlow();
+                }
+
+                synchronousPostingChain.RemoveAt(synchronousPostingChain.Count - 1);
+            }
+        }
+        catch
+        {
+            if (driver.HasExecuted)
+            {
+                throw;
+            }
+
+            lock (this.pendingUnderlyingSynchronizationContextCallbacksLock)
+            {
+                // Every callback remains in its owning JoinableTask's execution queue, so abandon this
+                // secondary route when no underlying message was established.
+                while (this.pendingUnderlyingSynchronizationContextCallbacks?.Count > 0)
+                {
+                    DisposeExecutionContext(this.pendingUnderlyingSynchronizationContextCallbacks.Dequeue().ExecutionContext);
+                }
+
+                this.pendingUnderlyingSynchronizationContextCallbacks = null;
+                this.underlyingSynchronizationContextCallbackPending = false;
+            }
+
+            if (propagateException)
+            {
+                throw;
+            }
+        }
+    }
+
+    private void RemoveCompletedPendingUnderlyingSynchronizationContextCallbacks()
+    {
+        Assumes.True(Monitor.IsEntered(this.pendingUnderlyingSynchronizationContextCallbacksLock));
+
+        // Only inspect the head to keep enqueue and drain operations O(1). Completed entries behind live work
+        // are removed as they reach the head, while coalescing still limits the underlying context to one driver.
+#pragma warning disable VSOnly // IPendingExecutionRequestState is intended for evaluation purposes only.
+        while (this.pendingUnderlyingSynchronizationContextCallbacks?.Count > 0
+            && this.pendingUnderlyingSynchronizationContextCallbacks.Peek().State is IPendingExecutionRequestState { IsCompleted: true })
+#pragma warning restore VSOnly
+        {
+            DisposeExecutionContext(this.pendingUnderlyingSynchronizationContextCallbacks.Dequeue().ExecutionContext);
         }
     }
 
@@ -1409,6 +1690,23 @@ public partial class JoinableTaskFactory
 
                 this.job.Factory.OnTransitionedToMainThread(this.job, !this.job.Factory.Context.IsOnMainThread);
             }
+        }
+    }
+
+    private sealed class UnderlyingSynchronizationContextCallback
+    {
+        private JoinableTaskFactory? factory;
+
+        internal UnderlyingSynchronizationContextCallback(JoinableTaskFactory factory)
+        {
+            this.factory = factory;
+        }
+
+        internal bool HasExecuted => Volatile.Read(ref this.factory) is null;
+
+        internal void Execute()
+        {
+            Interlocked.Exchange(ref this.factory, null)?.ExecuteOnePendingUnderlyingSynchronizationContextCallback();
         }
     }
 }
