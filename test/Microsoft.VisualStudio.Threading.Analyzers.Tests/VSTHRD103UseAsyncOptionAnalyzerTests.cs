@@ -2779,6 +2779,76 @@ namespace TestNamespace {
     }
 
     [Fact]
+    public async Task MemoryStreamOperationsDoNotGenerateWarning()
+    {
+        string test = """
+            using System.IO;
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task<int> ReadAsync(MemoryStream stream, byte[] buffer, Stream destination)
+                {
+                    await Task.Yield();
+                    stream.Write(buffer, 0, buffer.Length);
+                    stream.Write(buffer);
+                    stream.Flush();
+                    stream.CopyTo(destination);
+                    stream.CopyTo(destination, buffer.Length);
+                    stream?.CopyTo(destination);
+                    int read = stream.Read(buffer, 0, buffer.Length);
+                    stream.Read(buffer);
+                    stream.Dispose();
+                    return read;
+                }
+            }
+            """;
+
+        await new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = ReferencesHelper.Net80References,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task MemoryStreamOperationsThroughStreamGenerateWarning()
+    {
+        string test = """
+            using System.IO;
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task TestAsync(byte[] buffer, Stream destination)
+                {
+                    await Task.Yield();
+                    Stream stream = new MemoryStream();
+                    stream.{|#0:Read|}(buffer, 0, buffer.Length);
+                    stream.{|#1:Write|}(buffer, 0, buffer.Length);
+                    stream.{|#2:Flush|}();
+                    stream.{|#3:CopyTo|}(destination);
+                    stream.{|#4:Dispose|}();
+                }
+            }
+            """;
+
+        await new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ExpectedDiagnostics =
+            {
+                CSVerify.Diagnostic(Descriptor).WithLocation(0).WithArguments("Read", "ReadAsync"),
+                CSVerify.Diagnostic(Descriptor).WithLocation(1).WithArguments("Write", "WriteAsync"),
+                CSVerify.Diagnostic(Descriptor).WithLocation(2).WithArguments("Flush", "FlushAsync"),
+                CSVerify.Diagnostic(Descriptor).WithLocation(3).WithArguments("CopyTo", "CopyToAsync"),
+                CSVerify.Diagnostic(Descriptor).WithLocation(4).WithArguments("Dispose", "DisposeAsync"),
+            },
+        }.RunAsync();
+    }
+
+    [Fact]
     public async Task KnownFrameworkMethodsWithNonEquivalentAsyncAlternativesDoNotGenerateWarning()
     {
         string test = """
