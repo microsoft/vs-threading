@@ -90,9 +90,10 @@ Normal builds still report these audit warnings, and other documentation warning
 
 The `.github/workflows/docs.yml` GitHub Actions workflow publishes the content of these docs to github.io if the workflow itself and [GitHub Pages is enabled for your repository](https://docs.github.com/en/pages/quickstart).
 
-### Documentation validation feed authentication
+### Documentation validation and Copilot feed authentication
 
-The `.github/workflows/docs_validate.yml` workflow uses GitHub OIDC to authenticate
+The `.github/workflows/docs_validate.yml` and `.github/workflows/copilot-setup-steps.yml`
+workflows use GitHub OIDC to authenticate
 as the **azure-public/vside package pull** Entra application before `init.ps1` restores packages.
 It requests an Azure DevOps access token and supplies it through
 `NuGetPackageSourceCredentials_<source name>` for each Azure Artifacts source in
@@ -106,18 +107,27 @@ Sign in with `gh auth login` and
 `az login --tenant 72f988bf-86f1-41af-91ab-2d7cd011db47 --allow-no-subscriptions` first.
 The signed-in identities need repository administration and permission to manage the app's
 federated credentials. Use `-WhatIf` to preview without making changes.
-The script discovers the calling repository, trusts pull requests plus its default branch,
-and can be rerun without duplicating credentials.
+The script discovers the calling repository, trusts pull requests, its default branch,
+and the `copilot` environment used by Copilot code review and cloud agent setup.
+It can be rerun without duplicating credentials.
 Use `-Branches microbuild,release` to add other trusted branches; the default branch
-and PR context are always included. The script reports each created or reused credential.
-Credential names identify the owner, repository, and PR or branch context, for example
-`github-AArnott-Library.Template-pull-request` and
+and the PR and Copilot environment contexts are always included.
+The script reports each created or reused credential.
+Credential names identify the owner, repository, and PR, environment, or branch context, for example
+`github-AArnott-Library.Template-pull-request`,
+`github-AArnott-Library.Template-environment-copilot`, and
 `github-AArnott-Library.Template-branch-main`. Names requiring punctuation replacement
 or truncation include a short hash suffix to preserve uniqueness within Entra's name limits.
 
 This changes OIDC subjects for **all workflows** in the repository. Update any other cloud
 trust policies (including environment subjects) before running it; existing Entra credentials
 are preserved. The script does not configure Azure DevOps feed permissions.
+
+For repositories configured before Copilot environment trust was included, rerun the script
+with any additional trusted branches retained, then re-request the Copilot review.
+Copilot setup runs use an OIDC subject ending in `:environment:copilot`, rather than the
+PR or branch subject, so those existing credentials alone do not authenticate Copilot.
+Without the environment credential, Azure login fails with `AADSTS700213` before package restore.
 
 Authentication is enabled only for repositories owned by the `microsoft` organization,
 because this Entra tenant requires enterprise-issued GitHub assertions.
