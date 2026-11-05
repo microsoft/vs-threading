@@ -102,6 +102,7 @@ public static class ThreadingTools
     /// <param name="task">The task to wrap.</param>
     /// <param name="cancellationToken">The token that can be canceled to break out of the await.</param>
     /// <returns>The wrapping task.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="task"/> is <see langword="null"/>.</exception>
     public static Task<T> WithCancellation<T>(this Task<T> task, CancellationToken cancellationToken)
     {
         Requires.NotNull(task, nameof(task));
@@ -126,6 +127,7 @@ public static class ThreadingTools
     /// <param name="task">The task to wrap.</param>
     /// <param name="cancellationToken">The token that can be canceled to break out of the await.</param>
     /// <returns>The wrapping task.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="task"/> is <see langword="null"/>.</exception>
     public static Task WithCancellation(this Task task, CancellationToken cancellationToken)
     {
         Requires.NotNull(task, nameof(task));
@@ -267,6 +269,15 @@ public static class ThreadingTools
         Assumes.NotNull(task);
         Assumes.True(cancellationToken.CanBeCanceled);
 
+#if NET
+        // Observe the original task below to preserve its cancellation exception and fault-to-cancellation semantics.
+        Task waitTask = ((Task)task).WaitAsync(cancellationToken);
+        await waitTask.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+        if (waitTask.IsCanceled && !task.IsCanceled)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+        }
+#else
         var tcs = new TaskCompletionSource<bool>();
         using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s!).TrySetResult(true), tcs))
         {
@@ -275,6 +286,7 @@ public static class ThreadingTools
                 cancellationToken.ThrowIfCancellationRequested();
             }
         }
+#endif
 
         // Rethrow any fault/cancellation exception, even if we awaited above.
         // But if we skipped the above if branch, this will actually yield
@@ -295,6 +307,15 @@ public static class ThreadingTools
         Assumes.NotNull(task);
         Assumes.True(cancellationToken.CanBeCanceled);
 
+#if NET
+        // Observe the original task below to preserve its cancellation exception and fault-to-cancellation semantics.
+        Task waitTask = task.WaitAsync(cancellationToken);
+        await waitTask.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing | (continueOnCapturedContext ? ConfigureAwaitOptions.ContinueOnCapturedContext : ConfigureAwaitOptions.None));
+        if (waitTask.IsCanceled && !task.IsCanceled)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+        }
+#else
         var tcs = new TaskCompletionSource<bool>();
         using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s!).TrySetResult(true), tcs))
         {
@@ -303,6 +324,7 @@ public static class ThreadingTools
                 cancellationToken.ThrowIfCancellationRequested();
             }
         }
+#endif
 
         // Rethrow any fault/cancellation exception, even if we awaited above.
         // But if we skipped the above if branch, this will actually yield

@@ -2242,7 +2242,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
     }
 
     [Fact]
-    public void JoinCancellation()
+    public async Task JoinCancellation()
     {
         // Kick off the BeginAsync work from a background thread that has no special
         // affinity to the main thread.
@@ -2255,7 +2255,11 @@ public class JoinableTaskTests : JoinableTaskTestBase
 
         Assert.False(joinable.Task.IsCompleted);
         var cts = new CancellationTokenSource(AsyncDelay / 4);
-        Assert.Throws<OperationCanceledException>(() => joinable.Join(cts.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+        {
+            joinable.Join(cts.Token);
+            return Task.CompletedTask;
+        });
     }
 
     [Fact]
