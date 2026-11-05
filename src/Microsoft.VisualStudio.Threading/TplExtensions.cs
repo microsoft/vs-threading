@@ -65,10 +65,21 @@ public static partial class TplExtensions
     /// A task that completes with the result of the specified <paramref name="task"/> or
     /// faults with a <see cref="TimeoutException"/> if <paramref name="timeout"/> elapses first.
     /// </returns>
+    /// <remarks>Argument validation exceptions are stored in the returned task.</remarks>
     public static async Task WithTimeout(this Task task, TimeSpan timeout)
     {
         Requires.NotNull(task, nameof(task));
 
+#if NET
+        Task waitTask = WaitWithTimeout(task, timeout);
+        await waitTask.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+        if (waitTask.IsFaulted)
+        {
+            waitTask.GetAwaiter().GetResult();
+        }
+
+        task.GetAwaiter().GetResult();
+#else
         using (var timerCancellation = new CancellationTokenSource())
         {
             Task timeoutTask = Task.Delay(timeout, timerCancellation.Token);
@@ -84,6 +95,7 @@ public static partial class TplExtensions
             // re-throw any exceptions from the completed task.
             await task.ConfigureAwait(false);
         }
+#endif
     }
 
     /// <summary>
@@ -97,9 +109,20 @@ public static partial class TplExtensions
     /// A task that completes with the result of the specified <paramref name="task"/> or
     /// faults with a <see cref="TimeoutException"/> if <paramref name="timeout"/> elapses first.
     /// </returns>
+    /// <remarks>Argument validation exceptions are stored in the returned task.</remarks>
     public static async Task<T> WithTimeout<T>(this Task<T> task, TimeSpan timeout)
     {
+#if NET
+        Requires.NotNull(task, nameof(task));
+        Task waitTask = WaitWithTimeout(task, timeout);
+        await waitTask.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+        if (waitTask.IsFaulted)
+        {
+            waitTask.GetAwaiter().GetResult();
+        }
+#else
         await WithTimeout((Task)task, timeout).ConfigureAwait(false);
+#endif
         return task.GetAwaiter().GetResult();
     }
 
@@ -606,6 +629,28 @@ public static partial class TplExtensions
     {
         return Task.FromException<T>(ex);
     }
+
+#if NET
+    /// <summary>
+    /// Uses the native timeout implementation while preserving timeout argument validation.
+    /// </summary>
+    /// <param name="task">The task to wait for.</param>
+    /// <param name="timeout">The maximum time to wait.</param>
+    /// <returns>The task representing the wait.</returns>
+    private static Task WaitWithTimeout(Task task, TimeSpan timeout)
+    {
+        try
+        {
+            return task.WaitAsync(timeout);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            // Task.Delay uses a different parameter name and message for invalid timeouts.
+            _ = Task.Delay(timeout);
+            throw;
+        }
+    }
+#endif
 
     /// <summary>
     /// Applies a completed task's results to another.
