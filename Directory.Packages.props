@@ -4,7 +4,7 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
-    <MicrosoftTestingPlatformVersion>2.5.2</MicrosoftTestingPlatformVersion>
+    <MicrosoftTestingPlatformVersion>2.5.3</MicrosoftTestingPlatformVersion>
 
     <MicroBuildVersion>2.0.272</MicroBuildVersion>
     <CodeAnalysisVersion>5.9.0</CodeAnalysisVersion>
