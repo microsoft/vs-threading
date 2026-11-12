@@ -29,13 +29,12 @@ internal static class ReferencesHelper
     internal static readonly ReferenceAssemblies NetFramework20References = ReferenceAssemblies.NetFramework.Net20.Default.WithNuGetConfigFilePath(NuGetConfigPath);
 
 #if NETFRAMEWORK
-    public static ReferenceAssemblies DefaultReferences = ReferenceAssemblies.NetFramework.Net471.Default
+    public static ReferenceAssemblies DefaultReferences = ReferenceAssemblies.NetFramework.Net471.Default.WithNuGetConfigFilePath(NuGetConfigPath)
 #elif NET10_0
     public static ReferenceAssemblies DefaultReferences = Net100References
 #else
 #error Fix TFM conditions
 #endif
-        .WithNuGetConfigFilePath(NuGetConfigPath)
         .WithPackages(ImmutableArray.Create(
             new PackageIdentity("System.Collections.Immutable", "6.0.0"),
             new PackageIdentity("System.Threading.Tasks.Extensions", "4.6.3"),
