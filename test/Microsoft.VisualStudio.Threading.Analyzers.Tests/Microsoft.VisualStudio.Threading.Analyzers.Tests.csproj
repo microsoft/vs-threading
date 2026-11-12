@@ -1,7 +1,7 @@
 <Project>
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <PropertyGroup>
-    <TargetFrameworks>net8.0</TargetFrameworks>
+    <TargetFrameworks>net10.0</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <PublishNativeAOTTests>false</PublishNativeAOTTests>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -9,13 +9,13 @@
     <NoWarn>$(NoWarn);NU1701</NoWarn>
     <DefineConstants Condition="'$(TargetFramework)'=='net472'">$(DefineConstants);WINDOWS</DefineConstants>
     <AppConfig Condition="'$(TargetFramework)'=='net472'">App.net472.config</AppConfig>
-    <UsesWpf Condition="'$(TargetFramework)'=='net8.0-windows'">true</UsesWpf>
+    <UsesWpf Condition="'$(TargetFramework)'=='net10.0-windows'">true</UsesWpf>
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetFrameworkIdentifier)' == '.NETFramework' ">
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-    <TargetFrameworks>$(TargetFrameworks);net8.0-windows;net472</TargetFrameworks>
+    <TargetFrameworks>$(TargetFrameworks);net10.0-windows;net472</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes\Microsoft.VisualStudio.Threading.Analyzers.CodeFixes.csproj" />
@@ -60,7 +60,7 @@
     </EmbeddedResource>
   </ItemGroup>
   <Target Name="RemoveWindowsFramework" AfterTargets="ResolvePackageAssets"
-    Condition="'$(TargetFramework)'=='net8.0'">
+    Condition="'$(TargetFramework)'=='net10.0'">
     <!-- Our dependency of VS SDK is just for test assets. We have no real Windows dependency. But
     NuGet doesn't allow us to express that. -->
     <ItemGroup>

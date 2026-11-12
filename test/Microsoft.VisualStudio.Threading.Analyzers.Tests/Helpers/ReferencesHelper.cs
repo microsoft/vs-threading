@@ -6,7 +6,9 @@
 using System;
 using System.Collections.Immutable;
 using System.IO;
+#if NETFRAMEWORK
 using System.Net;
+#endif
 
 namespace Microsoft.VisualStudio.Threading.Analyzers.Tests;
 
@@ -15,9 +17,9 @@ internal static class ReferencesHelper
     private static readonly string NuGetConfigPath = FindNuGetConfigPath();
 
     /// <summary>
-    /// Gets the .NET 8 reference assemblies using this repository's NuGet sources.
+    /// Gets the .NET 10 reference assemblies using this repository's NuGet sources.
     /// </summary>
-    internal static readonly ReferenceAssemblies Net80References = ReferenceAssemblies.Net.Net80.WithNuGetConfigFilePath(NuGetConfigPath);
+    internal static readonly ReferenceAssemblies Net100References = ReferenceAssemblies.Net.Net100.WithNuGetConfigFilePath(NuGetConfigPath);
 
     /// <summary>
     /// Gets the .NET Framework 2.0 reference assemblies using this repository's NuGet sources.
@@ -26,8 +28,8 @@ internal static class ReferencesHelper
 
 #if NETFRAMEWORK
     public static ReferenceAssemblies DefaultReferences = ReferenceAssemblies.NetFramework.Net471.Default
-#elif NET8_0
-    public static ReferenceAssemblies DefaultReferences = Net80References
+#elif NET10_0
+    public static ReferenceAssemblies DefaultReferences = Net100References
 #else
 #error Fix TFM conditions
 #endif
@@ -43,12 +45,14 @@ internal static class ReferencesHelper
         "Microsoft.VisualStudio.Shell.15.0.dll",
     });
 
+#if NETFRAMEWORK
     static ReferencesHelper()
     {
 #pragma warning disable RS0030 // Do not used banned APIs
         ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 #pragma warning restore RS0030 // Do not used banned APIs
     }
+#endif
 
     private static string FindNuGetConfigPath()
     {

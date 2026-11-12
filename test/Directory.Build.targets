@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <Import Project="AOT.props"
-          Condition="'$(IsTestProject)' == 'true' and '$(PublishNativeAOTTests)' == 'true' and '$(TargetFramework)' != '' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))" />
+          Condition="'$(IsTestProject)' == 'true' and '$(PublishNativeAOTTests)' == 'true' and '$(TargetFramework)' != '' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net10.0'))" />
 
   <PropertyGroup Condition="'$(NativeAOT)' == 'true' and '$(PublishNativeAOTTests)' == 'true'">
     <NoWarn>$(NoWarn);IL2104;IL3053</NoWarn>
@@ -34,7 +34,7 @@
     </MSBuild>
     <MSBuild Projects="$(MSBuildProjectFullPath)" Targets="GetNativeAOTTestExecutable"
              Properties="NativeAOT=true"
-             Condition="'$(TargetFramework)' != '' and '$(PublishNativeAOTTests)' == 'true' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
+             Condition="'$(TargetFramework)' != '' and '$(PublishNativeAOTTests)' == 'true' and $([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net10.0'))">
       <Output TaskParameter="TargetOutputs" ItemName="_NativeAOTTest" />
     </MSBuild>
   </Target>
