@@ -17,7 +17,8 @@
     belong to this tenant.
 .PARAMETER Branches
     Additional branches to trust. Pull requests and the repository's default
-    branch are always included.
+    branch are always included, along with the copilot environment used by
+    Copilot code review and cloud agent setup.
 .EXAMPLE
     ./tools/Configure-GitHubOidc.ps1 -WhatIf
 .EXAMPLE
@@ -91,7 +92,7 @@ if ($PSBoundParameters.ContainsKey('Branches')) {
     $trustedBranches += $Branches
 }
 
-$contexts = @('pull_request')
+$contexts = @('pull_request', 'environment:copilot')
 foreach ($branch in $trustedBranches) {
     if ([string]::IsNullOrWhiteSpace($branch)) {
         throw 'Branch names must not be empty or whitespace.'
@@ -116,6 +117,8 @@ foreach ($context in ($contexts | Select-Object -Unique)) {
 
     $contextName = if ($context -eq 'pull_request') {
         'pull-request'
+    } elseif ($context -eq 'environment:copilot') {
+        'environment-copilot'
     } else {
         "branch-$($context.Substring('ref:refs/heads/'.Length).Replace('%3A', ':'))"
     }

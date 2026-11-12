@@ -194,7 +194,7 @@ public class Test {
         await new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         }.RunAsync();
     }
 
@@ -218,7 +218,7 @@ public class Test {
         var analyzerTest = new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         };
         analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithSpan(7, 25, 7, 31));
         await analyzerTest.RunAsync();
@@ -244,7 +244,7 @@ public class Test {
         var analyzerTest = new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         };
         analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithSpan(7, 25, 7, 31));
         await analyzerTest.RunAsync();
@@ -272,7 +272,7 @@ public class Test {
         var analyzerTest = new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         };
         analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithSpan(9, 33, 9, 39));
         await analyzerTest.RunAsync();
@@ -299,7 +299,7 @@ public class Test {
         var analyzerTest = new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         };
         analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithSpan(7, 41, 7, 47));
         await analyzerTest.RunAsync();
@@ -326,7 +326,7 @@ public class Test {
         var analyzerTest = new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         };
         analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithSpan(8, 25, 8, 31));
         await analyzerTest.RunAsync();
@@ -356,7 +356,7 @@ public class Test {
         var analyzerTest = new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         };
         analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithSpan(8, 25, 8, 31));
         await analyzerTest.RunAsync();
@@ -384,7 +384,7 @@ public class Test {
         var analyzerTest = new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         };
         analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithSpan(9, 25, 9, 31));
         await analyzerTest.RunAsync();
@@ -412,7 +412,7 @@ public class Test {
         var analyzerTest = new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         };
         analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithSpan(9, 25, 9, 31));
         await analyzerTest.RunAsync();
@@ -443,7 +443,7 @@ public class Test {
         var analyzerTest = new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         };
         analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithSpan(7, 25, 7, 31));
         await analyzerTest.RunAsync();
@@ -471,7 +471,7 @@ public class Test {
         var analyzerTest = new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         };
         analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithSpan(9, 26, 9, 32));
         await analyzerTest.RunAsync();
@@ -500,7 +500,7 @@ public class Test {
         var analyzerTest = new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         };
         analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic().WithSpan(8, 26, 8, 32));
         await analyzerTest.RunAsync();

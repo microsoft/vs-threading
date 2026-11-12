@@ -971,7 +971,7 @@ class Test {
         await new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         }.RunAsync();
     }
 
@@ -998,7 +998,7 @@ class Test {
         var analyzerTest = new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         };
         analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
         await analyzerTest.RunAsync();
@@ -1028,7 +1028,7 @@ class Test {
         var analyzerTest = new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         };
         analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
         await analyzerTest.RunAsync();
@@ -1058,7 +1058,7 @@ class Test {
         var analyzerTest = new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         };
         analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
         await analyzerTest.RunAsync();
@@ -1089,7 +1089,7 @@ class Test {
         var analyzerTest = new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         };
         analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
         await analyzerTest.RunAsync();
@@ -1122,7 +1122,7 @@ class Test {
         var analyzerTest = new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         };
         analyzerTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
         await analyzerTest.RunAsync();
@@ -1151,7 +1151,7 @@ class Test {
         var analyzerTest = new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         };
         await analyzerTest.RunAsync();
     }
@@ -1286,7 +1286,7 @@ class Test {
         await new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
             ExpectedDiagnostics =
             {
                 CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"),
@@ -1320,7 +1320,7 @@ class Test {
         await new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
             ExpectedDiagnostics =
             {
                 CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"),
@@ -1359,7 +1359,7 @@ class Test {
         await new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
             ExpectedDiagnostics =
             {
                 CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"),
@@ -1390,7 +1390,7 @@ class Test {
         await new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
             ExpectedDiagnostics =
             {
                 CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"),
@@ -1588,7 +1588,7 @@ class Test {
         var verifyTest = new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         };
         verifyTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
         await verifyTest.RunAsync();
@@ -1623,7 +1623,7 @@ class Test {
         await new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         }.RunAsync();
     }
 
@@ -1652,7 +1652,7 @@ class Test {
         var verifyTest = new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         };
         verifyTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
         await verifyTest.RunAsync();
@@ -1683,7 +1683,7 @@ class Test {
         var verifyTest = new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         };
         verifyTest.ExpectedDiagnostics.Add(CSVerify.Diagnostic(DescriptorNoAlternativeMethod).WithLocation(0).WithArguments("Result"));
         await verifyTest.RunAsync();
