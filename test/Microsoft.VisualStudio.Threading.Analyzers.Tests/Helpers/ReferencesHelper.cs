@@ -16,10 +16,12 @@ internal static class ReferencesHelper
 {
     private static readonly string NuGetConfigPath = FindNuGetConfigPath();
 
+    private static readonly string NuGetOrgConfigPath = Path.Combine(Path.GetDirectoryName(NuGetConfigPath)!, "nuget.org.config");
+
     /// <summary>
-    /// Gets the .NET 10 reference assemblies using this repository's NuGet sources.
+    /// Gets the .NET 10 reference assemblies from nuget.org.
     /// </summary>
-    internal static readonly ReferenceAssemblies Net100References = ReferenceAssemblies.Net.Net100.WithNuGetConfigFilePath(NuGetConfigPath);
+    internal static readonly ReferenceAssemblies Net100References = ReferenceAssemblies.Net.Net100.WithNuGetConfigFilePath(NuGetOrgConfigPath);
 
     /// <summary>
     /// Gets the .NET Framework 2.0 reference assemblies using this repository's NuGet sources.
