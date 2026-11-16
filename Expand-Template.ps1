@@ -174,6 +174,9 @@ try {
     Replace-Placeholders -Path "docfx/docs/getting-started.md" -Replacements @{
         'Library'=$LibraryName
     }
+    Replace-Placeholders -Path "docfx/index.md" -Replacements @{
+        'Library'=$LibraryName
+    }
 
     # Specially handle azure-pipelines .yml edits
     Replace-Placeholders -Path "azure-pipelines/build.yml" -Replacements @{
