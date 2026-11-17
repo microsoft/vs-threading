@@ -81,4 +81,4 @@ jobs:
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
     - name: 🔗 Markup Link Checker (mlc)
-      uses: becheran/mlc@d791bd6ae91ea883f02172e21f453ba8da45dfcd # v1.3.0
+      uses: becheran/mlc@6a356bc7cc0f46b1a3b6dd488199a403f0136301 # v2.0.0
