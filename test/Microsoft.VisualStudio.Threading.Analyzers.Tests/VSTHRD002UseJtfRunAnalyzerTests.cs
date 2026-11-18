@@ -1273,7 +1273,7 @@ class Test {
         await new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         }.RunAsync();
     }
 
@@ -2135,7 +2135,7 @@ class Test : Base, ITest {
         {
             TestCode = test,
             FixedCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         }.RunAsync();
     }
 
