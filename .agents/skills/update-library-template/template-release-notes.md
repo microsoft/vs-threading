@@ -109,3 +109,16 @@ When merging into a repo that already customized the landing page or the docs ta
 * Keep the repo's own pitch, install snippet, and feature highlights in `docfx/index.md`.
 * Drop `_layout: landing` and any "Click Docs across the top to get started" line so `/` shows the same top navbar and left docs sidebar as the other docs pages.
 * Insert Overview at the top of `docfx/docs/toc.yml` if it is missing, and keep the repo's existing entries after it.
+
+## Upgrade Azure Repos from `microbuild` to `microbuild-azdo`
+
+Library.Template now has a `microbuild-azdo` branch for repositories hosted on Azure Repos.
+To upgrade a repository that has previously merged the `microbuild` branch, run:
+
+```ps1
+.\tools\MergeFrom-Template.ps1 -SourceBranch microbuild-azdo
+```
+
+Resolve and commit any merge conflicts, then push and complete the resulting pull request with a merge commit.
+Do not squash the pull request because future template merge automation relies on the Library.Template merge history.
+After this first forced merge, the automation will detect the `microbuild-azdo` branch marker and continue merging from that branch automatically.
