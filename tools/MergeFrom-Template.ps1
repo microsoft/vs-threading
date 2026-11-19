@@ -4,10 +4,13 @@
     Merges the latest changes from Library.Template into HEAD of this repo.
 .PARAMETER LocalBranch
     The name of the local branch to create at HEAD and use to merge into from Library.Template.
+.PARAMETER SourceBranch
+    The Library.Template branch to merge from. When omitted, the branch previously merged into this repo is detected automatically.
 #>
 [CmdletBinding(SupportsShouldProcess = $true)]
 Param(
-    [string]$LocalBranch = "dev/$($env:USERNAME)/libtemplateUpdate"
+    [string]$LocalBranch = "dev/$($env:USERNAME)/libtemplateUpdate",
+    [string]$SourceBranch
 )
 
 Function Spawn-Tool($command, $commandArgs, $workingDirectory, $allowFailures) {
@@ -36,9 +39,14 @@ Function Spawn-Tool($command, $commandArgs, $workingDirectory, $allowFailures) {
     }
 }
 
-$remoteBranch = & $PSScriptRoot\Get-LibTemplateBasis.ps1 -ErrorIfNotRelated
-if ($LASTEXITCODE -ne 0) {
-    exit $LASTEXITCODE
+if ($SourceBranch) {
+    $remoteBranch = $SourceBranch
+}
+else {
+    $remoteBranch = & $PSScriptRoot\Get-LibTemplateBasis.ps1 -ErrorIfNotRelated
+    if ($LASTEXITCODE -ne 0) {
+        exit $LASTEXITCODE
+    }
 }
 
 $LibTemplateUrl = 'https://github.com/aarnott/Library.Template'

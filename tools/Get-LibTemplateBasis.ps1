@@ -9,6 +9,7 @@ Param(
 
 # This list should be sorted in order of decreasing specificity.
 $branchMarkers = @(
+    @{ commit = 'ea78d885a240ee147797214d96aa5e2e8f08cc2e'; branch = 'microbuild-azdo' };
     @{ commit = 'fd0a7b25ccf030bbd16880cca6efe009d5b1fffc'; branch = 'microbuild' };
     @{ commit = '05f49ce799c1f9cc696d53eea89699d80f59f833'; branch = 'main' };
 )
