@@ -235,6 +235,13 @@ internal static class CSharpCommonInterest
             return;
         }
 
+        if (!ContainsMemberNamed(problematicMethods, memberAccessSyntax.Name.Identifier.Text))
+        {
+            // Only a member with one of these names can be reported,
+            // so avoid querying the semantic model for every other member access.
+            return;
+        }
+
         if (ShouldIgnoreContext(context))
         {
             return;
@@ -300,6 +307,13 @@ internal static class CSharpCommonInterest
             throw new ArgumentNullException(nameof(descriptor));
         }
 
+        if (!ContainsMemberNamed(problematicMethods, memberBinding.Name.Identifier.ValueText))
+        {
+            // Only a member with one of these names can be reported,
+            // so avoid querying the semantic model for every other member binding.
+            return;
+        }
+
         if (ShouldIgnoreContext(context) || CSharpUtils.IsWithinNameOf(context.Node as ExpressionSyntax))
         {
             return;
@@ -329,6 +343,28 @@ internal static class CSharpCommonInterest
                 context.ReportDiagnostic(Diagnostic.Create(descriptor, memberBinding.Name.GetLocation()));
             }
         }
+    }
+
+    /// <summary>
+    /// Determines whether any of the given blocking members has the given name.
+    /// </summary>
+    /// <param name="methods">The synchronous blocking members to search.</param>
+    /// <param name="memberName">The name of the accessed member, as it appears in syntax.</param>
+    /// <returns><see langword="true" /> if a member with that name is in <paramref name="methods"/>; otherwise <see langword="false" />.</returns>
+    /// <remarks>
+    /// This requires no semantic model, so it is a cheap way to rule out most member accesses in a compilation.
+    /// </remarks>
+    internal static bool ContainsMemberNamed(IEnumerable<CommonInterest.SyncBlockingMethod> methods, string memberName)
+    {
+        foreach (CommonInterest.SyncBlockingMethod item in methods)
+        {
+            if (item.Method.Name == memberName)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
