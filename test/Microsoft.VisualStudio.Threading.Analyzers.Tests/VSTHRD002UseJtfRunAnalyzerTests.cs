@@ -1402,6 +1402,24 @@ class Test {
     }
 
     [Fact]
+    public async Task EscapedConditionalTaskWaitInSynchronousMethodReports()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                void F(Task task)
+                {
+                    task?.[|@Wait|]();
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
     public async Task BlockingMemberNamesOnOtherTypesDoNotReport()
     {
         string test = """
