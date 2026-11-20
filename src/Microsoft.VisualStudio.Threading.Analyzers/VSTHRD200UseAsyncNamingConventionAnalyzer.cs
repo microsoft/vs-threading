@@ -84,9 +84,9 @@ public class VSTHRD200UseAsyncNamingConventionAnalyzer : DiagnosticAnalyzer
         ImmutableArray<CommonInterest.TypeMatchSpec> asyncSuffixRequiredTypes,
         CancellationToken cancellationToken)
     {
-        if (methodSymbol.AssociatedSymbol is IPropertySymbol)
+        if (methodSymbol.MethodKind is not (MethodKind.Ordinary or MethodKind.ExplicitInterfaceImplementation or MethodKind.LocalFunction))
         {
-            // Skip accessor methods associated with properties.
+            // Skip methods whose names cannot be chosen, such as operators and accessors.
             return null;
         }
 
