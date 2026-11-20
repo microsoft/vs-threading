@@ -399,4 +399,32 @@ class Test {
 ";
         await CSVerify.VerifyAnalyzerAsync(test);
     }
+
+    [Fact]
+    public async Task RunAndJoinOnOtherTypes_ProducesNoDiagnostic()
+    {
+        var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Other {
+    internal void Run(Func<Task> asyncMethod) { }
+
+    internal void Join() { }
+}
+
+class Test {
+    JoinableTaskFactory jtf;
+
+    void F(Other other, JoinableTask joinableTask) {
+        other.Run(() => TplExtensions.CompletedTask);
+        other.Join();
+        jtf.[|Run|](() => TplExtensions.CompletedTask);
+        joinableTask.[|Join|]();
+    }
+}
+";
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
 }
