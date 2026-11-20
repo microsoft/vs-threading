@@ -4,10 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -178,6 +175,7 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
                             // Check if this method is excluded from VSTHRD103 diagnostics
                             if (this.IsExcluded(methodSymbol)
                                 || (!methodSymbol.IsStatic
+                                    && this.excludedMethods.Any(excluded => excluded.Name == methodSymbol.Name) // filter by member name first to avoid unnecessary semantic model lookups
                                     && context.SemanticModel.GetOperation(invocationExpressionSyntax, context.CancellationToken) is IInvocationOperation { Instance.Type: { } receiverType }
                                     && this.excludedMethods.Any(excluded => excluded.Name == methodSymbol.Name && excluded.ContainingType.IsMatch(receiverType))))
                             {
