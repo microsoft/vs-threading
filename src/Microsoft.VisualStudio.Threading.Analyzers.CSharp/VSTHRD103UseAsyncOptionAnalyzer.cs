@@ -173,11 +173,11 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
                             && m.HasAsyncCompatibleReturnType())
                         {
                             // Check if this method is excluded from VSTHRD103 diagnostics
-                            if (this.IsExcluded(methodSymbol)
-                                || (!methodSymbol.IsStatic
-                                    && this.excludedMethods.Any(excluded => excluded.Name == methodSymbol.Name) // filter by member name first to avoid unnecessary semantic model lookups
-                                    && context.SemanticModel.GetOperation(invocationExpressionSyntax, context.CancellationToken) is IInvocationOperation { Instance.Type: { } receiverType }
-                                    && this.excludedMethods.Any(excluded => excluded.Name == methodSymbol.Name && excluded.ContainingType.IsMatch(receiverType))))
+                            ITypeSymbol? receiverType = !methodSymbol.IsStatic
+                                && context.SemanticModel.GetOperation(invocationExpressionSyntax, context.CancellationToken) is IInvocationOperation { Instance.Type: { } type }
+                                    ? type
+                                    : null;
+                            if (this.IsExcluded(methodSymbol, receiverType))
                             {
                                 return;
                             }
@@ -254,8 +254,13 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
                             return true;
                         }
 
+                        ExpressionSyntax? receiver = taskReceiver ?? (memberName.Parent as MemberAccessExpressionSyntax)?.Expression;
+                        ITypeSymbol? receiverType = receiver is not null
+                            ? context.SemanticModel.GetTypeInfo(receiver, context.CancellationToken).Type
+                            : null;
+
                         // Check if this method is excluded from VSTHRD103 diagnostics
-                        if (this.IsExcluded(memberSymbol))
+                        if (this.IsExcluded(memberSymbol, receiverType))
                         {
                             return false;
                         }
@@ -288,9 +293,12 @@ public class VSTHRD103UseAsyncOptionAnalyzer : DiagnosticAnalyzer
             return false;
         }
 
-        private bool IsExcluded(ISymbol symbol)
+        private bool IsExcluded(ISymbol symbol, ITypeSymbol? receiverType = null)
             => this.excludedMethods.Contains(symbol)
                 || (symbol is IMethodSymbol { ReducedFrom: { } reducedFrom }
-                    && this.excludedMethods.Contains(reducedFrom));
+                    && this.excludedMethods.Contains(reducedFrom))
+                || (symbol is IMethodSymbol { IsStatic: false }
+                    && receiverType is not null
+                    && this.excludedMethods.Any(excluded => excluded.Name == symbol.Name && excluded.ContainingType.IsMatch(receiverType)));
     }
 }

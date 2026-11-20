@@ -2779,6 +2779,34 @@ namespace TestNamespace {
     }
 
     [Fact]
+    public async Task BlockingMethodReceiverTypeExclusionIsHonored()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task TestAsync()
+                {
+                    await Task.Yield();
+                    Task<int> task = new Task<int>(() => 1);
+                    task.Wait();
+                }
+            }
+            """;
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = ReferencesHelper.Net80References,
+        };
+        verifyTest.TestState.AdditionalFiles.Add((
+            "vs-threading.SyncMethodsToExcludeFromVSTHRD103.txt",
+            "[System.Threading.Tasks.Task]::Wait"));
+        await verifyTest.RunAsync();
+    }
+
+    [Fact]
     public async Task MemoryStreamOperationsDoNotGenerateWarning()
     {
         string test = """
@@ -2787,7 +2815,7 @@ namespace TestNamespace {
 
             class Test
             {
-                async Task<int> ReadAsync(MemoryStream stream, byte[] buffer, Stream destination)
+                async Task<int> TestAsync(MemoryStream stream, byte[] buffer, Stream destination)
                 {
                     await Task.Yield();
                     stream.Write(buffer, 0, buffer.Length);
