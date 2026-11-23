@@ -64,7 +64,6 @@ if ($IsLinux -or $IsMacOS) {
 
 $globalJson = Get-Content $PSScriptRoot/../global.json | ConvertFrom-Json
 $isMTP = $globalJson.test.runner -eq 'Microsoft.Testing.Platform'
-$extraArgs = @()
 $failedTests = 0
 
 if ($isMTP) {
@@ -106,10 +105,10 @@ if ($isMTP) {
         --no-build `
         -c $Configuration `
         -bl:"$testBinLog" `
+        @extraArgs `
         -- `
         @mtpArgs `
-        @dumpSwitches `
-        @extraArgs
+        @dumpSwitches
     if ($LASTEXITCODE -ne 0) { $failedTests += 1 }
 
     if ($IncludeNativeAOT) {
@@ -136,7 +135,7 @@ if ($isMTP) {
                 $nativeAotArgs += $dumpSwitches
             }
             Write-Host "Running NativeAOT tests from '$testExecutable'." -ForegroundColor Cyan
-            & $testExecutable @nativeAotArgs @extraArgs
+            & $testExecutable @nativeAotArgs
             if ($LASTEXITCODE -ne 0) { $failedTests += 1 }
         }
     }
