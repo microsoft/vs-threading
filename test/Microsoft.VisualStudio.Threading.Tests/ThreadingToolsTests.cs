@@ -152,7 +152,7 @@ public class ThreadingToolsTests : TestBase
         Task<object>? t = tcs.Task.WithCancellation(cts.Token);
         Assert.False(t.IsCompleted);
         cts.Cancel();
-        Assert.Throws<OperationCanceledException>(() =>
+        Assert.ThrowsAny<OperationCanceledException>(() =>
             t.GetAwaiter().GetResult());
     }
 
@@ -164,6 +164,89 @@ public class ThreadingToolsTests : TestBase
         Task<object>? t = tcs.Task.WithCancellation(cts.Token);
         tcs.SetResult(new GenericParameterHelper());
         Assert.Same(tcs.Task.Result, t.GetAwaiter().GetResult());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WithCancellation_CompletedTaskWinsOverCanceledToken(bool generic)
+    {
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+        foreach (Task<object> task in new[]
+        {
+            Task.FromResult(new object()),
+            Task.FromException<object>(new InvalidOperationException()),
+            Task.FromCanceled<object>(cts.Token),
+        })
+        {
+            Task result = generic ? task.WithCancellation(cts.Token) : ((Task)task).WithCancellation(cts.Token);
+            Assert.Same(task, result);
+            _ = task.Exception;
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WithCancellation_PrecanceledToken(bool generic)
+    {
+        var tcs = new TaskCompletionSource<object>();
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+        Task result = generic ? tcs.Task.WithCancellation(cts.Token) : ((Task)tcs.Task).WithCancellation(cts.Token);
+        TaskCanceledException ex = Assert.Throws<TaskCanceledException>(() => result.GetAwaiter().GetResult());
+        Assert.Equal(cts.Token, ex.CancellationToken);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WithCancellation_CanceledWait(bool generic)
+    {
+        var tcs = new TaskCompletionSource<object>();
+        using var cts = new CancellationTokenSource();
+        Task result = generic ? tcs.Task.WithCancellation(cts.Token) : ((Task)tcs.Task).WithCancellation(cts.Token);
+        cts.Cancel();
+        OperationCanceledException ex = Assert.ThrowsAny<OperationCanceledException>(() => result.GetAwaiter().GetResult());
+        Assert.Equal(cts.Token, ex.CancellationToken);
+        Assert.True(result.IsCanceled);
+        Assert.False(tcs.Task.IsCompleted);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void WithCancellation_SourceCanceled(bool generic, bool sameToken)
+    {
+        var tcs = new TaskCompletionSource<object>();
+        using var cts = new CancellationTokenSource();
+        using var sourceCts = new CancellationTokenSource();
+        CancellationToken sourceToken = sameToken ? cts.Token : sourceCts.Token;
+        Task result = generic ? tcs.Task.WithCancellation(cts.Token) : ((Task)tcs.Task).WithCancellation(cts.Token);
+        Assert.True(tcs.TrySetCanceled(sourceToken));
+        TaskCanceledException ex = Assert.Throws<TaskCanceledException>(() => result.GetAwaiter().GetResult());
+        Assert.Equal(sourceToken, ex.CancellationToken);
+        Assert.Same(tcs.Task, ex.Task);
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task WithCancellation_SourceFaulted(bool generic, bool cancellationException)
+    {
+        var tcs = new TaskCompletionSource<object>();
+        using var cts = new CancellationTokenSource();
+        Task result = generic ? tcs.Task.WithCancellation(cts.Token) : ((Task)tcs.Task).WithCancellation(cts.Token);
+        Exception expected = cancellationException ? new OperationCanceledException(cts.Token) : new InvalidOperationException();
+        tcs.SetException(expected);
+        Exception? actual = await Record.ExceptionAsync(() => result);
+        Assert.Same(expected, actual);
+        Assert.Equal(cancellationException, result.IsCanceled);
     }
 
     [Fact]
@@ -206,7 +289,7 @@ public class ThreadingToolsTests : TestBase
         Task? t = ((Task)tcs.Task).WithCancellation(cts.Token);
         Assert.False(t.IsCompleted);
         cts.Cancel();
-        Assert.Throws<OperationCanceledException>(() =>
+        Assert.ThrowsAny<OperationCanceledException>(() =>
             t.GetAwaiter().GetResult());
     }
 

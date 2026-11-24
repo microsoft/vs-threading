@@ -1077,6 +1077,74 @@ public class TplExtensionsTests : TestBase
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
+    public async Task WithTimeout_InvalidTimeout(bool generic)
+    {
+        foreach (bool completed in new[] { false, true })
+        {
+            foreach (TimeSpan timeout in new[] { TimeSpan.FromMilliseconds(-2), TimeSpan.MaxValue, TimeSpan.MinValue })
+            {
+                var tcs = new TaskCompletionSource<object?>();
+                if (completed)
+                {
+                    tcs.SetResult(null);
+                }
+
+                ArgumentOutOfRangeException expected = Assert.Throws<ArgumentOutOfRangeException>(() => { _ = Task.Delay(timeout); });
+                Task result = generic ? tcs.Task.WithTimeout(timeout) : ((Task)tcs.Task).WithTimeout(timeout);
+                ArgumentOutOfRangeException actual = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => result);
+                Assert.Equal(expected.ParamName, actual.ParamName);
+                Assert.Equal(expected.Message, actual.Message);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task WithTimeout_SourceFaulted(bool generic, bool cancellationException)
+    {
+        var tcs = new TaskCompletionSource<object>();
+        Task result = generic ? tcs.Task.WithTimeout(UnexpectedTimeout) : ((Task)tcs.Task).WithTimeout(UnexpectedTimeout);
+        Exception expected = cancellationException ? new OperationCanceledException(this.TimeoutToken) : new InvalidOperationException();
+        tcs.SetException(expected);
+        Exception? actual = await Record.ExceptionAsync(() => result);
+        Assert.Same(expected, actual);
+        Assert.Equal(cancellationException, result.IsCanceled);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WithTimeout_SourceCanceled(bool generic)
+    {
+        var tcs = new TaskCompletionSource<object>();
+        Task result = generic ? tcs.Task.WithTimeout(UnexpectedTimeout) : ((Task)tcs.Task).WithTimeout(UnexpectedTimeout);
+        Assert.True(tcs.TrySetCanceled(this.TimeoutToken));
+        TaskCanceledException ex = Assert.Throws<TaskCanceledException>(() => result.GetAwaiter().GetResult());
+        Assert.Equal(this.TimeoutToken, ex.CancellationToken);
+        Assert.Same(tcs.Task, ex.Task);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WithTimeout_ZeroTimeout(bool generic)
+    {
+        var tcs = new TaskCompletionSource<object?>();
+        Task result = generic ? tcs.Task.WithTimeout(TimeSpan.Zero) : ((Task)tcs.Task).WithTimeout(TimeSpan.Zero);
+        Assert.Throws<TimeoutException>(() => result.GetAwaiter().GetResult());
+        Assert.False(tcs.Task.IsCompleted);
+
+        tcs.SetResult(null);
+        result = generic ? tcs.Task.WithTimeout(TimeSpan.Zero) : ((Task)tcs.Task).WithTimeout(TimeSpan.Zero);
+        result.GetAwaiter().GetResult();
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     public void WithTimeout_MinusOneMeansInfiniteTimeout(bool generic)
     {
         this.ExecuteOnDispatcher(async delegate
