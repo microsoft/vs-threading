@@ -38,7 +38,7 @@
       "rollForward": false
     },
     "dotnet-symbol": {
-      "version": "11.0.756802",
+      "version": "10.0.750501",
       "commands": [
         "dotnet-symbol"
       ],
