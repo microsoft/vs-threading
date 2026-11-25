@@ -2802,7 +2802,7 @@ namespace TestNamespace {
         };
         verifyTest.TestState.AdditionalFiles.Add((
             "vs-threading.SyncMethodsToExcludeFromVSTHRD103.txt",
-            "[System.Threading.Tasks.Task]::Wait"));
+            "[System.Threading.Tasks.Task`1]::Wait"));
         await verifyTest.RunAsync();
     }
 
