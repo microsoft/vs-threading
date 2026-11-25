@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.VSTHRD200UseAsyncNamingConventionAnalyzer, Microsoft.VisualStudio.Threading.Analyzers.VSTHRD200UseAsyncNamingConventionCodeFix>;
+using VBVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.VisualBasicCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.VSTHRD200UseAsyncNamingConventionAnalyzer, Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
 public class VSTHRD200UseAsyncNamingConventionAnalyzerTests
 {
@@ -30,6 +31,64 @@ class Test {
 
         DiagnosticResult expected = CSVerify.Diagnostic(AddSuffixDescriptor).WithSpan(5, 10, 5, 13);
         await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
+
+    [Fact]
+    public async Task TaskReturningOperators_GenerateNoWarning()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            public sealed class Deferred<T>
+            {
+                public Task<T> RunAsync() => null;
+                public static implicit operator Task<T>(Deferred<T> value) => value.RunAsync();
+                public static explicit operator ValueTask<T>(Deferred<T> value) => default;
+                public static Task<T> operator +(Deferred<T> left, Deferred<T> right) => left.RunAsync();
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task VisualBasicTaskReturningOperators_GenerateNoWarning()
+    {
+        string test = """
+            Imports System.Threading.Tasks
+
+            Public Class Deferred
+                Public Shared Widening Operator CType(value As Deferred) As Task
+                    Return Nothing
+                End Operator
+
+                Public Shared Narrowing Operator CType(value As Deferred) As Task(Of Integer)
+                    Return Nothing
+                End Operator
+
+                Public Shared Operator +(left As Deferred, right As Deferred) As Task
+                    Return Nothing
+                End Operator
+            End Class
+            """;
+
+        await VBVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task VisualBasicTaskReturningMethodWithoutSuffix_GeneratesWarning()
+    {
+        string test = """
+            Imports System.Threading.Tasks
+
+            Public Class Deferred
+                Public Function {|#0:Run|}() As Task
+                    Return Nothing
+                End Function
+            End Class
+            """;
+
+        await VBVerify.VerifyAnalyzerAsync(test, VBVerify.Diagnostic(AddSuffixDescriptor).WithLocation(0));
     }
 
     /// <summary>
