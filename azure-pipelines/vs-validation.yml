@@ -27,7 +27,7 @@ extends:
   template: azure-pipelines/MicroBuild.1ES.Unofficial.yml@MicroBuildTemplate
   parameters:
     settings:
-      networkIsolationPolicy: DefaultDeny,CFSClean3
+      networkIsolationPolicy: DefaultDeny,CFSClean,CFSClean2,CFSClean3
     sdl:
       sourceAnalysisPool: VSEng-MicroBuildVSStable
       credscan:
@@ -101,7 +101,7 @@ extends:
       - job: insertion
         displayName: VS insertion
         dependsOn: upload
-        pool: VSEngSS-MicroBuild2022-1ES
+        pool: VSEng-MicroBuildVSStable
         steps:
         - checkout: self
           clean: true

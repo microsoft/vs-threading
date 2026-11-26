@@ -102,7 +102,7 @@ parameters:
 - name: linuxPool
   type: object
   default:
-    vmImage: ubuntu-24.04
+    vmImage: ubuntu-26.04
 - name: macOSPool
   type: object
   default:

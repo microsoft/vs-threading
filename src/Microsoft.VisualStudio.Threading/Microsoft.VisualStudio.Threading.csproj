@@ -8,13 +8,16 @@
     </Description>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
      <!-- Enable warnings regarding AOT compatibility. Learn more about testing strategies at https://devblogs.microsoft.com/dotnet/creating-aot-compatible-libraries/ -->
-    <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</IsAotCompatible>
+    <IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net10.0'))">true</IsAotCompatible>
     <PolySharpIncludeRuntimeSupportedAttributes>true</PolySharpIncludeRuntimeSupportedAttributes>
     <PolySharpExcludeGeneratedTypes>System.Runtime.CompilerServices.OverloadResolutionPriorityAttribute</PolySharpExcludeGeneratedTypes>
     <PackageValidationBaselineVersion Condition="$([MSBuild]::IsOSPlatform('Windows'))">17.14.15</PackageValidationBaselineVersion>
   </PropertyGroup>
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <PackageValidationBaselineFrameworkToIgnore Include="net8.0;net8.0-windows7.0" />
+  </ItemGroup>
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-    <UseWPF Condition=" '$(TargetFramework)' != 'net8.0' ">true</UseWPF>
+    <UseWPF Condition=" '$(TargetFramework)' != 'net10.0' ">true</UseWPF>
   </PropertyGroup>
   <ItemGroup>
     <CodeAnalysisDictionary Include="CustomDictionary.xml" />

@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Threading;
@@ -47,6 +48,9 @@ public abstract class JoinableTaskTestBase : TestBase
         return new JoinableTaskContext();
     }
 
+#if NET10_0_OR_GREATER
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Tests deliberately exercise best-effort hang reports, including when trimmed.")]
+#endif
     protected int GetPendingTasksCount()
     {
         IHangReportContributor hangContributor = this.context;

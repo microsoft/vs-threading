@@ -5,6 +5,8 @@
     Runs tests as they are run in cloud test runs.
 .PARAMETER Configuration
     The configuration within which to run tests
+.PARAMETER IncludeNativeAOT
+    Runs the NativeAOT-compiled tests and fails if the expected image is missing.
 .PARAMETER Agent
     The name of the agent. This is used in preparing test run titles.
 .PARAMETER PublishResults
@@ -19,6 +21,7 @@
 [CmdletBinding()]
 Param(
     [string]$Configuration='Debug',
+    [switch]$IncludeNativeAOT,
     [string]$Agent='Local',
     [switch]$PublishResults,
     [switch]$x86,
@@ -50,6 +53,9 @@ if ($x86) {
 
 $testBinLog = Join-Path $ArtifactStagingFolder (Join-Path build_logs test.binlog)
 $testLogs = Join-Path $ArtifactStagingFolder test_logs
+if (Test-Path -LiteralPath $testLogs) {
+    Remove-Item -LiteralPath $testLogs -Recurse -Force
+}
 
 $extraArgs = @()
 if ($IsLinux -or $IsMacOS) {
@@ -58,7 +64,6 @@ if ($IsLinux -or $IsMacOS) {
 
 $globalJson = Get-Content $PSScriptRoot/../global.json | ConvertFrom-Json
 $isMTP = $globalJson.test.runner -eq 'Microsoft.Testing.Platform'
-$extraArgs = @()
 $failedTests = 0
 
 if ($isMTP) {
@@ -74,6 +79,7 @@ if ($isMTP) {
         ,'--crash-report-if-supported'
     )
     $mtpArgs = @(
+        ,'--filter-not-trait','TestCategory=FailsInCloudTest'
         ,'--diagnostic'
         ,'--diagnostic-output-directory',$testLogs
         ,'--diagnostic-verbosity','Information'
@@ -99,12 +105,40 @@ if ($isMTP) {
         --no-build `
         -c $Configuration `
         -bl:"$testBinLog" `
+        @extraArgs `
         -- `
-        --filter-not-trait 'TestCategory=FailsInCloudTest' `
         @mtpArgs `
-        @dumpSwitches `
-        @extraArgs
+        @dumpSwitches
     if ($LASTEXITCODE -ne 0) { $failedTests += 1 }
+
+    if ($IncludeNativeAOT) {
+        $nativeAotTests = @(& "$PSScriptRoot/Get-NativeAOTTestProjects.ps1" -Configuration $Configuration)
+        foreach ($nativeAotTest in $nativeAotTests) {
+            $testExecutable = $nativeAotTest.ExecutablePath
+            if (-not (Test-Path -LiteralPath $testExecutable -PathType Leaf)) {
+                Write-Error "Expected NativeAOT test executable '$testExecutable' was not found."
+                $failedTests += 1
+                continue
+            }
+
+            $nativeAotArgs = @(
+                ,'--filter-not-trait','TestCategory=FailsInCloudTest'
+                ,'--diagnostic'
+                ,'--diagnostic-output-directory',$testLogs
+                ,'--diagnostic-verbosity','Information'
+                ,'--results-directory',$testLogs
+                ,'--report-trx'
+                ,'--report-trx-filename',"$($nativeAotTest.ProjectName)_$($nativeAotTest.TargetFramework)_NativeAOT_{arch}.trx"
+                ,'--timeout','5m'
+            )
+            if ($env:OS -eq 'Windows_NT') {
+                $nativeAotArgs += $dumpSwitches
+            }
+            Write-Host "Running NativeAOT tests from '$testExecutable'." -ForegroundColor Cyan
+            & $testExecutable @nativeAotArgs
+            if ($LASTEXITCODE -ne 0) { $failedTests += 1 }
+        }
+    }
 
     $trxFiles = Get-ChildItem -Recurse -Path $testLogs\*.trx
 } else {

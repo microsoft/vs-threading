@@ -7,7 +7,6 @@ using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -16,8 +15,6 @@ using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FindSymbols;
-using Microsoft.CodeAnalysis.Simplification;
-using Microsoft.VisualStudio.Threading;
 
 namespace Microsoft.VisualStudio.Threading.Analyzers;
 
@@ -91,8 +88,8 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
             or InvocationExpressionSyntax
             or ConditionalAccessExpressionSyntax
             or PostfixUnaryExpressionSyntax
-            ? SyntaxFactory.ParenthesizedExpression(awaitExpression)
-            : awaitExpression;
+                ? SyntaxFactory.ParenthesizedExpression(awaitExpression)
+                : awaitExpression;
 
     private static async Task<bool> CanConvertToAsyncAsync(
         Document document,
@@ -389,8 +386,7 @@ public class VSTHRD002UseJtfRunCodeFixWithAwait : CodeFixProvider
 
             var getAwaiterInvocation = getAwaiterInvocationExpression as InvocationExpressionSyntax;
             var getAwaiterAccess = getAwaiterInvocation?.Expression as MemberAccessExpressionSyntax;
-            return getAwaiterAccess?.Name.Identifier.ValueText == "GetAwaiter"
-                && getAwaiterInvocation!.ArgumentList.Arguments.Count == 0
+            return getAwaiterAccess?.Name.Identifier.ValueText == "GetAwaiter" && getAwaiterInvocation!.ArgumentList.Arguments.Count == 0
                 ? getAwaiterAccess.Expression
                 : null;
         }

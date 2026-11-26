@@ -12,8 +12,10 @@ public class ValidityTests
     [Fact]
     public void ProductNotInGac()
     {
+#if NETFRAMEWORK
         Assert.False(
             typeof(AsyncBarrier).GetTypeInfo().Assembly.Location.Contains("GAC"),
             $"{typeof(AsyncBarrier).GetTypeInfo().Assembly.GetName().Name} was loaded from the GAC. Run UnGac.cmd.");
+#endif
     }
 }

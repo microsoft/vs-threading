@@ -44,6 +44,18 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
 
+    /// <summary>
+    /// The names of the members in <see cref="CommonInterest.ProblematicSyncBlockingMethods"/>.
+    /// </summary>
+    private static readonly ImmutableArray<string> BuiltInBlockingMethodNames =
+        CommonInterest.ProblematicSyncBlockingMethods.Select(method => method.Method.Name).Distinct().ToImmutableArray();
+
+    /// <summary>
+    /// The names of the members in <see cref="CommonInterest.SyncBlockingProperties"/>.
+    /// </summary>
+    private static readonly ImmutableArray<string> BuiltInBlockingPropertyNames =
+        CommonInterest.SyncBlockingProperties.Select(property => property.Method.Name).Distinct().ToImmutableArray();
+
     /// <inheritdoc />
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
     {
@@ -133,13 +145,21 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
         bool analyzeBuiltInBlockingMethods)
     {
         var invocationExpressionSyntax = (InvocationExpressionSyntax)context.Node;
-        if (analyzeBuiltInBlockingMethods && ShouldAnalyze(context, analyzeWholeCodeBlock))
+        if (analyzeBuiltInBlockingMethods)
         {
+            // Only a handful of member names can be reported by the built-in checks.
+            // Test for those syntactically before doing any work that walks ancestors or queries the semantic model.
             if (invocationExpressionSyntax.Expression is MemberAccessExpressionSyntax memberAccess)
             {
-                InspectMemberAccess(context, memberAccess, CommonInterest.ProblematicSyncBlockingMethods);
+                if (BuiltInBlockingMethodNames.Contains(memberAccess.Name.Identifier.Text)
+                    && ShouldAnalyze(context, analyzeWholeCodeBlock))
+                {
+                    InspectMemberAccess(context, memberAccess, CommonInterest.ProblematicSyncBlockingMethods);
+                }
             }
             else if (invocationExpressionSyntax.Expression is MemberBindingExpressionSyntax memberBinding
+                && BuiltInBlockingMethodNames.Contains(memberBinding.Name.Identifier.ValueText)
+                && ShouldAnalyze(context, analyzeWholeCodeBlock)
                 && invocationExpressionSyntax.FirstAncestorOrSelf<ConditionalAccessExpressionSyntax>() is { } conditionalAccess)
             {
                 CSharpCommonInterest.InspectMemberBinding(
@@ -246,12 +266,16 @@ public class VSTHRD002UseJtfRunAnalyzer : DiagnosticAnalyzer
 
     private static void AnalyzeMemberAccess(SyntaxNodeAnalysisContext context, bool analyzeWholeCodeBlock)
     {
-        if (!ShouldAnalyze(context, analyzeWholeCodeBlock))
+        var memberAccessSyntax = (MemberAccessExpressionSyntax)context.Node;
+
+        // This runs for every member access in a code block, but only a few member names can be reported.
+        // Test for those syntactically before doing any work that walks ancestors or queries the semantic model.
+        if (!BuiltInBlockingPropertyNames.Contains(memberAccessSyntax.Name.Identifier.Text)
+            || !ShouldAnalyze(context, analyzeWholeCodeBlock))
         {
             return;
         }
 
-        var memberAccessSyntax = (MemberAccessExpressionSyntax)context.Node;
         InspectMemberAccess(
             context,
             memberAccessSyntax,

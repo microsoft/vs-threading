@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -61,7 +60,7 @@ public static partial class VisualBasicCodeFixVerifier<TAnalyzer, TCodeFix>
                 return from resourceName in Assembly.GetExecutingAssembly().GetManifestResourceNames()
                        where resourceName.StartsWith(additionalFilePrefix, StringComparison.Ordinal)
                        let content = ReadManifestResource(Assembly.GetExecutingAssembly(), resourceName)
-                       select (filename: resourceName.Substring(additionalFilePrefix.Length), SourceText.From(content));
+                       select (FileName: resourceName.Substring(additionalFilePrefix.Length), SourceText.From(content));
             });
         }
 

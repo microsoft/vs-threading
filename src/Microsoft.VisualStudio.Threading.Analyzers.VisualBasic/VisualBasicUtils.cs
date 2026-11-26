@@ -89,7 +89,7 @@ internal sealed class VisualBasicUtils : LanguageUtils
         return objectCreation.Syntax;
     }
 
-    public override bool MethodReturnsNullableReferenceType(IMethodSymbol methodSymbol)
+    public override bool MethodReturnsNullableReferenceType(IMethodSymbol method)
     {
         // VB.NET doesn't support nullable reference types
         return false;

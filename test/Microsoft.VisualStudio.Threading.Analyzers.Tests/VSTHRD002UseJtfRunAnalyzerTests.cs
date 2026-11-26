@@ -1273,7 +1273,7 @@ class Test {
         await new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         }.RunAsync();
     }
 
@@ -1399,6 +1399,111 @@ class Test {
             """;
 
         await CSVerify.VerifyCodeFixAsync(test, test);
+    }
+
+    [Fact]
+    public async Task EscapedConditionalTaskWaitInSynchronousMethodReports()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                void F(Task task)
+                {
+                    task?.[|@Wait|]();
+                }
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task BlockingMemberNamesOnOtherTypesDoNotReport()
+    {
+        string test = """
+            using System.Threading.Tasks;
+
+            class Other
+            {
+                internal int Result => 0;
+
+                internal static void WaitAll(params Task[] tasks) { }
+
+                internal static int WaitAny(params Task[] tasks) => 0;
+
+                internal void Wait() { }
+
+                internal Other GetAwaiter() => this;
+
+                internal int GetResult() => 0;
+            }
+
+            class Test
+            {
+                void OtherWait(Other other) => other.Wait();
+
+                void OtherConditionalWait(Other other) => other?.Wait();
+
+                int OtherResult(Other other) => other.Result;
+
+                int OtherGetResult(Other other) => other.GetAwaiter().GetResult();
+
+                int? OtherConditionalGetResult(Other other) => other?.GetAwaiter().GetResult();
+
+                void OtherWaitAll(Task task) => Other.WaitAll(task);
+
+                int OtherWaitAny(Task task) => Other.WaitAny(task);
+
+                void TaskWait(Task task) => task.[|Wait|]();
+
+                void TaskConditionalWait(Task task) => task?.[|Wait|]();
+
+                int TaskResult(Task<int> task) => task.[|Result|];
+
+                int TaskGetResult(Task<int> task) => task.GetAwaiter().[|GetResult|]();
+
+                void TaskWaitAll(Task task) => Task.[|WaitAll|](task);
+
+                int TaskWaitAny(Task task) => Task.[|WaitAny|](task);
+
+                bool TaskOtherMembers(Task task) => task.IsCanceled || task.GetAwaiter().IsCompleted;
+            }
+            """;
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task ConfiguredSyncBlockingMethodNamedLikeBuiltInMemberReports()
+    {
+        string test = """
+            class CustomWaiter
+            {
+                internal void Wait() { }
+
+                internal void Pulse() { }
+            }
+
+            class Test
+            {
+                void F(CustomWaiter waiter)
+                {
+                    waiter.[|Wait|]();
+                    waiter?.[|Wait|]();
+                    waiter.Pulse();
+                }
+            }
+            """;
+
+        var verifyTest = new CSVerify.Test
+        {
+            TestCode = test,
+            FixedCode = test,
+        };
+        verifyTest.TestState.AdditionalFiles.Add(("vs-threading.SyncBlockingMethods.txt", "[CustomWaiter]::Wait"));
+        await verifyTest.RunAsync();
     }
 
     [Fact]
@@ -2135,7 +2240,7 @@ class Test : Base, ITest {
         {
             TestCode = test,
             FixedCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         }.RunAsync();
     }
 

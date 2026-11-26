@@ -350,7 +350,8 @@ public class TplExtensionsTests : TestBase
     /// is captured and used to schedule the continuation, the <see cref="ExecutionContext"/> is always captured and applied.
     /// </summary>
     [Theory]
-    [CombinatorialData]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task NoThrowAwaitable_Await_CapturesExecutionContext(bool captureContext)
     {
         var awaitableTcs = new TaskCompletionSource<object?>();
@@ -373,7 +374,8 @@ public class TplExtensionsTests : TestBase
     /// is captured and used to schedule the continuation, the <see cref="ExecutionContext"/> is always captured and applied.
     /// </summary>
     [Theory]
-    [CombinatorialData]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task NoThrowAwaitable_OnCompleted_CapturesExecutionContext(bool captureContext)
     {
         var testResultTcs = new TaskCompletionSource<object?>();
@@ -401,7 +403,8 @@ public class TplExtensionsTests : TestBase
     }
 
     [Theory]
-    [CombinatorialData]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task NoThrowAwaitable_UnsafeOnCompleted_DoesNotCaptureExecutionContext(bool captureContext)
     {
         var testResultTcs = new TaskCompletionSource<object?>();
@@ -449,7 +452,8 @@ public class TplExtensionsTests : TestBase
     /// is captured and used to schedule the continuation, the <see cref="ExecutionContext"/> is always captured and applied.
     /// </summary>
     [Theory]
-    [CombinatorialData]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task NoThrowAwaitable_ValueTask_Await_CapturesExecutionContext(bool captureContext)
     {
         var awaitableTcs = new TaskCompletionSource<object?>();
@@ -472,7 +476,8 @@ public class TplExtensionsTests : TestBase
     /// is captured and used to schedule the continuation, the <see cref="ExecutionContext"/> is always captured and applied.
     /// </summary>
     [Theory]
-    [CombinatorialData]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task NoThrowAwaitable_ValueTask_OnCompleted_CapturesExecutionContext(bool captureContext)
     {
         var testResultTcs = new TaskCompletionSource<object?>();
@@ -500,7 +505,8 @@ public class TplExtensionsTests : TestBase
     }
 
     [Theory]
-    [CombinatorialData]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task NoThrowAwaitable_ValueTask_UnsafeOnCompleted_DoesNotCaptureExecutionContext(bool captureContext)
     {
         var testResultTcs = new TaskCompletionSource<object?>();
@@ -596,7 +602,8 @@ public class TplExtensionsTests : TestBase
     /// is captured and used to schedule the continuation, the <see cref="ExecutionContext"/> is always captured and applied.
     /// </summary>
     [Theory]
-    [CombinatorialData]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task NoThrowAwaitable_ValueTaskT_Await_CapturesExecutionContext(bool captureContext)
     {
         var awaitableTcs = new TaskCompletionSource<object?>();
@@ -619,7 +626,8 @@ public class TplExtensionsTests : TestBase
     /// is captured and used to schedule the continuation, the <see cref="ExecutionContext"/> is always captured and applied.
     /// </summary>
     [Theory]
-    [CombinatorialData]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task NoThrowAwaitable_ValueTaskT_OnCompleted_CapturesExecutionContext(bool captureContext)
     {
         var testResultTcs = new TaskCompletionSource<object?>();
@@ -647,7 +655,8 @@ public class TplExtensionsTests : TestBase
     }
 
     [Theory]
-    [CombinatorialData]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task NoThrowAwaitable_ValueTaskT_UnsafeOnCompleted_DoesNotCaptureExecutionContext(bool captureContext)
     {
         var testResultTcs = new TaskCompletionSource<object?>();
@@ -1063,6 +1072,74 @@ public class TplExtensionsTests : TestBase
             ? TplExtensions.WithTimeout<int>(null!, TimeSpan.FromSeconds(1))
             : TplExtensions.WithTimeout(null!, TimeSpan.FromSeconds(1));
         Assert.Throws<ArgumentNullException>(() => timeoutTask.GetAwaiter().GetResult());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task WithTimeout_InvalidTimeout(bool generic)
+    {
+        foreach (bool completed in new[] { false, true })
+        {
+            foreach (TimeSpan timeout in new[] { TimeSpan.FromMilliseconds(-2), TimeSpan.MaxValue, TimeSpan.MinValue })
+            {
+                var tcs = new TaskCompletionSource<object?>();
+                if (completed)
+                {
+                    tcs.SetResult(null);
+                }
+
+                ArgumentOutOfRangeException expected = Assert.Throws<ArgumentOutOfRangeException>(() => { _ = Task.Delay(timeout); });
+                Task result = generic ? tcs.Task.WithTimeout(timeout) : ((Task)tcs.Task).WithTimeout(timeout);
+                ArgumentOutOfRangeException actual = await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => result);
+                Assert.Equal(expected.ParamName, actual.ParamName);
+                Assert.Equal(expected.Message, actual.Message);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public async Task WithTimeout_SourceFaulted(bool generic, bool cancellationException)
+    {
+        var tcs = new TaskCompletionSource<object>();
+        Task result = generic ? tcs.Task.WithTimeout(UnexpectedTimeout) : ((Task)tcs.Task).WithTimeout(UnexpectedTimeout);
+        Exception expected = cancellationException ? new OperationCanceledException(this.TimeoutToken) : new InvalidOperationException();
+        tcs.SetException(expected);
+        Exception? actual = await Record.ExceptionAsync(() => result);
+        Assert.Same(expected, actual);
+        Assert.Equal(cancellationException, result.IsCanceled);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WithTimeout_SourceCanceled(bool generic)
+    {
+        var tcs = new TaskCompletionSource<object>();
+        Task result = generic ? tcs.Task.WithTimeout(UnexpectedTimeout) : ((Task)tcs.Task).WithTimeout(UnexpectedTimeout);
+        Assert.True(tcs.TrySetCanceled(this.TimeoutToken));
+        TaskCanceledException ex = Assert.Throws<TaskCanceledException>(() => result.GetAwaiter().GetResult());
+        Assert.Equal(this.TimeoutToken, ex.CancellationToken);
+        Assert.Same(tcs.Task, ex.Task);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WithTimeout_ZeroTimeout(bool generic)
+    {
+        var tcs = new TaskCompletionSource<object?>();
+        Task result = generic ? tcs.Task.WithTimeout(TimeSpan.Zero) : ((Task)tcs.Task).WithTimeout(TimeSpan.Zero);
+        Assert.Throws<TimeoutException>(() => result.GetAwaiter().GetResult());
+        Assert.False(tcs.Task.IsCompleted);
+
+        tcs.SetResult(null);
+        result = generic ? tcs.Task.WithTimeout(TimeSpan.Zero) : ((Task)tcs.Task).WithTimeout(TimeSpan.Zero);
+        result.GetAwaiter().GetResult();
     }
 
     [Theory]

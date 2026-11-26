@@ -23,7 +23,7 @@ extends:
   template: azure-pipelines/MicroBuild.1ES.Official.yml@MicroBuildTemplate
   parameters:
     settings:
-      networkIsolationPolicy: DefaultDeny,CFSClean3
+      networkIsolationPolicy: DefaultDeny,CFSClean,CFSClean2,CFSClean3
     sdl:
       sourceAnalysisPool: VSEng-MicroBuildVSStable
       sbom:
@@ -63,7 +63,7 @@ extends:
       - job: insert
         dependsOn: upload
         displayName: VS insertion
-        pool: VSEngSS-MicroBuild2022-1ES
+        pool: VSEng-MicroBuildVSStable
         templateContext:
           outputParentDirectory: $(Pipeline.Workspace)/CI
         steps:

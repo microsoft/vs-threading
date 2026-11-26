@@ -100,7 +100,7 @@ public partial class JoinableTaskFactory
 
     /// <summary>
     /// Gets a <see cref="SynchronizationContext"/> on which <see cref="SynchronizationContext.Wait(IntPtr[], bool, int)"/>
-    /// should be called from <see cref="JoinableTaskSynchronizationContext.Wait(IntPtr[], bool, int)"/>
+    /// should be called from <see cref="JoinableTaskSynchronizationContext.Wait(nint[], bool, int)"/>
     /// when <see cref="DisableProcessing()"/> has not been called.
     /// </summary>
     /// <remarks>

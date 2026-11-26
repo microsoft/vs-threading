@@ -18,10 +18,13 @@ public class JoinableTaskTests : JoinableTaskTestBase
     {
     }
 
-    [StaFact]
+    [Fact]
     public void RunFuncOfTaskSTA()
     {
-        this.RunFuncOfTaskHelper();
+        TestUtilities.RunOnSta(() =>
+        {
+            new JoinableTaskTests(this.Logger).RunFuncOfTaskHelper();
+        });
     }
 
     [Fact]
@@ -2239,7 +2242,7 @@ public class JoinableTaskTests : JoinableTaskTestBase
     }
 
     [Fact]
-    public void JoinCancellation()
+    public async Task JoinCancellation()
     {
         // Kick off the BeginAsync work from a background thread that has no special
         // affinity to the main thread.
@@ -2252,7 +2255,11 @@ public class JoinableTaskTests : JoinableTaskTestBase
 
         Assert.False(joinable.Task.IsCompleted);
         var cts = new CancellationTokenSource(AsyncDelay / 4);
-        Assert.Throws<OperationCanceledException>(() => joinable.Join(cts.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+        {
+            joinable.Join(cts.Token);
+            return Task.CompletedTask;
+        });
     }
 
     [Fact]
@@ -4544,6 +4551,9 @@ public class JoinableTaskTests : JoinableTaskTestBase
     /// Writes out a DGML graph of pending tasks and collections to the test context.
     /// </summary>
     /// <param name="context">A specific context to collect data from; <see langword="null" /> will use this.context.</param>
+#if NET10_0_OR_GREATER
+    [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Tests deliberately exercise best-effort hang reports, including when trimmed.")]
+#endif
     private void PrintActiveTasksReport(JoinableTaskContext? context = null)
     {
         context = context ?? this.context;

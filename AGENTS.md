@@ -31,43 +31,43 @@ dotnet test --no-build -c Release
 
 **Run tests for a specific test project**:
 ```bash
-dotnet test --project test/Library.Tests/Library.Tests.csproj --no-build -c Release
+dotnet test --project test/Microsoft.VisualStudio.Threading.Tests/Microsoft.VisualStudio.Threading.Tests.csproj --no-build -c Release
 ```
 
 **Run a single test method**:
 ```bash
-dotnet test --project test/Library.Tests/Library.Tests.csproj --no-build -c Release -- --filter-method ClassName.MethodName
+dotnet test --project test/Microsoft.VisualStudio.Threading.Tests/Microsoft.VisualStudio.Threading.Tests.csproj --no-build -c Release -- --filter-method ClassName.MethodName
 ```
 
 **Run all tests in a test class**:
 ```bash
-dotnet test --project test/Library.Tests/Library.Tests.csproj --no-build -c Release -- --filter-class ClassName
+dotnet test --project test/Microsoft.VisualStudio.Threading.Tests/Microsoft.VisualStudio.Threading.Tests.csproj --no-build -c Release -- --filter-class ClassName
 ```
 
 **Run tests with wildcard matching** (supports wildcards at beginning and/or end):
 ```bash
-dotnet test --project test/Library.Tests/Library.Tests.csproj --no-build -c Release -- --filter-method "*Pattern*"
+dotnet test --project test/Microsoft.VisualStudio.Threading.Tests/Microsoft.VisualStudio.Threading.Tests.csproj --no-build -c Release -- --filter-method "*Pattern*"
 ```
 
 **Run tests with a specific trait** (equivalent to category filtering):
 ```bash
-dotnet test --project test/Library.Tests/Library.Tests.csproj --no-build -c Release -- --filter-trait "TraitName=value"
+dotnet test --project test/Microsoft.VisualStudio.Threading.Tests/Microsoft.VisualStudio.Threading.Tests.csproj --no-build -c Release -- --filter-trait "TraitName=value"
 ```
 
 **Exclude tests with a specific trait** (skip unstable tests):
 ```bash
-dotnet test --project test/Library.Tests/Library.Tests.csproj --no-build -c Release -- --filter-not-trait "TestCategory=FailsInCloudTest"
+dotnet test --project test/Microsoft.VisualStudio.Threading.Tests/Microsoft.VisualStudio.Threading.Tests.csproj --no-build -c Release -- --filter-not-trait "TestCategory=FailsInCloudTest"
 ```
 
 **Run tests for a specific framework only**:
 ```bash
-dotnet test --project test/Library.Tests/Library.Tests.csproj --no-build -c Release --framework net9.0
+dotnet test --project test/Microsoft.VisualStudio.Threading.Tests/Microsoft.VisualStudio.Threading.Tests.csproj --no-build -c Release --framework net10.0
 ```
 
 **List all available tests without running them**:
 ```bash
-cd test/Library.Tests
-dotnet run --no-build -c Release --framework net9.0 -- --list-tests
+cd test/Microsoft.VisualStudio.Threading.Tests
+dotnet run --no-build -c Release --framework net10.0 -- --list-tests
 ```
 
 **Key points about test filtering with MTP v2 / xunit v3**:
@@ -84,4 +84,4 @@ dotnet run --no-build -c Release --framework net9.0 -- --list-tests
 * Honor StyleCop rules and fix any reported build warnings *after* getting tests to pass.
 * In C# files, use namespace *statements* instead of namespace *blocks* for all new files that define namespaces.
 * Test files are *not* expected to declare namespaces.
-* Add API doc comments to all new public and internal members.
+* Add API doc comments to all new public and internal members in shipping code under `src`. Tests and samples do not require XML API documentation; do not add XML docs to test or sample members solely to satisfy this rule.

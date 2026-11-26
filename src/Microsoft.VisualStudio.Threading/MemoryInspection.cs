@@ -93,7 +93,7 @@ internal static class MemoryInspection
                 method?.Name,
                 instanceType,
                 AsyncReturnStackPrefix,
-                GetAddress(invokeDelegate.Target).ToInt64()); // the cast allows hex formatting
+                (long)GetAddress(invokeDelegate.Target)); // the cast allows hex formatting
         }
 
         return string.Format(
@@ -248,5 +248,5 @@ internal static class MemoryInspection
     /// However, this method provides no guarantees that the address will remain valid for the caller,
     /// so it is only useful for diagnostics and when we don't expect addresses to be changing much any more.
     /// </remarks>
-    private static unsafe IntPtr GetAddress(object value) => new IntPtr(Unsafe.AsPointer(ref value));
+    private static unsafe nint GetAddress(object value) => new IntPtr(Unsafe.AsPointer(ref value));
 }

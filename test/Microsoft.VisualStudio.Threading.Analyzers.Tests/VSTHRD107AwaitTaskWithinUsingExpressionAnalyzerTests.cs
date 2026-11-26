@@ -1,4 +1,4 @@
-﻿// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using CSVerify = Microsoft.VisualStudio.Threading.Analyzers.Tests.CSharpCodeFixVerifier<Microsoft.VisualStudio.Threading.Analyzers.VSTHRD107AwaitTaskWithinUsingExpressionAnalyzer, Microsoft.VisualStudio.Threading.Analyzers.VSTHRD107AwaitTaskWithinUsingExpressionCodeFix>;
@@ -245,5 +245,239 @@ class Test {
 
         DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(9, 16, 9, 19);
         await CSVerify.VerifyAnalyzerAsync(test, expected);
+    }
+
+    [Fact]
+    public async Task UsingStatementWithVarDeclarationInSyncMethod_GeneratesError()
+    {
+        var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    void F() {
+        AsyncSemaphore lck = null;
+        using (var releaser = lck.EnterAsync())
+        {
+        }
+    }
+}
+";
+        var withFix = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task FAsync() {
+        AsyncSemaphore lck = null;
+        using (var releaser = await lck.EnterAsync())
+        {
+        }
+    }
+}
+";
+
+        DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(8, 31, 8, 47);
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
+
+    [Fact]
+    public async Task UsingStatementWithVarDeclarationInAsyncMethod_GeneratesError()
+    {
+        var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task F() {
+        AsyncSemaphore lck = null;
+        using (var releaser = lck.EnterAsync())
+        {
+        }
+    }
+}
+";
+        var withFix = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task F() {
+        AsyncSemaphore lck = null;
+        using (var releaser = await lck.EnterAsync())
+        {
+        }
+    }
+}
+";
+
+        DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(8, 31, 8, 47);
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
+
+    [Fact]
+    public async Task UsingDeclarationInSyncMethod_GeneratesError()
+    {
+        var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    void F() {
+        AsyncSemaphore lck = null;
+        using var releaser = lck.EnterAsync();
+    }
+}
+";
+        var withFix = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task FAsync() {
+        AsyncSemaphore lck = null;
+        using var releaser = await lck.EnterAsync();
+    }
+}
+";
+
+        DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(8, 30, 8, 46);
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
+
+    [Fact]
+    public async Task UsingDeclarationInAsyncMethod_GeneratesError()
+    {
+        var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task F() {
+        AsyncSemaphore lck = null;
+        using var releaser = lck.EnterAsync();
+    }
+}
+";
+        var withFix = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task F() {
+        AsyncSemaphore lck = null;
+        using var releaser = await lck.EnterAsync();
+    }
+}
+";
+
+        DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(8, 30, 8, 46);
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
+
+    [Fact]
+    public async Task UsingDeclarationWithExplicitInterfaceType_GeneratesError()
+    {
+        var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task F() {
+        AsyncSemaphore lck = null;
+        using IDisposable releaser = lck.EnterAsync();
+    }
+}
+";
+        var withFix = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task F() {
+        AsyncSemaphore lck = null;
+        using IDisposable releaser = await lck.EnterAsync();
+    }
+}
+";
+
+        DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(9, 38, 9, 54);
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
+
+    [Fact]
+    public async Task UsingStatementWithExplicitInterfaceType_GeneratesError()
+    {
+        var test = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task F() {
+        AsyncSemaphore lck = null;
+        using (IDisposable releaser = lck.EnterAsync())
+        {
+        }
+    }
+}
+";
+        var withFix = @"
+using System;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task F() {
+        AsyncSemaphore lck = null;
+        using (IDisposable releaser = await lck.EnterAsync())
+        {
+        }
+    }
+}
+";
+
+        DiagnosticResult expected = CSVerify.Diagnostic().WithSpan(9, 39, 9, 55);
+        await CSVerify.VerifyCodeFixAsync(test, expected, withFix);
+    }
+
+    [Fact]
+    public async Task UsingAwaitDeclaration_GeneratesNoError()
+    {
+        var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task F() {
+        AsyncSemaphore lck = null;
+        using var releaser = await lck.EnterAsync();
+    }
+}
+";
+
+        await CSVerify.VerifyAnalyzerAsync(test);
+    }
+
+    [Fact]
+    public async Task UsingStatementWithAwaitDeclaration_GeneratesNoError()
+    {
+        var test = @"
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Threading;
+
+class Test {
+    async Task F() {
+        AsyncSemaphore lck = null;
+        using (var releaser = await lck.EnterAsync())
+        {
+        }
+    }
+}
+";
+
+        await CSVerify.VerifyAnalyzerAsync(test);
     }
 }

@@ -147,13 +147,13 @@ namespace Microsoft.VisualStudio.Threading
             /// <summary>
             /// Synchronously blocks without a message pump.
             /// </summary>
-            /// <param name="waitHandles">An array of type <see cref="IntPtr" /> that contains the native operating system handles.</param>
+            /// <param name="waitHandles">An array of type <see cref="nint" /> that contains the native operating system handles.</param>
             /// <param name="waitAll">true to wait for all handles; false to wait for any handle.</param>
             /// <param name="millisecondsTimeout">The number of milliseconds to wait, or <see cref="Timeout.Infinite" /> (-1) to wait indefinitely.</param>
             /// <returns>
             /// The array index of the object that satisfied the wait.
             /// </returns>
-            public override unsafe int Wait(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout)
+            public override unsafe int Wait(nint[] waitHandles, bool waitAll, int millisecondsTimeout)
             {
                 Requires.NotNull(waitHandles, nameof(waitHandles));
 
@@ -169,7 +169,7 @@ namespace Microsoft.VisualStudio.Threading
                     if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
 #endif
                     {
-                        fixed (IntPtr* pHandles = waitHandles)
+                        fixed (nint* pHandles = waitHandles)
                         {
                             return (int)PInvoke.WaitForMultipleObjects((uint)waitHandles.Length, (HANDLE*)pHandles, waitAll, (uint)millisecondsTimeout);
                         }

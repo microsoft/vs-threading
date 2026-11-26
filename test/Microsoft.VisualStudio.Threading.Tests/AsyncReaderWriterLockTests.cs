@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -834,10 +835,13 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
             writeLockHeld.Task);
     }
 
-    [StaFact]
+    [Fact]
     public void ReadLockReleaseOnSta()
     {
-        this.LockReleaseTestHelper(this.asyncLock.ReadLockAsync());
+        TestUtilities.RunOnSta(() =>
+        {
+            this.LockReleaseTestHelper(this.asyncLock.ReadLockAsync());
+        });
     }
 
 #if ISOLATED_TEST_SUPPORT
@@ -861,30 +865,36 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
     }
 #endif
 
-    [StaFact]
+    [Fact]
     public void LockAsyncThrowsOnGetResultBySta()
     {
-        Assert.Equal(ApartmentState.STA, Thread.CurrentThread.GetApartmentState()); // STA required.
+        TestUtilities.RunOnSta(() =>
+        {
+            Assert.Equal(ApartmentState.STA, Thread.CurrentThread.GetApartmentState()); // STA required.
 
-        AsyncReaderWriterLock.Awaiter? awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
-        Assert.Throws<InvalidOperationException>(() => awaiter.GetResult()); // throws on an STA thread
+            AsyncReaderWriterLock.Awaiter? awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
+            Assert.Throws<InvalidOperationException>(() => awaiter.GetResult()); // throws on an STA thread
+        });
     }
 
-    [StaFact]
+    [Fact]
     public void LockAsyncNotIssuedTillGetResultOnSta()
     {
-        AsyncReaderWriterLock.Awaiter? awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
-        Assert.False(this.asyncLock.IsReadLockHeld);
-        try
+        TestUtilities.RunOnSta(() =>
         {
-            awaiter.GetResult();
-        }
-        catch (InvalidOperationException)
-        {
-            // This exception happens because we invoke it on the STA.
-            // But we have to invoke it so that the lock is effectively canceled
-            // so the test doesn't hang in Cleanup.
-        }
+            AsyncReaderWriterLock.Awaiter? awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
+            Assert.False(this.asyncLock.IsReadLockHeld);
+            try
+            {
+                awaiter.GetResult();
+            }
+            catch (InvalidOperationException)
+            {
+                // This exception happens because we invoke it on the STA.
+                // But we have to invoke it so that the lock is effectively canceled
+                // so the test doesn't hang in Cleanup.
+            }
+        });
     }
 
     [Fact]
@@ -1121,10 +1131,13 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
         Assert.False(this.asyncLock.IsWriteLockHeld);
     }
 
-    [StaFact]
+    [Fact]
     public void UpgradeableReadLockAsyncReleaseOnSta()
     {
-        this.LockReleaseTestHelper(this.asyncLock.UpgradeableReadLockAsync());
+        TestUtilities.RunOnSta(() =>
+        {
+            this.LockReleaseTestHelper(this.asyncLock.UpgradeableReadLockAsync());
+        });
     }
 
 #if ISOLATED_TEST_SUPPORT
@@ -1488,10 +1501,13 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
         Assert.False(this.asyncLock.IsWriteLockHeld);
     }
 
-    [StaFact]
+    [Fact]
     public void WriteLockAsyncReleaseOnSta()
     {
-        this.LockReleaseTestHelper(this.asyncLock.WriteLockAsync());
+        TestUtilities.RunOnSta(() =>
+        {
+            this.LockReleaseTestHelper(this.asyncLock.WriteLockAsync());
+        });
     }
 
     [Fact]
@@ -2658,21 +2674,24 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
         });
     }
 
-    [StaFact]
+    [Fact]
     public void PrecancelledWriteLockAsyncRequestOnSTA()
     {
-        var cts = new CancellationTokenSource();
-        cts.Cancel();
-        AsyncReaderWriterLock.Awaiter? awaiter = this.asyncLock.WriteLockAsync(cts.Token).GetAwaiter();
-        Assert.True(awaiter.IsCompleted);
-        try
+        TestUtilities.RunOnSta(() =>
         {
-            awaiter.GetResult();
-            Assert.Fail("Expected OperationCanceledException not thrown.");
-        }
-        catch (OperationCanceledException)
-        {
-        }
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+            AsyncReaderWriterLock.Awaiter? awaiter = this.asyncLock.WriteLockAsync(cts.Token).GetAwaiter();
+            Assert.True(awaiter.IsCompleted);
+            try
+            {
+                awaiter.GetResult();
+                Assert.Fail("Expected OperationCanceledException not thrown.");
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        });
     }
 
     [Fact]
@@ -2785,46 +2804,49 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
         Assert.False(this.asyncLock.IsWriteLockHeld);
     }
 
-    [StaFact]
+    [Fact]
     public async Task CancelJustBeforeIsCompletedNoLeak()
     {
-        var lockAwaitFinished = new TaskCompletionSource<object?>();
-        var cts = new CancellationTokenSource();
-
-        AsyncReaderWriterLock.Awaitable awaitable = this.asyncLock.UpgradeableReadLockAsync(cts.Token);
-        AsyncReaderWriterLock.Awaiter? awaiter = awaitable.GetAwaiter();
-        cts.Cancel();
-
-        if (awaiter.IsCompleted)
+        await TestUtilities.RunOnSta(async () =>
         {
-            // The lock should not be issued on an STA thread
-            Assert.ThrowsAny<OperationCanceledException>(() => awaiter.GetResult().Dispose());
-            await lockAwaitFinished.SetAsync();
-        }
-        else
-        {
-            awaiter.OnCompleted(delegate
+            var lockAwaitFinished = new TaskCompletionSource<object?>();
+            var cts = new CancellationTokenSource();
+
+            AsyncReaderWriterLock.Awaitable awaitable = this.asyncLock.UpgradeableReadLockAsync(cts.Token);
+            AsyncReaderWriterLock.Awaiter? awaiter = awaitable.GetAwaiter();
+            cts.Cancel();
+
+            if (awaiter.IsCompleted)
             {
-                try
+                // The lock should not be issued on an STA thread
+                Assert.ThrowsAny<OperationCanceledException>(() => awaiter.GetResult().Dispose());
+                await lockAwaitFinished.SetAsync();
+            }
+            else
+            {
+                awaiter.OnCompleted(delegate
                 {
-                    awaiter.GetResult().Dispose();
-                    Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
-                }
-                catch (OperationCanceledException)
-                {
-                }
+                    try
+                    {
+                        awaiter.GetResult().Dispose();
+                        Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
+                    }
+                    catch (OperationCanceledException)
+                    {
+                    }
 
-                lockAwaitFinished.SetAsync();
-            });
-        }
+                    lockAwaitFinished.SetAsync();
+                });
+            }
 
-        await lockAwaitFinished.Task.WithTimeout(UnexpectedTimeout);
+            await lockAwaitFinished.Task.WithTimeout(UnexpectedTimeout);
 
-        // No lock is leaked
-        using (await this.asyncLock.UpgradeableReadLockAsync())
-        {
-            Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
-        }
+            // No lock is leaked
+            using (await this.asyncLock.UpgradeableReadLockAsync())
+            {
+                Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
+            }
+        });
     }
 
     [Fact]
@@ -3010,25 +3032,28 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
         await readLockAcquired.WaitAsync();
     }
 
-    [StaFact]
+    [Fact]
     public void CompleteBlocksNewTopLevelLocksSTA()
     {
-        Assert.Equal(ApartmentState.STA, Thread.CurrentThread.GetApartmentState()); // test requires STA
-
-        this.asyncLock.Complete();
-
-        // Exceptions should always be thrown via the awaitable result rather than synchronously thrown
-        // so that we meet expectations of C# async methods.
-        AsyncReaderWriterLock.Awaiter? awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
-        Assert.True(awaiter.IsCompleted);
-        try
+        TestUtilities.RunOnSta(() =>
         {
-            awaiter.GetResult();
-            Assert.Fail("Expected exception not thrown.");
-        }
-        catch (InvalidOperationException)
-        {
-        }
+            Assert.Equal(ApartmentState.STA, Thread.CurrentThread.GetApartmentState()); // test requires STA
+
+            this.asyncLock.Complete();
+
+            // Exceptions should always be thrown via the awaitable result rather than synchronously thrown
+            // so that we meet expectations of C# async methods.
+            AsyncReaderWriterLock.Awaiter? awaiter = this.asyncLock.ReadLockAsync().GetAwaiter();
+            Assert.True(awaiter.IsCompleted);
+            try
+            {
+                awaiter.GetResult();
+                Assert.Fail("Expected exception not thrown.");
+            }
+            catch (InvalidOperationException)
+            {
+            }
+        });
     }
 
     [Fact]
@@ -3682,42 +3707,45 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
             }));
     }
 
-    [StaFact]
+    [Fact]
     public void OnBeforeWriteLockReleasedCallbackNeverInvokedOnSTA()
     {
-        TestUtilities.Run(async delegate
+        TestUtilities.RunOnSta(() =>
         {
-            var callbackCompleted = new TaskCompletionSource<object?>();
-            AsyncReaderWriterLock.Releaser releaser = default(AsyncReaderWriterLock.Releaser);
-            var staScheduler = TaskScheduler.FromCurrentSynchronizationContext();
-            var nowait = Task.Run(async delegate
+            TestUtilities.Run(async delegate
             {
-                using (await this.asyncLock.UpgradeableReadLockAsync())
+                var callbackCompleted = new TaskCompletionSource<object?>();
+                AsyncReaderWriterLock.Releaser releaser = default(AsyncReaderWriterLock.Releaser);
+                var staScheduler = TaskScheduler.FromCurrentSynchronizationContext();
+                var nowait = Task.Run(async delegate
                 {
-                    using (releaser = await this.asyncLock.WriteLockAsync())
+                    using (await this.asyncLock.UpgradeableReadLockAsync())
                     {
-                        this.asyncLock.OnBeforeWriteLockReleased(async delegate
+                        using (releaser = await this.asyncLock.WriteLockAsync())
                         {
-                            try
+                            this.asyncLock.OnBeforeWriteLockReleased(async delegate
                             {
-                                Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
-                                await Task.Yield();
-                                Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
-                                await callbackCompleted.SetAsync();
-                            }
-                            catch (Exception ex)
-                            {
-                                callbackCompleted.SetException(ex);
-                            }
-                        });
+                                try
+                                {
+                                    Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
+                                    await Task.Yield();
+                                    Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
+                                    await callbackCompleted.SetAsync();
+                                }
+                                catch (Exception ex)
+                                {
+                                    callbackCompleted.SetException(ex);
+                                }
+                            });
 
-                        // Transition to an STA thread prior to calling Release (the point of this test).
-                        await staScheduler;
+                            // Transition to an STA thread prior to calling Release (the point of this test).
+                            await staScheduler;
+                        }
                     }
-                }
-            });
+                });
 
-            await callbackCompleted.Task;
+                await callbackCompleted.Task;
+            });
         });
     }
 
@@ -3725,66 +3753,69 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
     /// Test for when the write queue is NOT empty when a write lock is released on an STA to a (non-sticky)
     /// upgradeable read lock and a synchronous callback is to be invoked.
     /// </summary>
-    [StaFact]
+    [Fact]
     public async Task OnBeforeWriteLockReleasedToUpgradeableReadOnStaWithCallbacksAndWaitingWriter()
     {
-        TestUtilities.Run(async delegate
+        await TestUtilities.RunOnSta(async () =>
         {
-            var firstWriteHeld = new TaskCompletionSource<object?>();
-            var callbackCompleted = new TaskCompletionSource<object?>();
-            var secondWriteLockQueued = new TaskCompletionSource<object?>();
-            var secondWriteLockHeld = new TaskCompletionSource<object?>();
-            AsyncReaderWriterLock.Releaser releaser = default(AsyncReaderWriterLock.Releaser);
-            var staScheduler = TaskScheduler.FromCurrentSynchronizationContext();
-            await Task.WhenAll(
-                Task.Run(async delegate
-                {
-                    using (await this.asyncLock.UpgradeableReadLockAsync())
+            TestUtilities.Run(async delegate
+            {
+                var firstWriteHeld = new TaskCompletionSource<object?>();
+                var callbackCompleted = new TaskCompletionSource<object?>();
+                var secondWriteLockQueued = new TaskCompletionSource<object?>();
+                var secondWriteLockHeld = new TaskCompletionSource<object?>();
+                AsyncReaderWriterLock.Releaser releaser = default(AsyncReaderWriterLock.Releaser);
+                var staScheduler = TaskScheduler.FromCurrentSynchronizationContext();
+                await Task.WhenAll(
+                    Task.Run(async delegate
                     {
-                        using (releaser = await this.asyncLock.WriteLockAsync())
+                        using (await this.asyncLock.UpgradeableReadLockAsync())
                         {
-                            await firstWriteHeld.SetAsync();
-                            this.asyncLock.OnBeforeWriteLockReleased(async delegate
+                            using (releaser = await this.asyncLock.WriteLockAsync())
                             {
-                                await callbackCompleted.SetAsync();
-                            });
+                                await firstWriteHeld.SetAsync();
+                                this.asyncLock.OnBeforeWriteLockReleased(async delegate
+                                {
+                                    await callbackCompleted.SetAsync();
+                                });
 
-                            await secondWriteLockQueued.Task;
+                                await secondWriteLockQueued.Task;
 
-                            // Transition to an STA thread prior to calling Release (the point of this test).
-                            await staScheduler;
-                        }
-                    }
-                }),
-                Task.Run(async delegate
-                {
-                    await firstWriteHeld.Task;
-                    AsyncReaderWriterLock.Awaiter? writerAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
-                    Assert.False(writerAwaiter.IsCompleted);
-                    writerAwaiter.OnCompleted(delegate
-                    {
-                        using (writerAwaiter.GetResult())
-                        {
-                            try
-                            {
-                                Assert.True(callbackCompleted.Task.IsCompleted);
-                                secondWriteLockHeld.SetAsync();
-                            }
-                            catch (Exception ex)
-                            {
-                                secondWriteLockHeld.SetException(ex);
+                                // Transition to an STA thread prior to calling Release (the point of this test).
+                                await staScheduler;
                             }
                         }
-                    });
+                    }),
+                    Task.Run(async delegate
+                    {
+                        await firstWriteHeld.Task;
+                        AsyncReaderWriterLock.Awaiter? writerAwaiter = this.asyncLock.WriteLockAsync().GetAwaiter();
+                        Assert.False(writerAwaiter.IsCompleted);
+                        writerAwaiter.OnCompleted(delegate
+                        {
+                            using (writerAwaiter.GetResult())
+                            {
+                                try
+                                {
+                                    Assert.True(callbackCompleted.Task.IsCompleted);
+                                    secondWriteLockHeld.SetAsync();
+                                }
+                                catch (Exception ex)
+                                {
+                                    secondWriteLockHeld.SetException(ex);
+                                }
+                            }
+                        });
 
-                    await secondWriteLockQueued.SetAsync();
-                }),
-                callbackCompleted.Task,
-                secondWriteLockHeld.Task);
+                        await secondWriteLockQueued.SetAsync();
+                    }),
+                    callbackCompleted.Task,
+                    secondWriteLockHeld.Task);
+            });
+
+            this.asyncLock.Complete();
+            await this.asyncLock.Completion;
         });
-
-        this.asyncLock.Complete();
-        await this.asyncLock.Completion;
     }
 
     [Fact]
@@ -3809,35 +3840,38 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
     }
 
     /// <summary>Verifies that locks requested on STA threads will marshal to an MTA.</summary>
-    [StaFact]
+    [Fact]
     public async Task StaLockRequestsMarshalToMTA()
     {
-        var testComplete = new TaskCompletionSource<object?>();
-        Thread staThread = new Thread((ThreadStart)delegate
+        await TestUtilities.RunOnSta(async () =>
         {
-            try
+            var testComplete = new TaskCompletionSource<object?>();
+            Thread staThread = new Thread((ThreadStart)delegate
             {
-                AsyncReaderWriterLock.Awaitable awaitable = this.asyncLock.ReadLockAsync();
-                AsyncReaderWriterLock.Awaiter? awaiter = awaitable.GetAwaiter();
-                Assert.False(awaiter.IsCompleted, "The lock should not be issued on an STA thread.");
-
-                awaiter.OnCompleted(delegate
+                try
                 {
-                    Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
-                    awaiter.GetResult().Dispose();
-                    testComplete.SetAsync();
-                });
+                    AsyncReaderWriterLock.Awaitable awaitable = this.asyncLock.ReadLockAsync();
+                    AsyncReaderWriterLock.Awaiter? awaiter = awaitable.GetAwaiter();
+                    Assert.False(awaiter.IsCompleted, "The lock should not be issued on an STA thread.");
 
-                testComplete.Task.Wait();
-            }
-            catch (Exception ex)
-            {
-                testComplete.TrySetException(ex);
-            }
+                    awaiter.OnCompleted(delegate
+                    {
+                        Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
+                        awaiter.GetResult().Dispose();
+                        testComplete.SetAsync();
+                    });
+
+                    testComplete.Task.Wait();
+                }
+                catch (Exception ex)
+                {
+                    testComplete.TrySetException(ex);
+                }
+            });
+            staThread.SetApartmentState(ApartmentState.STA);
+            staThread.Start();
+            await testComplete.Task;
         });
-        staThread.SetApartmentState(ApartmentState.STA);
-        staThread.Start();
-        await testComplete.Task;
     }
 
     /// <summary>Verifies that when an MTA holding a lock traverses (via CallContext) to an MTA that the MTA DOES appear to hold a lock.</summary>
@@ -4322,6 +4356,9 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
     }
 
     [Fact]
+#if NET10_0_OR_GREATER
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Tests deliberately exercise best-effort hang reports, including when trimmed.")]
+#endif
     public void GetHangReportSimple()
     {
         IHangReportContributor reportContributor = this.asyncLock;
@@ -4533,6 +4570,9 @@ public class AsyncReaderWriterLockTests : TestBase, IDisposable
         await Task.Yield();
     }
 
+#if NET10_0_OR_GREATER
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "Tests deliberately exercise best-effort hang reports, including when trimmed.")]
+#endif
     private void PrintHangReport()
     {
         IHangReportContributor reportContributor = this.asyncLock;
