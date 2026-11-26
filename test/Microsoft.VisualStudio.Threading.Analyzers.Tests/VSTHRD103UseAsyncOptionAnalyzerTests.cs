@@ -2798,7 +2798,7 @@ namespace TestNamespace {
         var verifyTest = new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         };
         verifyTest.TestState.AdditionalFiles.Add((
             "vs-threading.SyncMethodsToExcludeFromVSTHRD103.txt",
@@ -2835,7 +2835,35 @@ namespace TestNamespace {
         await new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
+        }.RunAsync();
+    }
+
+    [Fact]
+    public async Task UnmanagedMemoryStreamOperationsDoNotGenerateWarning()
+    {
+        string test = """
+            using System.IO;
+            using System.Threading.Tasks;
+
+            class Test
+            {
+                async Task TestAsync(UnmanagedMemoryStream stream, byte[] buffer, Stream destination)
+                {
+                    await Task.Yield();
+                    stream.Write(buffer, 0, buffer.Length);
+                    stream.Flush();
+                    stream.CopyTo(destination);
+                    stream.Read(buffer, 0, buffer.Length);
+                    stream.Dispose();
+                }
+            }
+            """;
+
+        await new CSVerify.Test
+        {
+            TestCode = test,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
         }.RunAsync();
     }
 
@@ -2864,7 +2892,7 @@ namespace TestNamespace {
         await new CSVerify.Test
         {
             TestCode = test,
-            ReferenceAssemblies = ReferencesHelper.Net80References,
+            ReferenceAssemblies = ReferencesHelper.Net100References,
             ExpectedDiagnostics =
             {
                 CSVerify.Diagnostic(Descriptor).WithLocation(0).WithArguments("Read", "ReadAsync"),

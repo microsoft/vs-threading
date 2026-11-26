@@ -119,6 +119,7 @@ are intended for different operations or exceptional use cases, or offer no bene
 | Entity Framework Core `IDbContextFactory<TContext>` | `CreateDbContext` |
 | NUnit `Assert` | `That` |
 | `System.IO.MemoryStream` | `CopyTo`, `Dispose`, `Flush`, `Read`, `Write` |
+| `System.IO.UnmanagedMemoryStream` | `CopyTo`, `Dispose`, `Flush`, `Read`, `Write` |
 | xUnit `Assert` | `Throws`, `ThrowsAny` |
 
 Projects and NuGet packages can extend this list by adding their own files that match the

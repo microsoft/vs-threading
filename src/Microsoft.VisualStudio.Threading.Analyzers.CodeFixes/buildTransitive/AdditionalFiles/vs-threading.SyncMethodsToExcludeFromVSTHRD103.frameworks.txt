@@ -10,5 +10,10 @@
 [System.IO.MemoryStream]::Flush
 [System.IO.MemoryStream]::Read
 [System.IO.MemoryStream]::Write
+[System.IO.UnmanagedMemoryStream]::CopyTo
+[System.IO.UnmanagedMemoryStream]::Dispose
+[System.IO.UnmanagedMemoryStream]::Flush
+[System.IO.UnmanagedMemoryStream]::Read
+[System.IO.UnmanagedMemoryStream]::Write
 [Xunit.Assert]::Throws
 [Xunit.Assert]::ThrowsAny
